@@ -1,0 +1,459 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   CONTAINER PRINCIPAL
+   ======================================== */
+.card-container { 
+  width: 100%;
+  max-width: 1600px;
+  height: auto;
+  min-height: 750px;
+  perspective: 1500px;
+  padding: 1rem;
+}
+
+.flip { 
+  transform-style: preserve-3d; 
+  transition: transform 1s cubic-bezier(0.4, 0.2, 0.2, 1); 
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 750px;
+}
+
+.flipped { 
+  transform: rotateY(180deg); 
+}
+
+.face { 
+  position: absolute; 
+  width: 100%; 
+  height: 100%; 
+  border-radius: 25px; 
+  backface-visibility: hidden; 
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+}
+
+.back { 
+  transform: rotateY(180deg); 
+}
+
+/* ========================================
+   SÉLECTEUR TYPE DE CONNEXION
+   ======================================== */
+.login-type-selector {
+  background: transparent;
+  padding: 1.5rem 2rem;
+  border-bottom: none;
+}
+
+.type-button {
+  padding: 0.875rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  min-width: 180px;
+}
+
+.type-button.admin {
+  background: linear-gradient(135deg, #00bcd4, #0097a7);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+}
+
+.type-button.admin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+}
+
+.type-button.user {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.type-button.user:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.type-button.inactive {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.type-button.inactive:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ========================================
+   INPUTS
+   ======================================== */
+.input-industrial { 
+  background: rgba(255, 255, 255, 0.08); 
+  border: 2px solid rgba(255, 255, 255, 0.25); 
+  color: white; 
+  transition: all 0.3s ease;
+  font-size: 1.25rem;
+  cursor: pointer;
+  min-height: 65px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+}
+
+.input-industrial::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.input-industrial:focus { 
+  border-color: #00e6ff; 
+  box-shadow: 0 0 20px rgba(0, 230, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.input-industrial.active {
+  border-color: #00e6ff;
+  box-shadow: 0 0 15px rgba(0, 230, 255, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.input-industrial.error {
+  border-color: #ff4757;
+  box-shadow: 0 0 15px rgba(255, 71, 87, 0.3);
+}
+
+/* ========================================
+   BOUTONS PRINCIPAUX
+   ======================================== */
+.btn-industrial {
+  background: linear-gradient(135deg, #00bcd4, #0097a7);
+  padding: 1.125rem 2.5rem;
+  border-radius: 15px;
+  color: white;
+  font-weight: 700;
+  font-size: 1.375rem;
+  transition: all 0.3s ease;
+  min-height: 70px;
+  box-shadow: 0 4px 15px rgba(0, 188, 212, 0.3);
+}
+
+.btn-industrial:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 188, 212, 0.5);
+}
+
+.btn-industrial-register {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 1.125rem 2.5rem;
+  border-radius: 15px;
+  color: white;
+  font-weight: 700;
+  font-size: 1.375rem;
+  transition: all 0.3s ease;
+  min-height: 70px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-industrial-register:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+
+/* ========================================
+   TITRE NEON
+   ======================================== */
+.neon { 
+  color: #00ffff; 
+  text-shadow: 
+    0 0 10px #00ffff,
+    0 0 20px #00ffff,
+    0 0 40px #00ffff;
+  font-size: clamp(2.5rem, 4vw, 4rem);
+}
+
+/* ========================================
+   CLAVIER NUMÉRIQUE
+   ======================================== */
+.numpad-large {
+  width: 380px;
+  padding-bottom: 1rem;
+}
+
+.numpad-btn-large {
+  min-height: 4.5rem;
+  aspect-ratio: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: bold;
+  border-radius: 12px;
+  height: 4.5rem;
+  width: 100%;
+}
+
+.numpad-btn-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.numpad-btn-large:active {
+  transform: scale(0.95);
+}
+
+/* ========================================
+   INDICATEURS
+   ======================================== */
+.current-field-indicator {
+  background: rgba(0, 230, 255, 0.15);
+  border: 2px solid #00e6ff;
+  border-radius: 12px;
+  padding: 0.875rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.current-field-text {
+  color: #00e6ff;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.value-display {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  padding: 1.125rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #00ffff;
+}
+
+/* ========================================
+   PARTICULES
+   ======================================== */
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #00ffff, transparent);
+  animation: float 12s linear infinite;
+  filter: blur(1px);
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* ========================================
+   LOADER
+   ======================================== */
+.loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader {
+  width: 80px;
+  height: 80px;
+  border: 5px solid transparent;
+  border-top: 5px solid #00ffff;
+  border-right: 5px solid #00ffff;
+  border-radius: 50%;
+  animation: spin 1.2s ease-in-out infinite;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.6);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader-bg { 
+  position: fixed; 
+  inset: 0; 
+  background: rgba(0, 0, 0, 0.9); 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  z-index: 2000;
+  backdrop-filter: blur(15px);
+}
+
+/* ========================================
+   MESSAGES D'ERREUR
+   ======================================== */
+.error-message {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-10px); }
+  75% { transform: translateX(10px); }
+}
+
+/* ========================================
+   RESPONSIVE - TABLETTES (≤1024px)
+   ======================================== */
+@media (max-width: 1024px) {
+  .card-container {
+    max-width: 95%;
+    min-height: 650px;
+  }
+
+  .flip {
+    min-height: 650px;
+  }
+
+  .type-button {
+    min-width: 150px;
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .numpad-large {
+    max-width: 340px;
+    min-width: 300px;
+  }
+  
+  .numpad-btn-large {
+    min-height: 3.75rem;
+    font-size: 1.5rem;
+  }
+
+  .input-industrial {
+    font-size: 1.125rem;
+    min-height: 60px;
+  }
+}
+
+/* ========================================
+   RESPONSIVE - MOBILES (≤768px)
+   ======================================== */
+@media (max-width: 768px) {
+  .card-container {
+    padding: 0.5rem;
+    min-height: 550px;
+  }
+
+  .flip {
+    min-height: 550px;
+  }
+
+  .login-type-selector {
+    padding: 1rem;
+  }
+
+  .type-button {
+    min-width: 130px;
+    font-size: 0.95rem;
+    padding: 0.625rem 1.25rem;
+  }
+  
+  .numpad-large {
+    max-width: 100%;
+    min-width: auto;
+  }
+  
+  .numpad-btn-large {
+    min-height: 3.5rem;
+    font-size: 1.4rem;
+  }
+  
+  .input-industrial {
+    font-size: 1.125rem;
+    min-height: 58px;
+  }
+
+  .btn-industrial,
+  .btn-industrial-register {
+    font-size: 1.125rem;
+    min-height: 60px;
+  }
+}
+
+/* ========================================
+   RESPONSIVE - PETITS MOBILES (≤480px)
+   ======================================== */
+@media (max-width: 480px) {
+  .card-container {
+    padding: 0.25rem;
+    min-height: 400px;
+  }
+
+  .flip {
+    min-height: 400px;
+  }
+
+  .type-button {
+    min-width: 110px;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .numpad-btn-large {
+    min-height: 3rem;
+    font-size: 1.15rem;
+  }
+  
+  .btn-industrial,
+  .btn-industrial-register {
+    font-size: 0.95rem;
+    min-height: 48px;
+  }
+
+  .input-industrial {
+    font-size: 0.9rem;
+    min-height: 46px;
+  }
+}
+
+/* ========================================
+   SCROLLBAR
+   ======================================== */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #00bcd4, #0097a7);
+  border-radius: 3px;
+}

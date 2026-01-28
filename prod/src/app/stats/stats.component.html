@@ -1,0 +1,544 @@
+<div class="stats-container">
+  
+  <!-- ============================================ -->
+  <!-- SECTION FILTRE DE PÉRIODE -->
+  <!-- ============================================ -->
+  <div *ngIf="!statsData" class="header">
+    <h1>Statistiques par Période</h1>
+    
+    <div class="filter-section">
+      <div class="filter-group">
+        <div class="filter-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Sélectionner une période</span>
+        </div>
+        
+        <div class="date-inputs">
+          <div class="input-group">
+            <label for="dateDebut">Date début :</label>
+            <input 
+              type="date" 
+              id="dateDebut" 
+              [(ngModel)]="dateDebut"
+              [max]="dateFin || maxDate"
+              class="filter-input"
+            />
+          </div>
+          
+          <div class="input-group">
+            <label for="dateFin">Date fin :</label>
+            <input 
+              type="date" 
+              id="dateFin" 
+              [(ngModel)]="dateFin"
+              [min]="dateDebut"
+              [max]="maxDate"
+              class="filter-input"
+            />
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button 
+            type="button"
+            class="btn-filter" 
+            (click)="chargerStatsPeriode()"
+            [disabled]="isLoading || !dateDebut || !dateFin">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span *ngIf="!isLoading">Afficher les statistiques</span>
+            <span *ngIf="isLoading">Chargement...</span>
+          </button>
+          
+          <button 
+            type="button"
+            class="btn-reset" 
+            (click)="reinitialiser()"
+            [disabled]="isLoading">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+              <path d="M3 21v-5h5"></path>
+            </svg>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Message d'erreur -->
+    <div *ngIf="errorMessage" class="error-message">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- LOADING -->
+    <div *ngIf="isLoading" class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des statistiques...</p>
+    </div>
+
+    <!-- MESSAGE DE BIENVENUE -->
+    <div *ngIf="!isLoading && !statsData" class="welcome-card">
+      <div class="welcome-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+      </div>
+      <h2>Bienvenue</h2>
+      <p>Sélectionnez une période puis cliquez sur "Afficher les statistiques"</p>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- RÉSULTATS - PAGE COMPLÈTE -->
+  <!-- ============================================ -->
+  <div *ngIf="statsData" class="results-layout">
+    
+    <!-- SIDEBAR GAUCHE -->
+    <aside class="sidebar">
+      
+      <!-- INFO PÉRIODE -->
+      <div class="sidebar-card period-info">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <h3>Période</h3>
+        </div>
+        <div class="period-details">
+          <div class="period-item">
+            <span class="period-label">Du</span>
+            <span class="period-value">{{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">Au</span>
+            <span class="period-value">{{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">Jours</span>
+            <span class="period-value">{{ getNombreJours() }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">Semaines</span>
+            <span class="period-value">{{ statsData.periode.nombreSemaines }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTIVITÉ GLOBALE -->
+      <div class="sidebar-card productivity-card">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+          </svg>
+          <h3>Productivité Globale</h3>
+        </div>
+        <div class="productivity-value">
+          <span class="pcs-value">{{ statsData.productionGlobale.pcsTotal | number:'1.1-1' }}%</span>
+          <div class="productivity-status" [style.color]="getCouleurStatut(statsData.productionGlobale.pcsTotal)">
+            {{ getStatutProduction(statsData.productionGlobale.pcsTotal) }}
+          </div>
+        </div>
+        <div class="productivity-details">
+          <div class="detail-item">
+            <span class="detail-label">Qté Source</span>
+            <span class="detail-value">{{ statsData.productionGlobale.totalQteSource | number }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Qté Déclarée</span>
+            <span class="detail-value">{{ statsData.productionGlobale.totalDecProduction | number }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- OEE -->
+      <div class="sidebar-card oee-card">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="12" x2="14.5" y2="14.5"></line>
+          </svg>
+          <h3>OEE</h3>
+        </div>
+        <div class="oee-value">
+          <span class="oee-empty">-</span>
+          <small class="oee-note">Non disponible</small>
+        </div>
+      </div>
+
+      <!-- PERSONNEL -->
+      <div class="sidebar-card personnel-card">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <h3>Personnel</h3>
+        </div>
+        <div class="personnel-stats">
+          <div class="personnel-item total">
+            <span class="personnel-label">Total Ouvriers</span>
+            <span class="personnel-value">{{ statsData.personnel.totalOuvriers }}</span>
+          </div>
+          <div class="personnel-item presents">
+            <span class="personnel-label">Présents</span>
+            <span class="personnel-value">{{ statsData.personnel.presents }}</span>
+          </div>
+          <div class="personnel-item conges">
+            <span class="personnel-label">Congés</span>
+            <span class="personnel-value">{{ statsData.personnel.conges }}</span>
+          </div>
+          <div class="personnel-item absents">
+            <span class="personnel-label">Absents</span>
+            <span class="personnel-value">{{ statsData.personnel.absents }}</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="main-content">
+      
+      <!-- HEADER AVEC BOUTON RETOUR -->
+      <div class="content-header">
+        <div class="header-top">
+          <div>
+            <h2>Production par Ligne</h2>
+            <p class="content-subtitle">
+              Période du {{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }} 
+              au {{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}
+            </p>
+          </div>
+          <button class="btn-retour" (click)="reinitialiser()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5"></path>
+              <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+            Retour au filtre
+          </button>
+        </div>
+      </div>
+
+      <!-- GRAPHIQUE HISTOGRAMME -->
+      <div class="chart-container">
+        <canvas #chartCanvas></canvas>
+      </div>
+
+      <!-- ANALYSE DES 7M -->
+      <div class="m7-section">
+        <h2 class="m7-title">Analyse des 6M</h2>
+        
+        <div class="m7-circles-grid">
+          <div *ngFor="let item of mDetails | keyvalue" 
+               class="m-circle-item"
+               (click)="toggleMDetails(item.key)"
+               [class.active]="selectedM === item.key">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM(item.key)"
+                  [ngStyle]="getCircleStyle(getPourcentageM(item.key))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageM(item.key) | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotal(item.key) }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ item.value.label }}</div>
+            <div class="m-circle-description">{{ item.value.description }}</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- MODALE DE DÉTAILS DES NON-CONFORMITÉS -->
+  <!-- ============================================ -->
+  <div *ngIf="showDetailsModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      
+      <!-- HEADER DE LA MODALE -->
+      <div class="modal-header">
+        <h2 class="modal-title">{{ detailsModalTitle }}</h2>
+        <button class="modal-close-btn" (click)="closeModal()">×</button>
+      </div>
+
+      <!-- INFOS DU HEADER -->
+     <!-- INFOS DU HEADER -->
+<div class="modal-info-bar">
+      <div class="modal-info-item">
+        <span class="info-label">Période:</span>
+        <span class="info-value">
+          {{ getPeriodeDisplay() }}
+        </span>
+      </div>
+      <div class="modal-info-item">
+        <span class="info-label">Cause:</span>
+        <span class="info-value">{{ detailsModalCause }}</span>
+      </div>
+      <div class="modal-info-item">
+        <span class="info-label">Références:</span>
+        <span class="info-value">{{ detailsModalData.length }}</span>
+      </div>
+      <div class="modal-info-item">
+        <span class="info-label">Total 7M:</span>
+        <span class="info-value">{{ (detailsModalStats?.total7M || 0) | number }}</span>
+      </div>
+    </div>
+
+      <!-- TABLEAU DES DÉTAILS -->
+      <div class="modal-table-container">
+  <table class="modal-table">
+    <thead>
+      <tr>
+        <th>Date</th>  <!-- ✅ NOUVELLE COLONNE -->
+        <th>Jour</th>  <!-- ✅ NOUVELLE COLONNE -->
+        <th>Ligne</th> <!-- ✅ DÉPLACÉ AVEC DATE -->
+        <th>Référence</th>
+        <th>OF</th>
+        <th>Qty Planifiée</th>
+        <th>Qty Produite</th>
+        <th>Delta</th>
+        <th>M1<br><small>Matière Première</small></th>
+        <th>M2<br><small>Absence</small></th>
+        <th>M3<br><small>Rendement</small></th>
+        <th>M4<br><small>Méthode</small></th>
+        <th>M5<br><small>Maintenance</small></th>
+        <th>M6<br><small>Qualité</small></th>
+        <th>M7<br><small>Environnement</small></th>
+        <th>Total 7M</th>
+        <th>% Écart</th>
+        <th>Réf MP</th>
+        <th>Réf Qualité</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let detail of detailsModalData">
+        <!-- NOUVELLES COLONNES DATE ET JOUR -->
+        <td class="text-bold">{{ detail.date | date:'dd/MM/yyyy' }}</td>
+        <td>{{ detail.jour | titlecase }}</td>
+        <td>{{ detail.ligne }}</td>
+        
+        <td class="text-bold">{{ detail.reference }}</td>
+        <td>{{ detail.of }}</td>
+        <td class="text-right">{{ detail.qtyPlanifiee | number }}</td>
+        <td class="text-right">{{ detail.qtyProduite | number }}</td>
+        <td class="text-right" [style.color]="getDeltaColor(detail.delta)">
+          {{ detail.delta | number }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m1_matierePremiere > 0">
+          {{ detail.m1_matierePremiere > 0 ? (detail.m1_matierePremiere | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m2_absence > 0">
+          {{ detail.m2_absence > 0 ? (detail.m2_absence | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m3_rendement > 0">
+          {{ detail.m3_rendement > 0 ? (detail.m3_rendement | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m4_methode > 0">
+          {{ detail.m4_methode > 0 ? (detail.m4_methode | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m5_maintenance > 0">
+          {{ detail.m5_maintenance > 0 ? (detail.m5_maintenance | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m6_qualite > 0">
+          {{ detail.m6_qualite > 0 ? (detail.m6_qualite | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m7_environnement > 0">
+          {{ detail.m7_environnement > 0 ? (detail.m7_environnement | number) : '-' }}
+        </td>
+        <td class="text-right text-bold">{{ detail.total7M | number }}</td>
+        <td class="text-right">{{ detail.pourcentageEcart | number:'1.1-1' }}%</td>
+        <td class="text-center">{{ detail.refMP || '-' }}</td>
+        <td class="text-center">{{ detail.refQualite || '-' }}</td>
+      </tr>
+
+      <!-- LIGNE DE TOTAUX -->
+      <tr class="totals-row">
+        <td colspan="3" class="text-bold">TOTAUX</td> <!-- Changé colspan de 2 à 3 -->
+        <td class="text-right text-bold">{{ detailsModalStats.totalQtyPlanifiee | number }}</td>
+        <td class="text-right text-bold">{{ detailsModalStats.totalQtyProduite | number }}</td>
+        <td class="text-right text-bold">{{ detailsModalStats.totalDelta | number }}</td>
+        <td colspan="7"></td>
+        <td class="text-right text-bold">{{ detailsModalStats.total7M | number }}</td>
+        <td class="text-right text-bold">{{ detailsModalStats.tauxConformite }}%</td>
+        <td colspan="2"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+      <!-- FOOTER STATISTIQUES -->
+      <div class="modal-footer-stats">
+        <div class="footer-stat-card">
+          <div class="footer-stat-label">Références avec non-conf</div>
+          <div class="footer-stat-value">{{ detailsModalStats.referencesAvecNonConf }}/{{ detailsModalStats.totalReferences }}</div>
+        </div>
+        <div class="footer-stat-card">
+          <div class="footer-stat-label">Taux de conformité</div>
+          <div class="footer-stat-value">{{ detailsModalStats.tauxConformite }}%</div>
+        </div>
+        <div class="footer-stat-card">
+          <div class="footer-stat-label">Cause principale</div>
+          <div class="footer-stat-value">{{ detailsModalStats.causesPrincipales }}</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+<!-- MODALE DES DÉTAILS D'UNE LIGNE -->
+<!-- ============================================ -->
+<div *ngIf="showLigneModal && ligneModalData" class="modal-overlay" (click)="closeLigneModal()">
+  <div class="modal-container ligne-modal" (click)="$event.stopPropagation()">
+    
+    <!-- HEADER -->
+    <div class="modal-header">
+      <h2 class="modal-title">{{ ligneModalTitle }}</h2>
+      <button class="modal-close-btn" (click)="closeLigneModal()">×</button>
+    </div>
+
+    <!-- STATISTIQUES PRINCIPALES -->
+    <div class="ligne-stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Productivité (PCS)</div>
+          <div class="stat-value">{{ ligneModalData.production.pcs | number:'1.1-1' }}%</div>
+          <div class="stat-status" [style.color]="getCouleurStatut(ligneModalData.production.pcs)">
+            {{ getStatutProduction(ligneModalData.production.pcs) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Quantité Source</div>
+          <div class="stat-value">{{ ligneModalData.production.totalQteSource | number }}</div>
+          <div class="stat-sub">Planifiée</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Quantité Déclarée</div>
+          <div class="stat-value">{{ ligneModalData.production.totalDecProduction | number }}</div>
+          <div class="stat-sub">Produite</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Références</div>
+          <div class="stat-value">{{ ligneModalData.nombreReferences }}</div>
+          <div class="stat-sub">Articles différents</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYSE DES 7M POUR CETTE LIGNE -->
+    <div class="m7-section-ligne">
+      <h3 class="section-title">Analyse des 7M pour cette ligne</h3>
+      
+      <div class="m7-mini-grid">
+        <div *ngFor="let item of mDetails | keyvalue" class="m7-mini-card">
+          <div class="m7-mini-header">
+            <div class="m7-mini-icon" [style.background]="getColorForM(item.key)">
+              {{ item.value.icon }}
+            </div>
+            <div class="m7-mini-title">{{ item.value.label }}</div>
+          </div>
+          <div class="m7-mini-content">
+            <div class="m7-mini-value">
+              {{ getPourcentageMForLigne(item.key) | number:'1.1-1' }}%
+            </div>
+            <div class="m7-mini-quantity">
+              {{ getQuantiteMForLigne(item.key) | number }}
+            </div>
+          </div>
+          <div *ngIf="getReferencesMForLigne(item.key)?.length" class="m7-mini-refs">
+            Réf: {{ getReferencesMForLigne(item.key)?.join(', ') }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLEAU DES RÉFÉRENCES -->
+    <div *ngIf="ligneModalReferences.length > 0" class="references-section">
+      <h3 class="section-title">Détail par Référence</h3>
+      
+      <div class="table-container">
+        <table class="references-table">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>OF</th>
+              <th>Qty Planifiée</th>
+              <th>Qty Modifiée</th>
+              <th>Qty Produite</th>
+              <th>PCS</th>
+              <th>7M Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ref of ligneModalReferences">
+              <td class="text-bold">{{ ref.reference }}</td>
+              <td>{{ ref.of }}</td>
+              <td class="text-right">{{ ref.qtePlanifiee | number }}</td>
+              <td class="text-right">{{ ref.qteModifiee | number }}</td>
+              <td class="text-right">{{ ref.decProduction | number }}</td>
+              <td class="text-right">{{ ref.pcsProd | number:'1.1-1' }}%</td>
+              <td class="text-right">
+                {{ (ref.causes7M?.total || 0) | number }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MESSAGE SI PAS DE RÉFÉRENCES -->
+    <div *ngIf="ligneModalReferences.length === 0" class="no-data-message">
+      
+      <p>Les détails par référence ne sont pas disponibles</p>
+    </div>
+
+  </div>
+</div>
+
+</div>

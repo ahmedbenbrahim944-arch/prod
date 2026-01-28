@@ -1,0 +1,1613 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================== LAYOUT PRINCIPAL ==================== */
+.full-screen-layout {
+  min-height: 100vh;
+  background: #f8fafc !important;
+}
+
+/* ==================== HEADER ==================== */
+.header-industrial {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid #e2e8f0;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: #57E809 !important;
+}
+
+.h1 {
+  color: #57E809 !important;
+}
+
+/* ==================== TABLEAU HEBDOMADAIRE - STYLE SIMPLE ET CLAIR ==================== */
+.week-planning-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  background: #ffffff !important;
+  font-size: 0.813rem !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* En-têtes du tableau */
+.week-planning-table th {
+  font-weight: 100;
+  color: #57E809 !important;
+  border: 1px solid #e2e8f0 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 0.625rem !important;
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  text-align: center;
+  line-height: 0;
+}
+
+/* Cellules du tableau - Lignes invisibles */
+.week-planning-table td {
+  padding: 4px 6px !important;
+  border: none !important;
+  vertical-align: middle;
+  min-width: 100px !important;
+  font-size: 0.813rem !important;
+  background: transparent !important;
+  color: #050505 !important;
+  text-align: center;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  height: 1px !important;
+}
+
+/* Colonnes compactes */
+.week-planning-table td:nth-child(1) {
+  min-width: 10px !important;
+  max-width: 20px !important;
+  padding: 0px 0px !important;
+  font-size: 0.75rem !important;
+}
+
+.week-planning-table td:nth-child(2),
+.week-planning-table td:nth-child(3),
+.week-planning-table td:nth-child(4),
+.week-planning-table td:nth-child(5),
+.week-planning-table td:nth-child(6),
+.week-planning-table td:nth-child(7) {
+  min-width: 10px !important;
+  max-width: 20px !important;
+  padding: 0px 0px !important;
+  font-size: 0.75rem !important;
+}
+
+/* Effet hover sur les lignes - subtil */
+.week-planning-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Pas d'alternance de couleur */
+.week-planning-table tbody tr:nth-child(even),
+.week-planning-table tbody tr:nth-child(odd) {
+  background: transparent !important;
+}
+
+/* Séparateur visuel léger entre les groupes de 5 lignes */
+.week-planning-table tbody tr:nth-child(5n) td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 6px !important;
+}
+
+.week-planning-table tbody tr:nth-child(5n+1) td {
+  padding-top: 0px !important;
+}
+
+/* ========== COLONNE RÉFÉRENCES - FIX PRINCIPAL ========== */
+.week-planning-table .sticky-cell {
+  background: #fcf8f8 !important;
+  font-weight: 600;
+  font-size: 0.75rem !important;
+  color: #091fe8 !important;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  border-right: 1px solid #e2e8f0 !important;
+  padding: 3px 5px !important;
+  max-width: 80px !important;
+  white-space: nowrap;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* Style pour les inputs */
+.week-planning-table input {
+  font-size: 0.813rem !important;
+  font-weight: 500;
+  padding: 3px 5px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px;
+  color: #334155 !important;
+  text-align: center;
+  width: 100%;
+  transition: all 0.2s ease;
+  min-height: 28px !important;
+}
+
+.week-planning-table input:focus {
+  background: #ffffff !important;
+  border-color: #e90e0e !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+/* Style pour les valeurs affichées */
+.value-display {
+  font-size: 0.813rem !important;
+  font-weight: 600;
+  padding: 3px 0 !important;
+  color: #000000 !important;
+}
+
+/* Style pour les pourcentages delta */
+.delta-value {
+  font-size: 0.813rem !important;
+  font-weight: 700 !important;
+  padding: 3px 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #f8fafc;
+}
+
+/* Couleurs pour les deltas */
+.delta-excellent { 
+  color: #059669 !important; 
+  background: #d1fae5 !important;
+}
+.delta-good { 
+  color: #d97706 !important; 
+  background: #fef3c7 !important;
+}
+.delta-average { 
+  color: #ea580c !important; 
+  background: #ffedd5 !important;
+}
+.delta-poor { 
+  color: #dc2626 !important; 
+  background: #fee2e2 !important;
+}
+
+/* Style pour les en-têtes de jours */
+.day-header {
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+  padding: 6px 4px !important;
+  color: #57E809 !important;
+  line-height: 0.5;
+}
+
+.day-header .nb-operateurs {
+  color: #000000;
+  display: block;
+}
+
+.day-header .date-display {
+  font-size: 0.563rem;
+  margin-top: 1px;
+  font-weight: 500;
+  color: #000000;
+  display: block;
+}
+
+/* Style pour les références */
+.reference-cell {
+  font-size: 0.813rem !important;
+  font-weight: 600 !important;
+  color: #e90e0e !important;
+  background: #f8fafc !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reference-cell:hover {
+  background: #e0f2fe !important;
+}
+
+/* Bordures simplifiées */
+.week-planning-table th {
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Colonne OF Verticale */
+.vertical-text-cell {
+  min-width: 35px !important;
+  max-width: 35px !important;
+  padding: 3px 2px !important;
+  position: relative;
+}
+
+.vertical-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 3px;
+}
+
+.vertical-text-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 600;
+  font-size: 0.625rem;
+  color: #e90e0e;
+  text-orientation: mixed;
+}
+
+.vertical-text-input {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.813rem !important;
+  font-weight: 600 !important;
+  color: #cf1313 !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 3px;
+  padding: 3px 2px !important;
+  text-align: center;
+  width: 100%;
+  min-width: 25px;
+  height: auto;
+}
+
+.vertical-text-input:focus {
+  outline: none;
+  background: #ffffff !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+.vertical-text-value {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: #000000;
+  text-orientation: mixed;
+}
+
+/* ==================== CARTES DE LIGNES ==================== */
+.line-card-large {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1; /* Carré parfait */
+  max-width: 500px; /* Taille maximale réduite */
+  max-height: 500px; /* Taille maximale réduite */
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0; /* Pas de radius - coins carrés */
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.line-card-large:hover {
+  transform: translateY(-2px);
+  border-color: #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
+}
+
+.image-container-large {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.line-card-large img {
+  transition: transform 0.4s ease;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  filter: brightness(0.96);
+}
+
+.line-card-large:hover img {
+  transform: scale(1.04);
+}
+
+.line-overlay-large {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, 
+    rgba(255, 255, 255, 0.98) 0%, 
+    rgba(255, 255, 255, 0.88) 35%, 
+    transparent 100%);
+  padding: 1.25rem 1rem 1rem 1rem;
+}
+
+.line-name-large {
+  color: #334155;
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: 0.3px;
+}
+
+.status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 0.688rem;
+  font-weight: 600;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-badge-active {
+  background: rgba(16, 185, 129, 0.95);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.status-badge-inactive {
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ==================== SEARCH BAR ==================== */
+.search-container {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.search-container:focus-within {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.08);
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #334155;
+  font-size: 0.813rem;
+  width: 100%;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-icon {
+  color: #0ea5e9;
+}
+
+/* ==================== SIDEBAR DES SEMAINES ==================== */
+.weeks-sidebar {
+  width: 220px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-right: 1px solid #cbd5e1;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 25;
+}
+
+.week-item {
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 6px;
+  margin: 4px 8px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 1;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.week-item:hover {
+  background: #2e59aa;
+  border-left-color: #0ea5e9;
+  transform: translateX(2px);
+  color: #ffffff;
+}
+
+.week-item.active {
+  background: #0ea5e9;
+  border-left-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+  font-weight: 600;
+}
+
+.week-item .font-bold {
+  color: #1e293b !important;
+}
+
+.week-item .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.week-item:hover .font-bold {
+  color: #ffffff !important;
+}
+
+.week-item:hover .text-gray-400 {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.week-item.active .font-bold {
+  color: #ffffff !important;
+}
+
+.week-item.active .text-gray-400 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.week-item.active .text-cyan-300 {
+  color: #ffffff !important;
+}
+
+/* ==================== SCROLLBAR ==================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==================== SCROLL HORIZONTAL ==================== */
+.table-responsive-container {
+  border-radius: 8px;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  padding-bottom: 3px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.table-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  position: relative;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar {
+  height: 7px;
+  background: #f1f5f9;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+  margin: 0 8px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+  background-clip: padding-box;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.planning-table-min-width {
+  min-width: 1000px;
+}
+
+/* ==================== MESSAGE DE SUCCÈS ==================== */
+.success-notification {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.success-content {
+  background: #10b981;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.813rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ==================== LOADER ==================== */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(243, 239, 239, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loader-container {
+  text-align: center;
+}
+
+.industrial-loader {
+  width: 45px;
+  height: 45px;
+  border: 3px solid rgba(14, 165, 233, 0.15);
+  border-top: 3px solid #0ea5e9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* ==================== MODAL ==================== */
+.causes-modal-overlay {
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.3s ease;
+  overflow-y: auto !important;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.causes-modal-content {
+  animation: slideUp 0.3s ease;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== STYLES POUR LES CHAMPS C ==================== */
+.week-planning-table tbody tr:nth-child(5n+1) td:not(.sticky-cell) {
+  background: #D4D9D2 !important;
+}
+
+.week-planning-table tbody tr:nth-child(5n+1) td:not(.sticky-cell) .value-display {
+  color: #0953c2 !important;
+}
+
+/* ==================== AGRANDISSEMENT DES NUMÉROS DE RÉFÉRENCES ==================== */
+.week-planning-table tbody td.sticky-cell {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: #091fe8 !important;
+  background: #fcf8f8 !important;
+  padding: 8px 10px !important;
+  min-height: 40px !important;
+  line-height: 1.4 !important;
+  max-width: 140px !important;
+  min-width: 120px !important;
+  white-space: nowrap;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+.week-planning-table tbody td.sticky-cell .truncate,
+.week-planning-table tbody td.sticky-cell span {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+}
+
+.week-planning-table th.sticky-cell {
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  padding: 10px 8px !important;
+  min-height: 50px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
+  border-right: 2px solid #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+/* ==================== STYLES POUR LE PANNEAU DES ENREGISTREMENTS ==================== */
+.records-panel-scroll {
+  max-height: calc(90vh - 200px);
+  min-height: 300px;
+}
+
+.records-panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.records-panel-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.records-panel-scroll::-webkit-scrollbar-thumb {
+  background: #3b82f6;
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+}
+
+.records-panel-scroll::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
+
+.records-panel-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #f1f5f9;
+}
+
+.records-panel-scroll {
+  scroll-behavior: smooth;
+}
+
+.records-panel-scroll .space-y-2 > div {
+  min-height: 80px;
+}
+
+/* ==================== SIDEBAR MOBILE/TABLET ==================== */
+.sidebar-hidden {
+  transform: translateX(-100%);
+  z-index: 25;
+}
+
+.sidebar-visible {
+  transform: translateX(0);
+  z-index: 25;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 15;
+  pointer-events: auto;
+}
+
+.toggle-sidebar-btn {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 12px 8px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 30;
+}
+
+.toggle-sidebar-btn.sidebar-open {
+  left: 220px;
+  z-index: 30;
+}
+
+.tooltip-text {
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ==================== CHANGEMENTS POUR COULEUR VERTE #57E809 ==================== */
+.text-center h1 {
+  color: #57E809 !important;
+}
+
+.text-cyan-400 {
+  color: #57E809 !important;
+}
+
+.mb-4.sm\\:mb-6.p-3.sm\\:p-4 h3 {
+  color: #57E809 !important;
+}
+
+.day-header .date-display {
+  color: #000000 !important;
+}
+
+.day-header .text-xs.sm\\:text-sm.text-gray-300.mt-1 {
+  color: #000000 !important;
+}
+
+.day-header .text-xs.sm\\:text-sm.text-gray-300.font-bold.mb-1 {
+  color: #000000 !important;
+}
+
+.day-header .nb-operateurs {
+  color: #000000 !important;
+}
+
+/* ==================== OVERFLOW POUR TABLEAU DE SAISIE ==================== */
+.production-form-saisie-container {
+  max-height: calc(20vh - 200px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.flex-1.p-6.overflow-y-auto {
+  max-height: 80%;
+}
+
+.production-form-container table {
+  min-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+.production-form-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #0f172a;
+}
+
+.production-form-container tbody {
+  display: block;
+  max-height: calc(90vh - 350px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.production-form-container tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.production-form-container tbody::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.production-form-container tbody::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.production-form-container tbody::-webkit-scrollbar-thumb {
+  background: #0ea5e9;
+  border-radius: 4px;
+  border: 2px solid #1e293b;
+}
+
+.production-form-container tbody::-webkit-scrollbar-thumb:hover {
+  background: #0284c7;
+}
+
+.production-form-container tbody {
+  scrollbar-width: thin;
+  scrollbar-color: #0ea5e9 #1e293b;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(15px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.full-screen-layout .absolute.inset-0 {
+  opacity: 0.02 !important;
+}
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+/* Desktop (1280px) */
+@media (max-width: 1280px) {
+  .line-card-large { height: 220px; }
+  .week-planning-table td { min-width: 90px; }
+  .week-planning-table th,
+  .week-planning-table td {
+    font-size: 0.75rem;
+    padding: 4px 5px;
+  }
+}
+
+/* Tablettes paysage (1024px) */
+@media (max-width: 1024px) {
+  .line-card-large { height: 200px; }
+  .weeks-sidebar { 
+    width: 210px; 
+  }
+  
+  .week-item {
+    min-height: 62px;
+    padding: 6px 10px;
+  }
+  
+  .week-planning-table th,
+  .week-planning-table td {
+    font-size: 0.688rem;
+    padding: 3px 4px;
+  }
+  .line-name-large { font-size: 1rem; }
+}
+
+/* Tablettes portrait (768px) */
+@media (max-width: 768px) {
+  .weeks-sidebar { 
+    width: 200px;
+  }
+  
+  .week-item {
+    min-height: 65px;
+    padding: 8px 12px;
+    margin: 6px 8px;
+  }
+  
+  .week-item .font-bold {
+    font-size: 1rem !important;
+  }
+  
+  .week-item .text-gray-400 {
+    font-size: 0.875rem !important;
+  }
+  
+  .line-card-large { height: 180px; }
+  .week-planning-table th,
+  .week-planning-table td {
+    font-size: 0.688rem;
+    padding: 3px 4px;
+    height: 28px !important;
+  }
+  .line-name-large { font-size: 0.938rem; }
+}
+
+/* Mobiles (640px) */
+@media (max-width: 640px) {
+  .week-planning-table {
+    font-size: 0.625rem;
+  }
+  
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 2px 3px;
+    font-size: 0.625rem;
+    height: 24px !important;
+  }
+  
+  .week-planning-table input {
+    font-size: 0.625rem !important;
+    padding: 2px 3px !important;
+    min-height: 22px !important;
+  }
+}
+
+/* Petits mobiles (480px) */
+@media (max-width: 480px) {
+  .line-card-large { height: 160px; }
+  .line-name-large { font-size: 0.813rem; }
+  
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 2px 2px;
+    font-size: 0.563rem;
+    height: 22px !important;
+  }
+  
+  .week-planning-table input {
+    font-size: 0.563rem !important;
+    padding: 1px 2px !important;
+    min-height: 20px !important;
+  }
+}
+
+/* Support tactile */
+/* Support tactile */
+@media (pointer: coarse) {
+  .week-planning-table input {
+    min-height: 36px !important;
+  }
+  
+  .week-item {
+    min-height: 70px !important;
+    padding: 10px 14px !important;
+    touch-action: manipulation;
+  }
+  
+  .week-item:active {
+    background: #2e59aa !important;
+    transform: scale(0.98);
+  }
+}
+
+/* ==================== RESPONSIVE TABLETTE HUAWEI MATEPAD SE 11" (1920x1200) ==================== */
+@media (min-width: 768px) and (max-width: 1920px) and (orientation: landscape) {
+  
+  /* === SIDEBAR - Configuration pour tablette === */
+  .weeks-sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 240px !important;
+    z-index: 40 !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .weeks-sidebar.sidebar-visible {
+    transform: translateX(0) !important;
+  }
+
+  /* Overlay actif quand sidebar visible */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 35 !important;
+    backdrop-filter: blur(3px);
+  }
+
+  /* Bouton toggle - TOUJOURS VISIBLE */
+  .toggle-sidebar-btn {
+    display: flex !important;
+    position: fixed !important;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 45 !important;
+    padding: 16px 10px;
+    background: #0ea5e9;
+    color: white;
+    border-radius: 0 10px 10px 0;
+    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: left 0.3s ease, background 0.2s ease;
+  }
+
+  .toggle-sidebar-btn:hover {
+    background: #0284c7;
+  }
+
+  .toggle-sidebar-btn.sidebar-open {
+    left: 240px;
+  }
+
+  /* Zone principale - Pleine largeur */
+  .flex-1.flex.overflow-hidden {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  /* Items semaine plus grands */
+  .week-item {
+    min-height: 75px !important;
+    padding: 14px 18px !important;
+    margin: 8px 12px !important;
+    font-size: 1.05rem !important;
+  }
+
+  .week-item .font-bold {
+    font-size: 1.2rem !important;
+  }
+
+  .week-item .text-gray-400 {
+    font-size: 1rem !important;
+  }
+
+  /* === TABLEAU - Colonnes élargies === */
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 12px 10px !important;
+    font-size: 1rem !important;
+    min-width: 130px !important;
+    min-height: 50px !important;
+  }
+
+  /* Colonne RÉFÉRENCES - AGRANDI ET FIXE */
+  .week-planning-table tbody td.sticky-cell {
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    min-width: 180px !important;
+    max-width: 200px !important;
+    padding: 14px 16px !important;
+    min-height: 55px !important;
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 20 !important;
+    background: #fcf8f8 !important;
+    color: #091fe8 !important;
+    display: table-cell !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+  }
+
+  .week-planning-table th.sticky-cell {
+    font-size: 1.1rem !important;
+    padding: 16px 12px !important;
+    min-height: 65px !important;
+  }
+
+  /* Inputs agrandis */
+  .week-planning-table input {
+    font-size: 1rem !important;
+    padding: 10px 12px !important;
+    min-height: 46px !important;
+    border-width: 2px !important;
+  }
+
+  /* Valeurs affichées agrandies */
+  .value-display {
+    font-size: 1.1rem !important;
+  }
+
+  /* Delta agrandis */
+  .delta-value {
+    font-size: 1.1rem !important;
+    padding: 10px 12px !important;
+    min-height: 46px !important;
+  }
+
+  /* Boutons agrandis */
+  button {
+    min-height: 48px !important;
+    padding: 12px 24px !important;
+    font-size: 1.05rem !important;
+  }
+
+  /* Headers jours avec bouton personne */
+  .day-header {
+    padding: 12px 8px !important;
+  }
+
+  .day-header .font-bold {
+    font-size: 1rem !important;
+  }
+
+  .day-header .date-display {
+    font-size: 0.9rem !important;
+  }
+
+  .day-header button {
+    min-width: 46px !important;
+    min-height: 46px !important;
+    padding: 12px !important;
+  }
+
+  .day-header button svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .nb-operateurs {
+    font-size: 1.2rem !important;
+  }
+
+  /* Search bar */
+  .search-container {
+    padding: 14px 18px !important;
+    max-width: 500px !important;
+  }
+
+  .search-input {
+    font-size: 1.05rem !important;
+  }
+
+  /* Scrollbar plus épaisse */
+  .table-scroll-wrapper::-webkit-scrollbar {
+    height: 12px !important;
+  }
+
+  .table-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 6px;
+  }
+
+  /* === MODAL CAUSES 5M === */
+  .fixed.inset-0.bg-black\\/50 {
+    padding: 24px !important;
+  }
+
+  .bg-white.rounded-xl.shadow-2xl.w-full.max-w-4xl {
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+  }
+
+  /* Grille des causes */
+  .grid.grid-cols-3.gap-2 {
+    gap: 14px !important;
+  }
+
+  .grid.grid-cols-3.gap-2 > div {
+    padding: 16px !important;
+  }
+
+  .grid.grid-cols-3.gap-2 input,
+  .grid.grid-cols-3.gap-2 select {
+    font-size: 1.05rem !important;
+    padding: 12px !important;
+    min-height: 46px !important;
+  }
+
+  .grid.grid-cols-3.gap-2 h4 {
+    font-size: 1.05rem !important;
+  }
+
+  /* Zone scrollable modal causes */
+  .p-3.space-y-2.max-h-\\[50vh\\] {
+    max-height: 60vh !important;
+    padding: 18px !important;
+  }
+
+  /* === MODAL SAISIE RAPPORT PRODUCTION === */
+  .production-form-overlay {
+    padding: 28px !important;
+  }
+
+  .production-form-container {
+    max-width: 94vw !important;
+    max-height: 88vh !important;
+  }
+
+  /* Header du formulaire */
+  .production-form-container .bg-blue-600 {
+    padding: 18px 24px !important;
+  }
+
+  .production-form-container .bg-blue-600 h2 {
+    font-size: 1.4rem !important;
+  }
+
+  /* Panneau de sélection opérateurs */
+  .w-1\\/4.bg-gray-50 {
+    width: 28% !important;
+    padding: 18px !important;
+  }
+
+  /* Liste des opérateurs */
+  .operator-list > div {
+    padding: 12px !important;
+    font-size: 1rem !important;
+    min-height: 54px !important;
+  }
+
+  .operator-list input[type="checkbox"] {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Tableau de saisie */
+  .flex-1.p-4.overflow-y-auto table {
+    font-size: 0.95rem !important;
+  }
+
+  .flex-1.p-4.overflow-y-auto th {
+    padding: 14px 12px !important;
+    font-size: 1rem !important;
+  }
+
+  .flex-1.p-4.overflow-y-auto td {
+    padding: 12px 10px !important;
+  }
+
+  /* Inputs des phases */
+  .flex-1.p-4.overflow-y-auto select,
+  .flex-1.p-4.overflow-y-auto input[type="number"] {
+    font-size: 1rem !important;
+    padding: 10px 12px !important;
+    min-height: 46px !important;
+  }
+
+  /* Panneau des enregistrements */
+  .w-1\\/3.bg-gray-50.border-l {
+    width: 33% !important;
+    padding: 18px !important;
+  }
+
+  .records-panel-scroll {
+    max-height: calc(85vh - 180px) !important;
+    min-height: 380px !important;
+  }
+
+  .records-panel-scroll > div > div {
+    padding: 12px !important;
+    font-size: 0.95rem !important;
+    min-height: 90px !important;
+  }
+
+  /* === MODAL DÉTAILS ENREGISTREMENT === */
+  .fixed.inset-0.bg-black.bg-opacity-75 {
+    padding: 28px !important;
+  }
+
+  .bg-white.rounded-xl.shadow-2xl.w-full.max-w-4xl.max-h-\\[90vh\\] {
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+  }
+
+  /* Grille des phases en édition */
+  .space-y-3 > div > div.flex.space-x-3 select,
+  .space-y-3 > div > div.flex.space-x-3 input {
+    font-size: 1.05rem !important;
+    padding: 12px 14px !important;
+    min-height: 46px !important;
+  }
+
+  /* === OPTIMISATIONS TACTILES === */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  .week-item,
+  .delta-value {
+    touch-action: manipulation;
+  }
+
+  /* === AMÉLIORATION LISIBILITÉ === */
+  .text-xs {
+    font-size: 0.9rem !important;
+  }
+
+  .text-sm {
+    font-size: 1rem !important;
+  }
+
+  .text-base {
+    font-size: 1.1rem !important;
+  }
+
+  .text-lg {
+    font-size: 1.25rem !important;
+  }
+
+  .text-xl {
+    font-size: 1.4rem !important;
+  }
+
+  /* === ESPACEMENTS === */
+  .p-2 {
+    padding: 12px !important;
+  }
+
+  .p-3 {
+    padding: 16px !important;
+  }
+
+  .p-4 {
+    padding: 20px !important;
+  }
+
+  /* === Z-INDEX MANAGEMENT === */
+  .weeks-sidebar {
+    z-index: 40 !important;
+  }
+
+  .sidebar-overlay {
+    z-index: 35 !important;
+  }
+
+  .toggle-sidebar-btn {
+    z-index: 45 !important;
+  }
+
+  .week-item {
+    z-index: 41 !important;
+  }
+
+  .production-form-overlay,
+  .fixed.inset-0.bg-black\\/50,
+  .fixed.inset-0.bg-black.bg-opacity-75 {
+    z-index: 50 !important;
+  }
+
+  /* === CORRECTIONS SPÉCIFIQUES === */
+  .week-planning-table td,
+  .week-planning-table th {
+    vertical-align: middle !important;
+  }
+
+  .week-planning-table tbody tr {
+    min-height: 52px !important;
+  }
+
+  .week-planning-table .sticky-cell {
+    overflow: visible !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+  }
+
+  .week-planning-table th,
+  .week-planning-table td {
+    border: 2px solid #e2e8f0 !important;
+  }
+
+  /* === SMOOTH SCROLLING === */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .overflow-y-auto,
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* === SUCCESS MESSAGE === */
+  .success-notification {
+    top: 90px !important;
+    right: 35px !important;
+  }
+
+  .success-content {
+    padding: 16px 26px !important;
+    font-size: 1.05rem !important;
+  }
+}
+
+/* ==================== TABLETTE PORTRAIT (1200x1920) ==================== */
+@media (min-width: 768px) and (max-width: 1920px) and (orientation: portrait) {
+  
+  .weeks-sidebar {
+    width: 280px !important;
+  }
+
+  .toggle-sidebar-btn.sidebar-open {
+    left: 280px !important;
+  }
+
+  .week-planning-table {
+    font-size: 0.9rem !important;
+  }
+
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 10px 8px !important;
+    min-width: 115px !important;
+  }
+
+  .production-form-container {
+    max-width: 96vw !important;
+  }
+
+  .w-1\\/4.bg-gray-50 {
+    width: 32% !important;
+  }
+
+  .w-1\\/3.bg-gray-50.border-l {
+    width: 38% !important;
+  }
+}
+
+/* ==================== FIX PROBLÈMES SPÉCIFIQUES ==================== */
+
+/* Empêcher le double scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Assurer que les modals ne dépassent pas */
+.fixed.inset-0 {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+}
+
+/* Améliorer la performance */
+.week-planning-table {
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+/* Forcer le rendu GPU pour les animations */
+.sidebar-visible,
+.sidebar-hidden,
+.toggle-sidebar-btn {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* S'assurer que rien ne dépasse horizontalement */
+* {
+  box-sizing: border-box;
+}
+
+.flex-1,
+.w-full,
+.max-w-7xl {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Améliorer les suggestions autocomplete */
+.absolute.z-10.w-full {
+  max-height: 220px !important;
+  font-size: 0.95rem !important;
+}
+
+.absolute.z-10.w-full > div {
+  padding: 12px 14px !important;
+  min-height: 48px !important;
+}
+
+/* ==================== AMÉLIORATION TABLETTES - FIX OVERLAY ==================== */
+@media (max-width: 1024px) {
+  .weeks-sidebar {
+    position: fixed !important;
+    z-index: 40 !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .week-item {
+    pointer-events: auto;
+    isolation: isolate;
+  }
+}
+
+@media (max-width: 768px) and (orientation: portrait) {
+  .week-item {
+    min-height: 72px !important;
+    padding: 12px 14px !important;
+    margin: 8px;
+    font-size: 1rem;
+  }
+  
+  .week-item .font-bold {
+    font-size: 1.1rem !important;
+    margin-bottom: 4px;
+  }
+  
+  .week-item .text-gray-400 {
+    font-size: 0.9rem !important;
+  }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+  .weeks-sidebar {
+    width: 220px;
+  }
+  
+  .week-item {
+    min-height: 65px !important;
+    padding: 10px 14px !important;
+  }
+}
+
+@media (pointer: coarse) and (min-resolution: 2dppx) {
+  .week-item {
+    border-width: 2px;
+  }
+  
+  .week-item:active {
+    background: #1d4ed8 !important;
+    border-left-color: #0ea5e9 !important;
+    color: #ffffff !important;
+  }
+}
+
+/* ==================== FIX FINAL RÉFÉRENCES TABLETTE ==================== */
+@media (min-width: 768px) and (max-width: 1920px) {
+  .week-planning-table tbody td.sticky-cell {
+    display: table-cell !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  
+  .week-planning-table tbody td.sticky-cell span,
+  .week-planning-table tbody td.sticky-cell .truncate {
+    display: inline !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}
+/* Style du bouton toggle */
+.sidebar-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+}
+
+/* Sur mobile, ajuster le bouton */
+@media (max-width: 768px) {
+    .sidebar-toggle-btn {
+        min-width: 36px;
+        height: 36px;
+    }
+}
+/* ==================== COULEUR SPÉCIALE DM ==================== */
+
+/* Couleur orange #F58727 pour les valeurs DM */
+.dm-value {
+  color: #F58727 !important;
+  font-weight: 700 !important;
+}
+
+/* Input DM en mode édition */
+.dm-input {
+  color: #F58727 !important;
+  font-weight: 700 !important;
+}
+
+/* Label DM */
+.dm-label {
+  color: #F58727 !important;
+  font-weight: 700 !important;
+}
+
+/* ==================== GRILLE 4 COLONNES POUR LES CARTES ==================== */
+/* Override la grille pour avoir 4 colonnes au lieu de 3 */
+.grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+@media (max-width: 1280px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+}

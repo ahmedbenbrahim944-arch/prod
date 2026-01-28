@@ -1,0 +1,914 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================== LAYOUT PRINCIPAL ==================== */
+.full-screen-layout {
+  min-height: 100vh;
+  background: #f8fafc !important;
+}
+
+/* ==================== HEADER ==================== */
+.header-industrial {
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid #e2e8f0;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  color: #e80909 !important;
+}
+.h1{
+    color: #57E809 !important;
+}
+
+
+/* ==================== TABLEAU HEBDOMADAIRE - STYLE SIMPLE ET CLAIR ==================== */
+.week-planning-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  background: #ffffff !important;
+  font-size: 0.813rem !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* En-têtes du tableau */
+.week-planning-table th {
+  
+  
+  font-weight: 100;
+  color: #57E809 !important;
+  border: 1px solid #e2e8f0 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 0.625rem !important;
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  text-align: center;
+  line-height: 0;
+  
+}
+
+/* Cellules du tableau - Lignes invisibles */
+.week-planning-table td {
+  padding: 4px 6px !important;
+  border: none !important;
+  vertical-align: middle;
+  min-width: 100px !important;
+  font-size: 1.1rem !important;
+  background: transparent !important;
+  color: #050505 !important;
+  text-align: center;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+  height: 1px !important;
+}
+
+/* Colonnes compactes */
+.week-planning-table td:nth-child(1) {
+  min-width: 10px !important;
+  max-width: 20px !important;
+  padding: 0px 0px !important;
+  font-size: 1rem !important;
+}
+
+.week-planning-table td:nth-child(2),
+.week-planning-table td:nth-child(3),
+.week-planning-table td:nth-child(4),
+.week-planning-table td:nth-child(5),
+.week-planning-table td:nth-child(6),
+.week-planning-table td:nth-child(7) {
+  min-width: 10px !important;
+  max-width: 20px !important;
+  padding: 0px 0px !important;
+  font-size: 1rem !important;
+}
+
+/* Effet hover sur les lignes - subtil */
+.week-planning-table tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Pas d'alternance de couleur */
+.week-planning-table tbody tr:nth-child(even),
+.week-planning-table tbody tr:nth-child(odd) {
+  background: transparent !important;
+}
+
+/* Séparateur visuel léger entre les groupes de 5 lignes */
+.week-planning-table tbody tr:nth-child(5n) td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 6px !important;
+}
+
+.week-planning-table tbody tr:nth-child(5n+1) td {
+  padding-top: 0px !important;
+}
+
+/* Style pour les cellules sticky */
+.week-planning-table .sticky-cell {
+    background: #fcf8f8 !important;
+  font-weight: 600;
+  font-size: 0.85rem !important; /* Réduit la taille de la police */
+  color: #091fe8 !important;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  border-right: 1px solid #e2e8f0 !important;
+  padding: 3px 4px !important; /* Réduit le padding */
+  max-width: 200px !important; /* Augmente la largeur max */
+  min-width: 100px !important; /* Définit une largeur minimale */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2; /* Ajuste l'interligne */
+  
+}
+
+/* Style pour les inputs */
+.week-planning-table input {
+  font-size: 1.1rem !important;
+  font-weight: 600;
+  padding: 3px 5px !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px;
+  color: #334155 !important;
+  text-align: center;
+  width: 100%;
+  transition: all 0.2s ease;
+  min-height: 28px !important;
+}
+
+.week-planning-table input:focus {
+  background: #ffffff !important;
+  border-color: #e90e0e !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+/* Style pour les valeurs affichées */
+.value-display {
+  font-size: 1.1rem !important;
+  font-weight: 700;
+  padding: 3px 0 !important;
+  color: #000000 !important;
+}
+
+/* Style pour les pourcentages delta */
+.delta-value {
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  padding: 3px 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #f8fafc;
+}
+
+/* Couleurs pour les deltas */
+.delta-excellent { 
+  color: #059669 !important; 
+  background: #d1fae5 !important;
+}
+.delta-good { 
+  color: #d97706 !important; 
+  background: #fef3c7 !important;
+}
+.delta-average { 
+  color: #ea580c !important; 
+  background: #ffedd5 !important;
+}
+.delta-poor { 
+  color: #dc2626 !important; 
+  background: #fee2e2 !important;
+}
+
+/* Style pour les en-têtes de jours */
+.day-header {
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+  padding: 6px 4px !important;
+  color: white !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  line-height: 0.5;
+}
+
+/* Forcer la couleur blanche pour tous les éléments dans day-header */
+.week-planning-table th.day-header,
+.week-planning-table th.day-header *,
+.week-planning-table th.day-header .text-cyan-400,
+.week-planning-table th.day-header .font-bold {
+  color: white !important;
+}
+
+/* Style pour les colonnes C/R et OF - même apparence que RÉFÉRENCES */
+.week-planning-table thead th:nth-child(2),
+.week-planning-table thead th:nth-child(3) {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  padding: 10px 8px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  border-right: 2px solid #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+/* Style pour les cellules NB OP (deuxième ligne d'en-têtes sous les jours) */
+.week-planning-table thead tr:nth-child(2) th {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 8px 6px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Forcer la couleur blanche pour tous les éléments dans les cellules NB OP */
+.week-planning-table thead tr:nth-child(2) th *,
+.week-planning-table thead tr:nth-child(2) th .text-black,
+.week-planning-table thead tr:nth-child(2) th span {
+  color: white !important;
+}
+
+.day-header .nb-operateurs {
+  
+  
+  color: white;
+  display: block;
+}
+
+.day-header .date-display {
+  font-size: 0.563rem;
+  margin-top: 1px;
+  font-weight: 500;
+  color: white;
+  display: block;
+}
+
+/* Style pour les références */
+.reference-cell {
+  font-size: 0.813rem !important;
+  font-weight: 600 !important;
+  color: #e90e0e !important;
+  background: #f8fafc !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reference-cell:hover {
+  background: #e0f2fe !important;
+}
+
+/* Bordures simplifiées */
+.week-planning-table th {
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Colonne OF Verticale */
+.vertical-text-cell {
+  min-width: 35px !important;
+  max-width: 35px !important;
+  padding: 3px 2px !important;
+  position: relative;
+}
+
+.vertical-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 3px;
+}
+
+.vertical-text-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-weight: 600;
+  font-size: 0.625rem;
+  color: #e90e0e;
+  text-orientation: mixed;
+}
+
+.vertical-text-input {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 1.1rem !important;
+  font-weight: 700 !important;
+  color: #cf1313 !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 3px;
+  padding: 3px 2px !important;
+  text-align: center;
+  width: 100%;
+  min-width: 25px;
+  height: auto;
+}
+
+.vertical-text-input:focus {
+  outline: none;
+  background: #ffffff !important;
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+}
+
+.vertical-text-value {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #000000;
+  text-orientation: mixed;
+  
+}
+
+/* ==================== CARTES DE LIGNES ==================== */
+.line-card-large {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1; /* Carré parfait */
+  max-width: 500px; /* Taille maximale réduite */
+  max-height: 500px; /* Taille maximale réduite */
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0; /* Pas de radius - coins carrés */
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.line-card-large:hover {
+  transform: translateY(-2px);
+  border-color: #0ea5e9;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.12);
+}
+
+.image-container-large {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0; /* Pas de radius */
+}
+
+.line-card-large img {
+  transition: transform 0.4s ease;
+  height: 100%; /* Image prend 100% de la hauteur */
+  width: 100%; /* Image prend 100% de la largeur */
+  object-fit: cover; /* Couvre toute la carte */
+  filter: brightness(0.96);
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: none;
+}
+
+.line-card-large:hover img {
+  transform: scale(1.04);
+}
+
+.line-overlay-large {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, 
+    rgba(255, 255, 255, 0.98) 0%, 
+    rgba(255, 255, 255, 0.88) 35%, 
+    transparent 100%);
+  padding: 1.25rem 1rem 1rem 1rem;
+}
+
+.line-name-large {
+  color: #334155;
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: 0.3px;
+}
+
+.status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 0.688rem;
+  font-weight: 600;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-badge-active {
+  background: rgba(16, 185, 129, 0.95);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.status-badge-inactive {
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ==================== SEARCH BAR ==================== */
+.search-container {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.search-container:focus-within {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.08);
+}
+
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #334155;
+  font-size: 0.813rem;
+  width: 100%;
+}
+
+.search-input::placeholder {
+  color: #94a3b8;
+}
+
+.search-icon {
+  color: #0ea5e9;
+}
+
+/* ==================== SIDEBAR DES SEMAINES ==================== */
+.weeks-sidebar {
+  width: 220px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-right: 1px solid #cbd5e1;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+}
+
+.week-item {
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 6px;
+  margin: 4px 8px;
+  font-weight: 500;
+}
+
+.week-item:hover {
+  background: #2e59aa;
+  border-left-color: #0ea5e9;
+  transform: translateX(2px);
+  color: #0369a1;
+}
+
+.week-item.active {
+  background: #0ea5e9;
+  border-left-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+  font-weight: 600;
+}
+
+/* Style spécifique pour les textes dans les items de semaine */
+.week-item .font-bold {
+  color: #1e293b !important;
+}
+
+.week-item .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+
+
+/* Quand l'item est actif */
+.week-item.active .font-bold {
+  color: #ffffff !important;
+}
+
+.week-item.active .text-gray-400 {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.week-item.active .text-cyan-300 {
+  color: #ffffff !important;
+}
+
+/* ==================== SCROLLBAR ==================== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==================== SCROLL HORIZONTAL ==================== */
+.table-responsive-container {
+  border-radius: 8px;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  padding-bottom: 3px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.table-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  position: relative;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar {
+  height: 7px;
+  background: #f1f5f9;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+  margin: 0 8px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+  background-clip: padding-box;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.planning-table-min-width {
+  min-width: 1000px;
+}
+
+/* ==================== MESSAGE DE SUCCÈS ==================== */
+.success-notification {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.success-content {
+  background: #10b981;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 0.813rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ==================== LOADER ==================== */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(243, 239, 239, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loader-container {
+  text-align: center;
+}
+
+.industrial-loader {
+  width: 45px;
+  height: 45px;
+  border: 3px solid rgba(14, 165, 233, 0.15);
+  border-top: 3px solid #0ea5e9;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* ==================== MODAL ==================== */
+.causes-modal-overlay {
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.3s ease;
+  overflow-y: auto !important;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.causes-modal-content {
+  animation: slideUp 0.3s ease;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* ==================== STYLES POUR LES CHAMPS C ==================== */
+
+
+/* ==================== RESPONSIVE DESIGN ==================== */
+
+/* Desktop (1280px) */
+@media (max-width: 1280px) {
+  .line-card-large { height: 220px; }
+  .week-planning-table td { min-width: 90px; }
+  .week-planning-table th,
+  .week-planning-table td {
+    font-size: 0.75rem;
+    padding: 4px 5px;
+  }
+}
+
+/* Tablettes paysage (1024px) */
+@media (max-width: 1024px) {
+  .line-card-large { height: 200px; }
+  .weeks-sidebar { width: 190px; }
+  .week-planning-table th,
+  .week-planning-table td {
+    font-size: 0.688rem;
+    padding: 3px 4px;
+  }
+  .line-name-large { font-size: 1rem; }
+}
+
+/* Tablettes portrait (768px) */
+@media (max-width: 768px) {
+  .weeks-sidebar { width: 170px; }
+  .line-card-large { height: 180px; }
+  .week-planning-table th,
+  .week-planning-table td {
+    font-size: 0.688rem;
+    padding: 3px 4px;
+    height: 28px !important;
+  }
+  .line-name-large { font-size: 0.938rem; }
+}
+
+/* Mobiles (640px) */
+@media (max-width: 640px) {
+  .week-planning-table {
+    font-size: 0.625rem;
+  }
+  
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 2px 3px;
+    font-size: 0.625rem;
+    height: 24px !important;
+  }
+  
+  .week-planning-table input {
+    font-size: 0.625rem !important;
+    padding: 2px 3px !important;
+    min-height: 22px !important;
+  }
+}
+
+/* Petits mobiles (480px) */
+@media (max-width: 480px) {
+  .line-card-large { height: 160px; }
+  .line-name-large { font-size: 0.813rem; }
+  
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 2px 2px;
+    font-size: 0.563rem;
+    height: 22px !important;
+  }
+  
+  .week-planning-table input {
+    font-size: 0.563rem !important;
+    padding: 1px 2px !important;
+    min-height: 20px !important;
+  }
+}
+
+/* Support tactile */
+@media (pointer: coarse) {
+  .week-planning-table input {
+    min-height: 32px !important;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(15px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Override pour le background des particules */
+.full-screen-layout .absolute.inset-0 {
+  opacity: 0.02 !important;
+}
+
+/* Sidebar mobile */
+.sidebar-hidden {
+  transform: translateX(-100%);
+}
+
+.sidebar-visible {
+  transform: translateX(0);
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 20;
+}
+
+.toggle-sidebar-btn {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 12px 8px;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-sidebar-btn.sidebar-open {
+  left: 220px;
+}
+
+/* Tooltip */
+.tooltip-text {
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Point vert indicateur */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.week-planning-table tbody tr:nth-child(5n+1) td:not(.sticky-cell) {
+    background: #D4D9D2 !important;
+  
+}
+.week-planning-table tbody tr:nth-child(5n+1) td:not(.sticky-cell) .value-display {
+    color: #0953c2 !important;
+   
+}
+/* ==================== CHANGEMENTS POUR COULEUR VERTE #57E809 ==================== */
+
+/* 1. TITRE "PLANIFICATION DES LIGNES" */
+.text-center h1 {
+  color: #57E809 !important;
+}
+
+/* Alternative si la classe est différente */
+
+
+/* 2. TITRE DE LA LIGNE (ex: "L39:A.C POLO XT5") */
+.text-cyan-400 {
+  color: #57E809 !important;
+}
+
+/* Dans la sidebar */
+.mb-4.sm\\:mb-6.p-3.sm\\:p-4 h3 {
+  color: #57E809 !important;
+}
+
+/* 3. JOURS DE LA SEMAINE (Lundi, Mardi, etc.) */
+.day-header .date-display {
+  color: white !important;
+}
+
+/* Alternative si classe différente */
+.day-header .text-xs.sm\\:text-sm.text-gray-300.mt-1 {
+  color: white !important;
+}
+
+/* Label "NB OP" */
+.day-header .text-xs.sm\\:text-sm.text-gray-300.font-bold.mb-1 {
+  color: white !important;
+}
+
+/* Valeur du nombre d'opérateurs dans la carte bleue */
+.day-header .nb-operateurs {
+  color: white !important;
+}
+/* ==================== AGRANDISSEMENT DES NUMÉROS DE RÉFÉRENCES ==================== */
+
+/* Pour TOUTES les cellules de référence dans le tableau principal */
+.week-planning-table tbody td.sticky-cell {
+  font-size: 8rem !important;  /* Augmenté de 0.813rem à 1rem */
+  font-weight: 700 !important;
+  color: #091fe8 !important;
+  background: #fcf8f8 !important;
+  padding: 8px 10px !important;  /* Augmenté le padding */
+  min-height: 40px !important;    /* Augmenté la hauteur */
+  line-height: 1.4 !important;
+  max-width: 140px !important;    /* Augmenté la largeur max */
+  min-width: 120px !important;    /* Augmenté la largeur min */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+/* Pour les références dans le tableau des détails aussi */
+.week-planning-table tbody td.sticky-cell {
+  font-size: 1rem !important;
+  padding: 8px 10px !important;
+}
+
+/* Pour s'assurer que le texte est bien visible */
+.week-planning-table tbody td.sticky-cell .truncate,
+.week-planning-table tbody td.sticky-cell span {
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+}
+.week-planning-table th.sticky-cell {
+  font-size: 0.85rem !important; /* Augmenter la taille de police */
+  font-weight: 700 !important; /* Rendre plus gras */
+  padding: 10px 8px !important; /* Augmenter le padding */
+  min-height: 50px !important; /* Augmenter la hauteur */
+  text-align: center !important;
+  vertical-align: middle !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
+  border-right: 2px solid #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+/* ==================== GRILLE 4 COLONNES POUR LES CARTES ==================== */
+/* Override la grille pour avoir 4 colonnes au lieu de 3 */
+.grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+@media (max-width: 1280px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+}

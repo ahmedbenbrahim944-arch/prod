@@ -1,0 +1,541 @@
+<!-- src/app/selection/selection.component.html -->
+<div class="selection-container">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Bouton retour -->
+    <button class="btn-back" (click)="goBack()">
+      <i class="icon-arrow">←</i> Retour aux lignes
+    </button>
+
+    <!-- Titre Ligne -->
+    <div class="ligne-title">
+      <h2>L04:RXT1</h2>
+      <p class="subtitle">{{ references.length }} références disponibles</p>
+    </div>
+
+    <!-- Liste des semaines -->
+    <div class="semaines-section">
+      <h3>SEMAINES DISPONIBLES</h3>
+      <div class="semaines-list">
+        <div 
+          *ngFor="let semaine of semaines" 
+          class="semaine-card"
+          [class.active]="selectedSemaine?.number === semaine.number"
+          (click)="selectSemaine(semaine)">
+          <div class="semaine-name">Semaine {{ semaine.number }}</div>
+          <div class="semaine-dates">
+            {{ semaine.startDate | date: 'dd/MM' }} - {{ semaine.endDate | date: 'dd/MM' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="main-content">
+    <!-- En-tête -->
+    <div class="header">
+      <h1>PLANNING DE SÉLECTION</h1>
+      <div class="legend">
+        <span class="legend-item">
+          <span class="color-box" style="background: #fbbf24;"></span> 
+          Qté à sélectionner
+        </span>
+        <span class="legend-item">
+          <span class="color-box" style="background: #60a5fa;"></span> 
+          Objectif/heure
+        </span>
+        <span class="legend-item">
+          <span class="color-box" style="background: #34d399;"></span> 
+          Qté sélectionnée
+        </span>
+        <span class="legend-item">
+          <span class="color-box" style="background: #ef4444;"></span> 
+          Rebut
+        </span>
+        <span class="legend-item">
+          <span class="color-box" style="background: #a78bfa;"></span> 
+          Nombre d'heures
+        </span>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages">
+      <div *ngIf="errorMessage" class="alert alert-error">
+        {{ errorMessage }}
+      </div>
+      <div *ngIf="successMessage" class="alert alert-success">
+        {{ successMessage }}
+      </div>
+    </div>
+
+    <!-- État initial -->
+    <div *ngIf="!selectedSemaine" class="empty-state">
+      <div class="empty-icon">📅</div>
+      <h3>Sélectionnez une semaine</h3>
+      <p>pour voir la planification</p>
+    </div>
+
+    <!-- Formulaire et tableau -->
+    <div *ngIf="selectedSemaine" class="content-area">
+      <!-- Formulaire d'ajout -->
+      <div class="form-card">
+        <h2 class="form-title">Ajouter une sélection</h2>
+        
+        <div class="form-grid">
+          <!-- Date -->
+          <div class="form-group">
+            <label>Date * <span class="required-indicator">●</span></label>
+            <input 
+              type="date" 
+              [(ngModel)]="formData.date"
+              class="form-control"
+              [class.has-value]="formData.date"
+              required>
+            <small class="help-text">Sélectionnez une date dans une semaine existante</small>
+          </div>
+
+          <!-- Matricule (recherche) -->
+          <div class="form-group autocomplete-wrapper">
+            <label>Matricule / Ouvrier * <span class="required-indicator">●</span></label>
+            <input 
+              type="text"
+              [(ngModel)]="searchMatricule"
+              (input)="onMatriculeSearch($event)"
+              (focus)="onMatriculeSearch($event)"
+              placeholder="Rechercher matricule ou nom..."
+              class="form-control"
+              [class.has-value]="formData.matricule"
+              autocomplete="off">
+            
+            <div class="autocomplete-dropdown" *ngIf="showOuvrierDropdown">
+              <div 
+                *ngFor="let ouvrier of filteredOuvriers" 
+                class="autocomplete-item"
+                (click)="selectOuvrier(ouvrier)">
+                <strong>{{ ouvrier.matricule }}</strong> - 
+                <ng-container *ngIf="ouvrier.nomPrenom">{{ ouvrier.nomPrenom }}</ng-container>
+                <ng-container *ngIf="!ouvrier.nomPrenom && ouvrier.nom && ouvrier.prenom">
+                  {{ ouvrier.nom }} {{ ouvrier.prenom }}
+                </ng-container>
+                <ng-container *ngIf="!ouvrier.nomPrenom && !ouvrier.prenom && ouvrier.nom">
+                  {{ ouvrier.nom }}
+                </ng-container>
+              </div>
+            </div>
+            <small class="help-text" *ngIf="!formData.matricule">Tapez pour rechercher un ouvrier</small>
+            <small class="help-text success" *ngIf="formData.matricule">✓ Ouvrier sélectionné</small>
+          </div>
+
+          <!-- Nom et prénom (auto) -->
+          <div class="form-group">
+            <label>Nom et Prénom</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.nomPrenom"
+              class="form-control"
+              [class.has-value]="formData.nomPrenom"
+              readonly
+              placeholder="Automatique">
+            <small class="help-text">Rempli automatiquement</small>
+          </div>
+
+          <!-- Ligne (auto) -->
+          <div class="form-group">
+            <label>Ligne</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.ligne"
+              class="form-control"
+              readonly>
+          </div>
+
+          <!-- ✅ Référence (recherche - Products + Matières Premières) -->
+          <div class="form-group autocomplete-wrapper">
+            <label>Référence * <span class="required-indicator">●</span></label>
+            <input 
+              type="text"
+              [(ngModel)]="searchReference"
+              (input)="onReferenceSearch($event)"
+              (focus)="onReferenceSearch($event)"
+              placeholder="Rechercher référence (produit ou matière première)..."
+              class="form-control"
+              [class.has-value]="formData.reference"
+              autocomplete="off">
+            
+            <div class="autocomplete-dropdown" *ngIf="showReferenceDropdown">
+              <div 
+                *ngFor="let refItem of filteredReferences" 
+                class="autocomplete-item"
+                (click)="selectReference(refItem)">
+                <!-- ✅ Badge pour indiquer le type -->
+                <span class="ref-type-badge" 
+                      [ngClass]="getReferenceTypeBadgeClass(refItem.type)">
+                  {{ getReferenceTypeBadge(refItem.type) }}
+                </span>
+                <strong>{{ refItem.reference }}</strong>
+                <span *ngIf="refItem.designation"> - {{ refItem.designation }}</span>
+                <br>
+                <small class="text-muted">Ligne: {{ refItem.ligneRef }}</small>
+              </div>
+            </div>
+            <small class="help-text" *ngIf="!formData.reference">Tapez pour rechercher une référence</small>
+            <small class="help-text success" *ngIf="formData.reference">✓ Référence sélectionnée</small>
+          </div>
+
+          <!-- Ligne Réf (auto) -->
+          <div class="form-group">
+            <label>Ligne Réf</label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.ligneRef"
+              class="form-control"
+              [class.has-value]="formData.ligneRef"
+              readonly
+              placeholder="Automatique">
+            <small class="help-text">Rempli automatiquement</small>
+          </div>
+
+          <!-- Quantité à sélectionner -->
+          <div class="form-group">
+            <label>Quantité à sélectionner * <span class="required-indicator">●</span></label>
+            <input 
+              type="number" 
+              [(ngModel)]="formData.qteASelectionne"
+              class="form-control"
+              [class.has-value]="formData.qteASelectionne"
+              min="1"
+              placeholder="0">
+            <small class="help-text">Quantité totale à sélectionner</small>
+          </div>
+
+          <!-- Objectif par heure -->
+          <div class="form-group">
+            <label>Objectif par heure * <span class="required-indicator">●</span></label>
+            <input 
+              type="number" 
+              [(ngModel)]="formData.objectifHeure"
+              class="form-control"
+              [class.has-value]="formData.objectifHeure"
+              min="1"
+              placeholder="0">
+            <small class="help-text">Quantité à sélectionner par heure</small>
+          </div>
+
+          <!-- ✅ NOUVEAU CHAMP : Numéro de ticket -->
+          <div class="form-group">
+            <label>Numéro de ticket <span class="optional-indicator">(optionnel)</span></label>
+            <input 
+              type="text" 
+              [(ngModel)]="formData.numTicket"
+              class="form-control"
+              [class.has-value]="formData.numTicket"
+              placeholder="non num">
+            <small class="help-text">Laissez vide pour "non num" par défaut</small>
+          </div>
+        </div>
+
+        <!-- Boutons -->
+        <div class="form-actions">
+          <button 
+            class="btn btn-primary" 
+            (click)="addPlanning()"
+            [disabled]="!isFormValid() || isLoading"
+            [title]="!isFormValid() ? 'Veuillez remplir tous les champs obligatoires (●)' : 'Ajouter le planning'">
+            <span *ngIf="!isLoading">✓ Ajouter</span>
+            <span *ngIf="isLoading">
+              <span class="spinner">⏳</span> Ajout en cours...
+            </span>
+          </button>
+          <button 
+            class="btn btn-secondary" 
+            (click)="resetForm()"
+            [disabled]="isLoading">
+            ↺ Réinitialiser
+          </button>
+        </div>
+        
+        <!-- Validation Status -->
+        <div class="validation-status" *ngIf="!isFormValid()">
+          <small class="text-warning">
+            ⚠️ Champs obligatoires manquants : 
+            <span *ngIf="!formData.date">Date, </span>
+            <span *ngIf="!formData.matricule">Matricule, </span>
+            <span *ngIf="!formData.reference">Référence, </span>
+            <span *ngIf="!formData.qteASelectionne || formData.qteASelectionne <= 0">Quantité, </span>
+            <span *ngIf="!formData.objectifHeure || formData.objectifHeure <= 0">Objectif</span>
+          </small>
+        </div>
+      </div>
+
+
+      <!-- 🆕 Section Plannings en Attente -->
+      <div class="pending-section" *ngIf="planningsEnAttente.length > 0">
+        <div class="pending-header">
+          <h2 class="pending-title">
+            ⏳ Plannings en Attente de Complétion
+            <span class="badge badge-warning">{{ planningsEnAttente.length }}</span>
+          </h2>
+          <p class="pending-subtitle">
+            Ces ouvriers ont été affectés au statut "Sélection" mais leurs plannings ne sont pas encore complétés
+          </p>
+        </div>
+
+        <div class="pending-cards">
+          <div *ngFor="let planning of planningsEnAttente" class="pending-card">
+            <div class="pending-card-header">
+              <div class="ouvrier-info">
+                <span class="matricule-badge">{{ planning.matricule }}</span>
+                <strong>{{ planning.nomPrenom }}</strong>
+              </div>
+              <span class="date-badge">{{ planning.date | date: 'dd/MM/yyyy' }}</span>
+            </div>
+
+            <div class="pending-card-body">
+              <div class="info-row">
+                <span class="info-label">Référence:</span>
+                <span class="info-value incomplete">{{ planning.reference }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Quantité:</span>
+                <span class="info-value incomplete">{{ planning.qteASelectionne }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Objectif/h:</span>
+                <span class="info-value incomplete">{{ planning.objectifHeure }}</span>
+              </div>
+            </div>
+
+            <div class="pending-card-footer">
+              <button 
+                class="btn btn-complete" 
+                (click)="openCompletionModal(planning)">
+                ✏️ Compléter ce planning
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Tableau des plannings -->
+      <div class="table-card">
+        <h2 class="table-title">
+          Plannings de la semaine {{ selectedSemaine.number }}
+          <span class="badge">{{ plannings.length }} entrée(s)</span>
+        </h2>
+
+        <div class="table-wrapper" *ngIf="plannings.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Matricule</th>
+                <th>Nom & Prénom</th>
+                <th>Ligne</th>
+                <th>Référence</th>
+                <th>Type</th>
+                <th>Ligne Réf</th>
+                <th>Num Ticket</th> <!-- ✅ NOUVELLE COLONNE -->
+                <th class="text-right">Qté à select.</th>
+                <th class="text-right">Obj./h</th>
+                <th class="text-right">Qté select.</th>
+                <th class="text-right">Rebut</th>
+                <th class="text-right">Heures</th>
+                <th class="text-right">Rendement</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let planning of plannings">
+                <td>{{ planning.date | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ planning.matricule }}</td>
+                <td>{{ planning.nomPrenom }}</td>
+                <td>{{ planning.ligne }}</td>
+                <td><strong>{{ planning.reference }}</strong></td>
+                <!-- ✅ Badge du type de référence -->
+                <td>
+                  <span class="ref-type-badge" 
+                        [ngClass]="getReferenceTypeBadgeClass(planning.typeReference)">
+                    {{ getReferenceTypeBadge(planning.typeReference) }}
+                  </span>
+                </td>
+                <td>{{ planning.ligneRef }}</td>
+                <!-- ✅ NOUVELLE COLONNE : Numéro de ticket -->
+                <td>
+                  <span class="ticket-badge">{{ planning.numTicket || 'non num' }}</span>
+                </td>
+                <td class="text-right qty-cell">{{ planning.qteASelectionne }}</td>
+                <td class="text-right obj-cell">{{ planning.objectifHeure }}</td>
+                <!-- ✅ Qté sélectionnée éditable -->
+                <td class="text-right selected-cell">
+                  <input 
+                    type="number" 
+                    [value]="planning.qteSelection || 0"
+                    (blur)="updateQteSelection(planning, $any($event.target).value)"
+                    class="inline-input"
+                    min="0">
+                </td>
+                <!-- ✅ NOUVELLE COLONNE : Rebut éditable -->
+                <td class="text-right rebut-cell">
+                  <input 
+                    type="number" 
+                    [value]="planning.rebut || 0"
+                    (blur)="updateRebut(planning, $any($event.target).value)"
+                    class="inline-input"
+                    min="0">
+                </td>
+                <!-- Heures éditable -->
+                <td class="text-right hours-cell">
+                  <input 
+                    type="number" 
+                    [value]="planning.nHeures || 0"
+                    (blur)="updateHeures(planning, $any($event.target).value)"
+                    class="inline-input"
+                    step="0.1"
+                    min="0.1">
+                </td>
+                <td class="text-right">
+                  {{ planning.rendement ? (planning.rendement + '%') : '-' }}
+                </td>
+                <td class="text-center">
+                  <button 
+                    class="btn-icon btn-delete" 
+                    (click)="deletePlanning(planning)"
+                    title="Supprimer">
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="empty-table" *ngIf="plannings.length === 0 && !isLoading">
+          <p>Aucun planning pour cette semaine</p>
+        </div>
+
+        <div class="loading-table" *ngIf="isLoading">
+          <p>⏳ Chargement...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 🆕 Modal de Complétion -->
+<div class="modal-overlay" *ngIf="showCompletionModal" (click)="closeCompletionModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">✏️ Compléter le Planning</h2>
+      <button class="btn-close" (click)="closeCompletionModal()">✕</button>
+    </div>
+
+    <div class="modal-body" *ngIf="selectedPlanningEnAttente">
+      <!-- Info ouvrier -->
+      <div class="ouvrier-card">
+        <div class="ouvrier-detail">
+          <span class="label">Matricule:</span>
+          <strong>{{ selectedPlanningEnAttente.matricule }}</strong>
+        </div>
+        <div class="ouvrier-detail">
+          <span class="label">Nom:</span>
+          <strong>{{ selectedPlanningEnAttente.nomPrenom }}</strong>
+        </div>
+        <div class="ouvrier-detail">
+          <span class="label">Date:</span>
+          <strong>{{ selectedPlanningEnAttente.date | date: 'dd/MM/yyyy' }}</strong>
+        </div>
+      </div>
+
+      <!-- Formulaire de complétion -->
+      <div class="form-grid modal-form">
+        <!-- Référence (recherche) -->
+        <div class="form-group autocomplete-wrapper">
+          <label>Référence * <span class="required-indicator">●</span></label>
+          <input 
+            type="text"
+            [(ngModel)]="searchReferenceModal"
+            (input)="onReferenceSearchModal($event)"
+            (focus)="onReferenceSearchModal($event)"
+            placeholder="Rechercher référence..."
+            class="form-control"
+            [class.has-value]="completionFormData.reference"
+            autocomplete="off">
+          
+          <div class="autocomplete-dropdown" *ngIf="showReferenceDropdownModal">
+            <div 
+              *ngFor="let refItem of filteredReferencesModal" 
+              class="autocomplete-item"
+              (click)="selectReferenceModal(refItem)">
+              <span class="ref-type-badge" 
+                    [ngClass]="getReferenceTypeBadgeClass(refItem.type)">
+                {{ getReferenceTypeBadge(refItem.type) }}
+              </span>
+              <strong>{{ refItem.reference }}</strong>
+              <span *ngIf="refItem.designation"> - {{ refItem.designation }}</span>
+              <br>
+              <small class="text-muted">Ligne: {{ refItem.ligneRef }}</small>
+            </div>
+          </div>
+          <small class="help-text" *ngIf="!completionFormData.reference">Tapez pour rechercher une référence</small>
+          <small class="help-text success" *ngIf="completionFormData.reference">✓ Référence sélectionnée: {{ completionFormData.reference }}</small>
+        </div>
+
+        <!-- Quantité à sélectionner -->
+        <div class="form-group">
+          <label>Quantité à sélectionner * <span class="required-indicator">●</span></label>
+          <input 
+            type="number" 
+            [(ngModel)]="completionFormData.qteASelectionne"
+            class="form-control"
+            [class.has-value]="completionFormData.qteASelectionne"
+            min="1"
+            placeholder="0">
+          <small class="help-text">Quantité totale à sélectionner</small>
+        </div>
+
+        <!-- Objectif par heure -->
+        <div class="form-group">
+          <label>Objectif par heure * <span class="required-indicator">●</span></label>
+          <input 
+            type="number" 
+            [(ngModel)]="completionFormData.objectifHeure"
+            class="form-control"
+            [class.has-value]="completionFormData.objectifHeure"
+            min="1"
+            placeholder="0">
+          <small class="help-text">Quantité à sélectionner par heure</small>
+        </div>
+
+        <!-- Numéro de ticket -->
+        <div class="form-group">
+          <label>Numéro de ticket <span class="optional-indicator">(optionnel)</span></label>
+          <input 
+            type="text" 
+            [(ngModel)]="completionFormData.numTicket"
+            class="form-control"
+            [class.has-value]="completionFormData.numTicket"
+            placeholder="non num">
+          <small class="help-text">Laissez vide pour "non num" par défaut</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button 
+        class="btn btn-secondary" 
+        (click)="closeCompletionModal()"
+        [disabled]="isLoading">
+        Annuler
+      </button>
+      <button 
+        class="btn btn-success" 
+        (click)="completePlanning()"
+        [disabled]="!isCompletionFormValid() || isLoading">
+        <span *ngIf="!isLoading">✓ Valider</span>
+        <span *ngIf="isLoading">
+          <span class="spinner">⏳</span> Enregistrement...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>

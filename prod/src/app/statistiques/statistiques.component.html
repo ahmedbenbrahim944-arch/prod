@@ -1,0 +1,971 @@
+<div class="stats-container">
+
+  <!-- ============================================ -->
+  <!-- PAGE DE FILTRES (Page 1) -->
+  <!-- ============================================ -->
+  <div *ngIf="!showResultatsSemaine && !showResultatsDate && !showAffectation">
+    
+    <!-- Bouton retour choix -->
+    <button class="btn-retour-choix" (click)="retourChoix()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Retour 
+    </button>
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Filtres Statistiques</h1>
+      
+      <!-- CONTROLES CÔTE À CÔTE -->
+      <div class="controls">
+        
+        <!-- SECTION FILTRE PAR SEMAINE -->
+        <div class="filter-group">
+          <div class="filter-header">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Filtrer par semaine</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="input-group">
+              <label for="semaine">Semaine :</label>
+              <select 
+                id="semaine" 
+                [(ngModel)]="semaineSelectionnee" 
+                class="filter-select">
+                <option *ngFor="let num of getSemainesArray()" [value]="'semaine' + num">
+                  Semaine {{ num }}
+                </option>
+              </select>
+            </div>
+            
+            <button 
+              class="btn-filter" 
+              (click)="chargerStatistiques()"
+              [disabled]="isLoading">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span *ngIf="!isLoading">Afficher les statistiques</span>
+              <span *ngIf="isLoading">Chargement...</span>
+            </button>
+            <button 
+              class="btn-filter btn-affectation" 
+              (click)="chargerAffectationPersonnel()"
+              [disabled]="isLoadingAffectation">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span *ngIf="!isLoadingAffectation">Affectation Personnel</span>
+              <span *ngIf="isLoadingAffectation">Chargement...</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SÉPARATEUR VERTICAL -->
+        <div class="filter-separator"></div>
+
+        <!-- SECTION FILTRE PAR DATE -->
+        <div class="filter-group">
+          <div class="filter-header">
+            <svg xmlns="http://www.w3.org2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Filtrer par date</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="input-group">
+              <label for="dateFilter">Date :</label>
+              <input 
+                type="date" 
+                id="dateFilter" 
+                [(ngModel)]="dateSelectionnee"
+                class="filter-input"
+              />
+            </div>
+            
+            <button 
+              class="btn-filter"
+              (click)="chargerStatsParDate()"
+              [disabled]="isLoadingDate">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span *ngIf="!isLoadingDate">Afficher les statistiques</span>
+              <span *ngIf="isLoadingDate">Chargement...</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoading || isLoadingDate || isLoadingAffectation" class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+
+    <!-- Message de bienvenue -->
+    <div *ngIf="!isLoading && !isLoadingDate && !isLoadingAffectation" class="welcome-card">
+      <div class="welcome-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+      </div>
+      <h2>Bienvenue</h2>
+      <p>Sélectionnez une semaine ou une date puis cliquez sur "Afficher les statistiques"</p>
+    </div>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE DES RÉSULTATS PAR SEMAINE (Page 2) -->
+  <!-- ============================================ -->
+  <div *ngIf="showResultatsSemaine" class="stats-content">
+    
+  <!-- Bouton retour aux filtres -->
+  <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Retour aux filtres
+  </button>
+
+  <!-- Layout avec sidebar et contenu principal -->
+  <div class="main-layout">
+    
+    <!-- Sidebar - Lignes -->
+    <div class="lignes-sidebar">
+      <div class="sidebar-header">
+        <h2>Lignes de production</h2>
+        <span class="date-badge">{{ semaineSelectionnee }}</span>
+      </div>
+      <div class="lignes-list">
+        <div 
+          *ngFor="let ligne of statsLignes" 
+          class="ligne-card"
+          [class.selected]="ligne.ligne === ligneSelectionnee"
+          (click)="selectionnerLigne(ligne.ligne)">
+          
+          <div class="ligne-header">
+            <span class="ligne-nom">{{ ligne.ligne }}</span>
+            <span class="ligne-percentage">{{ ligne.pcsProdTotal.toFixed(1) }}%</span>
+          </div>
+          
+          <div class="progress-bar">
+            <div 
+              class="progress-fill" 
+              [style.width.%]="ligne.pcsProdTotal"
+              [style.background-color]="getColorForPercentage(ligne.pcsProdTotal)">
+            </div>
+          </div>
+          
+          <div class="ligne-details">
+            <span>Planifications: {{ ligne.nombrePlanifications }}</span>
+            <span>Références: {{ ligne.nombreReferences }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu principal - Graphiques -->
+    <div class="main-content">
+      
+      <!-- ✅ NOUVEAU : PCS TOTAL DE LA SEMAINE AU-DESSUS DE L'HISTOGRAMME -->
+      <div class="pcs-total-banner">
+        <div class="pcs-banner-content">
+          <div class="pcs-banner-label">PCS TOTAL DE LA SEMAINE</div>
+          <div class="pcs-banner-value" >
+              
+            {{ (pcsTotalSemaine || 0).toFixed(1) }}%
+          </div>
+         
+        </div>
+      </div>
+      
+      <!-- Histogramme -->
+      <div class="chart-card">
+        <h3>Production par ligne - {{ semaineSelectionnee }}</h3>
+        <div class="chart-wrapper">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+        <!-- Les 5M avec titre dynamique -->
+        <div class="cinq-m-section">
+          <!-- Titre dynamique qui change selon la sélection -->
+          <h3>{{ titre5M }}</h3>
+          
+          <!-- Indicateur visuel si une ligne est sélectionnée -->
+          <div *ngIf="ligneSelectionnee" class="ligne-selectionnee-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Ligne sélectionnée : {{ ligneSelectionnee }}</span>
+            <button class="btn-reset-ligne" (click)="chargerStatistiques()" title="Revenir aux statistiques globales">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="cinq-m-grid">
+            
+            <!-- Matière Première -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-matierePremiere"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.matierePremiere ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Matière Première</h4>
+                <p class="m-description">Écarts liés aux matières premières</p>
+              </div>
+            </div>
+
+            <!-- Absence -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-absence"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.absence ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Absence</h4>
+                <p class="m-description">Écarts dus aux absences</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+  <div class="m-chart-wrapper">
+    <canvas id="pieChart-methode"></canvas>
+    <div class="m-center">
+      <span class="m-percentage">{{ (stats5M?.methode ?? 0).toFixed(1) }}%</span>
+    </div>
+  </div>
+  <div class="m-info">
+    <h4>Méthode</h4>
+    <p class="m-description">Écarts dus aux méthodes de travail</p>
+  </div>
+</div>
+
+            <!-- Rendement -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-rendement"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.rendement ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Rendement</h4>
+                <p class="m-description">Écarts de rendement</p>
+              </div>
+            </div>
+
+            <!-- Maintenance -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-maintenance"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.maintenance ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Maintenance</h4>
+                <p class="m-description">Écarts dus à la maintenance</p>
+              </div>
+            </div>
+
+            <!-- Qualité -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-qualite"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.qualite ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Qualité</h4>
+                <p class="m-description">Écarts de qualité</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+  <div class="m-chart-wrapper">
+    <canvas id="pieChart-environnement"></canvas>
+    <div class="m-center">
+      <span class="m-percentage">{{ (stats5M?.environnement ?? 0).toFixed(1) }}%</span>
+    </div>
+  </div>
+  <div class="m-info">
+    <h4>Environnement</h4>
+    <p class="m-description">Écarts environnementaux</p>
+  </div>
+</div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE DES RÉSULTATS PAR DATE (Page 2) -->
+  <!-- ============================================ -->
+  <div *ngIf="showResultatsDate" class="stats-content">
+  
+  <!-- Bouton retour aux filtres -->
+  <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Retour aux filtres
+  </button>
+
+  <!-- Layout avec sidebar et contenu principal -->
+  <div class="main-layout">
+    
+    <!-- Sidebar - Lignes pour la date -->
+    <div class="lignes-sidebar">
+      <div class="sidebar-header">
+        <h2>Lignes de production</h2>
+        <span class="date-badge">{{ statsDate?.periode?.date | date:'dd/MM/yyyy' }}</span>
+      </div>
+      
+      <div class="lignes-list">
+        <div 
+          *ngFor="let ligne of statsLignesDate" 
+          class="ligne-card"
+          [class.selected]="ligne.ligne === ligneSelectionneeDate"
+          (click)="selectionnerLigneDate(ligne.ligne)">
+          
+          <div class="ligne-header">
+            <span class="ligne-nom">{{ ligne.ligne }}</span>
+            <span class="ligne-percentage">{{ ligne.pcsProdTotal.toFixed(1) }}%</span>
+          </div>
+          
+          <div class="progress-bar">
+            <div 
+              class="progress-fill" 
+              [style.width.%]="ligne.pcsProdTotal"
+              [style.background-color]="getColorForPercentage(ligne.pcsProdTotal)">
+            </div>
+          </div>
+          
+          <div class="ligne-details">
+            <span>Planifications: {{ ligne.nombrePlanifications }}</span>
+            <span>Références: {{ ligne.nombreReferences }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="main-content">
+      
+      <!-- ✅ NOUVEAU : PCS TOTAL AU-DESSUS DE L'HISTOGRAMME -->
+      <div class="pcs-total-banner">
+        <div class="pcs-banner-content">
+          <div class="pcs-banner-label">PCS TOTAL TOUTES LIGNES</div>
+          <div class="pcs-banner-value" 
+               [style.color]="getColorForPercentage(pcsTotalDate || 0)">
+            {{ (pcsTotalDate || 0).toFixed(1) }}%
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Histogramme pour la date -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Production par ligne - {{ statsDate?.periode?.date | date:'dd/MM/yyyy' }}</h3>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="barChartDate"></canvas>
+        </div>
+      </div>
+
+    
+          
+          <!-- ✅ Légende des couleurs -->
+          
+
+        <!-- ✅ SECTION - Les 5M par date -->
+        <div class="cinq-m-section">
+          <!-- Titre dynamique -->
+          <h3>{{ titre5MDate }}</h3>
+          
+          <!-- Indicateur visuel si une ligne est sélectionnée -->
+          <div *ngIf="ligneSelectionneeDate" class="ligne-selectionnee-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>Ligne sélectionnée : {{ ligneSelectionneeDate }}</span>
+            <button class="btn-reset-ligne" (click)="resetSelectionLigneDate()" title="Revenir aux statistiques globales">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Grille des 5M -->
+          <div class="cinq-m-grid">
+            
+            <!-- Matière Première -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-matierePremiere-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.matierePremiere ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Matière Première</h4>
+                <p class="m-description">Écarts liés aux matières premières</p>
+              </div>
+            </div>
+
+            <!-- Absence -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-absence-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.absence ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Absence</h4>
+                <p class="m-description">Écarts dus aux absences</p>
+              </div>
+            </div>
+
+            <!-- Rendement -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-rendement-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.rendement ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Rendement</h4>
+                <p class="m-description">Écarts de rendement</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+  <div class="m-chart-wrapper">
+    <canvas id="pieChart-methode-date"></canvas>
+    <div class="m-center">
+      <span class="m-percentage">{{ (stats5MDateActuel?.methode ?? 0).toFixed(1) }}%</span>
+    </div>
+  </div>
+  <div class="m-info">
+    <h4>Méthode</h4>
+    <p class="m-description">Écarts dus aux méthodes de travail</p>
+  </div>
+</div>
+
+            <!-- Maintenance -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-maintenance-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.maintenance ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Maintenance</h4>
+                <p class="m-description">Écarts dus à la maintenance</p>
+              </div>
+            </div>
+
+            <!-- Qualité -->
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-qualite-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.qualite ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Qualité</h4>
+                <p class="m-description">Écarts de qualité</p>
+              </div>
+            </div>
+
+            <!-- Environnement -->
+<div class="m-card">
+  <div class="m-chart-wrapper">
+    <canvas id="pieChart-environnement-date"></canvas>
+    <div class="m-center">
+      <span class="m-percentage">{{ (stats5MDateActuel?.environnement ?? 0).toFixed(1) }}%</span>
+    </div>
+  </div>
+  <div class="m-info">
+    <h4>Environnement</h4>
+    <p class="m-description">Écarts environnementaux</p>
+  </div>
+</div>
+
+          </div>
+        </div>
+
+        <!-- ✅ BOUTON POUR AFFICHER LA SAISIE DES RAPPORTS -->
+        <div class="saisie-rapports-toggle">
+          <button class="btn-toggle-saisie" (click)="toggleSaisieRapports()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>{{ showSaisieRapports ? 'Masquer' : 'Afficher' }} la Saisie des Rapports</span>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="2"
+              class="chevron-icon"
+              [class.rotated]="showSaisieRapports">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        <!-- ✅ SECTION SAISIE DES RAPPORTS (conditionnelle) -->
+        <div *ngIf="showSaisieRapports" class="saisie-rapports-section">
+          <h3>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Saisie des Rapports
+          </h3>
+          
+          <!-- Carte de résumé -->
+          <div class="saisie-summary-card">
+            <div class="saisie-stats">
+              <div class="saisie-stat">
+                <span class="stat-label">Ouvriers ayant saisi</span>
+                <span class="stat-value">{{ statsDate?.rapportsSaisie?.nombreRapportsSaisis || 0 }}</span>
+              </div>
+              <div class="saisie-stat">
+                <span class="stat-label">Ouvriers n'ayant pas saisi</span>
+                <span class="stat-value text-danger">{{ statsDate?.rapportsSaisie?.nombreOuvriersNonSaisis || 0 }}</span>
+              </div>
+              <div class="saisie-stat">
+                <span class="stat-label">Taux de saisie</span>
+                <span class="stat-value" [ngClass]="{
+                  'text-success': (statsDate?.rapportsSaisie?.tauxSaisie || 0) >= 80,
+                  'text-warning': (statsDate?.rapportsSaisie?.tauxSaisie || 0) >= 50 && (statsDate?.rapportsSaisie?.tauxSaisie || 0) < 80,
+                  'text-danger': (statsDate?.rapportsSaisie?.tauxSaisie || 0) < 50
+                }">
+                  {{ statsDate?.rapportsSaisie?.tauxSaisie || 0 }}%
+                </span>
+              </div>
+              <div class="saisie-stat">
+                <span class="stat-label">Total ouvriers</span>
+                <span class="stat-value">{{ statsDate?.rapportsSaisie?.nombreOuvriersTotal || 0 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liste des ouvriers n'ayant pas saisi -->
+          <!-- SECTION OUVRIERS NON-SAISIS AVEC STATUTS -->
+<div *ngIf="statsDate?.rapportsSaisie?.nombreOuvriersNonSaisis > 0" class="non-saisie-section">
+  <div class="section-header" (click)="toggleNonSaisieList()">
+    <h4>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      Ouvriers n'ayant pas saisi ({{ statsDate?.rapportsSaisie?.nombreOuvriersNonSaisis }})
+      <span class="toggle-icon">{{ showNonSaisieList ? '−' : '+' }}</span>
+    </h4>
+    
+    <!-- BOUTON POUR GÉRER LES STATUTS -->
+    <button class="btn-gestion-statuts" (click)="toggleStatutsPanel()" *ngIf="showNonSaisieList">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      {{ showStatutsPanel ? 'Masquer' : 'Gérer' }} les statuts
+    </button>
+  </div>
+  
+  <div *ngIf="showNonSaisieList" class="non-saisie-list">
+    
+    <!-- BANNER INFORMATIF -->
+    <div *ngIf="showStatutsPanel" class="statuts-info-banner">
+      <div class="info-icon">📝</div>
+      <div class="info-content">
+        <strong>Gestion des statuts</strong>
+        <p>Pour chaque ouvrier non-saisi, sélectionnez un statut :</p>
+        <div class="statut-legende">
+          <span class="statut-badge" style="background-color: #ef4444;">AB - Absent</span>
+          <span class="statut-badge" style="background-color: #3b82f6;">C - Congé</span>
+          <span class="statut-badge" style="background-color: #10b981;">S - Sélection</span>
+        </div>
+        <p>Cliquez sur "Enregistrer" pour sauvegarder les statuts.</p>
+      </div>
+    </div>
+    
+    <div class="table-container">
+      <table class="ouvriers-table">
+        <thead>
+          <tr>
+            <th>Matricule</th>
+            <th>Nom & Prénom</th>
+            <th>Statut actuel</th>
+            <th *ngIf="showStatutsPanel">Nouveau statut</th>
+            <th *ngIf="showStatutsPanel">Commentaire</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- ANCIENNE VERSION (sans statuts) -->
+          <ng-container *ngIf="!showStatutsPanel">
+            <tr *ngFor="let ouvrier of getOuvriersAvecStatuts()">
+              <td>{{ ouvrier.matricule }}</td>
+              <td>{{ ouvrier.nomPrenom }}</td>
+              <td>
+                <span class="statut-indicateur" *ngIf="ouvrier.statut" [style.background-color]="getCouleurStatut(ouvrier.statut)">
+                  {{ getIconeStatut(ouvrier.statut) }} {{ ouvrier.statut }} - {{ getLibelleStatut(ouvrier.statut) }}
+                </span>
+                <span class="statut-indicateur" *ngIf="!ouvrier.statut" style="background-color: #6b7280;">
+                  ❓ Non défini
+                </span>
+              </td>
+              <td>
+                <button class="btn-notify" (click)="notifyOuvrier(ouvrier)">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  Notifier
+                </button>
+              </td>
+            </tr>
+          </ng-container>
+          
+          <!-- NOUVELLE VERSION (avec gestion des statuts) -->
+          <ng-container *ngIf="showStatutsPanel">
+            <tr *ngFor="let ouvrier of ouvriersNonSaisisAvecStatuts">
+              <td>{{ ouvrier.matricule }}</td>
+              <td>{{ ouvrier.nomPrenom }}</td>
+              <td>
+                <span class="statut-indicateur" *ngIf="ouvrier.statut" [style.background-color]="getCouleurStatut(ouvrier.statut)">
+                  {{ getIconeStatut(ouvrier.statut) }} {{ ouvrier.statut }} - {{ ouvrier.libelleStatut || getLibelleStatut(ouvrier.statut) }}
+                </span>
+                <span class="statut-indicateur" *ngIf="!ouvrier.statut" style="background-color: #6b7280;">
+                  ❓ Non défini
+                </span>
+              </td>
+              
+              <!-- COLONNE CHOIX DU STATUT -->
+              <td class="statut-choix">
+                <div class="statut-options">
+                  <label *ngFor="let option of statutOptions" class="statut-option">
+                    <input type="radio" 
+                      [name]="'statut_' + ouvrier.matricule"
+                      [value]="option.code"
+                      [checked]="getStatutActuel(ouvrier.matricule) === option.code"
+                      (change)="changerStatut(ouvrier.matricule, option.code)"
+                    >
+                    <span class="statut-badge" [style.background-color]="option.couleur">
+                      {{ option.icon }} {{ option.code }}
+                    </span>
+                    <span class="statut-libelle">{{ option.libelle }}</span>
+                  </label>
+                </div>
+                
+                <!-- BOUTON RÉINITIALISER -->
+                <button *ngIf="getStatutActuel(ouvrier.matricule)" 
+                        class="btn-reset-statut" 
+                        (click)="reinitialiserStatut(ouvrier.matricule)"
+                        title="Réinitialiser le statut">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </td>
+              
+              <!-- COLONNE COMMENTAIRE -->
+              <td>
+                <input type="text" 
+                  class="commentaire-input"
+                  [placeholder]="getStatutActuel(ouvrier.matricule) ? 'Ajouter un commentaire...' : 'Sélectionnez d\'abord un statut'"
+                  [value]="getCommentaireActuel(ouvrier.matricule)"
+                  (input)="changerCommentaire(ouvrier.matricule, $any($event.target).value)"
+                  [disabled]="!getStatutActuel(ouvrier.matricule)"
+                >
+              </td>
+              
+              <!-- COLONNE ACTIONS -->
+              <td class="actions-cell">
+                <div class="actions-buttons">
+                  <button class="btn-save-statut" 
+                          [disabled]="!getStatutActuel(ouvrier.matricule) || isSaving"
+                          (click)="sauvegarderStatut(ouvrier)">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                      <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                      <polyline points="7 3 7 8 15 8"></polyline>
+                    </svg>
+                    <span>{{ isSaving ? 'Enregistrement...' : 'Enregistrer' }}</span>
+                  </button>
+                  
+                  <button class="btn-notify" (click)="notifyOuvrier(ouvrier)">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    Notifier
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+      
+      <!-- BOUTON POUR SAUVEGARDER TOUS LES STATUTS -->
+      <div *ngIf="showStatutsPanel && ouvriersNonSaisisAvecStatuts.length > 0" class="save-all-section">
+        <button class="btn-save-all" 
+                [disabled]="isSaving" 
+                (click)="sauvegarderTousStatuts()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span>
+            {{ isSaving ? 'Enregistrement en cours...' : 'Enregistrer tous les statuts' }}
+            <span class="counter-badge">
+              {{ statutsModifies.size }}/{{ ouvriersNonSaisisAvecStatuts.length }}
+            </span>
+          </span>
+        </button>
+        
+        <div class="save-all-info">
+          <p>ⓘ <strong>{{ statutsModifies.size }}</strong> statut(s) modifié(s) sur {{ ouvriersNonSaisisAvecStatuts.length }} ouvrier(s)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+          <!-- Liste des ouvriers ayant saisi (optionnel) -->
+          <div *ngIf="statsDate?.rapportsSaisie?.nombreRapportsSaisis > 0" class="saisie-details">
+            <div class="section-header" (click)="toggleSaisieDetails()">
+              <h4>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Ouvriers ayant saisi ({{ statsDate?.rapportsSaisie?.nombreRapportsSaisis }})
+                <span class="toggle-icon">{{ showSaisieDetails ? '−' : '+' }}</span>
+              </h4>
+            </div>
+            
+            <div *ngIf="showSaisieDetails" class="saisie-details-list">
+              <div *ngIf="statsDate?.rapportsSaisie?.repartitionParLigne" class="repartition-lignes">
+                <h5>Répartition par ligne</h5>
+                <div class="lignes-grid">
+                  <div *ngFor="let ligne of getLignesAvecSaisie()" class="ligne-saisie-card">
+                    <span class="ligne-nom">{{ ligne.nom }}</span>
+                    <span class="ligne-count">{{ ligne.nombreOuvriers }} ouvrier(s)</span>
+                    <span class="ligne-heures">{{ ligne.totalHeures }} heures</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE AFFECTATION PERSONNEL (Page 3) -->
+  <!-- ============================================ -->
+  <div *ngIf="showAffectation" class="stats-content">
+    
+    <!-- Bouton retour aux filtres -->
+    <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Retour aux filtres
+    </button>
+
+    <!-- En-tête -->
+    <div class="affectation-header">
+      <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Affectation du Personnel - {{ semaineSelectionnee }}
+      </h1>
+    </div>
+
+    <!-- Statistiques globales -->
+    <div class="stats-globales-grid" *ngIf="affectationPersonnel">
+      <div class="stat-card">
+        <span class="stat-label">Total Planifié</span>
+        <span class="stat-value">{{ affectationPersonnel.statistiquesGlobales.totalPlanifie }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Saisi</span>
+        <span class="stat-value">{{ affectationPersonnel.statistiquesGlobales.totalSaisi }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Différence</span>
+        <span class="stat-value" 
+          [style.color]="getDeltaColor(affectationPersonnel.statistiquesGlobales.difference)">
+          {{ affectationPersonnel.statistiquesGlobales.difference >= 0 ? '+' : '' }}{{ affectationPersonnel.statistiquesGlobales.difference }}
+        </span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Non-conformités</span>
+        <span class="stat-value text-danger">{{ affectationPersonnel.statistiquesGlobales.nbNonConformites }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Taux de Conformité</span>
+        <span class="stat-value text-success">{{ affectationPersonnel.statistiquesGlobales.tauxConformite }}</span>
+      </div>
+    </div>
+
+    <!-- Tableau d'affectation -->
+    <div class="affectation-table-container" *ngIf="affectationPersonnel">
+      <div class="table-scroll-wrapper">
+        <table class="affectation-table">
+          <thead>
+            <tr>
+              <th rowspan="2" >LIGNE</th>
+              <th colspan="3" class="jour-header">LUNDI</th>
+              <th colspan="3" class="jour-header">MARDI</th>
+              <th colspan="3" class="jour-header">MERCREDI</th>
+              <th colspan="3" class="jour-header">JEUDI</th>
+              <th colspan="3" class="jour-header">VENDREDI</th>
+              <th colspan="3" class="jour-header">SAMEDI</th>
+            </tr>
+            <tr>
+              <ng-container *ngFor="let jour of ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI']">
+                <th class="sub-header">P</th>
+                <th class="sub-header">R</th>
+                <th class="sub-header">Δ</th>
+              </ng-container>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ligne of affectationPersonnel.lignes">
+              <td class="ligne-name sticky-col">{{ ligne.ligne }}</td>
+              
+              <!-- Lundi -->
+              <td class="cell-planifie">{{ ligne.jours[0].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[0].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[0].difference || 0)">
+                <strong>{{ (ligne.jours[0].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[0].difference || 0 }}</strong>
+              </td>
+              
+              <!-- Mardi -->
+              <td class="cell-planifie">{{ ligne.jours[1].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[1].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[1].difference || 0)">
+                <strong>{{ (ligne.jours[1].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[1].difference || 0 }}</strong>
+              </td>
+              
+              <!-- Mercredi -->
+              <td class="cell-planifie">{{ ligne.jours[2].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[2].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[2].difference || 0)">
+                <strong>{{ (ligne.jours[2].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[2].difference || 0 }}</strong>
+              </td>
+              
+              <!-- Jeudi -->
+              <td class="cell-planifie">{{ ligne.jours[3].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[3].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[3].difference || 0)">
+                <strong>{{ (ligne.jours[3].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[3].difference || 0 }}</strong>
+              </td>
+              
+              <!-- Vendredi -->
+              <td class="cell-planifie">{{ ligne.jours[4].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[4].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[4].difference || 0)">
+                <strong>{{ (ligne.jours[4].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[4].difference || 0 }}</strong>
+              </td>
+              
+              <!-- Samedi -->
+              <td class="cell-planifie">{{ ligne.jours[5].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[5].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[5].difference || 0)">
+                <strong>{{ (ligne.jours[5].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[5].difference || 0 }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Légende -->
+    <div class="legende">
+      <h3>Légende</h3>
+      <div class="legende-items">
+        <div class="legende-item">
+          <span class="legende-box conforme"></span>
+          <span>Conforme (P = R)</span>
+        </div>
+        <div class="legende-item">
+          <span class="legende-box non-conforme"></span>
+          <span>Non-conforme (P ≠ R)</span>
+        </div>
+        <div class="legende-item">
+          <strong>P</strong> = Nombre d'opérateurs planifiés
+        </div>
+        <div class="legende-item">
+          <strong>R</strong> = Nombre d'opérateurs ayant saisi
+        </div>
+        <div class="legende-item">
+          <strong>Δ</strong> = Différence (R - P)
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

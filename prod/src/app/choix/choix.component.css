@@ -1,0 +1,529 @@
+/* Styles pour le conteneur principal */
+.choix-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Titre */
+.titre {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+/* Description */
+.description {
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  color: #5d6d7e;
+  text-align: center;
+  max-width: 600px;
+  margin-bottom: 40px;
+  line-height: 1.5;
+}
+
+/* Conteneur des boutons */
+.boutons-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* Style de base pour tous les boutons (maintenant des liens) */
+.bouton-grand {
+  flex: 1;
+  min-width: 280px;
+  max-width: 500px;
+  height: auto;
+  min-height: 200px;
+  border: none;
+  border-radius: 20px;
+  padding: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none; /* Important pour les liens */
+  color: inherit; /* Hérite la couleur du texte */
+}
+
+/* Effet de survol pour tous les boutons */
+.bouton-grand:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  text-decoration: none; /* Assure qu'il n'y a pas de soulignement au survol */
+}
+
+/* Effet de clic pour tous les boutons */
+.bouton-grand:active {
+  transform: translateY(-2px);
+}
+
+/* Style pour les liens actifs */
+.bouton-grand.active {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Contenu du bouton */
+.bouton-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  z-index: 2;
+}
+
+/* Icône du bouton */
+.bouton-icon {
+  width: 60px;
+  height: 60px;
+  stroke-width: 1.5;
+}
+
+/* Titre du bouton */
+.bouton-titre {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Description du bouton */
+.bouton-description {
+  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+  line-height: 1.4;
+  max-width: 90%;
+  margin: 0;
+}
+
+/* Bouton Statistique */
+.bouton-grand.statistique {
+  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+  color: white;
+}
+
+.bouton-grand.statistique .bouton-icon {
+  stroke: #8eb1ff;
+}
+
+.bouton-grand.statistique:hover {
+  background: linear-gradient(135deg, #5a7ac7 0%, #2a3c68 100%);
+}
+
+/* Bouton Planning */
+.bouton-grand.planning {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+
+.bouton-grand.planning .bouton-icon {
+  stroke: #a5ffd6;
+}
+
+.bouton-grand.planning:hover {
+  background: linear-gradient(135deg, #1aad9e 0%, #52ff99 100%);
+}
+
+/* Responsive Design */
+
+/* Pour les très grands écrans (desktop) */
+@media (min-width: 1200px) {
+  .boutons-container {
+    gap: 50px;
+  }
+  
+  .bouton-grand {
+    min-height: 250px;
+    padding: 40px;
+  }
+}
+
+/* Pour les tablettes et petits écrans desktop */
+@media (max-width: 992px) {
+  .boutons-container {
+    gap: 25px;
+  }
+  
+  .bouton-grand {
+    min-width: 240px;
+    min-height: 180px;
+    padding: 25px;
+  }
+}
+
+/* Pour les tablettes en mode portrait */
+@media (max-width: 768px) {
+  .choix-container {
+    padding: 15px;
+  }
+  
+  .boutons-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .bouton-grand {
+    width: 100%;
+    max-width: 400px;
+    min-height: 170px;
+    padding: 20px;
+  }
+  
+  .bouton-icon {
+    width: 50px;
+    height: 50px;
+  }
+}
+
+/* Pour les téléphones en mode paysage */
+@media (max-width: 576px) and (orientation: landscape) {
+  .choix-container {
+    min-height: auto;
+    padding: 10px;
+  }
+  
+  .titre {
+    margin-bottom: 5px;
+  }
+  
+  .description {
+    margin-bottom: 20px;
+  }
+  
+  .bouton-grand {
+    min-height: 140px;
+    padding: 15px;
+  }
+  
+  .bouton-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .bouton-content {
+    gap: 10px;
+  }
+}
+
+/* Pour les téléphones en mode portrait */
+@media (max-width: 576px) and (orientation: portrait) {
+  .choix-container {
+    justify-content: flex-start;
+    padding-top: 30px;
+  }
+  
+  .bouton-grand {
+    min-height: 160px;
+  }
+  
+  .bouton-icon {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+/* Pour les très petits écrans */
+@media (max-width: 360px) {
+  .choix-container {
+    padding: 10px;
+  }
+  
+  .bouton-grand {
+    min-width: 100%;
+    min-height: 150px;
+    padding: 15px;
+  }
+  
+  .bouton-titre {
+    font-size: 1.3rem;
+  }
+  
+  .bouton-description {
+    font-size: 0.85rem;
+  }
+}
+
+/* Animation de chargement (optionnelle) */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bouton-grand {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.bouton-grand:nth-child(2) {
+  animation-delay: 0.1s;
+}
+/* ... (tous les styles précédents restent) ... */
+
+.btn-retour-login {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.btn-retour-login:hover {
+  background: linear-gradient(135deg, #ff5e6c 0%, #ff5252 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
+}
+
+.btn-retour-login:active {
+  transform: translateY(-1px);
+}
+
+.btn-retour-login svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  flex-shrink: 0;
+}
+
+/* Responsive pour le bouton retour */
+@media (max-width: 768px) {
+  .btn-retour-login {
+    top: 15px;
+    left: 15px;
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+  
+  .btn-retour-login svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+  
+  /* Stabiliser les boutons principaux sur tablette */
+  .bouton-grand {
+    min-width: 260px;
+    min-height: 180px;
+  }
+
+@media (max-width: 576px) {
+  .btn-retour-login {
+    top: 10px;
+    left: 10px;
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+  
+  .btn-retour-login svg {
+    width: 16px;
+    height: 16px;
+  
+  /* Empêcher le chevauchement avec le bouton SERFA */
+  .choix-container {
+    padding-top: 60px;
+  }
+  }
+}
+/* Bouton Magasin */
+.bouton-grand.magasin {
+  background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+  color: white;
+}
+
+.bouton-grand.magasin .bouton-icon {
+  stroke: #ffe4d6;
+}
+
+.bouton-grand.magasin:hover {
+  background: linear-gradient(135deg, #ff8f6f 0%, #ffc49b 100%);
+}
+/* ============================================ */
+/* STYLE POUR LE NOUVEAU BOUTON "SERFA 4.0"    */
+/* À ajouter dans choix.component.css           */
+/* ============================================ */
+
+/* Bouton SERFA 4.0 - Positionné à droite (symétrique au bouton retour) */
+.btn-serfa-40 {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  z-index: 1000;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-serfa-40:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.btn-serfa-40:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+}
+
+.btn-serfa-40 svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+  transition: transform 0.3s ease;
+}
+
+.btn-serfa-40:hover svg {
+  transform: translateX(4px);
+}
+
+.btn-serfa-text {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Version responsive pour mobile */
+@media (max-width: 768px) {
+  .btn-serfa-40 {
+    top: 10px;
+    right: 10px;
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+  
+  .btn-serfa-40 svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .btn-serfa-text {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn-serfa-40 {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .btn-serfa-40 svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .btn-serfa-text {
+    font-size: 11px;
+  }
+}
+
+/* Animation au chargement */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.btn-serfa-40 {
+  animation: slideInRight 0.6s ease-out;
+}
+/* Responsive amélioré pour très petits écrans */
+@media (max-width: 480px) {
+  .btn-retour-login {
+    padding: 8px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  
+  .btn-retour-login svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .btn-serfa-40 {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  
+  .choix-container {
+    padding-top: 70px;
+  }
+}
+
+/* Ajout de stabilité pour orientation paysage sur mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .choix-container {
+    padding: 10px;
+    padding-top: 60px;
+  }
+  
+  .bouton-grand {
+    min-height: 150px;
+    padding: 15px;
+  }
+  
+  .bouton-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Garantir la visibilité des boutons sur tous les écrans */
+@media (max-width: 360px) {
+  .btn-retour-login,
+  .btn-serfa-40 {
+    position: fixed;
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+  
+  .choix-container {
+    padding-top: 75px;
+  }
+}

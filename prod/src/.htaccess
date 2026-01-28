@@ -1,0 +1,10 @@
+# Enable rewriting
+RewriteEngine On
+
+# If requested resource exists as file or directory, leave it as it is
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI} -d
+RewriteRule ^ - [L]
+
+# If not, redirect everything to index.html
+RewriteRule ^ /index.html
