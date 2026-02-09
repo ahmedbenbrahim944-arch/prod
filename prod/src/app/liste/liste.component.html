@@ -1,0 +1,179 @@
+<div class="container">
+  <!-- ========== VUE FILTRE ========== -->
+  <div *ngIf="showFiltre" class="filtre-container">
+    <div class="filtre-card">
+      <h1 class="filtre-title">Productivité des Ouvriers</h1>
+      <p class="filtre-subtitle">Sélectionnez une période pour consulter les statistiques</p>
+
+      <div class="filtre-form">
+        <!-- Date de début -->
+        <div class="form-group">
+          <label for="dateDebut" class="form-label">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Date de début
+          </label>
+          <input 
+            type="date" 
+            id="dateDebut"
+            [(ngModel)]="dateDebut"
+            class="form-input"
+            placeholder="YYYY-MM-DD"
+          />
+        </div>
+
+        <!-- Date de fin -->
+        <div class="form-group">
+          <label for="dateFin" class="form-label">
+            <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Date de fin
+          </label>
+          <input 
+            type="date" 
+            id="dateFin"
+            [(ngModel)]="dateFin"
+            class="form-input"
+            placeholder="YYYY-MM-DD"
+          />
+        </div>
+
+        <!-- Message d'erreur -->
+        <div *ngIf="errorMessage" class="error-message">
+          <svg class="icon-error" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="button-group">
+          <button 
+            type="button"
+            (click)="reinitialiser()"
+            class="btn-secondary"
+            [disabled]="loading"
+          >
+            <svg class="icon-btn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Réinitialiser
+          </button>
+
+          <button 
+            type="button"
+            (click)="appliquerFiltre()"
+            class="btn-primary"
+            [disabled]="loading"
+          >
+            <span *ngIf="!loading" class="flex items-center gap-2">
+              <svg class="icon-btn" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+              Voir les résultats
+            </span>
+            <span *ngIf="loading" class="flex items-center gap-2">
+              <div class="spinner-small"></div>
+              Chargement...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== VUE TABLEAU ========== -->
+  <div *ngIf="!showFiltre" class="tableau-container">
+    <!-- En-tête avec bouton retour -->
+    <div class="header-section">
+      <button 
+        (click)="retourFiltre()"
+        class="btn-retour"
+      >
+        <svg class="icon-retour" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Retour au filtre
+      </button>
+
+      <div class="header-info">
+        <h1 class="header-title">Productivité des Ouvriers</h1>
+        <p class="header-periode">
+          Période : {{ formatDate(dateDebut) }} - {{ formatDate(dateFin) }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Indicateur de chargement -->
+    <div *ngIf="loading" class="loading-container">
+      <div class="spinner"></div>
+      <p class="loading-text">Chargement des données...</p>
+    </div>
+
+    <!-- Message si aucune donnée -->
+    <div *ngIf="!loading && data.length === 0" class="no-data-container">
+      <svg class="icon-no-data" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <p class="no-data-text">Aucune donnée disponible pour cette période</p>
+      <button (click)="retourFiltre()" class="btn-no-data">
+        Modifier les dates
+      </button>
+    </div>
+
+    <!-- Tableau des données -->
+    <div *ngIf="!loading && data.length > 0" class="table-wrapper">
+      <table class="data-table">
+        <thead class="table-header">
+          <tr>
+            <th class="th-cell">JOURS</th>
+            <th class="th-cell">MAT.</th>
+            <th class="th-cell th-nom">NOM & PRÉNOM</th>
+            <th class="th-cell">N°HEURES</th>
+            <th class="th-cell">LIGNES</th>
+            <th class="th-cell th-productivite">PRODUCTIVITÉ (%)</th>
+            <th class="th-cell">M1<br>MAT. PREM.</th>
+            <th class="th-cell">M2<br>MÉTHODE</th>
+            <th class="th-cell">M3<br>MAINTENANCE</th>
+            <th class="th-cell">M4<br>QUALITÉ</th>
+            <th class="th-cell">M5<br>ABSENCE</th>
+            <th class="th-cell">M6<br>RENDEMENT</th>
+            <th class="th-cell">M7<br>ENVIRONNEMENT</th>
+          </tr>
+        </thead>
+        <tbody class="table-body">
+  <tr *ngFor="let row of data; let i = index" 
+      class="table-row"
+      [class.row-even]="i % 2 === 0"
+      [class.row-odd]="i % 2 !== 0">
+    <td class="td-cell">{{ formatDate(row.JOURS) }}</td>
+    <td class="td-cell td-matricule">{{ afficherValeur(row.MAT) }}</td>
+    <td class="td-cell td-nom">{{ afficherValeur(row['NOM ET PRENOM']) }}</td>
+    <td class="td-cell td-center">{{ afficherValeur(getValue(row, ['N°HEURS', 'N°HEURES'])) }}</td>
+    <td class="td-cell">{{ afficherValeur(row.LIGNES) }}</td>
+    <td class="td-cell td-productivite">{{ formatPourcentage(getValue(row, ['PRODUCTIVITE', 'PRODUCTIVITÉ (%)'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M1', 'M1 MAT. PREM.'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M2', 'M2 MÉTHODE'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M3', 'M3 MAINTENANCE'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M4', 'M4 QUALITÉ'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M5', 'M5 ABSENCE'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M6', 'M6 RENDEMENT'])) }}</td>
+    <td class="td-cell td-center">{{ formatPourcentage(getValue(row, ['M7', 'M7 ENVIRONNEMENT'])) }}</td>
+  </tr>
+</tbody>
+      </table>
+    </div>
+
+    <!-- Footer avec statistiques -->
+    <div *ngIf="!loading && data.length > 0" class="footer-section">
+      <div class="footer-stats">
+        <div class="stat-item">
+          <span class="stat-label">Total ouvriers :</span>
+          <span class="stat-value">{{ data.length }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

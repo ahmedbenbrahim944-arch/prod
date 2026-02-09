@@ -1,0 +1,236 @@
+<div class="stats-container">
+
+  <!-- ============================================ -->
+  <!-- PAGE DE SÉLECTION DE DATES -->
+  <!-- ============================================ -->
+  <div *ngIf="!productiviteOuvriers || !productiviteOuvriers.tableau || productiviteOuvriers.tableau.length === 0" class="filter-page">
+    
+    <!-- Bouton retour -->
+    <button class="btn-retour-choix" (click)="retourChoix()">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Retour
+    </button>
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Productivité des Ouvriers</h1>
+      
+      <!-- Formulaire de sélection de dates -->
+      <div class="controls">
+        <div class="filter-group">
+          <div class="filter-header">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Sélectionner la période</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="date-range-inputs">
+              <div class="input-group">
+                <label for="dateDebut">Date début :</label>
+                <input 
+                  type="date" 
+                  id="dateDebut" 
+                  [(ngModel)]="dateDebutProductivite"
+                  [max]="dateFinProductivite"
+                  class="filter-input"
+                />
+              </div>
+              
+              <div class="input-group">
+                <label for="dateFin">Date fin :</label>
+                <input 
+                  type="date" 
+                  id="dateFin" 
+                  [(ngModel)]="dateFinProductivite"
+                  [min]="dateDebutProductivite"
+                  [max]="maxDate"
+                  class="filter-input"
+                />
+              </div>
+            </div>
+            
+            <button 
+              type="button"
+              class="btn-filter btn-charger-productivite"
+              (click)="chargerProductiviteOuvriers()"
+              [disabled]="isLoadingProductivite || !dateDebutProductivite || !dateFinProductivite">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+              <span *ngIf="!isLoadingProductivite">Charger la productivité</span>
+              <span *ngIf="isLoadingProductivite">Chargement...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="isLoadingProductivite" class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE DES RÉSULTATS -->
+  <!-- ============================================ -->
+  <div *ngIf="productiviteOuvriers && productiviteOuvriers.tableau && productiviteOuvriers.tableau.length > 0" class="stats-content">
+    
+    <!-- Bouton retour -->
+    <button class="btn-retour-choix" (click)="productiviteOuvriers = null">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Retour aux filtres
+    </button>
+
+    <!-- En-tête -->
+    <div class="productivite-header">
+      <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="8.5" cy="7" r="4"></circle>
+          <polyline points="17 11 19 13 23 9"></polyline>
+        </svg>
+        Productivité des Ouvriers
+      </h1>
+      <p class="periode-info">
+        Période : {{ dateDebutProductivite | date:'dd/MM/yyyy' }} - {{ dateFinProductivite | date:'dd/MM/yyyy' }}
+      </p>
+    </div>
+
+     <div class="m-legend">
+      M1:Matière Première M2:Méthode M2:Maintenance M3:Qualité M4:Absence M5:Rendement M6:Environnement
+    </div>
+
+    <!-- Tableau des résultats - VERSION COMPACTE -->
+    <div class="tableau-container">
+      <table class="productivite-table">
+        <thead>
+          <tr>
+            <th class="date-col">Jours</th>
+            <th class="matricule-col">MAT</th>
+            <th class="nom-col">Nom & Prénom</th>
+            <th class="heures-col">N°H</th>
+            <th class="ligne-col">Ligne</th>
+            <th class="productivite-col sortable" (click)="toggleProductiviteSort()">
+              Prod. (%)
+              <span class="sort-indicator" *ngIf="productiviteSortDirection === 'asc'">↑</span>
+              <span class="sort-indicator" *ngIf="productiviteSortDirection === 'desc'">↓</span>
+            </th>
+            <th class="m-col">M1</th>
+            <th class="m-col">M2</th>
+            <th class="m-col">M2</th>
+            <th class="m-col">M3</th>
+            <th class="m-col">M4</th>
+            <th class="m-col">M5</th>
+            <th class="m-col">M6</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- AVEC FILTRE OU TRI : Afficher les données filtrées/triées -->
+          <ng-container *ngIf="hasActiveFilter || productiviteSortDirection">
+            <tr *ngFor="let ligne of (productiviteSortDirection ? productiviteDataSorted : productiviteFiltree); let i = index" 
+                [class.row-even]="i % 2 === 0"
+                [class.high-productivity]="ligne.PRODUCTIVITE >= 90"
+                [class.medium-productivity]="ligne.PRODUCTIVITE >= 70 && ligne.PRODUCTIVITE < 90"
+                [class.low-productivity]="ligne.PRODUCTIVITE < 70">
+              
+              <td class="date-col">{{ ligne.JOURS | date:'dd/MM/yyyy' }}</td>
+              <td class="matricule-col">{{ ligne.MAT }}</td>
+              <td class="nom-col">{{ ligne["NOM ET PRENOM"] }}</td>
+              <td class="heures-col">{{ ligne["N°HEURS"] }}</td>
+              <td class="ligne-col">{{ ligne.LIGNES }}</td>
+              <td class="productivite-col" [style.color]="getColorForProductivite(ligne.PRODUCTIVITE)">
+                <strong>{{ ligne.PRODUCTIVITE | number:'1.1-1' }}%</strong>
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M1 > 0">
+                {{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
+                {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
+                {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
+                {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M5 > 0">
+                {{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M6 > 0">
+                {{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M7 > 0">
+                {{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '-' }}
+              </td>
+            </tr>
+          </ng-container>
+
+          <!-- PAS DE FILTRE : Afficher toutes les données -->
+          <ng-container *ngIf="!hasActiveFilter && !productiviteSortDirection">
+            <tr *ngFor="let ligne of (productiviteOuvriers?.tableau || []); let i = index" 
+                [class.row-even]="i % 2 === 0"
+                [class.high-productivity]="ligne.PRODUCTIVITE >= 90"
+                [class.medium-productivity]="ligne.PRODUCTIVITE >= 70 && ligne.PRODUCTIVITE < 90"
+                [class.low-productivity]="ligne.PRODUCTIVITE < 70">
+              
+              <td class="date-col">{{ ligne.JOURS | date:'dd/MM/yyyy' }}</td>
+              <td class="matricule-col">{{ ligne.MAT }}</td>
+              <td class="nom-col">{{ ligne["NOM ET PRENOM"] }}</td>
+              <td class="heures-col">{{ ligne["N°HEURS"] }}</td>
+              <td class="ligne-col">{{ ligne.LIGNES }}</td>
+              <td class="productivite-col" [style.color]="getColorForProductivite(ligne.PRODUCTIVITE)">
+                <strong>{{ ligne.PRODUCTIVITE | number:'1.1-1' }}%</strong>
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M1 > 0">
+                {{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
+                {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
+                {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
+                {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M5 > 0">
+                {{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M6 > 0">
+                {{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '-' }}
+              </td>
+              <td class="m-value-col" [class.has-value]="ligne.M7 > 0">
+                {{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '-' }}
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Message si aucune donnée -->
+    <div *ngIf="!productiviteOuvriers || !productiviteOuvriers.tableau || productiviteOuvriers.tableau.length === 0" 
+         class="no-data-message">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <p>Aucune donnée de productivité disponible pour cette période</p>
+    </div>
+
+  </div>
+
+</div>

@@ -12,6 +12,7 @@ import { PhaseService } from '../prod/phase.service';
 import { MatierePremierService } from '../prod2/matiere-premier.service';
 import { AuthService } from '../login/auth.service';
 import { HostListener } from '@angular/core';
+import { CommentaireService } from './commentaire.service';
 
 
 
@@ -177,6 +178,11 @@ export class Prod2Component implements AfterViewInit, OnInit {
 
   // Modal des causes
   showCausesModal = signal(false);
+  // 🔒 true = le modal a été ouvert automatiquement après sauvegarde → on ne peut pas le fermer tant que l'écart n'est pas justifié
+  causesModalForcee = signal(false);
+  // Liste des écarts restants à justifier après sauvegarde (on les traite un par un)
+  ecartsEnAttente = signal<{ reference: ReferenceProduction; jour: string }[]>([]);
+
   selectedEntryForCauses = signal<{
     reference: ReferenceProduction;
     day: string;
@@ -242,7 +248,8 @@ showMPSuggestions = signal(false);
     private ouvrierService: OuvrierService, // AJOUTER
     private phaseService: PhaseService ,
      private authService: AuthService,
-    private matierePremierService: MatierePremierService   
+    private matierePremierService: MatierePremierService  ,
+    private commentaireService: CommentaireService 
   ) {
     this.generateParticles();
   }
@@ -854,19 +861,47 @@ toggleEditMode(): void {
     // En mode enregistrement
     console.log('💾 Enregistrement des modifications...');
     
-    // 1. Détecter les écarts
-    const ecarts = this.detecterEcartsDP();
-    
-    // 2. Sauvegarder d'abord
+    // 1. Sauvegarder D'ABORD (toujours)
     this.sauvegarderPlanifications();
     
-    // 3. Puis notifier les écarts
-    if (ecarts.length > 0) {
-      setTimeout(() => {
-        this.notifierEcartsApresSauvegarde(ecarts);
-      }, 1000);
-    }
+    // 2. Après sauvegarde, chercher les écarts DP < C sans causes
+    setTimeout(() => {
+      this.ouvrirModalEcartsSequentiels();
+    }, 1200); // petit délai pour laisser la sauvegarde se terminer
   }
+}
+
+/**
+ * 🔒 Détecte tous les écarts DP < C sans causes enregistrées,
+ *    met la liste dans ecartsEnAttente, puis ouvre le modal forcé sur le premier.
+ */
+private ouvrirModalEcartsSequentiels(): void {
+  const planif = this.weekPlanification();
+  if (!planif) return;
+
+  const ecarts: { reference: ReferenceProduction; jour: string }[] = [];
+
+  planif.references.forEach(ref => {
+    this.weekDays.forEach(day => {
+      const entry = ref[day] as DayEntry;
+      if (entry && entry.c > 0 && entry.dp > 0 && entry.dp < entry.c && !entry.causes) {
+        ecarts.push({ reference: ref, jour: day });
+      }
+    });
+  });
+
+  if (ecarts.length === 0) {
+    // Pas d'écart → rien à faire
+    return;
+  }
+
+  // On garde tous les écarts en file
+  this.ecartsEnAttente.set(ecarts);
+
+  // On ouvre le modal forcé sur le PREMIER écart
+  const premier = ecarts[0];
+  this.causesModalForcee.set(true);
+  this.openCausesModal(premier.reference, premier.jour);
 }
 
 // Méthode pour sauvegarder les planifications
@@ -1959,6 +1994,10 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
   // Charger les matières premières (utilisées pour MP ET Qualité)
   this.loadMatieresPremieres(ligne);
 
+   this.selectedCommentaireId.set(null);
+
+   this.loadAvailableCommentaires();
+
   // Vérifier si une non-conformité existe déjà
   const dto = {
     semaine: `semaine${planif.weekNumber}`,
@@ -2003,6 +2042,23 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
         if (details.referenceQualite) {
           this.parseQualiteReferencesString(details.referenceQualite);
         }
+        let commentaireId = null;
+
+// Essayer de récupérer l'ID du commentaire de différentes façons
+if (details.commentaire) {
+  if (details.commentaire.id) {
+    commentaireId = details.commentaire.id;
+  } else if (typeof details.commentaire === 'number') {
+    commentaireId = details.commentaire;
+  }
+} else if (response.data.commentaireObjet && response.data.commentaireObjet.id) {
+  commentaireId = response.data.commentaireObjet.id;
+} else if (response.data.commentaireId) {
+  commentaireId = response.data.commentaireId;
+}
+
+console.log('Commentaire ID récupéré:', commentaireId);
+this.selectedCommentaireId.set(commentaireId);
         
         console.log('Données chargées:', {
           mpQuantite: details.matierePremiere,
@@ -2044,8 +2100,53 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
   });
 }
   closeCausesModal(): void {
+    // 🔒 Si le modal est forcé ET l'écart n'est pas encore justifié → on bloque
+    if (this.causesModalForcee() && this.getTotalCauses() !== this.getEcartCDP()) {
+      this.showSuccessMessage('⚠️ Vous devez d\'abord justifier l\'écart avant de fermer');
+      return;
+    }
+
     this.showCausesModal.set(false);
     this.selectedEntryForCauses.set(null);
+
+    // Si le modal était forcé, on passe au prochain écart en attente
+    if (this.causesModalForcee()) {
+      this.causesModalForcee.set(false);
+      this.passerAuProchainEcart();
+    }
+  }
+
+  /**
+   * Retourne true si l'utilisateur peut fermer le modal (X ou Annuler).
+   * Utilisé dans le template pour bloquer visuellement les boutons.
+   */
+  canFermerModal(): boolean {
+    // Si le modal n'est pas forcé → toujours fermable
+    if (!this.causesModalForcee()) return true;
+    // Si forcé → seulement si l'écart est justifié
+    return this.getTotalCauses() === this.getEcartCDP();
+  }
+
+  /**
+   * Après avoir sauvegardé un écart, on retire cet écart de la liste
+   * et on ouvre automatiquement le suivant s'il en reste un.
+   */
+  private passerAuProchainEcart(): void {
+    const restants = this.ecartsEnAttente();
+    if (restants.length <= 1) {
+      // Plus d'écarts en attente
+      this.ecartsEnAttente.set([]);
+      return;
+    }
+
+    // Retirer le premier (celui qu'on vient de justifier)
+    const suivants = restants.slice(1);
+    this.ecartsEnAttente.set(suivants);
+
+    // Ouvrir le modal forcé sur le suivant
+    const prochain = suivants[0];
+    this.causesModalForcee.set(true);
+    this.openCausesModal(prochain.reference, prochain.jour);
   }
   incrementCauseMethode(amount: number = 100): void {
   this.currentCauses.update(causes => ({
@@ -2308,12 +2409,20 @@ saveCauses(): void {
   }
   
   // Qualité avec références
- if (qualiteQuantite > 0) {
-  dto.qualite = qualiteQuantite;
-  if (qualiteRefsString) {
-    dto.referenceQualite = qualiteRefsString;
+  if (qualiteQuantite > 0) {
+    dto.qualite = qualiteQuantite;
+    
+    if (qualiteRefsString) {
+      dto.referenceQualite = qualiteRefsString;
+    }
+    
+    // ✅ VÉRIFICATION OBLIGATOIRE DU COMMENTAIRE
+    if (!this.selectedCommentaireId()) {
+      alert('Un commentaire est obligatoire lorsque la quantité Qualité > 0');
+      return;
+    }
+     dto.commentaireId = this.selectedCommentaireId(); // AJOUTÉ
   }
-}
 
 // ✅ ENVIRONNEMENT - SÉPARÉ DU BLOC QUALITÉ
 if (causes.m6Environnement > 0) {
@@ -3206,7 +3315,56 @@ getUserMatricule(): string | null {
   return this.authService.getUserMatricule();
 }
 
+availableCommentaires = signal<any[]>([]);
+selectedCommentaireId = signal<number | null>(null);
+isLoadingCommentaires = signal(false);
 
+private loadAvailableCommentaires(): void {
+  this.isLoadingCommentaires.set(true);
+  
+  this.commentaireService.getAllCommentaires().subscribe({
+    next: (commentaires) => {
+      console.log('Commentaires chargés depuis API:', commentaires);
+      this.availableCommentaires.set(commentaires);
+      this.isLoadingCommentaires.set(false);
+    },
+    error: (error) => {
+      console.error('Erreur chargement commentaires depuis API:', error);
+      this.isLoadingCommentaires.set(false);
+      
+      // En cas d'erreur, essayer d'utiliser les données mockées
+      this.loadMockCommentaires();
+    }
+  });
+}
+private loadMockCommentaires(): void {
+  const mockCommentaires = [
+    { id: 1, commentaire: 'Bavure' },
+    { id: 2, commentaire: 'Manque de matière' },
+    { id: 3, commentaire: 'Déformation' },
+    { id: 4, commentaire: 'Cote non conforme' },
+    { id: 5, commentaire: 'Soudure non conforme' },
+    { id: 6, commentaire: 'Aspect non conforme' },
+    { id: 7, commentaire: 'Casse' },
+    { id: 8, commentaire: 'Fissure' },
+    { id: 9, commentaire: 'Arrachement non conforme' },
+    { id: 10, commentaire: 'Sertissage non conforme' },
+    { id: 11, commentaire: 'Traitement non conforme' },
+    { id: 12, commentaire: 'Ancienne version' },
+    { id: 13, commentaire: 'Taraudage non conforme' }
+  ];
+  
+  this.availableCommentaires.set(mockCommentaires);
+}
+
+// Dans la classe Prod2Component
+getSelectedCommentaireText(): string {
+  const commentaireId = this.selectedCommentaireId();
+  if (!commentaireId) return '';
+  
+  const commentaire = this.availableCommentaires().find(c => c.id === commentaireId);
+  return commentaire ? commentaire.commentaire : 'Commentaire non trouvé';
+}
 
 
 
@@ -3216,6 +3374,3 @@ getUserMatricule(): string | null {
 
 
 }
-
-
-

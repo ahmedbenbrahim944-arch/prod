@@ -48,6 +48,7 @@ interface LigneDetail {
   };
   detailsReferences?: Array<{
     reference: string;
+    date: string;
     of: string;
     qtePlanifiee: number;
     qteModifiee: number;
@@ -93,17 +94,22 @@ interface StatsPeriode {
   }>;
   personnel: {
     totalOuvriers: number;
-    totalPresences: number;        // Nouveau
-    totalConges: number;           // Nouveau
-    totalAbsences: number;         // Nouveau
-    moyennePresences: number;      // ✅ MOYENNE JOURNALIÈRE
-    moyenneConges: number;         // ✅ MOYENNE JOURNALIÈRE
-    moyenneAbsences: number;       // ✅ MOYENNE JOURNALIÈRE
-    tauxPresence: number;          // Nouveau
-    joursDansPeriode: number;    
+    totalPresences: number;
+    totalSelections: number; // ✅ NOUVEAU
+    totalConges: number;
+    totalAbsences: number;
+    moyennePresences: number;
+    moyenneSelections: number; // ✅ NOUVEAU
+    moyenneConges: number;
+    moyenneAbsences: number;
+    moyenneAutres: number; // ✅ NOUVEAU
+    tauxPresence: number;
+    joursDansPeriode: number;
     presents: number;
+    selections: number; // ✅ NOUVEAU
     conges: number;
     absents: number;
+    autresStatuts: number; // ✅ NOUVEAU
     details: {
       matriculesPresents: number[];
       matriculesConges: number[];
@@ -169,50 +175,50 @@ export class StatsComponent implements OnInit {
   
   mDetails: { [key: string]: any } = {
     matierePremiere: { 
-      label: 'Matière Première', 
+      label: 'M1:Matière Première', 
       icon: 'M1', 
       color: '#ef4444',
       description: 'Écarts liés aux matières premières',
       key: 'm1_matierePremiere'
     },
     absence: { 
-      label: 'Absence', 
+      label: 'M2:Absence', 
       icon: 'M2', 
       color: '#3b82f6',
       description: 'Écarts dus aux absences',
       key: 'm2_absence'
     },
     rendement: { 
-      label: 'Rendement', 
+      label: 'M2:Rendement', 
       icon: 'M3', 
       color: '#8b5cf6',
       description: 'Écarts de rendement',
       key: 'm3_rendement'
     },
     methode: { 
-      label: 'Méthode', 
+      label: 'M3:Méthode', 
       icon: 'M4', 
       color: '#06b6d4',
       description: 'Écarts dus aux méthodes de travail',
       key: 'm4_methode'
     },
     maintenance: { 
-      label: 'Maintenance', 
+      label: 'M4:Maintenance', 
       icon: 'M5', 
       color: '#f59e0b',
       description: 'Écarts dus à la maintenance',
       key: 'm5_maintenance'
     },
     qualite: { 
-      label: 'Qualité', 
+      label: 'M5:Qualité', 
       icon: 'M6', 
       color: '#10b981',
       description: 'Écarts de qualité',
       key: 'm6_qualite'
     },
     environnement: { 
-      label: 'Environnement', 
-      icon: 'M7', 
+      label: 'M6:Environnement', 
+      icon: 'M6', 
       color: '#ec4899',
       description: 'Écarts environnementaux',
       key: 'm7_environnement'
@@ -653,6 +659,7 @@ getPeriodeDisplay(): string {
 ligneModalTitle: string = '';
 ligneModalData: LigneDetail | null = null;
 ligneModalReferences: any[] = [];
+expandedCause7M: string | null = null; // Pour suivre quelle cause 7M est dépliée
 
 
 onBarClick(event: any): void {
@@ -686,16 +693,48 @@ onBarClick(event: any): void {
 /**
  * Ouvrir la modale avec les détails d'une ligne
  */
-// Ajoutez cette méthode
 openLigneModal(ligne: any): void {
   this.ligneModalTitle = `Détails de la ligne ${this.formaterNomLigne(ligne.ligne)}`;
   this.ligneModalData = ligne;
   
-  // Récupérer les références détaillées
-  if (ligne.detailsReferences && Array.isArray(ligne.detailsReferences)) {
+  console.log('🔍 Données complètes de la ligne:', ligne);
+  console.log('🔍 Ligne recherchée:', ligne.ligne);
+  console.log('🔍 statsData.detailsNonConformites:', this.statsData?.detailsNonConformites);
+  
+  // Utiliser les detailsNonConformites filtrés par ligne
+  if (this.statsData?.detailsNonConformites && Array.isArray(this.statsData.detailsNonConformites)) {
+    // Filtrer les détails pour cette ligne spécifique
+    this.ligneModalReferences = this.statsData.detailsNonConformites
+      .filter(detail => detail.ligne === ligne.ligne)
+      .map(detail => ({
+        date: detail.date,
+        reference: detail.reference,
+        of: detail.of,
+        qtePlanifiee: detail.qtyPlanifiee,
+        qteModifiee: detail.qtyProduite, // Utiliser qtyProduite comme qteModifiee pour le moment
+        decProduction: detail.qtyProduite,
+        pcsProd: detail.qtyPlanifiee > 0 ? (detail.qtyProduite / detail.qtyPlanifiee) * 100 : 0,
+        causes7M: {
+          matierePremiere: detail.m1_matierePremiere || 0,
+          absence: detail.m2_absence || 0,
+          rendement: detail.m3_rendement || 0,
+          methode: detail.m4_methode || 0,
+          maintenance: detail.m5_maintenance || 0,
+          qualite: detail.m6_qualite || 0,
+          environnement: detail.m7_environnement || 0,
+          total: detail.total7M || 0
+        }
+      }));
+    
+    console.log('✅ Références filtrées pour la ligne:', this.ligneModalReferences.length);
+    console.log('✅ Première référence:', this.ligneModalReferences[0]);
+  } else if (ligne.detailsReferences && Array.isArray(ligne.detailsReferences)) {
+    // Fallback sur detailsReferences si disponible
     this.ligneModalReferences = ligne.detailsReferences;
+    console.log('✅ Utilisation de detailsReferences:', this.ligneModalReferences.length);
   } else {
     this.ligneModalReferences = [];
+    console.log('⚠️ Pas de détails trouvés');
   }
   
   this.showLigneModal = true;
@@ -770,6 +809,97 @@ getReferencesMForLigne(mKey: string): string[] {
   }
   
   return [];
+}
+
+/**
+ * Basculer l'expansion d'une cause 7M
+ */
+toggleCause7M(mKey: string): void {
+  if (this.expandedCause7M === mKey) {
+    this.expandedCause7M = null; // Fermer si déjà ouvert
+  } else {
+    this.expandedCause7M = mKey; // Ouvrir la nouvelle cause
+  }
+}
+
+/**
+ * Vérifier si une cause 7M est dépliée
+ */
+isCause7MExpanded(mKey: string): boolean {
+  return this.expandedCause7M === mKey;
+}
+
+/**
+ * Obtenir les références filtrées par une cause 7M spécifique
+ */
+getReferencesForCause7M(mKey: string): any[] {
+  if (!this.ligneModalReferences || this.ligneModalReferences.length === 0) {
+    return [];
+  }
+
+  // Mapper la clé mKey vers le nom de propriété dans causes7M
+  const causeMapping: { [key: string]: string } = {
+    'matierePremiere': 'matierePremiere',
+    'absence': 'absence',
+    'rendement': 'rendement',
+    'methode': 'methode',
+    'maintenance': 'maintenance',
+    'qualite': 'qualite',
+    'environnement': 'environnement'
+  };
+
+  const causeName = causeMapping[mKey];
+  if (!causeName) return [];
+
+  // Filtrer les références qui ont cette cause > 0
+  return this.ligneModalReferences.filter(ref => {
+    const causes7M = ref.causes7M;
+    if (!causes7M) return false;
+    
+    // Vérifier si la cause spécifique a une valeur > 0
+    const causeValue = causes7M[causeName];
+    return causeValue && causeValue > 0;
+  });
+}
+
+/**
+ * Vérifier si une cause 7M a des références
+ */
+hasCause7MReferences(mKey: string): boolean {
+  const refs = this.getReferencesForCause7M(mKey);
+  return refs && refs.length > 0;
+}
+
+// Méthode pour obtenir la référence MP d'une référence
+getRefMPForReference(ref: any): string {
+  // Chercher dans les données originales detailsNonConformites
+  if (this.statsData?.detailsNonConformites) {
+    const originalData = this.statsData.detailsNonConformites.find(
+      d => d.reference === ref.reference && 
+           d.of === ref.of && 
+           d.date === ref.date
+    );
+    return originalData?.refMP || '-';
+  }
+  
+  // Si non trouvé, vérifier dans ref lui-même
+  return ref.refMP || '-';
+}
+
+// Méthode pour obtenir la référence Qualité d'une référence
+getRefQualiteForReference(ref: any): string {
+  // Chercher dans les données originales detailsNonConformites
+  if (this.statsData?.detailsNonConformites) {
+    const originalData = this.statsData.detailsNonConformites.find(
+      d => d.reference === ref.reference && 
+           d.of === ref.of && 
+           d.date === ref.date
+    );
+    return originalData?.refQualite || '-';
+  }
+  
+  // Si non trouvé, vérifier dans ref lui-même
+  return ref.refQualite || '-';
 }
 
 }

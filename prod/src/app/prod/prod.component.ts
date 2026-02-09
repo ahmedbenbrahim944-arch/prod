@@ -200,6 +200,7 @@ export class ProdComponent implements OnInit {
   particles = signal<any[]>([]);
   users = signal<User[]>([]);
   errorMessage = signal<string | null>(null);
+  ouvriers = signal<any[]>([]);
 
   weekStats = signal<any>(null);
 loadingStats = signal(false);
@@ -324,6 +325,9 @@ stats5MAnnuellesPreview = signal<Stats5MAnnuellesResponse | null>(null);
   this.loadUsers();
   this.loadStats();
   this.loadMatierePremieres();
+   this.loadOuvriers();
+   this.loadOuvriers();
+    
   
   // Watcher pour le changement de semaine
   effect(() => {
@@ -1982,21 +1986,7 @@ loadExistingTimeForReference() {
 /**
  * Vérifier si un ouvrier avec ce matricule existe déjà
  */
-async checkIfWorkerExists(matricule: number): Promise<boolean> {
-  try {
-    // CORRECTION : passer directement le nombre
-    await this.ouvrierService.searchByMatricule(matricule).toPromise();
-    return true; // Si pas d'erreur, l'ouvrier existe
-  } catch (error: any) {
-    // Si erreur 404, l'ouvrier n'existe pas
-    if (error.status === 404) {
-      return false;
-    }
-    // Pour d'autres erreurs, on considère qu'il n'existe pas
-    console.log('Erreur lors de la vérification:', error);
-    return false;
-  }
-}
+
 // Ajoutez ces propriétés
 matriculeCheckResult: {
   available: boolean;
@@ -3255,29 +3245,33 @@ private async generateStats5MAnnuellesExcel(data: Stats5MAnnuellesResponse): Pro
       total: data.moyennesAnnuelles.matierePremiere.pourcentage
     },
     {
-      label: '% M5:Qualité',
-      key: 'qualite',
-      total: data.moyennesAnnuelles.qualite.pourcentage
-    },
-    {
       label: '% M2:absence',
       key: 'absence',
       total: data.moyennesAnnuelles.absence.pourcentage
+    },
+     {
+      label: '% M2:Rendement',
+      key: 'rendement',
+      total: data.moyennesAnnuelles.rendement.pourcentage
     },
      {
       label: '% M3:Méthode', // NOUVEAU - LIGNE SÉPARÉE
       key: 'methode',
       total: data.moyennesAnnuelles.methode.pourcentage
     },
-    {
+     {
       label: '% M4:maintenance',
       key: 'maintenance',
       total: data.moyennesAnnuelles.maintenance.pourcentage
     },
     {
-      label: '% M2:Rendement',
-      key: 'rendement',
-      total: data.moyennesAnnuelles.rendement.pourcentage
+      label: '% M5:Qualité',
+      key: 'qualite',
+      total: data.moyennesAnnuelles.qualite.pourcentage
+    },
+    {label : '% M6:Environnement',
+      key: 'environnement',
+      total: data.moyennesAnnuelles.environnement.pourcentage
     }
   ];
 
@@ -3384,6 +3378,102 @@ private resetStats5MAnnuellesForm() {
   };
   this.stats5MAnnuellesPreview.set(null);
   this.errorMessage.set(null);
+}
+
+private loadOuvriers() {
+  this.loading.set(true);
+  
+  this.ouvrierService.findAll()
+    .pipe(
+      takeUntilDestroyed(this.destroyRef),
+      catchError(error => {
+        console.error('Erreur lors du chargement des ouvriers:', error);
+        this.errorMessage.set('Impossible de charger la liste des ouvriers');
+        return of([]);
+      }),
+      finalize(() => this.loading.set(false))
+    )
+    .subscribe({
+      next: (ouvriers) => {
+        this.ouvriers.set(ouvriers);
+      }
+    });
+}
+
+// Ajoutez une méthode publique
+refreshOuvriers() {
+  this.loadOuvriers();
+}
+
+// Méthode pour supprimer un ouvrier
+
+
+// Méthode pour vérifier si un ouvrier existe déjà (déjà présente, mais au cas où)
+async checkIfWorkerExists(matricule: number): Promise<boolean> {
+  try {
+    await this.ouvrierService.searchByMatricule(matricule).toPromise();
+    return true; // Si pas d'erreur, l'ouvrier existe
+  } catch (error: any) {
+    if (error.status === 404) {
+      return false; // Si erreur 404, l'ouvrier n'existe pas
+    }
+    console.log('Erreur lors de la vérification:', error);
+    return false;
+  }
+}
+
+// Méthode pour éditer un ouvrier (pré-remplit le formulaire)
+editOuvrier(ouvrier: any) {
+  this.workerForm.matricule = ouvrier.matricule;
+  this.workerForm.nomPrenom = ouvrier.nomPrenom;
+  
+  // Vérifier automatiquement le matricule
+  setTimeout(() => {
+    this.onCheckMatricule();
+  }, 300);
+  
+  // Faire défiler vers le formulaire
+  setTimeout(() => {
+    const formElement = document.querySelector('.creation-card');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
+  
+  this.showSuccessMessage(`Formulaire pré-rempli pour ${ouvrier.nomPrenom} (${ouvrier.matricule})`);
+}
+// Méthode pour supprimer un ouvrier
+onDeleteOuvrier(matricule: number) {
+  if (confirm(`Êtes-vous sûr de vouloir supprimer l'ouvrier avec le matricule ${matricule} ?`)) {
+    this.loading.set(true);
+    
+    this.ouvrierService.remove(matricule)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(error => {
+          console.error('Erreur lors de la suppression:', error);
+          
+          if (error.status === 404) {
+            this.errorMessage.set(`Ouvrier avec le matricule ${matricule} introuvable`);
+          } else if (error.status === 403) {
+            this.errorMessage.set('Vous n\'avez pas les permissions pour supprimer un ouvrier');
+          } else {
+            this.errorMessage.set(error.error?.message || 'Erreur lors de la suppression de l\'ouvrier');
+          }
+          
+          return of(null);
+        }),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe({
+        next: (response) => {
+          if (response) {
+            this.showSuccessMessage(`Ouvrier avec le matricule ${matricule} supprimé avec succès !`);
+            this.loadOuvriers(); // Recharger la liste
+          }
+        }
+      });
+  }
 }
 
 }

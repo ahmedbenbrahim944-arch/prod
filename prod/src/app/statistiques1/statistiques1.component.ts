@@ -18,6 +18,8 @@ import { forkJoin } from 'rxjs';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 Chart.register(ChartDataLabels);
 import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 
 Chart.register(...registerables);
@@ -849,7 +851,7 @@ getColorForProductivite(productivite: number): string {
       this.totalQtyPlanifiee += rapport.quantiteSource;
       this.totalQtyProduite += rapport.decProduction;
       this.totalDelta += rapport.deltaProd;
-      this.total7M += rapport.total7M || rapport.total6M;
+       this.total7M += rapport.total7M || rapport.total6M;
       this.totalMatierePremiere += rapport.details.matierePremiere;
       this.totalAbsence += rapport.details.absence;
       this.totalRendement += rapport.details.rendement;
@@ -1123,42 +1125,94 @@ getColorForProductivite(productivite: number): string {
  * ✅ NOUVELLE MÉTHODE - Exporter en Excel (.xlsx)
  */
 exporterExcel(): void {
-  if (!this.productiviteOuvriers?.tableau || this.productiviteOuvriers.tableau.length === 0) {
+  console.log('🔄 Début export Excel...');
+  
+  // 1. Vérifier les données disponibles
+  const donneesDisponibles = this.productiviteFiltree?.length > 0 
+    ? this.productiviteFiltree 
+    : this.productiviteOuvriers?.tableau;
+  
+  console.log('📊 Données disponibles:', donneesDisponibles);
+  
+  if (!donneesDisponibles || donneesDisponibles.length === 0) {
+    console.error('❌ Aucune donnée à exporter');
     alert('Aucune donnée à exporter');
     return;
   }
-
-  // Déterminer quelles données exporter
-  const donneesAExporter = this.valeurFiltre && this.productiviteFiltree.length > 0 
-    ? this.productiviteFiltree  // Données filtrées
-    : this.productiviteOuvriers.tableau; // Toutes les données
-
-  if (donneesAExporter.length === 0) {
-    alert('Aucune donnée à exporter');
-    return;
-  }
-
+  
   try {
-    // Préparer les données pour Excel
-    const donneesFormatees = this.preparerDonneesPourExport(donneesAExporter);
+    // 2. Préparer les données
+    const donneesFormatees = this.preparerDonneesPourExport(donneesDisponibles);
+    console.log('✅ Données formatées:', donneesFormatees.length, 'lignes');
     
-    // Créer une feuille de calcul
-    const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(donneesFormatees);
+    // 3. Vérifier que les données ne sont pas vides
+    if (donneesFormatees.length === 0) {
+      console.error('❌ Données formatées vides');
+      alert('Les données formatées sont vides');
+      return;
+    }
     
-    // Créer un classeur
+    // 4. Créer une feuille de calcul avec gestion d'erreurs
+    let ws: XLSX.WorkSheet;
+    try {
+      ws = XLSX.utils.json_to_sheet(donneesFormatees);
+      console.log('✅ Feuille de calcul créée');
+    } catch (sheetError) {
+      console.error('❌ Erreur création feuille:', sheetError);
+      
+      // Essayer une autre méthode
+      const headers = Object.keys(donneesFormatees[0]);
+      const data = donneesFormatees.map(row => headers.map(header => row[header]));
+      ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    }
+    
+    // 5. Ajuster la largeur des colonnes
+    const wscols = Object.keys(donneesFormatees[0]).map(() => ({ width: 20 }));
+    ws['!cols'] = wscols;
+    
+    // 6. Créer un classeur
     const wb: XLSX.WorkBook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Productivité');
     
-    // Générer le nom du fichier
+    // 7. Générer le nom du fichier
     const nomFichier = this.genererNomFichier('xlsx');
+    console.log('📁 Nom du fichier:', nomFichier);
     
-    // Exporter le fichier
-    XLSX.writeFile(wb, nomFichier);
+    // 8. Exporter avec une méthode alternative si nécessaire
+    try {
+      XLSX.writeFile(wb, nomFichier);
+      console.log('✅ Export Excel réussi!');
+    } catch (writeError) {
+      console.error('❌ Erreur writeFile:', writeError);
+      
+      // Méthode alternative : créer un blob
+      const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      const url = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nomFichier;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Nettoyer
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    }
     
-    console.log('✅ Fichier Excel exporté:', nomFichier);
   } catch (error) {
     console.error('❌ Erreur lors de l\'export Excel:', error);
-    alert('Erreur lors de l\'export Excel');
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+      console.error('❌ Erreur lors de l\'export Excel:', error);
+      alert(`Erreur lors de l\'export Excel. Détails: ${error.message}`);
+    } else {
+      console.error('❌ Erreur lors de l\'export Excel:', String(error));
+      alert('Erreur lors de l\'export Excel.');
+    }
   }
 }
 
@@ -1204,28 +1258,80 @@ exporterCSV(): void {
 /**
  * ✅ NOUVELLE MÉTHODE - Préparer les données pour l'export
  */
+/**
+ * ✅ CORRIGÉ - Préparer les données pour l'export
+ */
 private preparerDonneesPourExport(donnees: any[]): any[] {
-  return donnees.map(ligne => {
-    return {
-      'Date': new Date(ligne.JOURS).toLocaleDateString('fr-FR'),
-      'Matricule': ligne.MAT || '',
-      'Nom et Prénom': ligne['NOM ET PRENOM'] || '',
-      'Heures travaillées': ligne['N°HEURS'] || 0,
-      'Ligne de production': ligne.LIGNES || '',
-      'Productivité (%)': ligne.PRODUCTIVITE ? `${ligne.PRODUCTIVITE.toFixed(1)}%` : '0%',
-      'M1 - Matière Première (%)': ligne.M1 ? `${ligne.M1.toFixed(1)}%` : '-',
-      'M2 - Méthode (%)': ligne.M2 ? `${ligne.M2.toFixed(1)}%` : '-',
-      'M3 - Maintenance (%)': ligne.M3 ? `${ligne.M3.toFixed(1)}%` : '-',
-      'M4 - Qualité (%)': ligne.M4 ? `${ligne.M4.toFixed(1)}%` : '-',
-      'M5 - Absence (%)': ligne.M5 ? `${ligne.M5.toFixed(1)}%` : '-',
-      'M6 - Rendement (%)': ligne.M6 ? `${ligne.M6.toFixed(1)}%` : '-',
-      'M7 - Environnement (%)': ligne.M7 ? `${ligne.M7.toFixed(1)}%` : '-',
-      'Productivité Moyenne': ligne['PRODUCTIVITE MOYENNE'] || '-',
-      'Note': ligne.NOTE || '-'
-    };
-  });
+  console.log('🔄 Formatage des données pour export...');
+  
+  if (!donnees || donnees.length === 0) {
+    console.warn('⚠️ Aucune donnée à formater');
+    return [];
+  }
+  
+  try {
+    return donnees.map((ligne, index) => {
+      // Vérifier que la ligne existe
+      if (!ligne) {
+        console.warn(`⚠️ Ligne ${index} est undefined/null`);
+        return {};
+      }
+      
+      // Fonction helper pour convertir en nombre avec sécurité
+      const toNumber = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          // Enlever les caractères non numériques sauf point et virgule
+          const cleaned = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+          const num = parseFloat(cleaned);
+          return isNaN(num) ? 0 : num;
+        }
+        return 0;
+      };
+      
+      // Fonction helper pour formater en pourcentage avec sécurité
+      const formatPourcentage = (value: any): string => {
+        const num = toNumber(value);
+        if (num === 0) return '-';
+        return `${num.toFixed(1)}%`;
+      };
+      
+      // Fonction helper pour formater une date
+      const formatDate = (dateString: any): string => {
+        if (!dateString) return '';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('fr-FR');
+        } catch (e) {
+          return String(dateString);
+        }
+      };
+      
+      return {
+        'Date': formatDate(ligne.JOURS),
+        'Matricule': String(ligne.MAT || ligne.matricule || ''),
+        'Nom et Prénom': String(ligne['NOM ET PRENOM'] || ligne.nomPrenom || ''),
+        'Heures travaillées': toNumber(ligne['N°HEURS'] || ligne.nombreHeures || ligne.heures),
+        'Ligne de production': String(ligne.LIGNES || ligne.ligne || ''),
+        'Productivité (%)': formatPourcentage(ligne.PRODUCTIVITE),
+        'M1 - Matière Première (%)': formatPourcentage(ligne.M1),
+        'M2 - Méthode (%)': formatPourcentage(ligne.M2),
+        'M3 - Maintenance (%)': formatPourcentage(ligne.M3),
+        'M4 - Qualité (%)': formatPourcentage(ligne.M4),
+        'M5 - Absence (%)': formatPourcentage(ligne.M5),
+        'M6 - Rendement (%)': formatPourcentage(ligne.M6),
+        'M7 - Environnement (%)': formatPourcentage(ligne.M7),
+        'Productivité Moyenne': ligne['PRODUCTIVITE MOYENNE'] || '-',
+        'Note': String(ligne.NOTE || '-')
+      };
+    });
+  } catch (error) {
+    console.error('❌ Erreur formatage données:', error);
+    console.error('Données problématiques:', donnees);
+    return [];
+  }
 }
-
 /**
  * ✅ NOUVELLE MÉTHODE - Convertir les données en CSV
  */
@@ -1642,6 +1748,316 @@ trierProductiviteDecroissant(): void {
     const bVal = b.PRODUCTIVITE || 0;
     return bVal - aVal;
   });
+}
+
+
+/**
+ * ✅ NOUVELLE MÉTHODE - Formater une date pour le titre
+ */
+private formatDateForTitle(dateString: string): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('fr-FR');
+  } catch (e) {
+    return dateString;
+  }
+}
+
+async exporterResumeExcel(): Promise<void> {
+  if (!this.productiviteOuvriers?.tableau || this.productiviteOuvriers.tableau.length === 0) {
+    alert('Aucune donnée à exporter');
+    return;
+  }
+
+  // Utiliser les données filtrées si disponibles, sinon toutes les données
+  let donneesSource = [];
+  if (this.valeurFiltre || this.ligneSelectionnee || (this.productiviteMin && this.productiviteMax)) {
+    donneesSource = this.productiviteFiltree;
+  } else {
+    donneesSource = this.productiviteSortDirection ? this.productiviteDataSorted : this.productiviteOuvriers.tableau;
+  }
+
+  // Grouper par ouvrier (MAT)
+  const groupeParOuvrier = new Map<number, any[]>();
+  
+  donneesSource.forEach(ligne => {
+    const mat = ligne.MAT;
+    if (!groupeParOuvrier.has(mat)) {
+      groupeParOuvrier.set(mat, []);
+    }
+    groupeParOuvrier.get(mat)!.push(ligne);
+  });
+
+  // Calculer les statistiques par ouvrier
+  const resumeOuvriers = Array.from(groupeParOuvrier.entries()).map(([mat, lignes]) => {
+    const totalHeures = lignes.reduce((sum, l) => {
+      const heures = l['N°HEURS'];
+      const heuresNum = typeof heures === 'string' ? parseFloat(heures) : heures;
+      return sum + (heuresNum || 0);
+    }, 0);
+    
+    // Filtrer les lignes avec productivité > 0
+    const lignesProdPositive = lignes.filter(l => {
+      const prod = l.PRODUCTIVITE;
+      const prodNum = typeof prod === 'string' ? parseFloat(prod) : (prod || 0);
+      return prodNum > 0;
+    });
+    
+    const nbJoursProdPositive = lignesProdPositive.length;
+    
+    const calculerMoyenneProductivite = (): number => {
+      if (nbJoursProdPositive === 0) return 0;
+      const somme = lignesProdPositive.reduce((sum, l) => {
+        const prod = l.PRODUCTIVITE;
+        const prodNum = typeof prod === 'string' ? parseFloat(prod) : (prod || 0);
+        return sum + prodNum;
+      }, 0);
+      return somme / nbJoursProdPositive;
+    };
+    
+    const calculerMoyenneM = (champ: string): number => {
+      if (nbJoursProdPositive === 0) return 0;
+      const somme = lignesProdPositive.reduce((sum, l) => {
+        const valeur = l[champ];
+        const valeurNum = typeof valeur === 'string' ? parseFloat(valeur) : (valeur || 0);
+        return sum + valeurNum;
+      }, 0);
+      return somme / nbJoursProdPositive;
+    };
+
+    return {
+      'Matricule': mat,
+      'Nom et Prénom': lignes[0]['NOM ET PRENOM'] || 'N/A',
+      'Total Heures': totalHeures.toFixed(2),
+      'Productivité Moyenne': calculerMoyenneProductivite().toFixed(2) + '%',
+      'M1 Mat. Prem': calculerMoyenneM('M1').toFixed(2) + '%',
+      'M2 Méthode': calculerMoyenneM('M2').toFixed(2) + '%',
+      'M3 Maintenance': calculerMoyenneM('M3').toFixed(2) + '%',
+      'M4 Qualité': calculerMoyenneM('M4').toFixed(2) + '%',
+      'M5 Absence': calculerMoyenneM('M5').toFixed(2) + '%',
+      'M6 Rendement': calculerMoyenneM('M6').toFixed(2) + '%',
+      'M7 Environnement': calculerMoyenneM('M7').toFixed(2) + '%'
+    };
+  });
+
+  // Trier par nom
+  resumeOuvriers.sort((a, b) => a['Nom et Prénom'].localeCompare(b['Nom et Prénom']));
+
+  console.log('📊 Export ExcelJS - Données à exporter:', resumeOuvriers.length, 'ouvriers');
+
+  try {
+    // Créer un nouveau workbook
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Application de Production';
+    workbook.lastModifiedBy = 'Application';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
+    // Créer une feuille
+    const worksheet = workbook.addWorksheet('Résumé Productivité');
+    
+    // 1. TITRE PRINCIPAL (ligne 1)
+    const titleRow = worksheet.getRow(1);
+    titleRow.height = 35;
+    worksheet.mergeCells('A1:K1');
+    
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'STATISTIQUES DE PRODUCTIVITÉ PAR OUVRIER';
+    titleCell.font = {
+      name: 'Calibri',
+      size: 16,
+      bold: true,
+      color: { argb: 'FFFFFFFF' } // Blanc
+    };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1F4E78' } // Bleu foncé #1F4E78
+    };
+    titleCell.alignment = {
+      vertical: 'middle',
+      horizontal: 'center'
+    };
+    
+    // 2. PÉRIODE (ligne 2)
+    const periodeRow = worksheet.getRow(2);
+    periodeRow.height = 25;
+    worksheet.mergeCells('A2:K2');
+    
+    const periodeCell = worksheet.getCell('A2');
+    periodeCell.value = `Période : ${this.formatDateForTitle(this.dateDebutProductivite)} au ${this.formatDateForTitle(this.dateFinProductivite)}`;
+    periodeCell.font = {
+      name: 'Calibri',
+      size: 11,
+      color: { argb: 'FF000000' } // Noir
+    };
+    periodeCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD9EAD3' } // Vert très clair #D9EAD3
+    };
+    periodeCell.alignment = {
+      vertical: 'middle',
+      horizontal: 'center'
+    };
+    
+    // 3. Ligne vide (ligne 3)
+    worksheet.getRow(3).height = 10;
+    
+    // 4. EN-TÊTES (ligne 4)
+    const headers = [
+      'Matricule',
+      'Nom et Prénom', 
+      'Total Heures',
+      'Productivité Moyenne',
+      'M1 Mat. Prem',
+      'M2 Méthode',
+      'M3 Maintenance',
+      'M4 Qualité',
+      'M5 Absence',
+      'M6 Rendement',
+      'M7 Environnement'
+    ];
+    
+    const headerRow = worksheet.getRow(4);
+    headerRow.height = 30;
+    
+    headers.forEach((header, index) => {
+      const cell = headerRow.getCell(index + 1);
+      cell.value = header;
+      cell.font = {
+        name: 'Calibri',
+        size: 11,
+        bold: true,
+        color: { argb: 'FFFFFFFF' } // Blanc
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF548235' } // Vert foncé #548235
+      };
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: index < 2 ? 'left' : 'center',
+        wrapText: true
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      };
+    });
+    
+    // 5. DONNÉES (lignes 5+)
+    resumeOuvriers.forEach((ouvrier, index) => {
+      const dataRow = worksheet.getRow(5 + index);
+      dataRow.height = 25;
+      
+      // Alterner les couleurs de fond
+      const bgColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF2F2F2'; // Blanc / Gris clair
+      
+      // Créer un style commun pour les cellules de données
+      const dataCellStyle = {
+        fill: {
+          type: 'pattern' as const,
+          pattern: 'solid' as const,
+          fgColor: { argb: bgColor }
+        },
+        border: {
+          top: { style: 'thin' as const, color: { argb: 'FFD9D9D9' } },
+          left: { style: 'thin' as const, color: { argb: 'FFD9D9D9' } },
+          bottom: { style: 'thin' as const, color: { argb: 'FFD9D9D9' } },
+          right: { style: 'thin' as const, color: { argb: 'FFD9D9D9' } }
+        }
+      };
+      
+      // Matricule (colonne A)
+      const cell1 = dataRow.getCell(1);
+      cell1.value = ouvrier['Matricule'];
+      cell1.font = { name: 'Calibri', size: 10 };
+      cell1.fill = dataCellStyle.fill;
+      cell1.alignment = { vertical: 'middle', horizontal: 'left' };
+      cell1.border = dataCellStyle.border;
+      
+      // Nom et Prénom (colonne B)
+      const cell2 = dataRow.getCell(2);
+      cell2.value = ouvrier['Nom et Prénom'];
+      cell2.font = { name: 'Calibri', size: 10 };
+      cell2.fill = dataCellStyle.fill;
+      cell2.alignment = { vertical: 'middle', horizontal: 'left' };
+      cell2.border = dataCellStyle.border;
+      
+      // Total Heures (colonne C)
+      const cell3 = dataRow.getCell(3);
+      cell3.value = ouvrier['Total Heures'];
+      cell3.font = { name: 'Calibri', size: 10 };
+      cell3.fill = dataCellStyle.fill;
+      cell3.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell3.border = dataCellStyle.border;
+      
+      // Productivité Moyenne (colonne D)
+      const cell4 = dataRow.getCell(4);
+      cell4.value = ouvrier['Productivité Moyenne'];
+      cell4.font = { name: 'Calibri', size: 10 };
+      cell4.fill = dataCellStyle.fill;
+      cell4.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell4.border = dataCellStyle.border;
+      
+      // M1 à M7 (colonnes E à K)
+      const mKeys = ['M1 Mat. Prem', 'M2 Méthode', 'M3 Maintenance', 'M4 Qualité', 
+                    'M5 Absence', 'M6 Rendement', 'M7 Environnement'];
+      
+      for (let i = 0; i < mKeys.length; i++) {
+        const cell = dataRow.getCell(5 + i);
+        cell.value = (ouvrier as any)[mKeys[i]];
+        cell.font = { name: 'Calibri', size: 10 };
+        cell.fill = dataCellStyle.fill;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = dataCellStyle.border;
+      }
+    });
+    
+    // Définir les largeurs de colonnes
+    worksheet.columns = [
+      { width: 12 },  // A - Matricule
+      { width: 25 },  // B - Nom et Prénom
+      { width: 12 },  // C - Total Heures
+      { width: 18 },  // D - Productivité Moyenne
+      { width: 12 },  // E - M1 Mat. Prem
+      { width: 12 },  // F - M2 Méthode
+      { width: 15 },  // G - M3 Maintenance
+      { width: 12 },  // H - M4 Qualité
+      { width: 12 },  // I - M5 Absence
+      { width: 15 },  // J - M6 Rendement
+      { width: 18 }   // K - M7 Environnement
+    ];
+    
+    // Générer le nom du fichier
+    const dateDebut = this.dateDebutProductivite 
+      ? new Date(this.dateDebutProductivite).toLocaleDateString('fr-FR').replace(/\//g, '-') 
+      : 'debut';
+    const dateFin = this.dateFinProductivite 
+      ? new Date(this.dateFinProductivite).toLocaleDateString('fr-FR').replace(/\//g, '-') 
+      : 'fin';
+    const fileName = `Statistiques_Productivite_Ouvriers_${dateDebut}_au_${dateFin}.xlsx`;
+    
+    // Sauvegarder le fichier
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    saveAs(blob, fileName);
+    
+    console.log('✅ Rapport Excel généré avec ExcelJS:', fileName);
+    console.log('✅ Styles appliqués: Titre bleu, en-têtes vert, données alternées');
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de la génération Excel:', error);
+    alert('Erreur lors de la génération du fichier Excel');
+  }
 }
 
 

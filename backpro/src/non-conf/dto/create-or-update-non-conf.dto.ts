@@ -56,12 +56,18 @@ export class CreateOrUpdateNonConfDto {
   @IsOptional()
   referenceQualite?: string;
 
+  // === NOUVEAU CHAMP : ID DU COMMENTAIRE ===
   @IsNumber()
-  @Min(0, { message: 'Environnement doit être positif ou zéro' })  // NOUVEAU CHAMP
+  @IsOptional()
+  commentaireId?: number; // ID du commentaire sélectionné
+  // ==========================================
+
+  @IsNumber()
+  @Min(0, { message: 'Environnement doit être positif ou zéro' })
   @IsOptional()
   environnement?: number;
 
   @IsString()
   @IsOptional()
-  commentaire?: string;
+  commentaire?: string; // Garder pour commentaire libre
 }

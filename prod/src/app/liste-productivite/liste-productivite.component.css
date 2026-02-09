@@ -1,0 +1,600 @@
+/* ============================================ */
+/* CONTAINER PRINCIPAL - OPTIMISÉ COMPACT */
+/* ============================================ */
+.stats-container {
+  padding: 0.5rem;
+  min-height: 100vh;
+}
+
+/* ============================================ */
+/* BOUTON RETOUR - COMPACT */
+/* ============================================ */
+.btn-retour-choix {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #667eea;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.btn-retour-choix:hover {
+  background: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-retour-choix svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================ */
+/* HEADER ET CONTRÔLES - COMPACT */
+/* ============================================ */
+.header {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 0.5rem;
+}
+
+.header h1 {
+  margin: 0 0 1rem 0;
+  color: #1f2937;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ============================================ */
+/* CONTRÔLES - FILTRES */
+/* ============================================ */
+.controls {
+  display: flex;
+  align-items: stretch;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 300px;
+  max-width: 450px;
+  background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.filter-group:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.filter-header svg {
+  width: 20px;
+  height: 20px;
+  color: #667eea;
+}
+
+.filter-header span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.filter-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.date-range-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.filter-select,
+.filter-input {
+  padding: 0.6rem 0.8rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #1f2937;
+  background: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.filter-select:hover,
+.filter-input:hover {
+  border-color: #667eea;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.btn-filter:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+}
+
+.btn-filter:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-filter svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============================================ */
+/* LOADING */
+/* ============================================ */
+.loading {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading p {
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ============================================ */
+/* LAYOUT PRINCIPAL - ULTRA COMPACT */
+/* ============================================ */
+.stats-content {
+  background: white;
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================ */
+/* EN-TÊTE PRODUCTIVITÉ - COMPACT */
+/* ============================================ */
+.productivite-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.productivite-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.productivite-header svg {
+  width: 24px;
+  height: 24px;
+  stroke: white;
+}
+
+.periode-info {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0.4rem 0 0 0;
+  letter-spacing: 0.3px;
+}
+
+/* ============================================ */
+/* TABLEAU PRODUCTIVITÉ - VERSION ULTRA COMPACTE */
+/* ============================================ */
+.tableau-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 180px); /* Maximiser la hauteur visible */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+/* Scrollbar personnalisée */
+.tableau-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.tableau-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.tableau-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.tableau-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* TABLE - ULTRA COMPACT */
+.productivite-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px; /* Police réduite pour plus de densité */
+  table-layout: fixed;
+  min-width: 100%;
+}
+
+/* THEAD - EN-TÊTE FIXE */
+.productivite-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.productivite-table thead th {
+  padding: 6px 4px; /* Padding très réduit */
+  text-align: center;
+  font-weight: 600;
+  font-size: 10px; /* Header encore plus petit */
+  color: white;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.productivite-table thead th:last-child {
+  border-right: none;
+}
+
+/* COLONNES - LARGEURS OPTIMISÉES */
+.date-col { 
+  width: 75px; 
+  min-width: 75px;
+}
+
+.matricule-col { 
+  width: 50px; 
+  min-width: 50px;
+}
+
+.nom-col { 
+  width: 140px; 
+  min-width: 140px;
+  text-align: left !important;
+}
+
+.heures-col { 
+  width: 40px; 
+  min-width: 40px;
+}
+
+.ligne-col { 
+  width: 45px; 
+  min-width: 45px;
+}
+
+.productivite-col { 
+  width: 65px; 
+  min-width: 65px;
+}
+
+.m-col { 
+  width: 50px; 
+  min-width: 50px;
+}
+
+/* TBODY - LIGNES COMPACTES */
+.productivite-table tbody td {
+  padding: 4px 4px; /* Padding minimal */
+  text-align: center;
+  border-bottom: 1px solid #f1f5f9;
+  border-right: 1px solid #f1f5f9;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 28px; /* Hauteur de ligne ultra compacte */
+}
+
+.productivite-table tbody td:last-child {
+  border-right: none;
+}
+
+/* Nom aligné à gauche */
+.nom-col {
+  text-align: left !important;
+  padding-left: 6px !important;
+}
+
+/* Colonne Productivité - mise en valeur */
+.productivite-col {
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+/* Colonnes M - valeurs */
+.m-value-col {
+  font-size: 10.5px;
+  color: #64748b;
+}
+
+.m-value-col.has-value {
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* LIGNES ALTERNÉES */
+.productivite-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.productivite-table tbody tr.row-even {
+  background-color: #f8fafc;
+}
+
+.productivite-table tbody tr:hover {
+  background-color: #e0e7ff !important;
+  transform: scale(1.002);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* COLORISATION PAR PERFORMANCE */
+.productivite-table tbody tr.high-productivity {
+  border-left: 3px solid #10b981;
+}
+
+.productivite-table tbody tr.medium-productivity {
+  border-left: 3px solid #3b82f6;
+}
+
+.productivite-table tbody tr.low-productivity {
+  border-left: 3px solid #f59e0b;
+}
+
+/* INDICATEUR DE TRI */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+
+.sortable:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sort-indicator {
+  font-size: 12px;
+  margin-left: 3px;
+  font-weight: bold;
+}
+
+/* MESSAGE "AUCUNE DONNÉE" */
+.no-data-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.no-data-message svg {
+  width: 48px;
+  height: 48px;
+  stroke: #cbd5e1;
+  margin-bottom: 12px;
+}
+
+.no-data-message p {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+/* ============================================ */
+/* RESPONSIVE - OPTIMISATIONS */
+/* ============================================ */
+@media (max-width: 1400px) {
+  .productivite-table {
+    font-size: 10px;
+  }
+  
+  .productivite-table thead th {
+    font-size: 9px;
+    padding: 5px 3px;
+  }
+  
+  .productivite-table tbody td {
+    font-size: 10px;
+    padding: 3px 3px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .nom-col {
+    width: 120px;
+    min-width: 120px;
+  }
+  
+  .m-col {
+    width: 45px;
+    min-width: 45px;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-container {
+    padding: 0.25rem;
+  }
+  
+  .productivite-header h1 {
+    font-size: 1.1rem;
+  }
+  
+  .periode-info {
+    font-size: 0.8rem;
+  }
+  
+  .tableau-container {
+    max-height: calc(100vh - 160px);
+  }
+}
+
+/* ============================================ */
+/* ANIMATIONS - RÉDUITES POUR PERFORMANCE */
+/* ============================================ */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.productivite-table tbody tr {
+  animation: slideInUp 0.2s ease forwards;
+  opacity: 0;
+}
+
+/* Limite l'animation aux 50 premières lignes pour la performance */
+.productivite-table tbody tr:nth-child(-n+50) { 
+  animation-delay: calc(var(--row-index, 0) * 0.01s); 
+}
+
+.productivite-table tbody tr:nth-child(n+51) { 
+  animation: none; 
+  opacity: 1; 
+}
+
+/* ============================================ */
+/* OPTIMISATIONS POUR GRANDS ÉCRANS */
+/* ============================================ */
+@media (min-width: 1920px) {
+  .tableau-container {
+    max-height: calc(100vh - 200px);
+  }
+  
+  .productivite-table {
+    font-size: 12px;
+  }
+  
+  .productivite-table thead th {
+    font-size: 11px;
+    padding: 7px 5px;
+  }
+  
+  .productivite-table tbody td {
+    font-size: 12px;
+    padding: 5px 5px;
+    height: 32px;
+  }
+}
+
+/* ============================================ */
+/* PRINT STYLES - Pour impression */
+/* ============================================ */
+@media print {
+  .stats-container {
+    padding: 0;
+  }
+  
+  .btn-retour-choix {
+    display: none;
+  }
+  
+  .productivite-table {
+    font-size: 8pt;
+  }
+  
+  .productivite-table thead {
+    position: static;
+  }
+  
+  .tableau-container {
+    max-height: none;
+    overflow: visible;
+  }
+}

@@ -13,6 +13,9 @@ import { SelectionComponent } from './selection/selection.component';
 import { Choix1Component } from './choix1/choix1.component';
 import { PhaseComponent } from './phase/phase.component';
 import { StatsComponent } from './stats/stats.component';
+import { ListeComponent } from './liste/liste.component';
+import { ListeProductiviteComponent } from './liste-productivite/liste-productivite.component';
+import { NonconformiteComponent } from './nonconformite/nonconformite.component';
 
 
 export const routes: Routes = [
@@ -29,6 +32,10 @@ export const routes: Routes = [
   { path: 'sele', component: SelectionComponent },
  { path: 'choix1', component: Choix1Component },
   { path: 'pha', component: PhaseComponent }, 
-  { path: 'statP', component: StatsComponent }, 
+  { path: 'statP', component: StatsComponent },
+  { path: 'list', component: ListeComponent },
+  { path: 'listP', component: ListeProductiviteComponent },
+  { path: 'sais', component: NonconformiteComponent}
+
   
 ];

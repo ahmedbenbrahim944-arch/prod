@@ -1571,6 +1571,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
        methode: number;
       maintenance: number;
       qualite: number;
+      environnement: number;
       total5M: number;
     }> = {};
 
@@ -1584,6 +1585,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
         methode: 0,
         maintenance: 0,
         qualite: 0,
+        environnement: 0,
         total5M: 0
       };
     }
@@ -1610,6 +1612,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
         statsParMois[moisNum].methode += nonConf.methode;
         statsParMois[moisNum].maintenance += nonConf.maintenance;
         statsParMois[moisNum].qualite += nonConf.qualite;
+        statsParMois[moisNum].environnement += nonConf.environnement;
         statsParMois[moisNum].total5M += nonConf.total;
       }
     });
@@ -1624,6 +1627,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
     let totalAnnuelMethode = 0;
     let totalAnnuelMaintenance = 0;
     let totalAnnuelQualite = 0;
+    let totalAnnuelEnvironnement = 0;
 
     for (let m = 1; m <= 12; m++) {
       const moisNom = moisNoms[m - 1];
@@ -1662,6 +1666,10 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
         qualite: {
           quantite: data.qualite,
           pourcentage: calculerPourcentage(data.qualite)
+        },
+        environnement: {
+          quantite: data.environnement,
+          pourcentage: calculerPourcentage(data.environnement)
         }
       };
 
@@ -1674,6 +1682,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
       totalAnnuelMethode += data.methode;
       totalAnnuelMaintenance += data.maintenance;
       totalAnnuelQualite += data.qualite;
+      totalAnnuelEnvironnement += data.environnement;
     }
 
     // 9. Calculer les moyennes annuelles
@@ -1716,6 +1725,11 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
         quantite: totalAnnuelQualite,
         pourcentage: calculerPourcentageAnnuel(totalAnnuelQualite),
         pourcentageDans5M: totalAnnuel5M > 0 ? Math.round((totalAnnuelQualite / totalAnnuel5M) * 100 * 100) / 100 : 0
+      },
+      environnement: {
+        quantite: totalAnnuelEnvironnement,
+        pourcentage: calculerPourcentageAnnuel(totalAnnuelEnvironnement),
+        pourcentageDans5M: totalAnnuel5M > 0 ? Math.round((totalAnnuelEnvironnement / totalAnnuel5M) * 100 * 100) / 100 : 0
       }
     };
 
@@ -1723,14 +1737,15 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
     const donneesGraphiques = {
       // Pour le graphique circulaire (répartition des causes)
       graphiqueCirculaire: {
-        labels: ['Matière Première', 'Absence', 'Rendement', 'Maintenance', 'Qualité', 'Méthode'],
+        labels: ['Matière Première', 'Absence', 'Rendement', 'Méthode', 'Maintenance', 'Qualité', 'Environnement'],
         values: [
           moyennesAnnuelles.matierePremiere.pourcentageDans5M,
           moyennesAnnuelles.absence.pourcentageDans5M,
           moyennesAnnuelles.rendement.pourcentageDans5M,
           moyennesAnnuelles.methode.pourcentageDans5M,
           moyennesAnnuelles.maintenance.pourcentageDans5M,
-          moyennesAnnuelles.qualite.pourcentageDans5M
+          moyennesAnnuelles.qualite.pourcentageDans5M,
+          moyennesAnnuelles.environnement.pourcentageDans5M
         ]
       },
       // Pour le graphique en barres (% général arrêt par mois)
@@ -1749,6 +1764,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
       methode: moisFormates[mois].methode.pourcentage,
       maintenance: moisFormates[mois].maintenance.pourcentage,
       qualite: moisFormates[mois].qualite.pourcentage,
+      environnement: moisFormates[mois].environnement.pourcentage,
       total5M: moisFormates[mois].pourcentageTotal5M
     }));
 
@@ -2934,14 +2950,28 @@ private async getSemainesEntreDates(dateDebut: string, dateFin: string): Promise
   const debut = new Date(dateDebut);
   const fin = new Date(dateFin);
   
-  // Trouver toutes les semaines dont la dateDebut est dans l'intervalle
+  // ✅ NOUVELLE LOGIQUE : Trouver les semaines dont la période chevauche la période demandée
   const semaines = await this.semaineRepository
     .createQueryBuilder('semaine')
-    .select('semaine.nom')
-    .where('semaine.dateDebut >= :debut', { debut: debut.toISOString().split('T')[0] })
-    .andWhere('semaine.dateDebut <= :fin', { fin: fin.toISOString().split('T')[0] })
+    .where('semaine.dateDebut <= :fin', { fin: fin.toISOString().split('T')[0] })
+    .andWhere('semaine.dateFin >= :debut', { debut: debut.toISOString().split('T')[0] })
     .orderBy('semaine.dateDebut', 'ASC')
     .getMany();
+
+  // ✅ Si aucune semaine trouvée et que c'est le même jour, chercher la semaine qui contient ce jour
+  if (semaines.length === 0 && dateDebut === dateFin) {
+    console.log('⚠️ Recherche de la semaine contenant le jour:', dateDebut);
+    const semaine = await this.semaineRepository
+      .createQueryBuilder('semaine')
+      .where(':date BETWEEN semaine.dateDebut AND semaine.dateFin', { 
+        date: dateDebut 
+      })
+      .getOne();
+    
+    if (semaine) {
+      return [semaine.nom];
+    }
+  }
 
   return semaines.map(s => s.nom);
 }
@@ -3112,6 +3142,9 @@ async getStatsParPeriode(dateDebut: string, dateFin: string) {
       throw new BadRequestException('La date de début doit être avant la date de fin');
     }
 
+    // ✅ MODIFICATION : Si c'est la même date, traiter comme un seul jour
+    const estMemeDate = dateDebut === dateFin;
+    
     // 2. Obtenir toutes les semaines dans la période
     const semaines = await this.getSemainesEntreDates(dateDebut, dateFin);
     
@@ -3122,32 +3155,36 @@ async getStatsParPeriode(dateDebut: string, dateFin: string) {
     }
 
     console.log(`Semaines trouvées: ${semaines.join(', ')}`);
+    console.log(`Mode: ${estMemeDate ? 'Jour unique' : 'Période multiple jours'}`);
 
     // 3. Calculer les statistiques en parallèle
     const [productionStats, personnelStats] = await Promise.all([
-      this.calculerProductionEt7MPourPeriode(semaines),
-      this.calculerPersonnelPourPeriode(dateDebut, dateFin)
+      this.calculerProductionEt7MPourPeriode(semaines, dateDebut, dateFin, estMemeDate),
+      this.calculerPersonnelPourPeriode(dateDebut, dateFin, estMemeDate)
     ]);
 
     // 4. Calculer les totaux globaux
     const productionGlobale = this.calculerProductionGlobale(productionStats.statsParLigne);
 
     // 5. Récupérer les détails des non-conformités pour la période
-    const detailsNonConformites = await this.getDetailsNonConformitesPourPeriode(semaines);
+    const detailsNonConformites = await this.getDetailsNonConformitesPourPeriode(semaines, dateDebut, dateFin, estMemeDate);
 
     // 6. Préparer la réponse
     const response = {
-      message: `Statistiques complètes pour la période du ${dateDebut} au ${dateFin}`,
+      message: estMemeDate 
+        ? `Statistiques complètes pour le ${dateDebut}`
+        : `Statistiques complètes pour la période du ${dateDebut} au ${dateFin}`,
       periode: {
         dateDebut,
         dateFin,
         nombreSemaines: semaines.length,
         joursDansPeriode: personnelStats.joursDansPeriode,
+        estJourUnique: estMemeDate, // ✅ Nouveau champ
         dateCalcul: new Date().toISOString()
       },
       productionGlobale: {
         ...productionGlobale,
-        oee: null // Pour le moment vide comme demand
+        oee: null
       },
       statsParLigne: productionStats.statsParLigne,
       personnel: personnelStats,
@@ -3156,6 +3193,7 @@ async getStatsParPeriode(dateDebut: string, dateFin: string) {
     };
 
     console.log(`=== FIN CALCUL STATS POUR PÉRIODE ===`);
+    console.log(`Mode: ${estMemeDate ? 'Jour unique' : 'Période'}`);
     console.log(`Lignes: ${productionStats.statsParLigne.length}`);
     console.log(`Production globale: ${productionGlobale.pcsTotal}%`);
 
@@ -3177,7 +3215,12 @@ async getStatsParPeriode(dateDebut: string, dateFin: string) {
 /**
  * ✅ NOUVELLE MÉTHODE : Récupérer les détails des non-conformités pour une période
  */
-private async getDetailsNonConformitesPourPeriode(semaines: string[]): Promise<any[]> {
+private async getDetailsNonConformitesPourPeriode(
+  semaines: string[], 
+  dateDebut: string, 
+  dateFin: string,
+  estMemeDate: boolean = false
+): Promise<any[]> {
   try {
     // Récupérer toutes les planifications avec leurs non-conformités
     const planifications = await this.planificationRepository.find({
@@ -3191,9 +3234,29 @@ private async getDetailsNonConformitesPourPeriode(semaines: string[]): Promise<a
     }
 
     const details: any[] = [];
+    const dateDebutObj = new Date(dateDebut);
+    const dateFinObj = new Date(dateFin);
 
     // Parcourir toutes les planifications
     for (const plan of planifications) {
+      // Convertir semaine+jour en date
+      const datePlan = await this.getDateFromSemaineJour(plan.semaine, plan.jour);
+      const datePlanObj = new Date(datePlan);
+      
+      // ✅ FILTRE IMPORTANT : Vérifier si la date est dans la période demandée
+      // Si c'est le même jour, on filtre strictement
+      if (estMemeDate) {
+        // Pour un jour unique, on compare les dates complètes
+        if (datePlan !== dateDebut) {
+          continue; // Ignorer les autres jours
+        }
+      } else {
+        // Pour une période, vérifier si la date est dans l'intervalle
+        if (datePlanObj < dateDebutObj || datePlanObj > dateFinObj) {
+          continue;
+        }
+      }
+      
       const quantiteSource = this.getQuantitySource(plan);
       
       // Préparer le détail de base
@@ -3305,7 +3368,12 @@ private async getDateFromSemaineJour(semaine: string, jour: string): Promise<str
 /**
  * Méthode utilitaire : Calculer production et 7M pour la période
  */
-private async calculerProductionEt7MPourPeriode(semaines: string[]) {
+private async calculerProductionEt7MPourPeriode(
+  semaines: string[], 
+  dateDebut: string, 
+  dateFin: string,
+  estMemeDate: boolean = false
+) {
   // Récupérer toutes les planifications pour ces semaines AVEC les vraies données
   const planifications = await this.planificationRepository.find({
     where: semaines.map(semaine => ({ semaine })),
@@ -3313,25 +3381,69 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
     order: { ligne: 'ASC', semaine: 'ASC', jour: 'ASC' }
   });
 
-  console.log(`Planifications trouvées:`, planifications.length);
+  console.log(`Planifications initiales trouvées: ${planifications.length}`);
   
-  // Afficher quelques données pour déboguer
-  planifications.slice(0, 5).forEach(p => {
-    console.log(`Plan: ${p.ligne} - ${p.reference} - ${p.semaine} - ${p.jour}`);
-    console.log(`  QtePlanifiee: ${p.qtePlanifiee}, QteModifiee: ${p.qteModifiee}, DecProduction: ${p.decProduction}`);
-    if (p.nonConformites && p.nonConformites.length > 0) {
-      const nc = p.nonConformites[0];
-      console.log(`  NonConf: MP=${nc.matierePremiere}, Total=${nc.total}, RefMP=${nc.referenceMatierePremiere}`);
+  // ✅ FILTRER par date si c'est un jour unique
+  let planificationsFiltrees = planifications;
+  
+  if (estMemeDate) {
+    console.log(`🔍 Filtrage pour jour unique: ${dateDebut}`);
+    
+    // Créer un tableau pour stocker les planifications filtrées
+    const filtered: Planification[] = [];
+    
+    for (const plan of planifications) {
+      try {
+        // Convertir semaine+jour en date
+        const datePlan = await this.getDateFromSemaineJour(plan.semaine, plan.jour);
+        
+        // Pour un jour unique : comparer les dates (format YYYY-MM-DD)
+        if (datePlan === dateDebut) {
+          filtered.push(plan);
+          console.log(`  ✅ Gardé: ${plan.ligne} - ${plan.reference} - ${plan.semaine} - ${plan.jour} (${datePlan})`);
+        } else {
+          console.log(`  ❌ Ignoré: ${plan.ligne} - ${plan.reference} - ${plan.semaine} - ${plan.jour} (${datePlan} != ${dateDebut})`);
+        }
+      } catch (error) {
+        console.error(`Erreur conversion date pour ${plan.semaine}-${plan.jour}:`, error);
+      }
     }
-  });
-
-  if (planifications.length === 0) {
-    throw new NotFoundException(
-      `Aucune planification trouvée pour les semaines spécifiées`
-    );
+    
+    planificationsFiltrees = filtered;
+    console.log(`Planifications après filtrage jour unique: ${planificationsFiltrees.length}`);
+  } else {
+    // Pour une période normale, filtrer entre dateDebut et dateFin
+    console.log(`🔍 Filtrage pour période: ${dateDebut} à ${dateFin}`);
+    const dateDebutObj = new Date(dateDebut);
+    const dateFinObj = new Date(dateFin);
+    
+    const filtered: Planification[] = [];
+    
+    for (const plan of planifications) {
+      try {
+        const datePlan = await this.getDateFromSemaineJour(plan.semaine, plan.jour);
+        const datePlanObj = new Date(datePlan);
+        
+        if (datePlanObj >= dateDebutObj && datePlanObj <= dateFinObj) {
+          filtered.push(plan);
+        }
+      } catch (error) {
+        console.error(`Erreur conversion date pour ${plan.semaine}-${plan.jour}:`, error);
+      }
+    }
+    
+    planificationsFiltrees = filtered;
+    console.log(`Planifications après filtrage période: ${planificationsFiltrees.length}`);
   }
 
-  // Grouper par ligne
+  if (planificationsFiltrees.length === 0) {
+    const message = estMemeDate 
+      ? `Aucune planification trouvée pour le ${dateDebut}`
+      : `Aucune planification trouvée entre ${dateDebut} et ${dateFin}`;
+    throw new NotFoundException(message);
+  }
+
+  // Grouper par ligne (le reste du code reste inchangé)
   const statsParLigne: Record<string, {
     ligne: string;
     totalQteSource: number;
@@ -3346,32 +3458,12 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
       qualite: number;
       environnement: number;
     };
-    // ✅ CORRECTION : Références seulement pour MP et Qualité
-    referencesMP: string[];    // Uniquement Matière Première
-    referencesQualite: string[]; // Uniquement Qualité
+    referencesMP: string[];
+    referencesQualite: string[];
     references: Set<string>;
-    detailsReferences: Record<string, {
-      reference: string;
-      of: string;
-      qtePlanifiee: number;
-      qteModifiee: number;
-      decProduction: number;
-      pcsProd: number;
-      causes7M: {
-        matierePremiere: { quantite: number, reference: string };
-        absence: { quantite: number, reference: string };
-        rendement: { quantite: number, reference: string };
-        methode: { quantite: number, reference: string };
-        maintenance: { quantite: number, reference: string };
-        qualite: { quantite: number, reference: string };
-        environnement: { quantite: number, reference: string };
-        total: number;
-        commentaire: string;
-      };
-    }>;
+    detailsReferences: Record<string, any>;
   }> = {};
 
-  // Initialiser les totaux globaux 7M
   const totaux7MGlobaux = {
     matierePremiere: 0,
     absence: 0,
@@ -3382,15 +3474,11 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
     environnement: 0
   };
 
-  // Parcourir toutes les planifications
-  for (const plan of planifications) {
+  // Parcourir toutes les planifications filtrées
+  for (const plan of planificationsFiltrees) {
     const ligne = plan.ligne;
-    
-    // ✅ CORRECTION : Utiliser la méthode getQuantitySource pour avoir la bonne quantité
     const quantiteSource = this.getQuantitySource(plan);
     
-    console.log(`Traitement: ${ligne} - ${plan.reference} - QtePlanifiee: ${plan.qtePlanifiee}, QteModifiee: ${plan.qteModifiee}, Source: ${quantiteSource}, DecProd: ${plan.decProduction}`);
-
     // Initialiser la ligne si elle n'existe pas
     if (!statsParLigne[ligne]) {
       statsParLigne[ligne] = {
@@ -3416,10 +3504,9 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
 
     const ligneStats = statsParLigne[ligne];
     
-    // ✅ CORRECTION : Accumuler les VRAIES valeurs
     ligneStats.totalQteSource += quantiteSource;
     ligneStats.totalDecProduction += plan.decProduction;
-    ligneStats.totalQtePlanifiee += plan.qtePlanifiee; // Pour le calcul des pourcentages 7M
+    ligneStats.totalQtePlanifiee += plan.qtePlanifiee;
     ligneStats.references.add(plan.reference);
 
     // Initialiser le détail pour cette référence
@@ -3427,9 +3514,9 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
       ligneStats.detailsReferences[plan.reference] = {
         reference: plan.reference,
         of: plan.of || '',
-        qtePlanifiee: 0,  // Initialiser à 0
-        qteModifiee: 0,   // Initialiser à 0
-        decProduction: 0, // Initialiser à 0
+        qtePlanifiee: 0,
+        qteModifiee: 0,
+        decProduction: 0,
         pcsProd: plan.pcsProd || 0,
         causes7M: {
           matierePremiere: { quantite: 0, reference: '' },
@@ -3445,7 +3532,6 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
       };
     }
 
-    // ✅ CORRECTION : Accumuler les valeurs pour cette référence
     const refDetail = ligneStats.detailsReferences[plan.reference];
     refDetail.qtePlanifiee += plan.qtePlanifiee;
     refDetail.qteModifiee += plan.qteModifiee;
@@ -3455,9 +3541,6 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
     if (plan.nonConformites && plan.nonConformites.length > 0) {
       const nonConf = plan.nonConformites[0];
       
-      console.log(`  NonConf trouvée: MP=${nonConf.matierePremiere}, Abs=${nonConf.absence}, Total=${nonConf.total}`);
-
-      // ✅ CORRECTION : Accumuler les VRAIES quantités pour la ligne
       ligneStats.causes7M.matierePremiere += nonConf.matierePremiere;
       ligneStats.causes7M.absence += nonConf.absence;
       ligneStats.causes7M.rendement += nonConf.rendement;
@@ -3466,7 +3549,6 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
       ligneStats.causes7M.qualite += nonConf.qualite;
       ligneStats.causes7M.environnement += nonConf.environnement;
 
-      // ✅ CORRECTION : Mettre à jour le détail pour cette référence
       refDetail.causes7M.matierePremiere.quantite += nonConf.matierePremiere;
       refDetail.causes7M.absence.quantite += nonConf.absence;
       refDetail.causes7M.rendement.quantite += nonConf.rendement;
@@ -3476,12 +3558,10 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
       refDetail.causes7M.environnement.quantite += nonConf.environnement;
       refDetail.causes7M.total += nonConf.total;
       
-      // Ajouter le commentaire si disponible
       if (nonConf.commentaire) {
         refDetail.causes7M.commentaire = nonConf.commentaire;
       }
 
-      // ✅ CORRECTION : Ajouter les références UNIQUEMENT pour MP et Qualité
       if (nonConf.referenceMatierePremiere && nonConf.matierePremiere > 0) {
         const refMP = nonConf.referenceMatierePremiere.trim();
         if (refMP && !ligneStats.referencesMP.includes(refMP)) {
@@ -3490,7 +3570,6 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
         refDetail.causes7M.matierePremiere.reference = refMP;
       }
 
-      // ✅ CORRECTION : Pour la qualité (si le champ existe)
       if (nonConf.referenceQualite && nonConf.qualite > 0) {
         const refQualite = nonConf.referenceQualite.trim();
         if (refQualite && !ligneStats.referencesQualite.includes(refQualite)) {
@@ -3499,7 +3578,6 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
         refDetail.causes7M.qualite.reference = refQualite;
       }
 
-      // Accumuler totaux globaux
       totaux7MGlobaux.matierePremiere += nonConf.matierePremiere;
       totaux7MGlobaux.absence += nonConf.absence;
       totaux7MGlobaux.rendement += nonConf.rendement;
@@ -3507,25 +3585,20 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
       totaux7MGlobaux.maintenance += nonConf.maintenance;
       totaux7MGlobaux.qualite += nonConf.qualite;
       totaux7MGlobaux.environnement += nonConf.environnement;
-    } else {
-      console.log(`  Aucune non-conf pour ${plan.reference}`);
     }
   }
 
   // Formater les résultats par ligne
   const lignesFormatees = Object.values(statsParLigne).map(ligne => {
-    // Calculer le PCS pour la ligne
     const pcsLigne = ligne.totalQteSource > 0
       ? (ligne.totalDecProduction / ligne.totalQteSource) * 100
       : 0;
 
-    // Calculer les pourcentages 7M (par rapport à qtePlanifiee)
     const calculerPourcentage = (valeur: number): number => {
       if (ligne.totalQtePlanifiee <= 0) return 0;
       return Math.round((valeur / ligne.totalQtePlanifiee) * 100 * 10) / 10;
     };
 
-    // Convertir les détails des références en tableau
     const detailsReferencesArray = Object.values(ligne.detailsReferences);
 
     return {
@@ -3540,12 +3613,11 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
         matierePremiere: {
           quantite: ligne.causes7M.matierePremiere,
           pourcentage: calculerPourcentage(ligne.causes7M.matierePremiere),
-          references: ligne.referencesMP // ✅ Seulement MP
+          references: ligne.referencesMP
         },
         absence: {
           quantite: ligne.causes7M.absence,
           pourcentage: calculerPourcentage(ligne.causes7M.absence)
-          // Pas de références pour absence
         },
         rendement: {
           quantite: ligne.causes7M.rendement,
@@ -3562,7 +3634,7 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
         qualite: {
           quantite: ligne.causes7M.qualite,
           pourcentage: calculerPourcentage(ligne.causes7M.qualite),
-          references: ligne.referencesQualite // ✅ Seulement Qualité
+          references: ligne.referencesQualite
         },
         environnement: {
           quantite: ligne.causes7M.environnement,
@@ -3574,7 +3646,6 @@ private async calculerProductionEt7MPourPeriode(semaines: string[]) {
     };
   });
 
-  // Trier par ligne
   lignesFormatees.sort((a, b) => a.ligne.localeCompare(b.ligne));
 
   return {
@@ -3661,43 +3732,136 @@ private calculerResume7M(totaux7MGlobaux: any, lignesFormatees: any[], reference
 /**
  * ✅ NOUVELLE VERSION : Calculer les statistiques du personnel en MOYENNE JOURNALIÈRE
  */
-private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
+private async calculerPersonnelPourPeriode(
+  dateDebut: string, 
+  dateFin: string,
+  estMemeDate: boolean = false
+) {
   try {
-    console.log(`👥 CALCUL PERSONNEL MOYENNE ${dateDebut} à ${dateFin}`);
+    console.log(`👥 CALCUL PERSONNEL POUR ${estMemeDate ? 'JOUR UNIQUE' : 'PÉRIODE'}: ${dateDebut} ${estMemeDate ? '' : `à ${dateFin}`}`);
     
-    // 1. Récupérer tous les ouvriers
-    const tousLesOuvriers = await this.ouvrierRepository.find({
-      select: ['matricule', 'nomPrenom']
-    });
-    const totalOuvriers = tousLesOuvriers.length;
-    
-    console.log(`📋 Total ouvriers dans la base: ${totalOuvriers}`);
+    // ✅ ADAPTATION POUR UN JOUR UNIQUE
+    if (estMemeDate) {
+      // Convertir la date en semaine+jour
+      const { semaine, jour } = this.convertirDateEnSemaineEtJour(dateDebut);
+      
+      console.log(`📅 Date ${dateDebut} → semaine="${semaine}", jour="${jour}"`);
+      
+      // Récupérer le nombre total d'ouvriers (excl. nomPrenom commençant par 'S')
+      const totalOuvriers = await this.calculerTotalOuvriers();
+      console.log(`📋 Total ouvriers (excl. S…): ${totalOuvriers}`);
 
-    // 2. Récupérer les semaines dans la période
+      // A. Compter les PRÉSENCES (rapports de saisie) pour ce jour — DISTINCT matricule
+      const rapportsJourResult = await this.saisieRapportRepository
+        .createQueryBuilder('rapport')
+        .select('COUNT(DISTINCT rapport.matricule)', 'count')
+        .where('rapport.semaine = :semaine', { semaine })
+        .andWhere('rapport.jour = :jour', { jour })
+        .getRawOne();
+      const rapportsJour = parseInt(rapportsJourResult?.count ?? '0', 10);
+
+      console.log(`📝 Rapports de saisie trouvés: ${rapportsJour}`);
+
+      // B. Compter les CONGÉS (statut = 'C') pour ce jour
+      const congesJour = await this.statutOuvrierRepository
+        .createQueryBuilder('statut')
+        .where('statut.date = :date', { date: dateDebut })
+        .andWhere('statut.statut = :statut', { statut: 'C' })
+        .getCount();
+
+      console.log(`🏖️ Congés trouvés: ${congesJour}`);
+
+      // C. Compter les ABSENCES (statut = 'AB') pour ce jour
+      const absencesJour = await this.statutOuvrierRepository
+        .createQueryBuilder('statut')
+        .where('statut.date = :date', { date: dateDebut })
+        .andWhere('statut.statut = :statut', { statut: 'AB' })
+        .getCount();
+
+      console.log(`❌ Absences trouvées: ${absencesJour}`);
+
+      // ✅ D. MODIFICATION : Compter les SÉLECTIONS (statut = 'S') pour ce jour
+      const selectionsJour = await this.statutOuvrierRepository
+        .createQueryBuilder('statut')
+        .where('statut.date = :date', { date: dateDebut })
+        .andWhere('statut.statut = :statut', { statut: 'S' })
+        .getCount();
+
+      console.log(`🎯 Sélections (statut S) trouvées: ${selectionsJour}`);
+
+      // E. Calculer le reste (autres statuts ou pas de statut)
+      const autres = totalOuvriers - rapportsJour - congesJour - absencesJour - selectionsJour;
+      
+      const tauxPresence = totalOuvriers > 0
+        ? Math.round(((rapportsJour + selectionsJour) / totalOuvriers) * 100 * 10) / 10
+        : 0;
+
+      console.log(`📊 RÉSUMÉ ${dateDebut}:`);
+      console.log(`   - Présences (saisie): ${rapportsJour}`);
+      console.log(`   - Sélections (S): ${selectionsJour}`);
+      console.log(`   - Congés: ${congesJour}`);
+      console.log(`   - Absences: ${absencesJour}`);
+      console.log(`   - Autres/Non définis: ${autres}`);
+      console.log(`   - Taux de présence (inclut sélections): ${tauxPresence}%`);
+
+      return {
+        totalOuvriers,
+        totalPresences: rapportsJour,
+        totalSelections: selectionsJour,
+        totalConges: congesJour,
+        totalAbsences: absencesJour,
+        autres: autres,
+        moyennePresences: rapportsJour,
+        moyenneSelections: selectionsJour,
+        moyenneConges: congesJour,
+        moyenneAbsences: absencesJour,
+        moyenneAutres: autres,
+        tauxPresence,
+        joursDansPeriode: 1,
+        detailsParJour: {
+          presences: { [dateDebut]: rapportsJour },
+          selections: { [dateDebut]: selectionsJour },
+          conges: { [dateDebut]: congesJour },
+          absences: { [dateDebut]: absencesJour },
+          autres: { [dateDebut]: autres }
+        },
+        presents: rapportsJour,
+        selections: selectionsJour,
+        conges: congesJour,
+        absents: absencesJour,
+        autresStatuts: autres
+      };
+    }
+    
+    // Récupérer le nombre total d'ouvriers (excl. nomPrenom commençant par 'S')
+    const totalOuvriers = await this.calculerTotalOuvriers();
+    
+    console.log(`📋 Total ouvriers (excl. S…): ${totalOuvriers}`);
+
+    // Récupérer les semaines dans la période
     const semaines = await this.getSemainesEntreDates(dateDebut, dateFin);
     const joursDansPeriode = this.calculerNombreJoursPeriode(dateDebut, dateFin);
     
     console.log(`📅 Jours dans la période: ${joursDansPeriode} jours`);
     console.log(`📅 Semaines dans la période: ${semaines.length}`);
 
-    // 3. Initialiser les compteurs pour les moyennes
-    let totalPresences = 0;   // Somme des présences sur tous les jours
-    let totalConges = 0;      // Somme des congés sur tous les jours
-    let totalAbsences = 0;    // Somme des absences sur tous les jours
+    // Initialiser les compteurs pour les moyennes
+    let totalPresences = 0;
+    let totalSelections = 0;
+    let totalConges = 0;
+    let totalAbsences = 0;
     
-    // Pour suivre les présences par jour
     const presencesParJour: { [date: string]: number } = {};
+    const selectionsParJour: { [date: string]: number } = {};
     const congesParJour: { [date: string]: number } = {};
     const absencesParJour: { [date: string]: number } = {};
 
-    // 4. Pour chaque semaine, récupérer les données jour par jour
+    // Pour chaque semaine, récupérer les données jour par jour
     for (const semaine of semaines) {
-      // Les jours de travail (lundi à samedi)
       const joursSemaine = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
       
       for (const jour of joursSemaine) {
         try {
-          // Convertir semaine+jour en date réelle
           const dateReelle = await this.getDateFromSemaineJour(semaine, jour);
           
           // Vérifier si la date est dans la période
@@ -3705,17 +3869,29 @@ private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
             continue;
           }
 
-          // A. Compter les PRÉSENCES (rapports de saisie) pour ce jour
-          const rapportsJour = await this.saisieRapportRepository
+          // 1. Compter les présences (rapports de saisie) — DISTINCT matricule
+          const rapportsJourResult = await this.saisieRapportRepository
             .createQueryBuilder('rapport')
+            .select('COUNT(DISTINCT rapport.matricule)', 'count')
             .where('rapport.semaine = :semaine', { semaine })
             .andWhere('rapport.jour = :jour', { jour })
-            .getCount();
+            .getRawOne();
+          const rapportsJour = parseInt(rapportsJourResult?.count ?? '0', 10);
 
           totalPresences += rapportsJour;
           presencesParJour[dateReelle] = rapportsJour;
 
-          // B. Compter les CONGÉS (statut = 'C') pour ce jour
+          // ✅ 2. MODIFICATION : Compter les SÉLECTIONS (statut = 'S') pour ce jour
+          const selectionsJour = await this.statutOuvrierRepository
+            .createQueryBuilder('statut')
+            .where('statut.date = :date', { date: dateReelle })
+            .andWhere('statut.statut = :statut', { statut: 'S' })
+            .getCount();
+
+          totalSelections += selectionsJour;
+          selectionsParJour[dateReelle] = selectionsJour;
+
+          // 3. Compter les congés
           const congesJour = await this.statutOuvrierRepository
             .createQueryBuilder('statut')
             .where('statut.date = :date', { date: dateReelle })
@@ -3725,7 +3901,7 @@ private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
           totalConges += congesJour;
           congesParJour[dateReelle] = congesJour;
 
-          // C. Compter les ABSENCES (statut = 'AB') pour ce jour
+          // 4. Compter les absences
           const absencesJour = await this.statutOuvrierRepository
             .createQueryBuilder('statut')
             .where('statut.date = :date', { date: dateReelle })
@@ -3735,7 +3911,11 @@ private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
           totalAbsences += absencesJour;
           absencesParJour[dateReelle] = absencesJour;
 
-          console.log(`📊 ${dateReelle} (${jour}): Présences=${rapportsJour}, Congés=${congesJour}, Absences=${absencesJour}`);
+          console.log(`📊 ${dateReelle} (${jour}):`);
+          console.log(`   - Présences (saisie)=${rapportsJour}`);
+          console.log(`   - Sélections (S)=${selectionsJour}`);
+          console.log(`   - Congés=${congesJour}`);
+          console.log(`   - Absences=${absencesJour}`);
 
         } catch (error) {
           console.error(`❌ Erreur pour ${semaine}-${jour}:`, error);
@@ -3744,9 +3924,13 @@ private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
       }
     }
 
-    // 5. Calculer les MOYENNES journalières
+    // Calculer les MOYENNES journalières
     const moyennePresences = joursDansPeriode > 0 
       ? Math.round((totalPresences / joursDansPeriode) * 10) / 10 
+      : 0;
+    
+    const moyenneSelections = joursDansPeriode > 0
+      ? Math.round((totalSelections / joursDansPeriode) * 10) / 10 
       : 0;
     
     const moyenneConges = joursDansPeriode > 0 
@@ -3757,44 +3941,49 @@ private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
       ? Math.round((totalAbsences / joursDansPeriode) * 10) / 10 
       : 0;
 
-    // 6. Calculer les taux
+    const autres = (totalOuvriers * joursDansPeriode) - totalPresences - totalSelections - totalConges - totalAbsences;
+    const moyenneAutres = joursDansPeriode > 0
+      ? Math.round((autres / joursDansPeriode) * 10) / 10
+      : 0;
+
+    // Taux de présence inclut maintenant les sélections
     const tauxPresence = totalOuvriers > 0 && joursDansPeriode > 0
-      ? Math.round((totalPresences / (totalOuvriers * joursDansPeriode)) * 100 * 10) / 10
+      ? Math.round(((totalPresences + totalSelections) / (totalOuvriers * joursDansPeriode)) * 100 * 10) / 10
       : 0;
 
     console.log('📈 RÉSULTATS MOYENNES:');
-    console.log(`   Moyenne présences/jour: ${moyennePresences}`);
+    console.log(`   Moyenne présences (saisie)/jour: ${moyennePresences}`);
+    console.log(`   Moyenne sélections (S)/jour: ${moyenneSelections}`);
     console.log(`   Moyenne congés/jour: ${moyenneConges}`);
     console.log(`   Moyenne absences/jour: ${moyenneAbsences}`);
-    console.log(`   Taux de présence: ${tauxPresence}%`);
+    console.log(`   Moyenne autres/jour: ${moyenneAutres}`);
+    console.log(`   Taux de présence (inclut sélections): ${tauxPresence}%`);
 
     return {
-      // Totaux sur la période
       totalOuvriers,
-      totalPresences,      // Nombre total de présences (somme de tous les jours)
-      totalConges,         // Nombre total de congés
-      totalAbsences,       // Nombre total d'absences
-      
-      // Moyennes journalières (CE QUE VOUS VOULEZ)
-      moyennePresences,    // ✅ Moyenne du nombre de présents par jour
-      moyenneConges,       // ✅ Moyenne du nombre de congés par jour
-      moyenneAbsences,     // ✅ Moyenne du nombre d'absents par jour
-      
-      // Statistiques supplémentaires
-      tauxPresence,        // Taux de présence global
-      joursDansPeriode,    // Nombre de jours dans la période
-      
-      // Données détaillées (pour analyse)
+      totalPresences,
+      totalSelections,
+      totalConges,
+      totalAbsences,
+      autres: autres,
+      moyennePresences,
+      moyenneSelections,
+      moyenneConges,
+      moyenneAbsences,
+      moyenneAutres,
+      tauxPresence,
+      joursDansPeriode,
       detailsParJour: {
         presences: presencesParJour,
+        selections: selectionsParJour,
         conges: congesParJour,
         absences: absencesParJour
       },
-      
-      // Pour compatibilité avec l'ancien code
-      presents: Math.round(moyennePresences),  // Arrondi pour l'affichage simple
+      presents: Math.round(moyennePresences),
+      selections: Math.round(moyenneSelections),
       conges: Math.round(moyenneConges),
-      absents: Math.round(moyenneAbsences)
+      absents: Math.round(moyenneAbsences),
+      autresStatuts: Math.round(moyenneAutres)
     };
 
   } catch (error) {
@@ -3802,20 +3991,44 @@ private async calculerPersonnelPourPeriode(dateDebut: string, dateFin: string) {
     return {
       totalOuvriers: 0,
       totalPresences: 0,
+      totalSelections: 0,
       totalConges: 0,
       totalAbsences: 0,
+      autres: 0,
       moyennePresences: 0,
+      moyenneSelections: 0,
       moyenneConges: 0,
       moyenneAbsences: 0,
+      moyenneAutres: 0,
       tauxPresence: 0,
       joursDansPeriode: 0,
-      detailsParJour: { presences: {}, conges: {}, absences: {} },
+      detailsParJour: { 
+        presences: {}, 
+        selections: {},
+        conges: {}, 
+        absences: {}, 
+        autres: {} 
+      },
       presents: 0,
+      selections: 0,
       conges: 0,
-      absents: 0
+      absents: 0,
+      autresStatuts: 0
     };
   }
 }
+
+private async calculerTotalOuvriers(): Promise<number> {
+  const result = await this.ouvrierRepository
+    .createQueryBuilder('ouvrier')
+    .select('COUNT(*)', 'count')
+    .where('ouvrier.nomPrenom NOT LIKE :pattern', { 
+      pattern: 'S %'  // S majuscule suivi d'un espace
+    })
+    .getRawOne();
+  return parseInt(result?.count ?? '0', 10);
+}
+
 
 /**
  * ✅ Calculer le nombre de jours dans une période

@@ -21,24 +21,24 @@ export class LoginComponent implements OnInit, OnDestroy {
   currentInputField: string = 'email';
   numpadValue: string = '';
 
-  loginForm = { 
-    nom: '', 
+  loginForm = {
+    nom: '',
     password: '',
     errors: { nom: '', password: '' }
   };
 
-  registerForm = { 
-    firstName: '', 
-    lastName: '', 
-    nom: '', 
-    password: '', 
+  registerForm = {
+    firstName: '',
+    lastName: '',
+    nom: '',
+    password: '',
     confirm: '',
     errors: { firstName: '', lastName: '', nom: '', password: '', confirm: '' }
   };
 
   numpadButtons = [
     '1', '2', '3',
-    '4', '5', '6', 
+    '4', '5', '6',
     '7', '8', '9',
     '⌫', '0', '✓'
   ];
@@ -46,7 +46,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   private isNumericInput(value: string): boolean {
     return /^\d*$/.test(value);
@@ -129,7 +129,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.createParticles();
-    
+
     // Si déjà connecté, rediriger vers la bonne page
     if (this.authService.isLoggedIn()) {
       const userType = this.authService.getUserType();
@@ -159,7 +159,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
     const key = event.key;
-    
+
     if (this.isNumericKey(key) || key === 'Backspace' || key === 'Delete' || key === 'Enter') {
       event.preventDefault();
     }
@@ -179,7 +179,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     return /^[0-9]$/.test(key);
   }
 
-  toggleFlip() { 
+  toggleFlip() {
     this.flipped = !this.flipped;
     this.clearErrors();
     this.currentInputField = this.flipped ? 'firstName' : 'email';
@@ -258,7 +258,23 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.numpadValue = this.numpadValue.slice(0, -1);
     } else if (button === '✓') {
       this.setCurrentFieldValue(this.numpadValue);
-      this.goToNextField();
+
+      // Vérifier si on est sur le dernier champ
+      const isLastField = this.flipped ?
+        this.currentInputField === 'confirmPassword' :
+        this.currentInputField === 'password';
+
+      if (isLastField) {
+        // Si dernier champ, soumettre le formulaire
+        if (this.flipped) {
+          this.onRegister();
+        } else {
+          this.onLogin();
+        }
+      } else {
+        // Sinon, passer au champ suivant
+        this.goToNextField();
+      }
     } else {
       this.numpadValue += button;
     }
@@ -266,12 +282,12 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   goToNextField() {
-    const fields = this.flipped ? 
-      ['firstName', 'lastName', 'registerEmail', 'registerPassword', 'confirmPassword'] : 
+    const fields = this.flipped ?
+      ['firstName', 'lastName', 'registerEmail', 'registerPassword', 'confirmPassword'] :
       ['email', 'password'];
-    
+
     const currentIndex = fields.indexOf(this.currentInputField);
-    
+
     if (currentIndex < fields.length - 1) {
       this.openNumpad(fields[currentIndex + 1]);
     }
@@ -281,7 +297,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.validateLogin()) {
       this.loading = true;
       this.errorMessage = '';
-      
+
       const credentials: LoginCredentials = {
         nom: this.loginForm.nom,
         password: this.loginForm.password
@@ -365,12 +381,12 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 
-  isFlipped() { 
-    return this.flipped; 
+  isFlipped() {
+    return this.flipped;
   }
 
   getCurrentFieldName(): string {
-    const fieldNames: {[key: string]: string} = {
+    const fieldNames: { [key: string]: string } = {
       'email': 'Matricule',
       'password': 'Mot de passe',
       'firstName': 'Prénom',

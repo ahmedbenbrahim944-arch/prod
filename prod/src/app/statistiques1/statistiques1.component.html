@@ -177,15 +177,7 @@
     </div>
 
     <!-- Message de bienvenue -->
-    <div *ngIf="!isLoading && !isLoadingDate && !isLoadingAffectation && !isLoadingProductivite" class="welcome-card">
-      <div class="welcome-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-        </svg>
-      </div>
-      <h2>Bienvenue</h2>
-      <p>Sélectionnez une semaine ou une date puis cliquez sur "Afficher les statistiques"</p>
-    </div>
+   
 
   </div>
 
@@ -1519,6 +1511,11 @@
           </svg>
           Exporter en Excel
         </button>
+
+        <button class="btn-export btn-resume" (click)="exporterResumeExcel()">
+    <svg>...</svg>
+    Résumé (Par Ouvrier)
+  </button>
         
         <!-- Bouton CSV -->
         <button class="btn-export btn-csv" (click)="exporterCSV()">
@@ -1534,7 +1531,7 @@
         
         <!-- Info export -->
         <div class="export-info" *ngIf="valeurFiltre || ligneSelectionnee || (productiviteMin && productiviteMax)">
-          <small>📝 Export des données filtrées ({{ productiviteFiltree?.length || 0 }} ligne(s))</small>
+          <small> Export des données filtrées ({{ productiviteFiltree?.length || 0 }} ligne(s))</small>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Planification } from '../semaine/entities/planification.entity';
 import { CreateOrUpdateNonConfDto } from './dto/create-or-update-non-conf.dto';
 import { GetNonConfDto } from './dto/get-non-conf.dto';
 import { GetNonConfByDateDto } from './dto/get-non-conf-by-date.dto';
+import { Commentaire } from 'src/commentaire/entities/commentaire.entity';
 
 @Injectable()
 export class NonConfService {
@@ -15,6 +16,8 @@ export class NonConfService {
     private nonConfRepository: Repository<NonConformite>,
     @InjectRepository(Planification)
     private planificationRepository: Repository<Planification>,
+    @InjectRepository(Commentaire)
+    private commentaireRepository: Repository<Commentaire>
   ) {}
 
   private getQuantitySource(planification: Planification): number {
@@ -61,277 +64,348 @@ export class NonConfService {
   }
 
   // ==================== CRÉER OU METTRE À JOUR NON-CONFORMITÉ (MODIFIÉ) ====================
-  async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonConfDto) {
-    const { 
-      semaine, 
-      jour, 
-      ligne, 
-      reference, 
+ // src/non-conf/non-conf.service.ts - Fonction createOrUpdateNonConformite complète
+// src/non-conf/non-conf.service.ts - Fonction createOrUpdateNonConformite corrigée
+async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonConfDto) {
+  const { 
+    semaine, 
+    jour, 
+    ligne, 
+    reference, 
+    referenceMatierePremiere,
+    referenceQualite,
+    commentaireId,
+    commentaire: commentaireLibre
+  } = createOrUpdateNonConfDto;
+
+  console.log('=== DÉBUT createOrUpdateNonConformite ===');
+  console.log('DTO reçu:', createOrUpdateNonConfDto);
+
+  try {
+    // 1. Trouver la planification
+    const planification = await this.planificationRepository.findOne({
+      where: { semaine, jour, ligne, reference },
+      relations: ['semaineEntity']
+    });
+
+    if (!planification) {
+      console.error('Planification non trouvée:', { semaine, jour, ligne, reference });
+      throw new NotFoundException('Planification non trouvée');
+    }
+
+    console.log('Planification trouvée:', {
+      id: planification.id,
+      qtePlanifiee: planification.qtePlanifiee,
+      qteModifiee: planification.qteModifiee,
+      decProduction: planification.decProduction
+    });
+
+    // 2. Vérifier les règles métier pour la QUALITÉ
+    const qualite = createOrUpdateNonConfDto.qualite || 0;
+    
+    if (qualite > 0) {
+      if (!referenceQualite || referenceQualite.trim() === '') {
+        throw new BadRequestException('La référence qualité est obligatoire lorsque la quantité Qualité > 0');
+      }
+      
+      if (!commentaireId) {
+        throw new BadRequestException('Un commentaire doit être sélectionné lorsque la quantité Qualité > 0');
+      }
+      
+      const commentaireExiste = await this.commentaireRepository.findOne({
+        where: { id: commentaireId }
+      });
+      
+      if (!commentaireExiste) {
+        throw new NotFoundException(`Commentaire avec ID ${commentaireId} non trouvé`);
+      }
+      
+      console.log('Commentaire validé:', commentaireExiste.commentaire);
+    }
+
+    // 3. Calculer le deltaProd actuel
+    const quantiteSource = this.getQuantitySource(planification);
+    const deltaProd = planification.decProduction - quantiteSource;
+
+    console.log('Calculs:', {
+      quantiteSource,
+      decProduction: planification.decProduction,
+      deltaProd
+    });
+
+    // 4. Vérifier si un rapport existe déjà
+    const existingNonConf = await this.nonConfRepository.findOne({
+      where: { planification: { id: planification.id } },
+      relations: ['planification', 'commentaireObjet']
+    });
+
+    // 5. Gestion deltaProd = 0 (suppression automatique)
+    if (deltaProd === 0) {
+      if (existingNonConf) {
+        await this.nonConfRepository.remove(existingNonConf);
+        console.log('✅ Rapport supprimé automatiquement (deltaProd = 0)');
+        
+        return {
+          message: 'Rapport de non-conformité supprimé (deltaProd = 0)',
+          action: 'auto_deleted',
+          data: { 
+            semaine, 
+            jour, 
+            ligne, 
+            reference,
+            quantiteSource,
+            decProduction: planification.decProduction,
+            deltaProd: 0,
+            ecartPourcentage: 0
+          }
+        };
+      } else {
+        console.log('ℹ️ Aucun rapport à créer (deltaProd = 0)');
+        throw new BadRequestException('Aucune non-conformité à déclarer (deltaProd = 0)');
+      }
+    }
+
+    // 6. Vérifier si deltaProd est négatif
+    if (deltaProd > 0) {
+      console.warn('DeltaProd positif, pas de non-conformité:', deltaProd);
+      throw new BadRequestException('Aucune non-conformité à déclarer (deltaProd positif)');
+    }
+
+    // 7. Extraire les valeurs du DTO
+    const matierePremiere = createOrUpdateNonConfDto.matierePremiere || 0;
+    const absence = createOrUpdateNonConfDto.absence || 0;
+    const rendement = createOrUpdateNonConfDto.rendement || 0;
+    const maintenance = createOrUpdateNonConfDto.maintenance || 0;
+    const qualiteValue = createOrUpdateNonConfDto.qualite || 0;
+    const methode = createOrUpdateNonConfDto.methode || 0;
+    const environnement = createOrUpdateNonConfDto.environnement || 0;
+
+    console.log('Valeurs extraites du DTO:', {
+      matierePremiere,
+      absence,
+      rendement,
+      maintenance,
+      qualite: qualiteValue,
+      methode,
+      environnement,
       referenceMatierePremiere,
-      referenceQualite 
-    } = createOrUpdateNonConfDto;
+      referenceQualite,
+      commentaireId
+    });
 
-    console.log('=== DÉBUT createOrUpdateNonConformite ===');
-    console.log('DTO reçu:', createOrUpdateNonConfDto);
+    // 8. Calculer le total des 7M
+    const total7M = matierePremiere + absence + rendement + methode + maintenance + qualiteValue + environnement;
+    const deltaAbsolu = Math.abs(deltaProd);
+    const tolerance = 1;
 
-    try {
-      // 1. Trouver la planification
-      const planification = await this.planificationRepository.findOne({
-        where: { semaine, jour, ligne, reference },
-        relations: ['semaineEntity']
-      });
+    console.log('Totaux:', {
+      total7M,
+      deltaAbsolu,
+      difference: Math.abs(total7M - deltaAbsolu)
+    });
 
-      if (!planification) {
-        console.error('Planification non trouvée:', { semaine, jour, ligne, reference });
-        throw new NotFoundException('Planification non trouvée');
-      }
-
-      console.log('Planification trouvée:', {
-        id: planification.id,
-        qtePlanifiee: planification.qtePlanifiee,
-        qteModifiee: planification.qteModifiee,
-        decProduction: planification.decProduction
-      });
-
-      // 2. Calculer le deltaProd actuel
-      const quantiteSource = this.getQuantitySource(planification);
-      const deltaProd = planification.decProduction - quantiteSource;
-
-      console.log('Calculs:', {
-        quantiteSource,
-        decProduction: planification.decProduction,
-        deltaProd
-      });
-
-      // 3. Vérifier si un rapport existe déjà
-      const existingNonConf = await this.nonConfRepository.findOne({
-        where: { planification: { id: planification.id } },
-        relations: ['planification']
-      });
-
-      // ==================== NOUVEAU : GESTION deltaProd = 0 ====================
-      if (deltaProd === 0) {
-        if (existingNonConf) {
-          // Supprimer le rapport existant silencieusement
-          await this.nonConfRepository.remove(existingNonConf);
-          console.log('✅ Rapport supprimé automatiquement (deltaProd = 0)');
-          
-          return {
-            message: 'Rapport de non-conformité supprimé (deltaProd = 0)',
-            action: 'auto_deleted',
-            data: { 
-              semaine, 
-              jour, 
-              ligne, 
-              reference,
-              quantiteSource,
-              decProduction: planification.decProduction,
-              deltaProd: 0,
-              ecartPourcentage: 0
-            }
-          };
-        } else {
-          // Pas de rapport existant et deltaProd = 0 : rien à faire
-          console.log('ℹ️ Aucun rapport à créer (deltaProd = 0)');
-          throw new BadRequestException('Aucune non-conformité à déclarer (deltaProd = 0)');
-        }
-      }
-
-      // 4. Vérifier si deltaProd est négatif (comportement existant)
-      if (deltaProd > 0) {
-        console.warn('DeltaProd positif, pas de non-conformité:', deltaProd);
-        throw new BadRequestException('Aucune non-conformité à déclarer (deltaProd positif)');
-      }
-
-      // 5. Extraire les valeurs du DTO
-      const matierePremiere = createOrUpdateNonConfDto.matierePremiere || 0;
-      const absence = createOrUpdateNonConfDto.absence || 0;
-      const rendement = createOrUpdateNonConfDto.rendement || 0;
-      const maintenance = createOrUpdateNonConfDto.maintenance || 0;
-      const qualite = createOrUpdateNonConfDto.qualite || 0;
-      const methode = createOrUpdateNonConfDto.methode || 0;
-      const environnement = createOrUpdateNonConfDto.environnement || 0;
-
-      console.log('Valeurs extraites du DTO:', {
-        matierePremiere,
-        absence,
-        rendement,
-        maintenance,
-        qualite,
-        methode, 
-         environnement,
-        referenceMatierePremiere,
-        referenceQualite
-      });
-
-      // 6. Calculer le total des 7M
-     const total7M = matierePremiere + absence + rendement + methode + maintenance + qualite + environnement;
-      const deltaAbsolu = Math.abs(deltaProd);
-      const tolerance = 1;
-
-      console.log('Totaux:', {
-        total7M,
-        deltaAbsolu,
-        difference: Math.abs(total7M - deltaAbsolu)
-      });
-
-      // 7. Vérifier la correspondance avec deltaProd
-      if (Math.abs(total7M - deltaAbsolu) > tolerance) {
-        throw new BadRequestException(
-          `Le total des causes (${total7M}) ne correspond pas au deltaProd (${deltaAbsolu}). ` +
-          `Différence: ${Math.abs(total7M - deltaAbsolu)}`
-        );
-      }
-
-      // 8. Calculer le pourcentage d'écart
-      const ecartPourcentage = this.calculerEcartPourcentage(total7M, quantiteSource);
-      console.log('Pourcentage d\'écart calculé:', ecartPourcentage + '%');
-
-      const isUpdate = !!existingNonConf;
-      console.log(isUpdate ? 'Mise à jour de rapport existant' : 'Création nouveau rapport');
-
-      // 9. Gestion du total = 0 (suppression)
-      if (total7M === 0) {
-        if (isUpdate) {
-          await this.nonConfRepository.remove(existingNonConf);
-          console.log('Rapport supprimé (toutes valeurs à 0)');
-          return {
-            message: 'Rapport de non-conformité supprimé (toutes les valeurs sont à 0)',
-            action: 'deleted',
-            data: { 
-              semaine, 
-              jour, 
-              ligne, 
-              reference,
-              quantiteSource,
-              decProduction: planification.decProduction,
-              deltaProd,
-              ecartPourcentage: 0
-            }
-          };
-        } else {
-          throw new BadRequestException('Impossible de créer un rapport avec toutes les valeurs à 0');
-        }
-      }
-
-      // 10. Créer ou mettre à jour l'entité
-      let nonConf: NonConformite;
-      
-      if (isUpdate) {
-        nonConf = existingNonConf;
-        console.log('Rapport existant trouvé, ID:', nonConf.id);
-      } else {
-        nonConf = new NonConformite();
-        nonConf.planification = planification;
-        console.log('Nouveau rapport créé');
-      }
-      
-      // 11. Mettre à jour les champs de quantité
-      nonConf.matierePremiere = matierePremiere;
-      nonConf.absence = absence;
-      nonConf.rendement = rendement;
-      nonConf.maintenance = maintenance;
-      nonConf.qualite = qualite;
-      nonConf.methode = methode;
-      nonConf.environnement = environnement;
-      nonConf.total = total7M;
-      nonConf.ecartPourcentage = ecartPourcentage;
-      
-      // 12. Gestion de la référence matière première (SEULEMENT si quantité > 0)
-      if (matierePremiere > 0 && referenceMatierePremiere && referenceMatierePremiere.trim() !== '') {
-        nonConf.referenceMatierePremiere = referenceMatierePremiere;
-        console.log('Référence MP définie:', referenceMatierePremiere);
-      } else {
-        nonConf.referenceMatierePremiere = null;
-        console.log('Référence MP mise à null');
-      }
-      
-      // 13. Gestion de la référence qualité (SEULEMENT si quantité > 0)
-      if (qualite > 0 && referenceQualite && referenceQualite.trim() !== '') {
-        nonConf.referenceQualite = referenceQualite;
-        console.log('Référence Qualité définie:', referenceQualite);
-      } else {
-        nonConf.referenceQualite = null;
-        console.log('Référence Qualité mise à null');
-      }
-      
-      // 14. Gestion du commentaire
-      if (createOrUpdateNonConfDto.commentaire !== undefined) {
-        nonConf.commentaire = createOrUpdateNonConfDto.commentaire;
-      } else if (!isUpdate) {
-        nonConf.commentaire = null;
-      }
-
-      nonConf.updatedAt = new Date();
-
-      console.log('Entité avant sauvegarde:', {
-        matierePremiere: nonConf.matierePremiere,
-        referenceMatierePremiere: nonConf.referenceMatierePremiere,
-        absence: nonConf.absence,
-        rendement: nonConf.rendement,
-        maintenance: nonConf.maintenance,
-        qualite: nonConf.qualite,
-        referenceQualite: nonConf.referenceQualite,
-        total: nonConf.total,
-        ecartPourcentage: nonConf.ecartPourcentage
-      });
-
-      // 15. Sauvegarder
-      const savedNonConf = await this.nonConfRepository.save(nonConf);
-      
-      console.log('Sauvegarde réussie, ID:', savedNonConf.id);
-
-      // 16. Préparer la réponse
-      const actionMessage = isUpdate ? 'mis à jour' : 'créé';
-      const response = {
-        message: `Rapport de non-conformité ${actionMessage} avec succès`,
-        action: isUpdate ? 'updated' : 'created',
-        data: {
-          id: savedNonConf.id,
-          semaine,
-          jour,
-          ligne,
-          reference,
-          quantiteSource,
-          decProduction: planification.decProduction,
-          deltaProd,
-           total7M: savedNonConf.total,
-          ecartPourcentage: savedNonConf.ecartPourcentage,
-          details: {
-            matierePremiere: savedNonConf.matierePremiere,
-            referenceMatierePremiere: savedNonConf.referenceMatierePremiere,
-            absence: savedNonConf.absence,
-            rendement: savedNonConf.rendement,
-            maintenance: savedNonConf.maintenance,
-            qualite: savedNonConf.qualite,
-            methode: savedNonConf.methode,  // AJOUTÉ SI MANQUANT
-      environnement: savedNonConf.environnement, 
-            referenceQualite: savedNonConf.referenceQualite
-          },
-          commentaire: savedNonConf.commentaire,
-          createdAt: isUpdate ? existingNonConf?.createdAt : savedNonConf.createdAt,
-          updatedAt: savedNonConf.updatedAt
-        }
-      };
-
-      console.log('=== FIN createOrUpdateNonConformite - Succès ===');
-      return response;
-
-    } catch (error) {
-      console.error('=== ERREUR dans createOrUpdateNonConformite ===');
-      console.error('Erreur:', error);
-      console.error('Stack:', error.stack);
-      console.error('DTO qui a causé l\'erreur:', createOrUpdateNonConfDto);
-      
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
-        throw error;
-      }
-      
-      throw new InternalServerErrorException(
-        `Erreur lors de la sauvegarde du rapport: ${error.message}`
+    // 9. Vérifier la correspondance avec deltaProd
+    if (Math.abs(total7M - deltaAbsolu) > tolerance) {
+      throw new BadRequestException(
+        `Le total des causes (${total7M}) ne correspond pas au deltaProd (${deltaAbsolu}). ` +
+        `Différence: ${Math.abs(total7M - deltaAbsolu)}`
       );
     }
+
+    // 10. Calculer le pourcentage d'écart
+    const ecartPourcentage = this.calculerEcartPourcentage(total7M, quantiteSource);
+    console.log('Pourcentage d\'écart calculé:', ecartPourcentage + '%');
+
+    const isUpdate = !!existingNonConf;
+    console.log(isUpdate ? 'Mise à jour de rapport existant' : 'Création nouveau rapport');
+
+    // 11. Gestion du total = 0 (suppression)
+    if (total7M === 0) {
+      if (isUpdate) {
+        await this.nonConfRepository.remove(existingNonConf);
+        console.log('Rapport supprimé (toutes valeurs à 0)');
+        return {
+          message: 'Rapport de non-conformité supprimé (toutes les valeurs sont à 0)',
+          action: 'deleted',
+          data: { 
+            semaine, 
+            jour, 
+            ligne, 
+            reference,
+            quantiteSource,
+            decProduction: planification.decProduction,
+            deltaProd,
+            ecartPourcentage: 0
+          }
+        };
+      } else {
+        throw new BadRequestException('Impossible de créer un rapport avec toutes les valeurs à 0');
+      }
+    }
+
+    // 12. Créer ou mettre à jour l'entité
+    let nonConf: NonConformite;
+    
+    if (isUpdate) {
+      nonConf = existingNonConf;
+      console.log('Rapport existant trouvé, ID:', nonConf.id);
+    } else {
+      nonConf = new NonConformite();
+      nonConf.planification = planification;
+      console.log('Nouveau rapport créé');
+    }
+    
+    // 13. Mettre à jour les champs de quantité
+    nonConf.matierePremiere = matierePremiere;
+    nonConf.absence = absence;
+    nonConf.rendement = rendement;
+    nonConf.maintenance = maintenance;
+    nonConf.qualite = qualiteValue;
+    nonConf.methode = methode;
+    nonConf.environnement = environnement;
+    nonConf.total = total7M;
+    nonConf.ecartPourcentage = ecartPourcentage;
+    
+    // 14. Gestion de la référence matière première
+    if (matierePremiere > 0 && referenceMatierePremiere && referenceMatierePremiere.trim() !== '') {
+      nonConf.referenceMatierePremiere = referenceMatierePremiere;
+      console.log('Référence MP définie:', referenceMatierePremiere);
+    } else {
+      nonConf.referenceMatierePremiere = null;
+      console.log('Référence MP mise à null');
+    }
+    
+    // 15. Gestion de la référence qualité
+    if (qualiteValue > 0 && referenceQualite && referenceQualite.trim() !== '') {
+      nonConf.referenceQualite = referenceQualite;
+      console.log('Référence Qualité définie:', referenceQualite);
+    } else {
+      nonConf.referenceQualite = null;
+      console.log('Référence Qualité mise à null');
+    }
+    
+    // 16. Gestion du COMMENTAIRE
+    if (commentaireId && qualiteValue > 0) {
+      const commentaire = await this.commentaireRepository.findOne({
+        where: { id: commentaireId }
+      });
+      
+      if (commentaire) {
+        nonConf.commentaireObjet = commentaire;
+        console.log('Commentaire associé:', commentaire.commentaire);
+      } else {
+        nonConf.commentaireObjet = null;
+        console.warn('Commentaire non trouvé, mise à null');
+      }
+    } else {
+      nonConf.commentaireObjet = null;
+      console.log('Pas de commentaire associé');
+    }
+    
+    // 17. Gestion du commentaire libre
+    if (commentaireLibre !== undefined && commentaireLibre !== null) {
+      nonConf.commentaire = commentaireLibre.trim() !== '' ? commentaireLibre : null;
+      console.log('Commentaire libre défini:', commentaireLibre);
+    } else if (!isUpdate) {
+      nonConf.commentaire = null;
+    }
+
+    nonConf.updatedAt = new Date();
+
+    console.log('Entité avant sauvegarde:', {
+      matierePremiere: nonConf.matierePremiere,
+      referenceMatierePremiere: nonConf.referenceMatierePremiere,
+      absence: nonConf.absence,
+      rendement: nonConf.rendement,
+      maintenance: nonConf.maintenance,
+      qualite: nonConf.qualite,
+      referenceQualite: nonConf.referenceQualite,
+      methode: nonConf.methode,
+      environnement: nonConf.environnement,
+      commentaireId: nonConf.commentaireObjet?.id,
+      commentaireTexte: nonConf.commentaireObjet?.commentaire,
+      commentaireLibre: nonConf.commentaire,
+      total: nonConf.total,
+      ecartPourcentage: nonConf.ecartPourcentage
+    });
+
+    // 18. Sauvegarder
+    const savedNonConf = await this.nonConfRepository.save(nonConf);
+    
+    console.log('Sauvegarde réussie, ID:', savedNonConf.id);
+
+    // 19. Charger les relations pour la réponse (CORRECTION ICI)
+    const nonConfWithRelations = await this.nonConfRepository.findOne({
+      where: { id: savedNonConf.id },
+      relations: ['commentaireObjet', 'planification']
+    });
+
+    // VÉRIFIER QUE L'ENTITÉ EXISTE (CORRECTION DU NULL)
+    if (!nonConfWithRelations) {
+      throw new InternalServerErrorException('Erreur lors de la récupération du rapport sauvegardé');
+    }
+
+    // 20. Préparer la réponse (CORRIGÉ AVEC VÉRIFICATIONS DE NULL)
+    const actionMessage = isUpdate ? 'mis à jour' : 'créé';
+    const response = {
+      message: `Rapport de non-conformité ${actionMessage} avec succès`,
+      action: isUpdate ? 'updated' : 'created',
+      data: {
+        id: nonConfWithRelations.id,
+        semaine,
+        jour,
+        ligne,
+        reference,
+        quantiteSource,
+        decProduction: planification.decProduction,
+        deltaProd,
+        total7M: nonConfWithRelations.total,
+        ecartPourcentage: nonConfWithRelations.ecartPourcentage,
+        details: {
+          matierePremiere: nonConfWithRelations.matierePremiere,
+          referenceMatierePremiere: nonConfWithRelations.referenceMatierePremiere,
+          absence: nonConfWithRelations.absence,
+          rendement: nonConfWithRelations.rendement,
+          maintenance: nonConfWithRelations.maintenance,
+          qualite: nonConfWithRelations.qualite,
+          methode: nonConfWithRelations.methode,
+          environnement: nonConfWithRelations.environnement,
+          referenceQualite: nonConfWithRelations.referenceQualite,
+          // CORRECTION : Vérification null pour commentaireObjet
+          commentaire: nonConfWithRelations.commentaireObjet 
+            ? {
+                id: nonConfWithRelations.commentaireObjet.id,
+                texte: nonConfWithRelations.commentaireObjet.commentaire
+              }
+            : null
+        },
+        // CORRECTION : Gestion null pour commentaire libre
+        commentaireLibre: nonConfWithRelations.commentaire || null,
+        createdAt: isUpdate 
+          ? (existingNonConf?.createdAt || nonConfWithRelations.createdAt)
+          : nonConfWithRelations.createdAt,
+        updatedAt: nonConfWithRelations.updatedAt
+      }
+    };
+
+    console.log('=== FIN createOrUpdateNonConformite - Succès ===');
+    return response;
+
+  } catch (error) {
+    console.error('=== ERREUR dans createOrUpdateNonConformite ===');
+    console.error('Erreur:', error);
+    console.error('Stack:', error.stack);
+    console.error('DTO qui a causé l\'erreur:', createOrUpdateNonConfDto);
+    
+    if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      throw error;
+    }
+    
+    throw new InternalServerErrorException(
+      `Erreur lors de la sauvegarde du rapport: ${error.message}`
+    );
   }
+}
 
   // ==================== RESTE DU CODE INCHANGÉ ====================
   async getNonConformites(getNonConfDto: GetNonConfDto) {
@@ -464,73 +538,88 @@ export class NonConfService {
     };
   }
 
-  async getNonConformiteByCriteria(semaine: string, jour: string, ligne: string, reference: string) {
-    const planification = await this.planificationRepository.findOne({
-      where: { semaine, jour, ligne, reference }
-    });
+ async getNonConformiteByCriteria(semaine: string, jour: string, ligne: string, reference: string) {
+  const planification = await this.planificationRepository.findOne({
+    where: { semaine, jour, ligne, reference }
+  });
 
-    if (!planification) {
-      throw new NotFoundException('Planification non trouvée');
-    }
+  if (!planification) {
+    throw new NotFoundException('Planification non trouvée');
+  }
 
-    const nonConf = await this.nonConfRepository.findOne({
-      where: { planification: { id: planification.id } },
-      relations: ['planification']
-    });
+  // AJOUTEZ LA RELATION 'commentaireObjet' ici ↓
+  const nonConf = await this.nonConfRepository.findOne({
+    where: { planification: { id: planification.id } },
+    relations: ['planification', 'commentaireObjet'] // AJOUTEZ 'commentaireObjet'
+  });
 
-    const quantiteSource = this.getQuantitySource(planification);
+  const quantiteSource = this.getQuantitySource(planification);
 
-    if (!nonConf) {
-      return {
-        message: 'Aucun rapport de non-conformité trouvé',
-        exists: false,
-        planification: {
-          semaine,
-          jour,
-          ligne,
-          reference,
-          quantiteSource,
-          decProduction: planification.decProduction,
-          deltaProd: planification.deltaProd,
-          pcsProd: `${planification.pcsProd}%`,
-          ecartPourcentage: 0
-        }
-      };
-    }
-
+  if (!nonConf) {
     return {
-      message: 'Rapport de non-conformité trouvé',
-      exists: true,
-      data: {
-        id: nonConf.id,
-        semaine: planification.semaine,
-        jour: planification.jour,
-        ligne: planification.ligne,
-        reference: planification.reference,
-        of: planification.of,
+      message: 'Aucun rapport de non-conformité trouvé',
+      exists: false,
+      planification: {
+        semaine,
+        jour,
+        ligne,
+        reference,
         quantiteSource,
         decProduction: planification.decProduction,
         deltaProd: planification.deltaProd,
         pcsProd: `${planification.pcsProd}%`,
-        total7M: nonConf.total,
-        ecartPourcentage: nonConf.ecartPourcentage,
-        details: {
-          matierePremiere: nonConf.matierePremiere,
-          referenceMatierePremiere: nonConf.referenceMatierePremiere,
-          absence: nonConf.absence,
-          rendement: nonConf.rendement,
-          maintenance: nonConf.maintenance,
-          methode: nonConf.methode, 
-          qualite: nonConf.qualite,
-          environnement: nonConf.environnement,
-          referenceQualite: nonConf.referenceQualite
-        },
-        commentaire: nonConf.commentaire,
-        createdAt: nonConf.createdAt,
-        updatedAt: nonConf.updatedAt
+        ecartPourcentage: 0
       }
     };
   }
+
+  return {
+    message: 'Rapport de non-conformité trouvé',
+    exists: true,
+    data: {
+      id: nonConf.id,
+      semaine: planification.semaine,
+      jour: planification.jour,
+      ligne: planification.ligne,
+      reference: planification.reference,
+      of: planification.of,
+      quantiteSource,
+      decProduction: planification.decProduction,
+      deltaProd: planification.deltaProd,
+      pcsProd: `${planification.pcsProd}%`,
+      total7M: nonConf.total,
+      ecartPourcentage: nonConf.ecartPourcentage,
+      details: {
+        matierePremiere: nonConf.matierePremiere,
+        referenceMatierePremiere: nonConf.referenceMatierePremiere,
+        absence: nonConf.absence,
+        rendement: nonConf.rendement,
+        maintenance: nonConf.maintenance,
+        methode: nonConf.methode, 
+        qualite: nonConf.qualite,
+        environnement: nonConf.environnement,
+        referenceQualite: nonConf.referenceQualite,
+        // AJOUTEZ LE COMMENTAIRE ICI ↓
+        commentaire: nonConf.commentaireObjet 
+          ? {
+              id: nonConf.commentaireObjet.id,
+              texte: nonConf.commentaireObjet.commentaire
+            }
+          : null
+      },
+      // AJOUTEZ AUSSI LE COMMENTAIRE AU NIVEAU RACINE POUR COMPATIBILITÉ ↓
+      commentaireObjet: nonConf.commentaireObjet 
+        ? {
+            id: nonConf.commentaireObjet.id,
+            commentaire: nonConf.commentaireObjet.commentaire
+          }
+        : null,
+      commentaire: nonConf.commentaire,
+      createdAt: nonConf.createdAt,
+      updatedAt: nonConf.updatedAt
+    }
+  };
+}
 
   async deleteNonConformite(id: number) {
     const nonConf = await this.nonConfRepository.findOne({

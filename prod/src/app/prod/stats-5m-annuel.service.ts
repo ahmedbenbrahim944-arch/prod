@@ -37,6 +37,10 @@ export interface Stats5MAnnuellesResponse {
         quantite: number;
         pourcentage: number;
       };
+      environnement: {
+        quantite: number;
+        pourcentage: number;
+      };
     };
   };
   moyennesAnnuelles: {
@@ -73,6 +77,11 @@ export interface Stats5MAnnuellesResponse {
       pourcentage: number;
       pourcentageDans5M: number;
     };
+    environnement: {
+      quantite: number;
+      pourcentage: number;
+      pourcentageDans5M: number;
+    };
   };
   donneesGraphiques: {
     graphiqueCirculaire: {
@@ -92,6 +101,7 @@ export interface Stats5MAnnuellesResponse {
     methode: number;
     maintenance: number;
     qualite: number;
+    environnement: number;
     total5M: number;
   }>;
 }

@@ -1,6 +1,7 @@
 // src/non-conf/entities/non-conf.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToOne, JoinColumn } from 'typeorm';
 import { Planification } from '../../semaine/entities/planification.entity';
+import { Commentaire } from '../../commentaire/entities/commentaire.entity'; // AJOUTÉ
 
 @Entity('non_conformites')
 export class NonConformite {
@@ -9,6 +10,12 @@ export class NonConformite {
 
   @ManyToOne(() => Planification, (planification) => planification.nonConformites, { onDelete: 'CASCADE' })
   planification: Planification;
+
+  // === RELATION AVEC COMMENTAIRE (NOUVEAU) ===
+  @ManyToOne(() => Commentaire, { nullable: true, eager: true })
+  @JoinColumn({ name: 'commentaire_id' }) // ou garder le même nom 'commentaire'
+  commentaireObjet?: Commentaire | null; // Renommer pour éviter conflit
+  // ===========================================
 
   // Les 7M (6M précédents + Environnement)
   @Column({ type: 'float', default: 0 })
@@ -35,17 +42,17 @@ export class NonConformite {
   @Column({ type: 'varchar', length: 100, nullable: true })
   referenceQualite: string | null;
 
-  @Column({ type: 'float', default: 0 })  // NOUVEAU CHAMP
+  @Column({ type: 'float', default: 0 })
   environnement: number;
 
   @Column({ type: 'float', default: 0 })
-  total: number;  // Total des 7M maintenant
+  total: number;
 
   @Column({ type: 'float', default: 0, name: 'ecart_pourcentage' })
   ecartPourcentage: number;
 
   @Column({ type: 'text', nullable: true })
-  commentaire: string | null;
+  commentaire: string | null; // Garder pour les commentaires libres
 
   @CreateDateColumn()
   createdAt: Date;

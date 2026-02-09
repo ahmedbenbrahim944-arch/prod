@@ -19,6 +19,8 @@ import { StatsModule } from './stats/stats.module';
 import { MagasinModule } from './magasin/magasin.module';
 import { StatutModule } from './statut/statut.module';
 import { PlanningSelectionModule } from './planning-selection/planning-selection.module';
+import { CommentaireModule } from './commentaire/commentaire.module';
+import { SaisieNonConfModule } from './saisie-non-conf/saisie-non-conf.module';
 
 @Module({
   imports: [
@@ -51,7 +53,9 @@ import { PlanningSelectionModule } from './planning-selection/planning-selection
     StatsModule,
     MagasinModule,
     StatutModule,
-    PlanningSelectionModule
+    PlanningSelectionModule,
+    CommentaireModule,
+    SaisieNonConfModule
 
   ],
   controllers: [],
