@@ -21,6 +21,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   currentInputField: string = 'email';
   numpadValue: string = '';
 
+  // 🎯 NOUVEAU FLAG : savoir si l'utilisateur a modifié le mot de passe manuellement
+  private passwordManuallyEdited = false;
+
   loginForm = {
     nom: '',
     password: '',
@@ -130,7 +133,6 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.createParticles();
 
-    // Si déjà connecté, rediriger vers la bonne page
     if (this.authService.isLoggedIn()) {
       const userType = this.authService.getUserType();
       if (userType === 'admin') {
@@ -198,8 +200,20 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   openNumpad(field: string) {
+    // 🎯 Quand l'utilisateur clique sur le champ mot de passe → il veut le modifier manuellement
+    if (field === 'password' && this.currentInputField !== 'password') {
+      this.passwordManuallyEdited = true;
+      // On remet le numpad à zéro pour qu'il puisse entrer un nouveau mot de passe
+      this.numpadValue = '';
+      this.loginForm.password = '';
+    }
     this.currentInputField = field;
-    this.numpadValue = this.getCurrentFieldValue();
+    // Si le champ password vient d'être réinitialisé, on affiche vide
+    if (field === 'password' && this.passwordManuallyEdited) {
+      this.numpadValue = '';
+    } else {
+      this.numpadValue = this.getCurrentFieldValue();
+    }
   }
 
   getCurrentFieldValue(): string {
@@ -227,13 +241,18 @@ export class LoginComponent implements OnInit, OnDestroy {
     switch (this.currentInputField) {
       case 'email':
         this.loginForm.nom = value;
-        // Synchronisation automatique du mot de passe avec le matricule (LOGIN uniquement)
+        // 🎯 Copie automatique dans le mot de passe SEULEMENT si l'utilisateur
+        // n'a pas encore modifié le mot de passe manuellement
+        if (!this.passwordManuallyEdited) {
+          this.loginForm.password = value;
+        }
+        break;
+
+      case 'password':
+        // 🎯 L'utilisateur saisit librement son mot de passe
         this.loginForm.password = value;
         break;
-      case 'password':
-        // Pour le champ password en mode login, on le synchronise aussi avec matricule
-        this.loginForm.password = this.loginForm.nom;
-        break;
+
       case 'firstName':
         this.registerForm.firstName = value;
         break;
@@ -242,7 +261,6 @@ export class LoginComponent implements OnInit, OnDestroy {
         break;
       case 'registerEmail':
         this.registerForm.nom = value;
-        // Pas de synchronisation pour l'inscription
         break;
       case 'registerPassword':
         this.registerForm.password = value;
@@ -253,34 +271,35 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 
-  onNumpadButtonClick(button: string) {
-    if (button === '⌫') {
-      this.numpadValue = this.numpadValue.slice(0, -1);
-    } else if (button === '✓') {
-      this.setCurrentFieldValue(this.numpadValue);
+onNumpadButtonClick(button: string) {
+  if (button === '⌫') {
+    this.numpadValue = this.numpadValue.slice(0, -1);
+  } else if (button === '✓') {
+    this.setCurrentFieldValue(this.numpadValue);
 
-      // Vérifier si on est sur le dernier champ
-      const isLastField = this.flipped ?
-        this.currentInputField === 'confirmPassword' :
-        this.currentInputField === 'password';
+    const isLastField = this.flipped ?
+      this.currentInputField === 'confirmPassword' :
+      this.currentInputField === 'password';
 
-      if (isLastField) {
-        // Si dernier champ, soumettre le formulaire
-        if (this.flipped) {
-          this.onRegister();
-        } else {
-          this.onLogin();
-        }
+    if (isLastField) {
+      if (this.flipped) {
+        this.onRegister();
       } else {
-        // Sinon, passer au champ suivant
-        this.goToNextField();
+        this.onLogin();
       }
     } else {
-      this.numpadValue += button;
+      this.goToNextField();
     }
-    this.setCurrentFieldValue(this.numpadValue);
+  } else {
+    this.numpadValue += button;
   }
-
+  
+  // Mettre à jour la valeur du champ
+  this.setCurrentFieldValue(this.numpadValue);
+  
+  // Si c'est un champ de mot de passe, l'afficheur montrera automatiquement des points
+  // grâce à la méthode maskPassword() dans le template
+}
   goToNextField() {
     const fields = this.flipped ?
       ['firstName', 'lastName', 'registerEmail', 'registerPassword', 'confirmPassword'] :
@@ -289,11 +308,24 @@ export class LoginComponent implements OnInit, OnDestroy {
     const currentIndex = fields.indexOf(this.currentInputField);
 
     if (currentIndex < fields.length - 1) {
-      this.openNumpad(fields[currentIndex + 1]);
+      // 🎯 Quand on passe automatiquement du matricule au mot de passe (via ✓),
+      // on ne considère PAS ça comme une édition manuelle → la copie auto reste
+      const nextField = fields[currentIndex + 1];
+      if (nextField === 'password') {
+        // Passage automatique : le mot de passe reste synchronisé avec le matricule
+        this.passwordManuallyEdited = false;
+        this.currentInputField = nextField;
+        this.numpadValue = this.loginForm.password; // Afficher la valeur pré-remplie
+      } else {
+        this.openNumpad(nextField);
+      }
     }
   }
 
   onLogin() {
+    // 🎯 Reset du flag pour la prochaine connexion
+    this.passwordManuallyEdited = false;
+
     if (this.validateLogin()) {
       this.loading = true;
       this.errorMessage = '';
@@ -307,11 +339,9 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.authService.adminLogin(credentials).subscribe({
           next: () => {
             this.loading = false;
-            // La redirection est gérée dans le service
           },
           error: (error) => {
             this.loading = false;
-            // Gestion des messages d'erreur du backend
             if (error.status === 401) {
               this.errorMessage = 'Matricule ou mot de passe incorrect';
             } else if (error.error?.message) {
@@ -326,11 +356,9 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.authService.userLogin(credentials).subscribe({
           next: () => {
             this.loading = false;
-            // La redirection est gérée dans le service
           },
           error: (error) => {
             this.loading = false;
-            // Gestion des messages d'erreur du backend
             if (error.status === 401) {
               this.errorMessage = 'Matricule ou mot de passe incorrect';
             } else if (error.error?.message) {
@@ -359,10 +387,8 @@ export class LoginComponent implements OnInit, OnDestroy {
       this.authService.registerAdmin(registerData).subscribe({
         next: (response) => {
           this.loading = false;
-          // Afficher un message de succès et basculer vers le login
           alert('Admin créé avec succès! Vous pouvez maintenant vous connecter.');
           this.toggleFlip();
-          // Remplir automatiquement le formulaire de login
           this.loginForm.nom = this.registerForm.nom;
           this.loginType = 'admin';
         },
@@ -397,4 +423,23 @@ export class LoginComponent implements OnInit, OnDestroy {
     };
     return fieldNames[this.currentInputField] || 'Champ';
   }
+  // src/app/login/login.component.ts
+// Ajoutez ces méthodes dans la classe LoginComponent
+
+/**
+ * Vérifie si le champ actuel est un champ de mot de passe
+ */
+isPasswordField(): boolean {
+  const passwordFields = ['password', 'registerPassword', 'confirmPassword'];
+  return passwordFields.includes(this.currentInputField);
+}
+
+/**
+ * Masque le mot de passe avec des points
+ */
+maskPassword(value: string): string {
+  if (!value) return '';
+  // Remplacer chaque caractère par un point
+  return '•'.repeat(value.length);
+}
 }

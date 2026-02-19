@@ -8,6 +8,9 @@ import { CreateOrUpdateNonConfDto } from './dto/create-or-update-non-conf.dto';
 import { GetNonConfDto } from './dto/get-non-conf.dto';
 import { GetNonConfByDateDto } from './dto/get-non-conf-by-date.dto';
 import { Commentaire } from 'src/commentaire/entities/commentaire.entity';
+import { Ouvrier } from 'src/ouvrier/entities/ouvrier.entity';
+import { Phase } from 'src/phase/entities/phase.entity';
+import { In as TypeORMIn } from 'typeorm';
 
 @Injectable()
 export class NonConfService {
@@ -17,7 +20,11 @@ export class NonConfService {
     @InjectRepository(Planification)
     private planificationRepository: Repository<Planification>,
     @InjectRepository(Commentaire)
-    private commentaireRepository: Repository<Commentaire>
+    private commentaireRepository: Repository<Commentaire>,
+     @InjectRepository(Ouvrier) // AJOUTÉ
+    private ouvrierRepository: Repository<Ouvrier>,
+    @InjectRepository(Phase) // AJOUTÉ
+    private phaseRepository: Repository<Phase>
   ) {}
 
   private getQuantitySource(planification: Planification): number {
@@ -29,6 +36,14 @@ export class NonConfService {
     const pourcentage = (total5M / quantiteSource) * 100;
     return Math.round(pourcentage * 10) / 10;
   }
+
+ private parsePhases(phasesString: string | null): string[] {
+  if (!phasesString) return [];
+  return phasesString
+    .split(',')
+    .map(p => p.trim())
+    .filter(p => p !== '');
+}
 
   // ==================== NOUVELLE MÉTHODE : NETTOYAGE AUTO ====================
   /**
@@ -63,9 +78,7 @@ export class NonConfService {
     }
   }
 
-  // ==================== CRÉER OU METTRE À JOUR NON-CONFORMITÉ (MODIFIÉ) ====================
- // src/non-conf/non-conf.service.ts - Fonction createOrUpdateNonConformite complète
-// src/non-conf/non-conf.service.ts - Fonction createOrUpdateNonConformite corrigée
+ 
 async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonConfDto) {
   const { 
     semaine, 
@@ -75,7 +88,12 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
     referenceMatierePremiere,
     referenceQualite,
     commentaireId,
-    commentaire: commentaireLibre
+    commentaire: commentaireLibre,
+    matriculesAbsence,
+    matriculesRendement,
+    absence,
+    rendement,
+    phasesMaintenance // ✅ NOUVEAU: récupération des phases maintenance
   } = createOrUpdateNonConfDto;
 
   console.log('=== DÉBUT createOrUpdateNonConformite ===');
@@ -97,10 +115,57 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       id: planification.id,
       qtePlanifiee: planification.qtePlanifiee,
       qteModifiee: planification.qteModifiee,
-      decProduction: planification.decProduction
+      decProduction: planification.decProduction,
+      ligne: planification.ligne
     });
 
-    // 2. Vérifier les règles métier pour la QUALITÉ
+    // 2. VALIDATION DES MATRICULES ABSENCE
+    const absenceValue = absence || 0;
+    if (absenceValue > 0) {
+      const validationAbsence = await this.validerMatricules(matriculesAbsence, 'absence');
+      if (!validationAbsence.valide) {
+        throw new BadRequestException(
+          validationAbsence.message || 'Validation des matricules absence échouée'
+        );
+      }
+      console.log('Matricules absence validés:', validationAbsence.matricules);
+    } else if (matriculesAbsence && matriculesAbsence.trim() !== '') {
+      throw new BadRequestException('Matricules absence fournis mais quantité absence = 0');
+    }
+    
+
+    // 3. VALIDATION DES MATRICULES RENDEMENT
+    const rendementValue = rendement || 0;
+    if (rendementValue > 0) {
+      const validationRendement = await this.validerMatricules(matriculesRendement, 'rendement');
+      if (!validationRendement.valide) {
+        throw new BadRequestException(
+          validationRendement.message || 'Validation des matricules rendement échouée'
+        );
+      }
+      console.log('Matricules rendement validés:', validationRendement.matricules);
+    } else if (matriculesRendement && matriculesRendement.trim() !== '') {
+      throw new BadRequestException('Matricules rendement fournis mais quantité rendement = 0');
+    }
+
+    // 4. ✅ NOUVEAU: VALIDATION DES PHASES MAINTENANCE
+    const maintenance = createOrUpdateNonConfDto.maintenance || 0;
+    if (maintenance > 0 && phasesMaintenance && phasesMaintenance.trim() !== '') {
+      const validationPhases = await this.validerPhasesMaintenance(
+        phasesMaintenance,
+        planification.ligne // Utiliser la ligne de la planification
+      );
+      
+      if (!validationPhases.valide) {
+        throw new BadRequestException(validationPhases.message);
+      }
+      
+      console.log('Phases maintenance validées:', validationPhases.phases);
+    } else if (maintenance > 0) {
+      console.log('Maintenance > 0 mais aucune phase sélectionnée (optionnel)');
+    }
+
+    // 5. Vérifier les règles métier pour la QUALITÉ
     const qualite = createOrUpdateNonConfDto.qualite || 0;
     
     if (qualite > 0) {
@@ -123,7 +188,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       console.log('Commentaire validé:', commentaireExiste.commentaire);
     }
 
-    // 3. Calculer le deltaProd actuel
+    // 6. Calculer le deltaProd actuel
     const quantiteSource = this.getQuantitySource(planification);
     const deltaProd = planification.decProduction - quantiteSource;
 
@@ -133,13 +198,13 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       deltaProd
     });
 
-    // 4. Vérifier si un rapport existe déjà
+    // 7. Vérifier si un rapport existe déjà
     const existingNonConf = await this.nonConfRepository.findOne({
       where: { planification: { id: planification.id } },
       relations: ['planification', 'commentaireObjet']
     });
 
-    // 5. Gestion deltaProd = 0 (suppression automatique)
+    // 8. Gestion deltaProd = 0 (suppression automatique)
     if (deltaProd === 0) {
       if (existingNonConf) {
         await this.nonConfRepository.remove(existingNonConf);
@@ -165,26 +230,29 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       }
     }
 
-    // 6. Vérifier si deltaProd est négatif
+    // 9. Vérifier si deltaProd est négatif
     if (deltaProd > 0) {
       console.warn('DeltaProd positif, pas de non-conformité:', deltaProd);
       throw new BadRequestException('Aucune non-conformité à déclarer (deltaProd positif)');
     }
 
-    // 7. Extraire les valeurs du DTO
+    // 10. Extraire les valeurs du DTO
     const matierePremiere = createOrUpdateNonConfDto.matierePremiere || 0;
-    const absence = createOrUpdateNonConfDto.absence || 0;
-    const rendement = createOrUpdateNonConfDto.rendement || 0;
-    const maintenance = createOrUpdateNonConfDto.maintenance || 0;
+    const absenceFinal = absenceValue;
+    const rendementFinal = rendementValue;
+    const maintenanceFinal = maintenance;
     const qualiteValue = createOrUpdateNonConfDto.qualite || 0;
     const methode = createOrUpdateNonConfDto.methode || 0;
     const environnement = createOrUpdateNonConfDto.environnement || 0;
 
     console.log('Valeurs extraites du DTO:', {
       matierePremiere,
-      absence,
-      rendement,
-      maintenance,
+      absence: absenceFinal,
+      matriculesAbsence,
+      rendement: rendementFinal,
+      matriculesRendement,
+      maintenance: maintenanceFinal,
+      phasesMaintenance,
       qualite: qualiteValue,
       methode,
       environnement,
@@ -193,8 +261,8 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       commentaireId
     });
 
-    // 8. Calculer le total des 7M
-    const total7M = matierePremiere + absence + rendement + methode + maintenance + qualiteValue + environnement;
+    // 11. Calculer le total des 7M
+    const total7M = matierePremiere + absenceFinal + rendementFinal + methode + maintenanceFinal + qualiteValue + environnement;
     const deltaAbsolu = Math.abs(deltaProd);
     const tolerance = 1;
 
@@ -204,7 +272,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       difference: Math.abs(total7M - deltaAbsolu)
     });
 
-    // 9. Vérifier la correspondance avec deltaProd
+    // 12. Vérifier la correspondance avec deltaProd
     if (Math.abs(total7M - deltaAbsolu) > tolerance) {
       throw new BadRequestException(
         `Le total des causes (${total7M}) ne correspond pas au deltaProd (${deltaAbsolu}). ` +
@@ -212,14 +280,14 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       );
     }
 
-    // 10. Calculer le pourcentage d'écart
+    // 13. Calculer le pourcentage d'écart
     const ecartPourcentage = this.calculerEcartPourcentage(total7M, quantiteSource);
     console.log('Pourcentage d\'écart calculé:', ecartPourcentage + '%');
 
     const isUpdate = !!existingNonConf;
     console.log(isUpdate ? 'Mise à jour de rapport existant' : 'Création nouveau rapport');
 
-    // 11. Gestion du total = 0 (suppression)
+    // 14. Gestion du total = 0 (suppression)
     if (total7M === 0) {
       if (isUpdate) {
         await this.nonConfRepository.remove(existingNonConf);
@@ -243,7 +311,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       }
     }
 
-    // 12. Créer ou mettre à jour l'entité
+    // 15. Créer ou mettre à jour l'entité
     let nonConf: NonConformite;
     
     if (isUpdate) {
@@ -255,18 +323,44 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       console.log('Nouveau rapport créé');
     }
     
-    // 13. Mettre à jour les champs de quantité
+    // 16. Mettre à jour les champs de quantité
     nonConf.matierePremiere = matierePremiere;
-    nonConf.absence = absence;
-    nonConf.rendement = rendement;
-    nonConf.maintenance = maintenance;
+    nonConf.absence = absenceFinal;
+    nonConf.rendement = rendementFinal;
+    nonConf.maintenance = maintenanceFinal;
     nonConf.qualite = qualiteValue;
     nonConf.methode = methode;
     nonConf.environnement = environnement;
     nonConf.total = total7M;
     nonConf.ecartPourcentage = ecartPourcentage;
     
-    // 14. Gestion de la référence matière première
+    // 17. Gestion des matricules
+    if (absenceFinal > 0 && matriculesAbsence && matriculesAbsence.trim() !== '') {
+      nonConf.matriculesAbsence = matriculesAbsence.trim();
+      console.log('Matricules absence sauvegardés:', nonConf.matriculesAbsence);
+    } else {
+      nonConf.matriculesAbsence = null;
+      console.log('Matricules absence mis à null');
+    }
+    
+    if (rendementFinal > 0 && matriculesRendement && matriculesRendement.trim() !== '') {
+      nonConf.matriculesRendement = matriculesRendement.trim();
+      console.log('Matricules rendement sauvegardés:', nonConf.matriculesRendement);
+    } else {
+      nonConf.matriculesRendement = null;
+      console.log('Matricules rendement mis à null');
+    }
+    
+    // 18. ✅ NOUVEAU: Gestion des phases maintenance
+    if (maintenanceFinal > 0 && phasesMaintenance && phasesMaintenance.trim() !== '') {
+      nonConf.phasesMaintenance = phasesMaintenance.trim();
+      console.log('Phases maintenance sauvegardées:', nonConf.phasesMaintenance);
+    } else {
+      nonConf.phasesMaintenance = null;
+      console.log('Phases maintenance mises à null');
+    }
+    
+    // 19. Gestion de la référence matière première
     if (matierePremiere > 0 && referenceMatierePremiere && referenceMatierePremiere.trim() !== '') {
       nonConf.referenceMatierePremiere = referenceMatierePremiere;
       console.log('Référence MP définie:', referenceMatierePremiere);
@@ -275,7 +369,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       console.log('Référence MP mise à null');
     }
     
-    // 15. Gestion de la référence qualité
+    // 20. Gestion de la référence qualité
     if (qualiteValue > 0 && referenceQualite && referenceQualite.trim() !== '') {
       nonConf.referenceQualite = referenceQualite;
       console.log('Référence Qualité définie:', referenceQualite);
@@ -284,7 +378,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       console.log('Référence Qualité mise à null');
     }
     
-    // 16. Gestion du COMMENTAIRE
+    // 21. Gestion du COMMENTAIRE
     if (commentaireId && qualiteValue > 0) {
       const commentaire = await this.commentaireRepository.findOne({
         where: { id: commentaireId }
@@ -302,7 +396,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       console.log('Pas de commentaire associé');
     }
     
-    // 17. Gestion du commentaire libre
+    // 22. Gestion du commentaire libre
     if (commentaireLibre !== undefined && commentaireLibre !== null) {
       nonConf.commentaire = commentaireLibre.trim() !== '' ? commentaireLibre : null;
       console.log('Commentaire libre défini:', commentaireLibre);
@@ -316,8 +410,11 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       matierePremiere: nonConf.matierePremiere,
       referenceMatierePremiere: nonConf.referenceMatierePremiere,
       absence: nonConf.absence,
+      matriculesAbsence: nonConf.matriculesAbsence,
       rendement: nonConf.rendement,
+      matriculesRendement: nonConf.matriculesRendement,
       maintenance: nonConf.maintenance,
+      phasesMaintenance: nonConf.phasesMaintenance, // ✅ NOUVEAU
       qualite: nonConf.qualite,
       referenceQualite: nonConf.referenceQualite,
       methode: nonConf.methode,
@@ -329,24 +426,44 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       ecartPourcentage: nonConf.ecartPourcentage
     });
 
-    // 18. Sauvegarder
+    // 23. Sauvegarder
     const savedNonConf = await this.nonConfRepository.save(nonConf);
     
     console.log('Sauvegarde réussie, ID:', savedNonConf.id);
 
-    // 19. Charger les relations pour la réponse (CORRECTION ICI)
+    // 24. Charger les relations pour la réponse
     const nonConfWithRelations = await this.nonConfRepository.findOne({
       where: { id: savedNonConf.id },
       relations: ['commentaireObjet', 'planification']
     });
 
-    // VÉRIFIER QUE L'ENTITÉ EXISTE (CORRECTION DU NULL)
     if (!nonConfWithRelations) {
       throw new InternalServerErrorException('Erreur lors de la récupération du rapport sauvegardé');
     }
 
-    // 20. Préparer la réponse (CORRIGÉ AVEC VÉRIFICATIONS DE NULL)
+    // 25. Préparer la réponse
     const actionMessage = isUpdate ? 'mis à jour' : 'créé';
+    
+    // Fonction pour parser les matricules
+    const parseMatricules = (matriculesString: string | null): number[] => {
+      if (!matriculesString) return [];
+      return matriculesString
+        .split(',')
+        .map(m => m.trim())
+        .filter(m => m !== '')
+        .map(m => parseInt(m, 10))
+        .filter(m => !isNaN(m));
+    };
+
+    // ✅ NOUVEAU: Fonction pour parser les phases maintenance
+    const parsePhases = (phasesString: string | null): string[] => {
+      if (!phasesString) return [];
+      return phasesString
+        .split(',')
+        .map(p => p.trim())
+        .filter(p => p !== '');
+    };
+
     const response = {
       message: `Rapport de non-conformité ${actionMessage} avec succès`,
       action: isUpdate ? 'updated' : 'created',
@@ -365,13 +482,15 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
           matierePremiere: nonConfWithRelations.matierePremiere,
           referenceMatierePremiere: nonConfWithRelations.referenceMatierePremiere,
           absence: nonConfWithRelations.absence,
+          matriculesAbsence: parseMatricules(nonConfWithRelations.matriculesAbsence),
           rendement: nonConfWithRelations.rendement,
+          matriculesRendement: parseMatricules(nonConfWithRelations.matriculesRendement),
           maintenance: nonConfWithRelations.maintenance,
+          phasesMaintenance: parsePhases(nonConfWithRelations.phasesMaintenance), // ✅ NOUVEAU
           qualite: nonConfWithRelations.qualite,
           methode: nonConfWithRelations.methode,
           environnement: nonConfWithRelations.environnement,
           referenceQualite: nonConfWithRelations.referenceQualite,
-          // CORRECTION : Vérification null pour commentaireObjet
           commentaire: nonConfWithRelations.commentaireObjet 
             ? {
                 id: nonConfWithRelations.commentaireObjet.id,
@@ -379,7 +498,6 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
               }
             : null
         },
-        // CORRECTION : Gestion null pour commentaire libre
         commentaireLibre: nonConfWithRelations.commentaire || null,
         createdAt: isUpdate 
           ? (existingNonConf?.createdAt || nonConfWithRelations.createdAt)
@@ -407,125 +525,128 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
   }
 }
 
-  // ==================== RESTE DU CODE INCHANGÉ ====================
-  async getNonConformites(getNonConfDto: GetNonConfDto) {
-    const { semaine, jour, ligne, reference } = getNonConfDto;
+private async validerMatricules(
+  matriculesString: string | undefined, 
+  type: 'absence' | 'rendement'
+): Promise<{ valide: boolean; message?: string; matricules?: number[] }> {
+  try {
+    console.log(`Validation temporaire des matricules ${type}:`, matriculesString);
     
-    const queryBuilder = this.nonConfRepository
-      .createQueryBuilder('nonConf')
-      .leftJoinAndSelect('nonConf.planification', 'planification')
-      .orderBy('nonConf.createdAt', 'DESC');
-
-    if (semaine) {
-      queryBuilder.andWhere('planification.semaine = :semaine', { semaine });
-    }
-    
-    if (jour) {
-      queryBuilder.andWhere('planification.jour = :jour', { jour });
-    }
-    
-    if (ligne) {
-      queryBuilder.andWhere('planification.ligne = :ligne', { ligne });
-    }
-    
-    if (reference) {
-      queryBuilder.andWhere('planification.reference = :reference', { reference });
+    // TEMPORAIRE: Accepte tous les matricules sans validation
+    if (!matriculesString || matriculesString.trim() === '') {
+      return { valide: true, matricules: [] };
     }
 
-    const nonConfs = await queryBuilder.getMany();
+    // Convertir la chaîne en tableau de nombres
+    const matriculesArray = matriculesString
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m !== '')
+      .map(m => {
+        const num = parseInt(m, 10);
+        return isNaN(num) ? 0 : num; // Accepte même si invalide
+      })
+      .filter(m => m > 0); // Filtre les valeurs valides
 
-    const formattedResults = nonConfs.map(nonConf => {
-      const plan = nonConf.planification;
-      const quantiteSource = this.getQuantitySource(plan);
-      
-      const ecartPourcentage = nonConf.ecartPourcentage > 0 
-        ? nonConf.ecartPourcentage 
-        : this.calculerEcartPourcentage(nonConf.total, quantiteSource);
-      
-      return {
-        id: nonConf.id,
-        semaine: plan.semaine,
-        jour: plan.jour,
-        ligne: plan.ligne,
-        reference: plan.reference,
-        of: plan.of,
-        quantiteSource,
-        decProduction: plan.decProduction,
-        deltaProd: plan.deltaProd,
-        pcsProd: `${plan.pcsProd}%`,
-        total7M: nonConf.total,
-        ecartPourcentage,
-        details: {
-          matierePremiere: nonConf.matierePremiere,
-          referenceMatierePremiere: nonConf.referenceMatierePremiere,
-          absence: nonConf.absence,
-          rendement: nonConf.rendement,
-          maintenance: nonConf.maintenance,
-          qualite: nonConf.qualite,
-          methode: nonConf.methode,
-          environnement: nonConf.environnement,
-          referenceQualite: nonConf.referenceQualite
-        },
-        commentaire: nonConf.commentaire,
-        createdAt: nonConf.createdAt,
-        updatedAt: nonConf.updatedAt
-      };
-    });
+    console.log(`Matricules ${type} acceptés temporairement:`, matriculesArray);
+    
+    return { valide: true, matricules: matriculesArray };
+  } catch (error) {
+    console.error(`Erreur validation temporaire matricules ${type}:`, error);
+    return { valide: true, matricules: [] }; // Accepte même en cas d'erreur
+  }
+}
 
-    const totals = {
-      matierePremiere: formattedResults.reduce((sum, item) => sum + item.details.matierePremiere, 0),
-      absence: formattedResults.reduce((sum, item) => sum + item.details.absence, 0),
-      rendement: formattedResults.reduce((sum, item) => sum + item.details.rendement, 0),
-      maintenance: formattedResults.reduce((sum, item) => sum + item.details.maintenance, 0),
-      methode: formattedResults.reduce((sum, item) => sum + item.details.methode, 0), 
-      qualite: formattedResults.reduce((sum, item) => sum + item.details.qualite, 0),
-       environnement: formattedResults.reduce((sum, item) => sum + item.details.environnement, 0),
-      total7M: formattedResults.reduce((sum, item) => sum + item.total7M, 0),
-      moyenneEcartPourcentage: formattedResults.length > 0 
-        ? Math.round((formattedResults.reduce((sum, item) => sum + item.ecartPourcentage, 0) / formattedResults.length) * 10) / 10
-        : 0
-    };
+async getNonConformites(getNonConfDto: GetNonConfDto) {
+  const { semaine, jour, ligne, reference } = getNonConfDto;
+  
+  const queryBuilder = this.nonConfRepository
+    .createQueryBuilder('nonConf')
+    .leftJoinAndSelect('nonConf.planification', 'planification')
+    .leftJoinAndSelect('nonConf.commentaireObjet', 'commentaireObjet') // AJOUTÉ pour avoir le commentaire
+    .orderBy('nonConf.createdAt', 'DESC');
 
-    return {
-      message: 'Rapports de non-conformité récupérés',
-      filters: { semaine, jour, ligne, reference },
-      total: formattedResults.length,
-      totals,
-      rapports: formattedResults
-    };
+  if (semaine) {
+    queryBuilder.andWhere('planification.semaine = :semaine', { semaine });
+  }
+  
+  if (jour) {
+    queryBuilder.andWhere('planification.jour = :jour', { jour });
+  }
+  
+  if (ligne) {
+    queryBuilder.andWhere('planification.ligne = :ligne', { ligne });
+  }
+  
+  if (reference) {
+    queryBuilder.andWhere('planification.reference = :reference', { reference });
   }
 
-  async getNonConformiteById(id: number) {
-    const nonConf = await this.nonConfRepository.findOne({
-      where: { id },
-      relations: ['planification']
+  const nonConfs = await queryBuilder.getMany();
+
+  // Fonction pour parser les matricules
+  const parseMatricules = (matriculesString: string | null): number[] => {
+    if (!matriculesString) return [];
+    return matriculesString
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m !== '')
+      .map(m => parseInt(m, 10))
+      .filter(m => !isNaN(m));
+  };
+
+  // Fonction pour récupérer les infos ouvriers (optionnel)
+  const getInfosOuvriers = async (matricules: number[]) => {
+    if (matricules.length === 0) return [];
+    
+    const ouvriers = await this.ouvrierRepository.find({
+      where: { matricule: In(matricules) }
     });
+    
+    return ouvriers.map(ouvrier => ({
+      matricule: ouvrier.matricule,
+      nomPrenom: ouvrier.nomPrenom
+    }));
+  };
 
-    if (!nonConf) {
-      throw new NotFoundException('Rapport de non-conformité non trouvé');
-    }
-
-    const planification = nonConf.planification;
-    const quantiteSource = this.getQuantitySource(planification);
+  const formattedResults = await Promise.all(nonConfs.map(async (nonConf) => {
+    const plan = nonConf.planification;
+    const quantiteSource = this.getQuantitySource(plan);
+    
+    const ecartPourcentage = nonConf.ecartPourcentage > 0 
+      ? nonConf.ecartPourcentage 
+      : this.calculerEcartPourcentage(nonConf.total, quantiteSource);
+    
+    // Récupérer les matricules
+    const matriculesAbsence = parseMatricules(nonConf.matriculesAbsence);
+    const matriculesRendement = parseMatricules(nonConf.matriculesRendement);
+    
+    // Récupérer les infos ouvriers (optionnel)
+    const infosAbsence = await getInfosOuvriers(matriculesAbsence);
+    const infosRendement = await getInfosOuvriers(matriculesRendement);
 
     return {
       id: nonConf.id,
-      semaine: planification.semaine,
-      jour: planification.jour,
-      ligne: planification.ligne,
-      reference: planification.reference,
-      of: planification.of,
+      semaine: plan.semaine,
+      jour: plan.jour,
+      ligne: plan.ligne,
+      reference: plan.reference,
+      of: plan.of,
       quantiteSource,
-      decProduction: planification.decProduction,
-      deltaProd: planification.deltaProd,
-      pcsProd: `${planification.pcsProd}%`,
-      tota7M: nonConf.total,
-      ecartPourcentage: nonConf.ecartPourcentage,
+      decProduction: plan.decProduction,
+      deltaProd: plan.deltaProd,
+      pcsProd: `${plan.pcsProd}%`,
+      total7M: nonConf.total,
+      ecartPourcentage,
       details: {
         matierePremiere: nonConf.matierePremiere,
         referenceMatierePremiere: nonConf.referenceMatierePremiere,
         absence: nonConf.absence,
+        matriculesAbsence: matriculesAbsence,
+        infosAbsence: infosAbsence, // Optionnel: infos complètes
         rendement: nonConf.rendement,
+        matriculesRendement: matriculesRendement,
+        infosRendement: infosRendement, // Optionnel: infos complètes
         maintenance: nonConf.maintenance,
         qualite: nonConf.qualite,
         methode: nonConf.methode,
@@ -533,10 +654,123 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
         referenceQualite: nonConf.referenceQualite
       },
       commentaire: nonConf.commentaire,
+      commentaireObjet: nonConf.commentaireObjet ? {
+        id: nonConf.commentaireObjet.id,
+        texte: nonConf.commentaireObjet.commentaire
+      } : null,
       createdAt: nonConf.createdAt,
       updatedAt: nonConf.updatedAt
     };
+  }));
+
+  // Calcul des totaux
+  const totals = {
+    matierePremiere: formattedResults.reduce((sum, item) => sum + item.details.matierePremiere, 0),
+    absence: formattedResults.reduce((sum, item) => sum + item.details.absence, 0),
+    rendement: formattedResults.reduce((sum, item) => sum + item.details.rendement, 0),
+    maintenance: formattedResults.reduce((sum, item) => sum + item.details.maintenance, 0),
+    methode: formattedResults.reduce((sum, item) => sum + item.details.methode, 0),
+    qualite: formattedResults.reduce((sum, item) => sum + item.details.qualite, 0),
+    environnement: formattedResults.reduce((sum, item) => sum + item.details.environnement, 0),
+    total7M: formattedResults.reduce((sum, item) => sum + item.total7M, 0),
+    moyenneEcartPourcentage: formattedResults.length > 0 
+      ? Math.round((formattedResults.reduce((sum, item) => sum + item.ecartPourcentage, 0) / formattedResults.length) * 10) / 10
+      : 0
+  };
+
+  // Statistiques par matricule (optionnel)
+  const statistiquesMatricules = {
+    absence: {},
+    rendement: {}
+  };
+
+  // Compter les occurrences par matricule (optionnel)
+  formattedResults.forEach(item => {
+    item.details.matriculesAbsence.forEach(matricule => {
+      if (!statistiquesMatricules.absence[matricule]) {
+        statistiquesMatricules.absence[matricule] = 0;
+      }
+      statistiquesMatricules.absence[matricule]++;
+    });
+    
+    item.details.matriculesRendement.forEach(matricule => {
+      if (!statistiquesMatricules.rendement[matricule]) {
+        statistiquesMatricules.rendement[matricule] = 0;
+      }
+      statistiquesMatricules.rendement[matricule]++;
+    });
+  });
+
+  return {
+    message: 'Rapports de non-conformité récupérés',
+    filters: { semaine, jour, ligne, reference },
+    total: formattedResults.length,
+    totals,
+    statistiquesMatricules, // Optionnel
+    rapports: formattedResults
+  };
+}
+
+ async getNonConformiteById(id: number) {
+  const nonConf = await this.nonConfRepository.findOne({
+    where: { id },
+    relations: ['planification', 'commentaireObjet']
+  });
+
+  if (!nonConf) {
+    throw new NotFoundException('Rapport de non-conformité non trouvé');
   }
+
+  const planification = nonConf.planification;
+  const quantiteSource = this.getQuantitySource(planification);
+
+  // Parser les matricules
+  const parseMatricules = (matriculesString: string | null): number[] => {
+    if (!matriculesString) return [];
+    return matriculesString
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m !== '')
+      .map(m => parseInt(m, 10))
+      .filter(m => !isNaN(m));
+  };
+
+  return {
+    id: nonConf.id,
+    semaine: planification.semaine,
+    jour: planification.jour,
+    ligne: planification.ligne,
+    reference: planification.reference,
+    of: planification.of,
+    quantiteSource,
+    decProduction: planification.decProduction,
+    deltaProd: planification.deltaProd,
+    pcsProd: `${planification.pcsProd}%`,
+    total7M: nonConf.total,
+    ecartPourcentage: nonConf.ecartPourcentage,
+    details: {
+      matierePremiere: nonConf.matierePremiere,
+      referenceMatierePremiere: nonConf.referenceMatierePremiere,
+      absence: nonConf.absence,
+      matriculesAbsence: parseMatricules(nonConf.matriculesAbsence),
+      rendement: nonConf.rendement,
+      matriculesRendement: parseMatricules(nonConf.matriculesRendement),
+      maintenance: nonConf.maintenance,
+       phasesMaintenance: this.parsePhases(nonConf.phasesMaintenance), 
+      qualite: nonConf.qualite,
+      methode: nonConf.methode,
+      environnement: nonConf.environnement,
+      referenceQualite: nonConf.referenceQualite
+    },
+    commentaire: nonConf.commentaire,
+    commentaireObjet: nonConf.commentaireObjet ? {
+      id: nonConf.commentaireObjet.id,
+      texte: nonConf.commentaireObjet.commentaire
+    } : null,
+    createdAt: nonConf.createdAt,
+    updatedAt: nonConf.updatedAt
+  };
+}
 
  async getNonConformiteByCriteria(semaine: string, jour: string, ligne: string, reference: string) {
   const planification = await this.planificationRepository.findOne({
@@ -547,13 +781,24 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
     throw new NotFoundException('Planification non trouvée');
   }
 
-  // AJOUTEZ LA RELATION 'commentaireObjet' ici ↓
   const nonConf = await this.nonConfRepository.findOne({
     where: { planification: { id: planification.id } },
-    relations: ['planification', 'commentaireObjet'] // AJOUTEZ 'commentaireObjet'
+    relations: ['planification', 'commentaireObjet']
   });
 
   const quantiteSource = this.getQuantitySource(planification);
+  
+
+  // Parser les matricules
+  const parseMatricules = (matriculesString: string | null): number[] => {
+    if (!matriculesString) return [];
+    return matriculesString
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m !== '')
+      .map(m => parseInt(m, 10))
+      .filter(m => !isNaN(m));
+  };
 
   if (!nonConf) {
     return {
@@ -572,6 +817,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       }
     };
   }
+  
 
   return {
     message: 'Rapport de non-conformité trouvé',
@@ -593,13 +839,15 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
         matierePremiere: nonConf.matierePremiere,
         referenceMatierePremiere: nonConf.referenceMatierePremiere,
         absence: nonConf.absence,
+        matriculesAbsence: parseMatricules(nonConf.matriculesAbsence),
         rendement: nonConf.rendement,
+        matriculesRendement: parseMatricules(nonConf.matriculesRendement),
         maintenance: nonConf.maintenance,
-        methode: nonConf.methode, 
+        phasesMaintenance: this.parsePhases(nonConf.phasesMaintenance),
+        methode: nonConf.methode,
         qualite: nonConf.qualite,
         environnement: nonConf.environnement,
         referenceQualite: nonConf.referenceQualite,
-        // AJOUTEZ LE COMMENTAIRE ICI ↓
         commentaire: nonConf.commentaireObjet 
           ? {
               id: nonConf.commentaireObjet.id,
@@ -607,7 +855,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
             }
           : null
       },
-      // AJOUTEZ AUSSI LE COMMENTAIRE AU NIVEAU RACINE POUR COMPATIBILITÉ ↓
+      
       commentaireObjet: nonConf.commentaireObjet 
         ? {
             id: nonConf.commentaireObjet.id,
@@ -665,6 +913,62 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
       reference
     };
   }
+private async validerPhasesMaintenance(
+  phasesString: string,
+  ligne: string
+): Promise<{ valide: boolean; message?: string; phases?: string[] }> {
+  try {
+    console.log(`Validation des phases maintenance pour la ligne ${ligne}:`, phasesString);
+    
+    if (!phasesString || phasesString.trim() === '') {
+      return { valide: true, phases: [] };
+    }
+
+    // Convertir la chaîne en tableau de strings
+    const phasesArray = phasesString
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p !== '');
+
+    if (phasesArray.length === 0) {
+      return { valide: true, phases: [] };
+    }
+
+    console.log('Phases à valider:', phasesArray);
+
+    // Utiliser TypeORMIn au lieu de In
+    const phasesExistantes = await this.phaseRepository.find({
+      where: {
+        ligne: ligne,
+        phase: TypeORMIn(phasesArray)
+      }
+    });
+
+    const phasesTrouvees = phasesExistantes.map(p => p.phase);
+    const phasesManquantes = phasesArray.filter(p => !phasesTrouvees.includes(p));
+
+    if (phasesManquantes.length > 0) {
+      console.warn(`Phases non trouvées pour la ligne ${ligne}:`, phasesManquantes);
+      return {
+        valide: false,
+        message: `Les phases suivantes n'existent pas pour la ligne ${ligne}: ${phasesManquantes.join(', ')}`
+      };
+    }
+
+    console.log('Toutes les phases sont valides:', phasesTrouvees);
+    return { 
+      valide: true, 
+      phases: phasesArray 
+    };
+
+  } catch (error) {
+    console.error('Erreur validation phases maintenance:', error);
+    return { 
+      valide: false, 
+      message: `Erreur lors de la validation des phases: ${error.message}`
+    };
+  }
+}
 
   async getStats(semaine?: string) {
     const queryBuilder = this.nonConfRepository
@@ -965,4 +1269,8 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
   }
 
 
+}
+
+function In(matriculesArray: number[]): number | import("typeorm").FindOperator<number> | undefined {
+  throw new Error('Function not implemented.');
 }

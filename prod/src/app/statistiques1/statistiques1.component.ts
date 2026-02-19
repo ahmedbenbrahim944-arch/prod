@@ -1789,7 +1789,7 @@ async exporterResumeExcel(): Promise<void> {
     groupeParOuvrier.get(mat)!.push(ligne);
   });
 
-  // Calculer les statistiques par ouvrier
+  // Calculer les statistiques par ouvrier - AVEC LA NOUVELLE CORRESPONDANCE
   const resumeOuvriers = Array.from(groupeParOuvrier.entries()).map(([mat, lignes]) => {
     const totalHeures = lignes.reduce((sum, l) => {
       const heures = l['N°HEURS'];
@@ -1831,20 +1831,21 @@ async exporterResumeExcel(): Promise<void> {
       'Nom et Prénom': lignes[0]['NOM ET PRENOM'] || 'N/A',
       'Total Heures': totalHeures.toFixed(2),
       'Productivité Moyenne': calculerMoyenneProductivite().toFixed(2) + '%',
-      'M1 Mat. Prem': calculerMoyenneM('M1').toFixed(2) + '%',
-      'M2 Méthode': calculerMoyenneM('M2').toFixed(2) + '%',
-      'M3 Maintenance': calculerMoyenneM('M3').toFixed(2) + '%',
-      'M4 Qualité': calculerMoyenneM('M4').toFixed(2) + '%',
-      'M5 Absence': calculerMoyenneM('M5').toFixed(2) + '%',
-      'M6 Rendement': calculerMoyenneM('M6').toFixed(2) + '%',
-      'M7 Environnement': calculerMoyenneM('M7').toFixed(2) + '%'
+      // CORRESPONDANCE CORRIGÉE SELON VOS BESOINS :
+      'M1 Matière première': calculerMoyenneM('M1').toFixed(2) + '%',          // M1 → M1 (correct)
+      'M2 Absence': calculerMoyenneM('M5').toFixed(2) + '%',                   // M5 → M2 (Absence)
+      'M2 Rendement': calculerMoyenneM('M6').toFixed(2) + '%',                 // M6 → M2 (Rendement)
+      'M3 Méthode': calculerMoyenneM('M2').toFixed(2) + '%',                   // M2 → M3 (Méthode)
+      'M4 Maintenance': calculerMoyenneM('M3').toFixed(2) + '%',               // M3 → M4 (Maintenance)
+      'M5 Qualité': calculerMoyenneM('M4').toFixed(2) + '%',                   // M4 → M5 (Qualité)
+      'M6 Environnement': calculerMoyenneM('M7').toFixed(2) + '%'              // M7 → M6 (Environnement)
     };
   });
 
   // Trier par nom
   resumeOuvriers.sort((a, b) => a['Nom et Prénom'].localeCompare(b['Nom et Prénom']));
 
-  console.log('📊 Export ExcelJS - Données à exporter:', resumeOuvriers.length, 'ouvriers');
+  console.log('📊 Export ExcelJS - Nouvelle correspondance appliquée');
 
   try {
     // Créer un nouveau workbook
@@ -1860,7 +1861,7 @@ async exporterResumeExcel(): Promise<void> {
     // 1. TITRE PRINCIPAL (ligne 1)
     const titleRow = worksheet.getRow(1);
     titleRow.height = 35;
-    worksheet.mergeCells('A1:K1');
+    worksheet.mergeCells('A1:L1'); // Changé de K1 à L1 car nous avons maintenant 12 colonnes
     
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'STATISTIQUES DE PRODUCTIVITÉ PAR OUVRIER';
@@ -1868,12 +1869,12 @@ async exporterResumeExcel(): Promise<void> {
       name: 'Calibri',
       size: 16,
       bold: true,
-      color: { argb: 'FFFFFFFF' } // Blanc
+      color: { argb: 'FFFFFFFF' }
     };
     titleCell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF1F4E78' } // Bleu foncé #1F4E78
+      fgColor: { argb: 'FF1F4E78' }
     };
     titleCell.alignment = {
       vertical: 'middle',
@@ -1883,19 +1884,19 @@ async exporterResumeExcel(): Promise<void> {
     // 2. PÉRIODE (ligne 2)
     const periodeRow = worksheet.getRow(2);
     periodeRow.height = 25;
-    worksheet.mergeCells('A2:K2');
+    worksheet.mergeCells('A2:L2'); // Changé de K2 à L2
     
     const periodeCell = worksheet.getCell('A2');
     periodeCell.value = `Période : ${this.formatDateForTitle(this.dateDebutProductivite)} au ${this.formatDateForTitle(this.dateFinProductivite)}`;
     periodeCell.font = {
       name: 'Calibri',
       size: 11,
-      color: { argb: 'FF000000' } // Noir
+      color: { argb: 'FF000000' }
     };
     periodeCell.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FFD9EAD3' } // Vert très clair #D9EAD3
+      fgColor: { argb: 'FFD9EAD3' }
     };
     periodeCell.alignment = {
       vertical: 'middle',
@@ -1905,19 +1906,19 @@ async exporterResumeExcel(): Promise<void> {
     // 3. Ligne vide (ligne 3)
     worksheet.getRow(3).height = 10;
     
-    // 4. EN-TÊTES (ligne 4)
+    // 4. EN-TÊTES AVEC DEUX COLONNES M2 (ligne 4)
     const headers = [
       'Matricule',
       'Nom et Prénom', 
       'Total Heures',
       'Productivité Moyenne',
-      'M1 Mat. Prem',
-      'M2 Méthode',
-      'M3 Maintenance',
-      'M4 Qualité',
-      'M5 Absence',
-      'M6 Rendement',
-      'M7 Environnement'
+      'M1 Matière première',
+      'M2 Absence',      // Première colonne M2
+      'M2 Rendement',    // Deuxième colonne M2
+      'M3 Méthode',
+      'M4 Maintenance',
+      'M5 Qualité',
+      'M6 Environnement'
     ];
     
     const headerRow = worksheet.getRow(4);
@@ -1930,12 +1931,12 @@ async exporterResumeExcel(): Promise<void> {
         name: 'Calibri',
         size: 11,
         bold: true,
-        color: { argb: 'FFFFFFFF' } // Blanc
+        color: { argb: 'FFFFFFFF' }
       };
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF548235' } // Vert foncé #548235
+        fgColor: { argb: 'FF548235' }
       };
       cell.alignment = {
         vertical: 'middle',
@@ -1956,9 +1957,8 @@ async exporterResumeExcel(): Promise<void> {
       dataRow.height = 25;
       
       // Alterner les couleurs de fond
-      const bgColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF2F2F2'; // Blanc / Gris clair
+      const bgColor = index % 2 === 0 ? 'FFFFFFFF' : 'FFF2F2F2';
       
-      // Créer un style commun pour les cellules de données
       const dataCellStyle = {
         fill: {
           type: 'pattern' as const,
@@ -2005,9 +2005,16 @@ async exporterResumeExcel(): Promise<void> {
       cell4.alignment = { vertical: 'middle', horizontal: 'center' };
       cell4.border = dataCellStyle.border;
       
-      // M1 à M7 (colonnes E à K)
-      const mKeys = ['M1 Mat. Prem', 'M2 Méthode', 'M3 Maintenance', 'M4 Qualité', 
-                    'M5 Absence', 'M6 Rendement', 'M7 Environnement'];
+      // M1 à M6 (colonnes E à K)
+      const mKeys = [
+        'M1 Matière première', 
+        'M2 Absence', 
+        'M2 Rendement', 
+        'M3 Méthode', 
+        'M4 Maintenance', 
+        'M5 Qualité', 
+        'M6 Environnement'
+      ];
       
       for (let i = 0; i < mKeys.length; i++) {
         const cell = dataRow.getCell(5 + i);
@@ -2025,13 +2032,13 @@ async exporterResumeExcel(): Promise<void> {
       { width: 25 },  // B - Nom et Prénom
       { width: 12 },  // C - Total Heures
       { width: 18 },  // D - Productivité Moyenne
-      { width: 12 },  // E - M1 Mat. Prem
-      { width: 12 },  // F - M2 Méthode
-      { width: 15 },  // G - M3 Maintenance
-      { width: 12 },  // H - M4 Qualité
-      { width: 12 },  // I - M5 Absence
-      { width: 15 },  // J - M6 Rendement
-      { width: 18 }   // K - M7 Environnement
+      { width: 15 },  // E - M1 Matière première
+      { width: 12 },  // F - M2 Absence
+      { width: 12 },  // G - M2 Rendement
+      { width: 12 },  // H - M3 Méthode
+      { width: 15 },  // I - M4 Maintenance
+      { width: 12 },  // J - M5 Qualité
+      { width: 15 }   // K - M6 Environnement
     ];
     
     // Générer le nom du fichier
@@ -2051,8 +2058,7 @@ async exporterResumeExcel(): Promise<void> {
     
     saveAs(blob, fileName);
     
-    console.log('✅ Rapport Excel généré avec ExcelJS:', fileName);
-    console.log('✅ Styles appliqués: Titre bleu, en-têtes vert, données alternées');
+    console.log('✅ Rapport Excel généré avec la nouvelle correspondance des M');
     
   } catch (error) {
     console.error('❌ Erreur lors de la génération Excel:', error);

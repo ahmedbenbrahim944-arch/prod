@@ -1,0 +1,152 @@
+<!-- pause-history.component.html - VERSION DEBUG SIMPLIFIÉE -->
+
+<div class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-800 p-4 md:p-8">
+  
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex items-center justify-between bg-white/10 backdrop-blur-xl p-6 rounded-3xl">
+      <button 
+        (click)="goBack()"
+        class="px-6 py-3 bg-white/20 hover:bg-white text-white hover:text-indigo-600 rounded-full"
+      >
+        ← Retour
+      </button>
+      
+      <h1 class="text-3xl font-bold text-white">
+        📊 Historique des Pauses
+      </h1>
+    </div>
+  </div>
+
+
+
+  <!-- Session Info -->
+  <div *ngIf="sessionInfo()" class="bg-white rounded-3xl p-6 mb-6 shadow-xl">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <div class="text-xs font-bold text-gray-600">LIGNE</div>
+        <div class="text-xl font-bold text-gray-900">{{ sessionInfo().ligne }}</div>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-gray-600">STATUT</div>
+        <div class="text-xl font-bold text-gray-900">{{ sessionInfo().status }}</div>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-gray-600">TEMPS PRODUCTION</div>
+        <div class="text-xl font-bold text-gray-900">{{ sessionInfo().productionTime || '0s' }}</div>
+      </div>
+      <div>
+        <div class="text-xs font-bold text-gray-600">PIÈCES PERDUES</div>
+        <div class="text-xl font-bold text-red-600">{{ totalLostPieces() }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pauses List -->
+  <div class="bg-white rounded-3xl p-6 md:p-8 shadow-2xl">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6">
+      Liste des Pauses ({{ pauses().length }})
+    </h2>
+
+    <!-- Empty State -->
+    <div *ngIf="pauses().length === 0" class="text-center py-16">
+      <div class="text-6xl mb-4">⏸️</div>
+      <p class="text-xl text-gray-500">Aucune pause enregistrée</p>
+      <p class="text-sm text-gray-400 mt-2">Les données ne sont pas chargées</p>
+    </div>
+
+    <!-- Pauses List -->
+    <div *ngIf="pauses().length > 0" class="space-y-6">
+      <div *ngFor="let pause of pauses(); let i = index" 
+           class="p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-gray-200">
+        
+        <!-- Numéro de pause -->
+        <div class="text-sm text-gray-500 mb-2">Pause #{{ i + 1 }}</div>
+        
+        <!-- Pause Header -->
+        <div class="flex flex-wrap justify-between items-start gap-4 mb-4 pb-4 border-b-2 border-gray-100">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-4 py-2 bg-indigo-600 text-white rounded-full font-bold">
+              {{ pause.mCategory }}
+            </span>
+            <span *ngIf="pause.subCategory" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">
+              {{ pause.subCategory }}
+            </span>
+          </div>
+          
+          <div class="flex items-center gap-4">
+            <!-- Pièces perdues -->
+            <div *ngIf="pause.lostPieces && pause.lostPieces > 0" 
+                 class="flex items-center gap-2 px-3 py-1 bg-red-100 rounded-lg border border-red-300">
+              <span>📉</span>
+              <span class="font-bold text-red-700">{{ pause.lostPieces }} pièces</span>
+            </div>
+            
+            <!-- Durée -->
+            <div class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
+              <span>⏱️</span>
+              <span class="font-bold font-mono">{{ pause.duration }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Times -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div class="text-sm">
+            <span class="text-gray-600">Début:</span>
+            <span class="ml-2 font-mono">{{ formatDateTime(pause.startTime) }}</span>
+          </div>
+          <div class="text-sm" *ngIf="pause.endTime">
+            <span class="text-gray-600">Fin:</span>
+            <span class="ml-2 font-mono">{{ formatDateTime(pause.endTime) }}</span>
+          </div>
+        </div>
+
+        <!-- Phases en panne -->
+        <div *ngIf="pause.phasesEnPanne && pause.phasesEnPanne.length > 0" class="mb-3">
+          <span class="text-xs font-bold text-gray-600">Phases en panne:</span>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <span *ngFor="let phase of pause.phasesEnPanne" 
+                  class="px-2 py-1 bg-orange-100 text-orange-800 text-sm rounded">
+              {{ phase }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Matières premières -->
+        <div *ngIf="pause.matierePremierRefs && pause.matierePremierRefs.length > 0" class="mb-3">
+          <span class="text-xs font-bold text-gray-600">Matières premières:</span>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <span *ngFor="let ref of pause.matierePremierRefs" 
+                  class="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded">
+              {{ ref }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Produits -->
+        <div *ngIf="pause.productRefs && pause.productRefs.length > 0" class="mb-3">
+          <span class="text-xs font-bold text-gray-600">Produits:</span>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <span *ngFor="let ref of pause.productRefs" 
+                  class="px-2 py-1 bg-green-100 text-green-800 text-sm rounded">
+              {{ ref }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Reason -->
+        <div *ngIf="pause.reason" class="mt-3 p-3 bg-gray-50 rounded-lg">
+          <span class="text-xs font-bold text-gray-600">Raison:</span>
+          <p class="text-sm text-gray-700 mt-1">{{ pause.reason }}</p>
+        </div>
+
+        <!-- Action -->
+        <div *ngIf="pause.actionTaken" class="mt-2 p-3 bg-gray-50 rounded-lg">
+          <span class="text-xs font-bold text-gray-600">Action:</span>
+          <p class="text-sm text-gray-700 mt-1">{{ pause.actionTaken }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

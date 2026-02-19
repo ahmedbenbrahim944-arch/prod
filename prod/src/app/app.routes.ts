@@ -16,6 +16,12 @@ import { StatsComponent } from './stats/stats.component';
 import { ListeComponent } from './liste/liste.component';
 import { ListeProductiviteComponent } from './liste-productivite/liste-productivite.component';
 import { NonconformiteComponent } from './nonconformite/nonconformite.component';
+import { Choix2Component } from './choix2/choix2.component';
+import { OuvrierComponent } from './ouvrier/ouvrier.component';
+import { Stats1Component } from './stats1/stats1.component';
+import { ProductionManagerComponent } from './production-manager/production-manager.component';
+import { Planification1Component } from './planification1/planification1.component';
+import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 
 
 export const routes: Routes = [
@@ -35,7 +41,25 @@ export const routes: Routes = [
   { path: 'statP', component: StatsComponent },
   { path: 'list', component: ListeComponent },
   { path: 'listP', component: ListeProductiviteComponent },
-  { path: 'sais', component: NonconformiteComponent}
+  { path: 'sais', component: NonconformiteComponent},
+  { path: 'ch2', component: Choix2Component},
+  { path: 'ouvrier', component: OuvrierComponent },
+{ path: 'ecran', component: Stats1Component },
+{
+    path: 'production',
+    component: ProductionManagerComponent,
+    // Ajoutez un guard d'authentification si nécessaire
+    // canActivate: [authGuard]
+  },
+  {
+    path: 'pause-history',
+    loadComponent: () => import('./pause-history/pause-history.component')
+      .then(m => m.PauseHistoryComponent)
+    // Page séparée pour l'historique des pauses (à créer)
+  },
+  { path: 'pl1', component: Planification1Component },
+  { path: 'ad', component: AdminDashboardComponent },
+
 
   
 ];

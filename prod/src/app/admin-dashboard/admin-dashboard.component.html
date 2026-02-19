@@ -1,0 +1,423 @@
+<!-- admin-dashboard.component.html -->
+
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 md:p-8">
+  
+  <!-- ========== HEADER ========== -->
+  <div class="mb-8">
+    <div class="bg-white/10 backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-2xl">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        <!-- Titre -->
+        <div class="flex items-center gap-4">
+          <button 
+            (click)="goBack()"
+            class="px-4 py-2 bg-white/20 hover:bg-white hover:text-purple-900 text-white rounded-full transition-all"
+          >
+            ← Retour
+          </button>
+          <h1 class="text-3xl md:text-4xl font-bold text-white flex items-center gap-3">
+            <span></span>
+            <span>Dashboard </span>
+          </h1>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center gap-3">
+          <!-- Auto-refresh toggle -->
+          <button
+            (click)="toggleAutoRefresh()"
+            [class]="autoRefresh() ? 'bg-green-500' : 'bg-gray-500'"
+            class="px-4 py-2 text-white rounded-lg hover:opacity-80 transition-all flex items-center gap-2"
+          >
+            <span>{{ autoRefresh() ? '🔄' : '⏸️' }}</span>
+            <span>{{ autoRefresh() ? 'Auto-refresh ON' : 'Auto-refresh OFF' }}</span>
+          </button>
+
+          <!-- Refresh manuel -->
+          <button
+            (click)="refresh()"
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all"
+          >
+            🔄 Rafraîchir
+          </button>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== FILTRES ========== -->
+  <div class="bg-white rounded-3xl p-6 mb-6 shadow-2xl">
+    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+       Filtres
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <!-- Date début -->
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Date début</label>
+        <input
+          type="date"
+          [(ngModel)]="filters().startDate"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+        />
+      </div>
+
+      <!-- Date fin -->
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Date fin</label>
+        <input
+          type="date"
+          [(ngModel)]="filters().endDate"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+        />
+      </div>
+
+      <!-- Ligne -->
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Ligne</label>
+        <select
+          [(ngModel)]="filters().ligne"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="all">Toutes les lignes</option>
+          <option *ngFor="let line of dashboardData()?.lines" [value]="line.ligne">
+            {{ line.ligne }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Statut -->
+      <div>
+        <label class="block text-sm font-bold text-gray-700 mb-2">Statut</label>
+        <select
+          [(ngModel)]="filters().status"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+        >
+          <option value="all">Tous</option>
+          <option value="active">Active</option>
+          <option value="paused">En pause</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <!-- Actions filtres -->
+      <div class="flex items-end gap-2">
+        <button
+          (click)="applyFilters()"
+          class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all"
+        >
+          Appliquer
+        </button>
+        <button
+          (click)="resetFilters()"
+          class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-all"
+        >
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LOADING ========== -->
+  <div *ngIf="loading()" class="text-center py-16">
+    <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
+    <p class="text-white mt-4">Chargement des données...</p>
+  </div>
+
+  <!-- ========== ERROR ========== -->
+  <div *ngIf="error()" class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-6">
+    {{ error() }}
+  </div>
+
+  <!-- ========== CONTENT ========== -->
+  <div *ngIf="!loading() && dashboardData()">
+    
+    <!-- ========== OVERVIEW STATS (Cartes) ========== -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+
+      <!-- Lignes Actives -->
+      <div class="bg-gradient-to-br from-green-500 to-green-700 rounded-2xl p-6 text-white shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold opacity-90">ACTIVES</span>
+          <span class="text-3xl">✅</span>
+        </div>
+        <div class="text-4xl font-bold">{{ totalActiveLines() }}</div>
+      </div>
+
+      <!-- Lignes en Pause -->
+      <div class="bg-gradient-to-br from-yellow-500 to-yellow-700 rounded-2xl p-6 text-white shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold opacity-90">EN PAUSE</span>
+          <span class="text-3xl">⏸️</span>
+        </div>
+        <div class="text-4xl font-bold">{{ totalPausedLines() }}</div>
+      </div>
+
+      <!-- Pièces Perdues -->
+      <div class="bg-gradient-to-br from-red-500 to-red-700 rounded-2xl p-6 text-white shadow-xl">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold opacity-90">PIÈCES PERDUES</span>
+          <span class="text-3xl">📉</span>
+        </div>
+        <div class="text-4xl font-bold">{{ dashboardData()!.overview.totalLostPieces }}</div>
+      </div>
+    </div>
+
+    <!-- ========== NAVIGATION TABS ========== -->
+    <div class="bg-white rounded-2xl p-2 mb-6 shadow-xl flex gap-2">
+      <button
+        (click)="activeView.set('cards')"
+        [class]="activeView() === 'cards' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="flex-1 px-6 py-3 rounded-lg font-bold transition-all hover:scale-105"
+      >
+        📊 Vue Cartes
+      </button>
+      <button
+        (click)="activeView.set('table')"
+        [class]="activeView() === 'table' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="flex-1 px-6 py-3 rounded-lg font-bold transition-all hover:scale-105"
+      >
+        📋 Vue Tableau
+      </button>
+      <button
+        (click)="activeView.set('stats')"
+        [class]="activeView() === 'stats' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700'"
+        class="flex-1 px-6 py-3 rounded-lg font-bold transition-all hover:scale-105"
+      >
+        📈 Statistiques
+      </button>
+    </div>
+
+    <!-- ========== VUE CARTES ========== -->
+    <div *ngIf="activeView() === 'cards'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div 
+        *ngFor="let line of dashboardData()!.lines"
+        class="bg-white rounded-2xl p-6 shadow-xl border-2 hover:shadow-2xl transition-all cursor-pointer"
+        [class.border-green-400]="line.status === 'active'"
+        [class.border-yellow-400]="line.status === 'paused'"
+        [class.border-gray-300]="line.status === 'inactive'"
+        (click)="viewLineDetails(line.ligne)"
+      >
+        <!-- Header Carte -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-2xl font-bold text-gray-900">{{ line.ligne }}</h3>
+          <span 
+            [class]="getStatusColor(line.status)"
+            class="px-3 py-1 rounded-full text-white text-sm font-bold"
+          >
+            {{ getStatusLabel(line.status) }}
+          </span>
+        </div>
+
+        <!-- Real-time data si active -->
+        <div *ngIf="line.realTime" class="space-y-3 mb-4">
+          <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+            <span class="text-sm font-semibold text-gray-700">Pièces produites</span>
+            <span class="text-xl font-bold text-blue-700">{{ line.realTime.piecesProduites }}</span>
+          </div>
+          
+          <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+            <span class="text-sm font-semibold text-gray-700">Temps production</span>
+            <span class="text-lg font-bold text-green-700">{{ line.realTime.tempsProduction }}</span>
+          </div>
+
+          <div *ngIf="line.realTime.pauseEnCours" class="p-3 bg-red-50 rounded-lg border border-red-200">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-red-700">⏸️ PAUSE EN COURS</span>
+              <span class="text-sm font-bold text-red-600">{{ line.realTime.pauseEnCours.mCategory }}</span>
+            </div>
+            <div class="text-xs text-red-600 mt-1">
+              Durée: {{ line.realTime.pauseEnCours.duree }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Info session si active -->
+        <div *ngIf="line.activeSession" class="text-sm text-gray-600 space-y-1">
+          <div><strong>Session ID:</strong> #{{ line.activeSession.id }}</div>
+          <div><strong>Produit:</strong> {{ line.activeSession.productType || 'N/A' }}</div>
+          <div><strong>Démarré par:</strong> {{ line.activeSession.startedBy?.name || 'N/A' }}</div>
+        </div>
+
+        <!-- Bouton voir détails -->
+        <button class="w-full mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all">
+          Voir détails →
+        </button>
+      </div>
+    </div>
+
+    <!-- ========== VUE TABLEAU ========== -->
+    <div *ngIf="activeView() === 'table'" class="bg-white rounded-2xl p-6 shadow-2xl overflow-auto">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">📋 Tableau des Lignes</h2>
+      
+      <table class="w-full min-w-max">
+        <thead>
+          <tr class="bg-gray-100 border-b-2 border-gray-300">
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Ligne</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Statut</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Session</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Pièces Produites</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Temps Production</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Temps Pause</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Pause En Cours</th>
+            <th class="px-4 py-3 text-left font-bold text-gray-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr 
+            *ngFor="let line of dashboardData()!.lines"
+            class="border-b hover:bg-gray-50 transition-colors"
+          >
+            <td class="px-4 py-3 font-bold">{{ line.ligne }}</td>
+            <td class="px-4 py-3">
+              <span 
+                [class]="getStatusColor(line.status)"
+                class="px-2 py-1 rounded-full text-white text-xs font-bold"
+              >
+                {{ getStatusLabel(line.status) }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <span *ngIf="line.activeSession">#{{ line.activeSession.id }}</span>
+              <span *ngIf="!line.activeSession" class="text-gray-400">-</span>
+            </td>
+            <td class="px-4 py-3">
+              <span *ngIf="line.realTime" class="font-bold text-blue-600">
+                {{ line.realTime.piecesProduites }}
+              </span>
+              <span *ngIf="!line.realTime" class="text-gray-400">-</span>
+            </td>
+            <td class="px-4 py-3">
+              <span *ngIf="line.realTime">{{ line.realTime.tempsProduction }}</span>
+              <span *ngIf="!line.realTime" class="text-gray-400">-</span>
+            </td>
+            <td class="px-4 py-3">
+              <span *ngIf="line.realTime">{{ line.realTime.tempsPause }}</span>
+              <span *ngIf="!line.realTime" class="text-gray-400">-</span>
+            </td>
+            <td class="px-4 py-3">
+              <span 
+                *ngIf="line.realTime?.pauseEnCours"
+                class="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold"
+              >
+                {{ line.realTime?.pauseEnCours?.mCategory }}
+              </span>
+              <span *ngIf="!line.realTime?.pauseEnCours" class="text-gray-400">-</span>
+            </td>
+            <td class="px-4 py-3">
+              <button
+                (click)="viewLineDetails(line.ligne)"
+                class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-all"
+              >
+                Détails
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="dashboardData()!.lines.length === 0" class="text-center py-8 text-gray-500">
+        Aucune ligne trouvée
+      </div>
+    </div>
+
+    <!-- ========== VUE STATISTIQUES ========== -->
+    <div *ngIf="activeView() === 'stats'" class="space-y-6">
+      
+      <!-- Stats par catégorie M -->
+      <div class="bg-white rounded-2xl p-6 shadow-2xl">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">📊 Pauses par Catégorie M</h2>
+        
+        <div *ngIf="mCategoryStats()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div 
+            *ngFor="let cat of mCategoryStats()!.categories"
+            class="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200"
+          >
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-bold text-gray-800">{{ cat.category }}</h3>
+              <span class="text-2xl font-bold text-purple-600">{{ cat.count }}</span>
+            </div>
+            
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Durée totale:</span>
+                <span class="font-bold">{{ cat.totalDuration }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Durée moyenne:</span>
+                <span class="font-bold">{{ cat.averageDuration }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Pièces perdues:</span>
+                <span class="font-bold text-red-600">{{ cat.totalLostPieces }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historique des pauses -->
+      <div class="bg-white rounded-2xl p-6 shadow-2xl">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">📋 Dernières Pauses</h2>
+        
+        <div *ngIf="pauseHistory()" class="space-y-4">
+          <div 
+            *ngFor="let pause of pauseHistory()!.pauses.slice(0, 10)"
+            class="p-4 bg-gray-50 rounded-xl border border-gray-200 hover:shadow-lg transition-all"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-2">
+              <div class="flex items-center gap-3">
+                <span class="px-3 py-1 bg-purple-600 text-white rounded-full font-bold">
+                  {{ pause.ligne }}
+                </span>
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold">
+                  {{ pause.mCategory }}
+                </span>
+                <span class="text-sm text-gray-600">
+                  {{ pause.startTime | date:'short' }}
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-4">
+                <span class="font-mono font-bold">{{ pause.duration }}</span>
+                <span *ngIf="pause.lostPieces > 0" class="px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-bold">
+                  -{{ pause.lostPieces }} pièces
+                </span>
+              </div>
+            </div>
+            
+            <div *ngIf="pause.reason" class="text-sm text-gray-700 mt-2">
+              {{ pause.reason }}
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between mt-6 pt-6 border-t">
+            <div class="text-sm text-gray-600">
+              Page {{ pauseHistory()!.pagination.page }} / {{ pauseHistory()!.pagination.totalPages }}
+              ({{ pauseHistory()!.pagination.total }} pauses au total)
+            </div>
+            
+            <div class="flex gap-2">
+              <button
+                (click)="previousPage()"
+                [disabled]="currentPage() === 1"
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg transition-all"
+              >
+                ← Précédent
+              </button>
+              <button
+                (click)="nextPage()"
+                [disabled]="currentPage() >= pauseHistory()!.pagination.totalPages"
+                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:bg-gray-100 disabled:text-gray-400 rounded-lg transition-all"
+              >
+                Suivant →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

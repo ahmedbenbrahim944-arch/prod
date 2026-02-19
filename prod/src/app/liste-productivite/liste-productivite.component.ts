@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,7 +16,7 @@ import * as XLSX from 'xlsx';
   templateUrl: './liste-productivite.component.html',
   styleUrls: ['./liste-productivite.component.css']
 })
-export class ListeProductiviteComponent implements OnInit {
+export class ListeProductiviteComponent implements OnInit, OnDestroy {
   
   // ============================================
   // PROPRIÉTÉS POUR LA PRODUCTIVITÉ DES OUVRIERS
@@ -36,7 +36,6 @@ export class ListeProductiviteComponent implements OnInit {
   valeurFiltre: string = '';
   minPourcentage: number = 0;
   maxPourcentage: number = 100;
-  // ✅ FIX 1: Utiliser null au lieu de valeurs par défaut pour détecter si l'utilisateur a appliqué un filtre
   productiviteMin: number | null = null;
   productiviteMax: number | null = null;
   ligneSelectionnee: string | null = null;
@@ -45,6 +44,14 @@ export class ListeProductiviteComponent implements OnInit {
   // Tri
   productiviteSortDirection: 'asc' | 'desc' | null = null;
   productiviteDataSorted: LigneProductivite[] = [];
+  
+  // ============================================
+  // PROPRIÉTÉS POUR LE DÉFILEMENT AUTOMATIQUE
+  // ============================================
+  
+  private scrollInterval: any = null;
+  private isUserInteracting: boolean = false;
+  private scrollTimeout: any = null;
   
   // ============================================
   // CONSTRUCTOR & LIFECYCLE
@@ -67,6 +74,13 @@ export class ListeProductiviteComponent implements OnInit {
     
     // Date de fin = aujourd'hui
     this.dateFinProductivite = this.maxDate;
+  }
+  
+  ngOnDestroy(): void {
+    this.stopAutoScroll();
+    if (this.scrollTimeout) {
+      clearTimeout(this.scrollTimeout);
+    }
   }
   
   // ============================================
@@ -151,8 +165,20 @@ export class ListeProductiviteComponent implements OnInit {
         console.log('✅ Productivité ouvriers chargée:', this.productiviteOuvriers);
         console.log('✅ Nombre de lignes dans le tableau:', this.productiviteOuvriers?.tableau?.length);
         
-        // ✅ FIX 2: Réinitialiser les filtres après chargement
+        // ✅ Réinitialiser les filtres après chargement
         this.reinitialiserFiltres();
+        
+        // ✅ Démarrer le défilement automatique après un court délai
+        // (pour laisser le temps au DOM de se mettre à jour)
+        setTimeout(() => {
+          // Revenir en haut du tableau
+          const tableauContainer = document.querySelector('.tableau-container');
+          if (tableauContainer) {
+            tableauContainer.scrollTop = 0;
+          }
+          // Démarrer le défilement
+          this.startAutoScroll();
+        }, 100);
       },
       error: (error) => {
         console.error('❌ Erreur chargement productivité:', error);
@@ -162,7 +188,7 @@ export class ListeProductiviteComponent implements OnInit {
     });
   }
 
-  // ✅ FIX 3: Nouvelle méthode pour réinitialiser les filtres
+  // ✅ Méthode pour réinitialiser les filtres
   reinitialiserFiltres(): void {
     this.champFiltre = '';
     this.valeurFiltre = '';
@@ -172,9 +198,19 @@ export class ListeProductiviteComponent implements OnInit {
     this.productiviteFiltree = [];
     this.productiviteSortDirection = null;
     this.productiviteDataSorted = [];
+    
+    // Réinitialiser le scroll et redémarrer le défilement
+    setTimeout(() => {
+      const tableauContainer = document.querySelector('.tableau-container');
+      if (tableauContainer) {
+        tableauContainer.scrollTop = 0;
+      }
+      this.isUserInteracting = false;
+      this.startAutoScroll();
+    }, 100);
   }
 
-  // ✅ FIX 4: Ajout d'une méthode pour vérifier si un filtre est actif
+  // ✅ Vérifier si un filtre est actif
   get hasActiveFilter(): boolean {
     return !!(this.valeurFiltre || 
               this.ligneSelectionnee || 
@@ -182,11 +218,12 @@ export class ListeProductiviteComponent implements OnInit {
               this.productiviteMax !== null);
   }
 
-  // ✅ Correction des méthodes utilitaires pour calculer les stats
+  // ✅ Calculer le total des heures
   private calculerTotalHeures(tableau: LigneProductivite[]): number {
     return tableau.reduce((total, ligne) => total + (ligne["N°HEURS"] || 0), 0);
   }
 
+  // ✅ Calculer la productivité moyenne
   private calculerProductiviteMoyenne(tableau: LigneProductivite[]): number {
     if (tableau.length === 0) return 0;
     const total = tableau.reduce((sum, ligne) => sum + (ligne.PRODUCTIVITE || 0), 0);
@@ -242,7 +279,7 @@ export class ListeProductiviteComponent implements OnInit {
       donnees = donnees.filter(ligne => ligne.LIGNES === this.ligneSelectionnee);
     }
     
-    // ✅ FIX 5: Correction du filtre par productivité
+    // Filtre par productivité
     if (this.productiviteMin !== null || this.productiviteMax !== null) {
       const min = this.productiviteMin ?? 0;
       const max = this.productiviteMax ?? 100;
@@ -258,6 +295,17 @@ export class ListeProductiviteComponent implements OnInit {
       this.productiviteDataSorted = [];
       // Réinitialiser le tri si pas de filtre
       this.productiviteSortDirection = null;
+      
+      // Réinitialiser le scroll et redémarrer le défilement
+      setTimeout(() => {
+        const tableauContainer = document.querySelector('.tableau-container');
+        if (tableauContainer) {
+          tableauContainer.scrollTop = 0;
+        }
+        this.isUserInteracting = false;
+        this.startAutoScroll();
+      }, 100);
+      
       return;
     }
     
@@ -326,6 +374,16 @@ export class ListeProductiviteComponent implements OnInit {
     // Réinitialiser le tri quand on applique un filtre
     this.productiviteSortDirection = null;
     this.productiviteDataSorted = [];
+    
+    // Réinitialiser le scroll et redémarrer le défilement
+    setTimeout(() => {
+      const tableauContainer = document.querySelector('.tableau-container');
+      if (tableauContainer) {
+        tableauContainer.scrollTop = 0;
+      }
+      this.isUserInteracting = false;
+      this.startAutoScroll();
+    }, 100);
   }
   
   /**
@@ -340,6 +398,16 @@ export class ListeProductiviteComponent implements OnInit {
     this.productiviteFiltree = [];
     this.productiviteSortDirection = null;
     this.productiviteDataSorted = [];
+    
+    // Réinitialiser le scroll et redémarrer le défilement
+    setTimeout(() => {
+      const tableauContainer = document.querySelector('.tableau-container');
+      if (tableauContainer) {
+        tableauContainer.scrollTop = 0;
+      }
+      this.isUserInteracting = false;
+      this.startAutoScroll();
+    }, 100);
   }
   
   // ============================================
@@ -357,6 +425,16 @@ export class ListeProductiviteComponent implements OnInit {
       this.productiviteSortDirection = 'desc';
       this.trierProductiviteDecroissant();
     }
+    
+    // Réinitialiser le scroll et redémarrer le défilement
+    setTimeout(() => {
+      const tableauContainer = document.querySelector('.tableau-container');
+      if (tableauContainer) {
+        tableauContainer.scrollTop = 0;
+      }
+      this.isUserInteracting = false;
+      this.startAutoScroll();
+    }, 100);
   }
   
   /**
@@ -365,7 +443,6 @@ export class ListeProductiviteComponent implements OnInit {
   trierProductiviteCroissant(): void {
     let donnees = [];
     
-    // ✅ FIX 6: Utiliser hasActiveFilter pour déterminer les données à trier
     if (this.hasActiveFilter) {
       donnees = [...this.productiviteFiltree];
     } else {
@@ -386,7 +463,6 @@ export class ListeProductiviteComponent implements OnInit {
   trierProductiviteDecroissant(): void {
     let donnees = [];
     
-    // ✅ FIX 7: Utiliser hasActiveFilter pour déterminer les données à trier
     if (this.hasActiveFilter) {
       donnees = [...this.productiviteFiltree];
     } else {
@@ -402,17 +478,87 @@ export class ListeProductiviteComponent implements OnInit {
   }
   
   // ============================================
+  // MÉTHODES DE GESTION DU SCROLL AUTOMATIQUE
+  // ============================================
+
+  /**
+   * Démarrer le défilement automatique
+   */
+  startAutoScroll(): void {
+    // Nettoyer l'intervalle existant
+    this.stopAutoScroll();
+    
+    // Démarrer un nouvel intervalle
+    this.scrollInterval = setInterval(() => {
+      this.scrollTable();
+    }, 1000); // 5 secondes
+  }
+
+  /**
+   * Arrêter le défilement automatique
+   */
+  stopAutoScroll(): void {
+    if (this.scrollInterval) {
+      clearInterval(this.scrollInterval);
+      this.scrollInterval = null;
+    }
+  }
+
+  /**
+   * Faire défiler le tableau
+   */
+  scrollTable(): void {
+    // Ne pas défiler si l'utilisateur interagit
+    if (this.isUserInteracting) {
+      return;
+    }
+    
+    const tableauContainer = document.querySelector('.tableau-container');
+    if (tableauContainer) {
+      const currentScroll = tableauContainer.scrollTop;
+      const scrollHeight = tableauContainer.scrollHeight;
+      const clientHeight = tableauContainer.clientHeight;
+      
+      // Si on est en bas, revenir en haut
+      if (currentScroll + clientHeight >= scrollHeight - 10) {
+        tableauContainer.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      } else {
+        // Sinon, défiler vers le bas (hauteur d'une ligne environ)
+        tableauContainer.scrollTo({
+          top: currentScroll + 40, // 40px approximativement la hauteur d'une ligne
+          behavior: 'smooth'
+        });
+      }
+    }
+  }
+
+  /**
+   * Gérer le début de l'interaction utilisateur
+   */
+  onUserInteraction(): void {
+    this.isUserInteracting = true;
+    
+    // Réactiver le défilement après 10 secondes d'inactivité
+    if (this.scrollTimeout) {
+      clearTimeout(this.scrollTimeout);
+    }
+    
+    this.scrollTimeout = setTimeout(() => {
+      this.isUserInteracting = false;
+    }, 10000); // 10 secondes d'inactivité
+  }
+  
+  // ============================================
   // MÉTHODES UTILITAIRES
   // ============================================
   
   /**
    * Obtenir la couleur pour la productivité
    */
-  getColorForProductivite(productivite: number): string {
-    if (productivite >= 90) return '#10b981'; // Vert
-    if (productivite >= 70) return '#3b82f6'; // Bleu
-    return '#f59e0b'; // Orange
-  }
+ 
   
   // ============================================
   // MÉTHODES D'EXPORT
@@ -584,4 +730,18 @@ export class ListeProductiviteComponent implements OnInit {
   get safeProductiviteStats(): any {
     return this.productiviteOuvriers?.statistiques?.resume || {};
   }
+  getProd(ligne: LigneProductivite): number {
+  const val = ligne.PRODUCTIVITE ?? 0;
+  return val === 0 ? 100 : val;
+}
+
+/**
+ * Couleur selon la productivité réelle (après conversion 0→100)
+ */
+getColorForProductivite(productivite: number): string {
+  const real = productivite === 0 ? 100 : productivite;
+  if (real >= 90) return '#00e5a0'; // vert
+  if (real >= 70) return '#4db8ff'; // bleu
+  return '#ff8c42';                 // orange
+}
 }

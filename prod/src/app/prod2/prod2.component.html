@@ -203,18 +203,26 @@
                 </div>
                 
                 <button 
-                  (click)="toggleEditMode()"
-                  [class.bg-green-600]="!isEditing()"
-                  [class.bg-blue-600]="isEditing()"
-                  class="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all duration-300 text-white flex items-center justify-center text-sm sm:text-base">
-                  <svg *ngIf="!isEditing()" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                  </svg>
-                  <svg *ngIf="isEditing()" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                  </svg>
-                  {{ isEditing() ? 'Enregistrer' : 'Modifier' }}
-                </button>
+    (click)="toggleEditMode()"
+    [class.bg-green-600]="!isEditing()"
+    [class.bg-blue-600]="isEditing()"
+    [class.opacity-50]="hasIncoherences() && isEditing()"
+    [class.cursor-not-allowed]="hasIncoherences() && isEditing()"
+    [attr.disabled]="hasIncoherences() && isEditing() ? true : null"
+    class="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all duration-300 text-white flex items-center justify-center text-sm sm:text-base">
+    
+    <svg *ngIf="!isEditing()" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+    </svg>
+    <svg *ngIf="isEditing()" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    
+    {{ isEditing() ? 
+      (hasIncoherences() ? 'Corrigez les erreurs' : 'Enregistrer') 
+      : 'Modifier' 
+    }}
+  </button>
               </div>
             </div>
           </div>
@@ -229,6 +237,25 @@
               <span><strong class="text-cyan-400">NB OP:</strong> Nombre d'opérateurs</span>
             </div>
           </div>
+          <div *ngIf="hasIncoherences()" class="error-banner bg-red-900/80 border border-red-700 rounded-lg p-3 mb-4">
+  <div class="flex items-start">
+    <svg class="w-5 h-5 text-red-400 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376a12 12 0 1 0 20.817 0M12 15.75h.008v.008H12v-.008z"/>
+    </svg>
+    <div class="flex-1">
+      <h3 class="font-bold text-red-300 text-sm mb-1">⚠️ Incohérence(s) détectée(s)</h3>
+      <div class="text-red-200 text-xs space-y-1">
+        <div *ngFor="let inc of incoherencesDP()" class="border-b border-red-800/50 pb-1 last:border-0">
+          <span class="font-semibold">{{inc.reference}}</span> - 
+          <span class="capitalize">{{inc.day}}</span> : 
+          DP(<span class="font-bold">{{inc.dp}}</span>) > C(<span class="font-bold">{{inc.c}}</span>)
+          <span class="text-red-300 ml-2">(+{{inc.difference}})</span>
+        </div>
+      </div>
+      <p class="text-red-300 text-xs mt-2 font-semibold">Corrigez ces valeurs avant de pouvoir enregistrer.</p>
+    </div>
+  </div>
+</div>
 
           <!-- Tableau de planification -->
           <div *ngIf="filteredWeekPlanification()" 
@@ -349,31 +376,33 @@
     
     <!-- Ligne DP - MODIFIABLE -->
     <tr class="border-b border-gray-700/50">
-      <td class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">DP</td>
-      <ng-container *ngFor="let day of weekDays">
-        <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
-          <!-- DP - MODIFIABLE EN MODE ÉDITION SEULEMENT SI canEditDP() -->
-          <input *ngIf="isEditing() && getDayEntry(ref, day) && canEditDP()" 
-                 type="number"
-                 [value]="getDayEntry(ref, day)!.dp"
-                 (input)="updateDayEntry(ref, day, 'dp', $any($event.target).value)"
-                 class="w-full bg-gray-700/50 border border-cyan-500/40 rounded px-2 sm:px-3 py-1 sm:py-2 text-white text-base sm:text-lg text-center font-bold">
-          
-          <!-- DP - LECTURE SEULE si pas de permission ou pas en mode édition -->
-          <span *ngIf="(!isEditing() || !canEditDP()) && getDayEntry(ref, day)" 
-                [class]="canEditDP() ? 'text-white font-bold text-base sm:text-lg value-display' : 'text-gray-400 font-bold text-base sm:text-lg value-display'">
-            {{ getDayEntry(ref, day)!.dp || '-' }}
-          </span>
-          
-          <!-- Message si pas de permission -->
-          <div *ngIf="isEditing() && !canEditDP() && getDayEntry(ref, day)" 
-               class="text-xs text-orange-400 mt-1"
-               title="Seuls les chefs secteurs normaux peuvent modifier DP">
-            🔒
-          </div>
-          
-          <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
-        </td>
+  <td class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">DP</td>
+  <ng-container *ngFor="let day of weekDays">
+    <!-- ========== MODIFIER CETTE CELLULE ========== -->
+    <td class="text-center border-2 border-gray-700 py-3 sm:py-4"
+        [class.dp-error]="getDayEntry(ref, day) && getDayEntry(ref, day)!.dp > getDayEntry(ref, day)!.c">
+      <!-- DP - MODIFIABLE EN MODE ÉDITION SEULEMENT SI canEditDP() -->
+      <input *ngIf="isEditing() && getDayEntry(ref, day) && canEditDP()" 
+             type="number"
+             [value]="getDayEntry(ref, day)!.dp"
+             (input)="updateDayEntry(ref, day, 'dp', $any($event.target).value)"
+             class="w-full bg-gray-700/50 border border-cyan-500/40 rounded px-2 sm:px-3 py-1 sm:py-2 text-white text-base sm:text-lg text-center font-bold">
+      
+      <!-- DP - LECTURE SEULE si pas de permission ou pas en mode édition -->
+      <span *ngIf="(!isEditing() || !canEditDP()) && getDayEntry(ref, day)" 
+            [class]="canEditDP() ? 'text-white font-bold text-base sm:text-lg value-display' : 'text-gray-400 font-bold text-base sm:text-lg value-display'">
+        {{ getDayEntry(ref, day)!.dp || '-' }}
+      </span>
+      
+      <!-- Message si pas de permission -->
+      <div *ngIf="isEditing() && !canEditDP() && getDayEntry(ref, day)" 
+           class="text-xs text-orange-400 mt-1"
+           title="Seuls les chefs secteurs normaux peuvent modifier DP">
+        🔒
+      </div>
+      
+      <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
+    </td>
       </ng-container>
     </tr>
     
@@ -525,11 +554,7 @@
             class="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-semibold transition-colors">
             Tout
           </button>
-          <button 
-            (click)="deselectAllOperators()"
-            class="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold transition-colors">
-            Aucun
-          </button>
+          
         </div>
 
         <!-- Liste des opérateurs - MODIFIÉ -->
@@ -1076,27 +1101,133 @@
           </div>
         </div>
         
-        <!-- M2: Absence -->
-        <div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
-          <h4 class="text-gray-700 font-bold text-sm mb-2">M2: Absence</h4>
-          <input type="number" 
-                 [value]="currentCauses().m2Absence || ''"
-                 (input)="updateCause('m2Absence', $any($event.target).value)"
-                 min="0"
-                 placeholder="Saisir quantité"
-                 class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-blue-500">
+      <!-- M2: Absence -->
+<div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
+  <h4 class="text-gray-700 font-bold text-sm mb-2">M2: Absence</h4>
+  
+  <!-- Quantité totale absence -->
+  <div class="mb-2">
+    <label class="block text-gray-600 text-xs mb-1">Quantité totale</label>
+    <input 
+      type="number" 
+      [value]="currentCauses().m2Absence || ''"
+      (input)="updateCause('m2Absence', $any($event.target).value)"
+      min="0"
+      placeholder="Ex: 200"
+      class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-blue-500">
+  </div>
+
+  <!-- Liste des matricules absence (visible si quantité > 0) -->
+  <div *ngIf="currentCauses().m2Absence > 0" class="space-y-1 mt-2">
+    <label class="block text-gray-600 text-xs">Matricules (séparés par virgule)</label>
+    
+    <!-- Matricules sélectionnés -->
+    <div *ngFor="let mat of selectedMatriculesAbsence(); let i = index" 
+         class="flex items-center space-x-1 bg-orange-50 rounded px-2 py-1 border border-orange-200">
+      <span class="text-xs font-semibold text-gray-800 flex-1">{{ mat }}</span>
+      <button (click)="removeMatriculeAbsence(i)"
+              type="button"
+              class="text-red-500 hover:text-red-700 p-0.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Ajouter un matricule -->
+    <div class="relative">
+      <input 
+        type="text"
+        [value]="currentAbsenceSearchQuery()"
+        (input)="onSearchAbsenceChange($event)"
+        (focus)="showAbsenceSuggestions.set(true)"
+        (blur)="closeAbsenceSuggestions()"
+        placeholder="Tapez le matricule..."
+        class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-xs focus:outline-none focus:border-blue-500"
+        autocomplete="off">
+      
+      <!-- Suggestions de matricules -->
+      <div *ngIf="showAbsenceSuggestions() && filteredAbsenceMatricules().length > 0" 
+           class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-md max-h-32 overflow-y-auto">
+        <div *ngFor="let mat of filteredAbsenceMatricules()" 
+             (mousedown)="addMatriculeAbsence(mat)"
+             class="px-2 py-1 text-gray-700 hover:bg-orange-100 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 text-xs">
+          {{ mat }}
         </div>
+      </div>
+    </div>
+    
+    <!-- Message si aucun matricule -->
+    <div *ngIf="selectedMatriculesAbsence().length === 0" 
+         class="text-xs text-gray-500 text-center italic">
+      Aucun matricule saisi (optionnel)
+    </div>
+  </div>
+</div>
         
-        <!-- M2: Rendement -->
-        <div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
-          <h4 class="text-gray-700 font-bold text-sm mb-2">M2: Rendement</h4>
-          <input type="number" 
-                 [value]="currentCauses().m2Rendement || ''"
-                 (input)="updateCause('m2Rendement', $any($event.target).value)"
-                 min="0"
-                 placeholder="Saisir quantité"
-                 class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-blue-500">
+<!-- M2: Rendement -->
+<div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
+  <h4 class="text-gray-700 font-bold text-sm mb-2">M2: Rendement</h4>
+  
+  <!-- Quantité totale rendement -->
+  <div class="mb-2">
+    <label class="block text-gray-600 text-xs mb-1">Quantité totale</label>
+    <input 
+      type="number" 
+      [value]="currentCauses().m2Rendement || ''"
+      (input)="updateCause('m2Rendement', $any($event.target).value)"
+      min="0"
+      placeholder="Ex: 150"
+      class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-blue-500">
+  </div>
+
+  <!-- Liste des matricules rendement (visible si quantité > 0) -->
+  <div *ngIf="currentCauses().m2Rendement > 0" class="space-y-1 mt-2">
+    <label class="block text-gray-600 text-xs">Matricules (séparés par virgule)</label>
+    
+    <!-- Matricules sélectionnés -->
+    <div *ngFor="let mat of selectedMatriculesRendement(); let i = index" 
+         class="flex items-center space-x-1 bg-teal-50 rounded px-2 py-1 border border-teal-200">
+      <span class="text-xs font-semibold text-gray-800 flex-1">{{ mat }}</span>
+      <button (click)="removeMatriculeRendement(i)"
+              type="button"
+              class="text-red-500 hover:text-red-700 p-0.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Ajouter un matricule -->
+    <div class="relative">
+      <input 
+        type="text"
+        [value]="currentRendementSearchQuery()"
+        (input)="onSearchRendementChange($event)"
+        (focus)="showRendementSuggestions.set(true)"
+        (blur)="closeRendementSuggestions()"
+        placeholder="Tapez le matricule..."
+        class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-xs focus:outline-none focus:border-blue-500"
+        autocomplete="off">
+      
+      <!-- Suggestions de matricules -->
+      <div *ngIf="showRendementSuggestions() && filteredRendementMatricules().length > 0" 
+           class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-md max-h-32 overflow-y-auto">
+        <div *ngFor="let mat of filteredRendementMatricules()" 
+             (mousedown)="addMatriculeRendement(mat)"
+             class="px-2 py-1 text-gray-700 hover:bg-teal-100 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 text-xs">
+          {{ mat }}
         </div>
+      </div>
+    </div>
+    
+    <!-- Message si aucun matricule -->
+    <div *ngIf="selectedMatriculesRendement().length === 0" 
+         class="text-xs text-gray-500 text-center italic">
+      Aucun matricule saisi (optionnel)
+    </div>
+  </div>
+</div>
 
         <!-- M3: Méthode -->
         <div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
@@ -1110,15 +1241,75 @@
         </div>
         
         <!-- M4: Maintenance -->
-        <div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
-          <h4 class="text-gray-700 font-bold text-sm mb-2">M4: Maintenance</h4>
-          <input type="number" 
-                 [value]="currentCauses().m4Maintenance || ''"
-                 (input)="updateCause('m4Maintenance', $any($event.target).value)"
-                 min="0"
-                 placeholder="Saisir quantité"
-                 class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-blue-500">
+        <!-- M4: Maintenance avec phases -->
+<div class="bg-gray-50 rounded-lg p-2 border border-gray-300">
+  <h4 class="text-gray-700 font-bold text-sm mb-2">M4: Maintenance</h4>
+  
+  <!-- Quantité totale maintenance -->
+  <div class="mb-2">
+    <label class="block text-gray-600 text-xs mb-1">Quantité totale</label>
+    <input 
+      type="number" 
+      [value]="currentCauses().m4Maintenance || ''"
+      (input)="updateCause('m4Maintenance', $any($event.target).value)"
+      min="0"
+      placeholder="Ex: 150"
+      class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-blue-500">
+  </div>
+
+  <!-- Liste des phases maintenance (visible si quantité > 0) -->
+  <div *ngIf="currentCauses().m4Maintenance > 0" class="space-y-1 mt-2">
+    <label class="block text-gray-600 text-xs">Phases (max 3)</label>
+    
+    <!-- Phases sélectionnées -->
+    <div *ngFor="let phase of selectedPhasesMaintenance(); let i = index" 
+         class="flex items-center space-x-1 bg-purple-50 rounded px-2 py-1 border border-purple-200">
+      <span class="text-xs font-semibold text-gray-800 flex-1">{{ phase }}</span>
+      <button (click)="removePhasesMaintenance(i)"
+              type="button"
+              class="text-red-500 hover:text-red-700 p-0.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Ajouter une phase -->
+    <div *ngIf="selectedPhasesMaintenance().length < 3" class="relative">
+      <input 
+        type="text"
+        [value]="currentPhasesSearchQuery()"
+        (input)="onSearchPhasesChange($event)"
+        (focus)="showPhasesSuggestions.set(true)"
+        (blur)="closePhasesSuggestions()"
+        placeholder="Tapez pour ajouter une phase..."
+        class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-xs focus:outline-none focus:border-blue-500"
+        autocomplete="off">
+      
+      <!-- Suggestions de phases -->
+      <div *ngIf="showPhasesSuggestions() && filteredPhasesRefs().length > 0" 
+           class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-md max-h-32 overflow-y-auto">
+        <div *ngFor="let phase of filteredPhasesRefs()" 
+             (mousedown)="addPhasesMaintenance(phase)"
+             class="px-2 py-1 text-gray-700 hover:bg-purple-100 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0 text-xs">
+          {{ phase }}
         </div>
+      </div>
+    </div>
+
+    <!-- Message limite -->
+    <div *ngIf="selectedPhasesMaintenance().length >= 3" 
+         class="text-xs text-orange-600 text-center">
+      Maximum 3 phases atteint
+    </div>
+    
+    <!-- Message optionnel -->
+    <div *ngIf="selectedPhasesMaintenance().length === 0" 
+         class="text-xs text-gray-500 text-center italic">
+      Aucune phase sélectionnée (optionnel)
+    </div>
+  </div>
+</div>
 
         <!-- M6: Environnement -->
 <div class="bg-gray-50 rounded-lg p-2 border border-gray-300">

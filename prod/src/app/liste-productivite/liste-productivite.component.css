@@ -1,600 +1,623 @@
-/* ============================================ */
-/* CONTAINER PRINCIPAL - OPTIMISÉ COMPACT */
-/* ============================================ */
-.stats-container {
-  padding: 0.5rem;
-  min-height: 100vh;
+/* ============================================================ */
+/* VARIABLES — THÈME INDUSTRIEL SOMBRE                         */
+/* ============================================================ */
+:host {
+  --bg-deep:        #0d0f14;
+  --bg-panel:       #13161e;
+  --bg-card:        #1a1e28;
+  --bg-row:         #161920;
+  --bg-row-alt:     #1d2130;
+  --border:         #252a38;
+  --border-bright:  #2e3447;
+
+  --accent-green:   #00e5a0;
+  --accent-blue:    #4db8ff;
+  --accent-orange:  #ff8c42;
+  --accent-red:     #ff4d6d;
+  --accent-purple:  #a78bfa;
+
+  --text-primary:   #e8eaf0;
+  --text-secondary: #8892a4;
+  --text-muted:     #4a5268;
+
+  --thead-bg:       #0f1219;
+  --thead-text:     #6b7a99;
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  --font-ui:   'Rajdhani', 'Barlow', 'Segoe UI', sans-serif;
+
+  font-family: var(--font-ui);
 }
 
-/* ============================================ */
-/* BOUTON RETOUR - COMPACT */
-/* ============================================ */
+/* ============================================================ */
+/* IMPORT FONTS                                                 */
+/* ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================ */
+/* CONTAINER RACINE                                             */
+/* ============================================================ */
+.stats-container {
+  background: var(--bg-deep);
+  min-height: 100vh;
+  padding: 0.6rem;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+
+  /* Texture légère industrielle */
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(0,229,160,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(77,184,255,0.03) 0%, transparent 50%),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 79px,
+      rgba(255,255,255,0.01) 80px
+    );
+}
+
+/* ============================================================ */
+/* BOUTON RETOUR                                               */
+/* ============================================================ */
 .btn-retour-choix {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  background: rgba(255, 255, 255, 0.95);
-  color: #667eea;
-  border: none;
-  border-radius: 8px;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
 }
 
 .btn-retour-choix:hover {
-  background: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  background: rgba(77,184,255,0.06);
 }
 
 .btn-retour-choix svg {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
-/* ============================================ */
-/* HEADER ET CONTRÔLES - COMPACT */
-/* ============================================ */
-.header {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 0.5rem;
-}
-
-.header h1 {
-  margin: 0 0 1rem 0;
-  color: #1f2937;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-align: center;
-}
-
-/* ============================================ */
-/* CONTRÔLES - FILTRES */
-/* ============================================ */
-.controls {
-  display: flex;
-  align-items: stretch;
-  gap: 1.5rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  flex: 1;
-  min-width: 300px;
-  max-width: 450px;
-  background: linear-gradient(135deg, #f6f8fb 0%, #ffffff 100%);
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.filter-group:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.filter-header {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.filter-header svg {
-  width: 20px;
-  height: 20px;
-  color: #667eea;
-}
-
-.filter-header span {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1f2937;
-}
-
-.filter-inputs {
+/* ============================================================ */
+/* PAGE DE SÉLECTION — FILTRE                                  */
+/* ============================================================ */
+.filter-page {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  align-items: flex-start;
+  gap: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-top: 1rem;
 }
 
-.date-range-inputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.8rem;
+.filter-card {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.filter-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem 1.5rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(0,229,160,0.08);
+  border: 1px solid rgba(0,229,160,0.2);
+  border-radius: 6px;
+  color: var(--accent-green);
+  flex-shrink: 0;
+}
+
+.header-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.filter-card-header h1 {
+  margin: 0 0 0.2rem 0;
+  font-family: var(--font-ui);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.filter-subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.filter-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.date-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.date-separator {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  padding-bottom: 0.65rem;
+  flex-shrink: 0;
 }
 
 .input-group {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
 .input-group label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #4b5563;
-}
-
-.filter-select,
-.filter-input {
-  padding: 0.6rem 0.8rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  color: #1f2937;
-  background: white;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.filter-select:hover,
-.filter-input:hover {
-  border-color: #667eea;
-}
-
-.filter-select:focus,
-.filter-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.btn-filter {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.7rem 1.2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
+  gap: 0.3rem;
+  font-size: 0.75rem;
   font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.filter-input {
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s ease;
+  color-scheme: dark;
 }
 
-.btn-filter:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+.filter-input:hover,
+.filter-input:focus {
+  outline: none;
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 2px rgba(0,229,160,0.1);
 }
 
-.btn-filter:disabled {
-  opacity: 0.6;
+.btn-charger {
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, rgba(0,229,160,0.15) 0%, rgba(0,229,160,0.08) 100%);
+  color: var(--accent-green);
+  border: 1px solid rgba(0,229,160,0.35);
+  border-radius: 4px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn-charger:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(0,229,160,0.25) 0%, rgba(0,229,160,0.15) 100%);
+  border-color: var(--accent-green);
+  box-shadow: 0 0 20px rgba(0,229,160,0.15);
+}
+
+.btn-charger:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.btn-filter svg {
-  width: 18px;
-  height: 18px;
+.btn-charger-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-/* ============================================ */
-/* LOADING */
-/* ============================================ */
-.loading {
-  text-align: center;
-  padding: 3rem 2rem;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 3px solid #f3f4f6;
-  border-top: 3px solid #667eea;
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0,229,160,0.3);
+  border-top-color: var(--accent-green);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 
-.loading p {
-  color: #1f2937;
-  font-size: 1rem;
-  font-weight: 600;
+/* ============================================================ */
+/* PAGE DES RÉSULTATS                                          */
+/* ============================================================ */
+.results-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  height: calc(100vh - 1.2rem);
 }
 
-/* ============================================ */
-/* LAYOUT PRINCIPAL - ULTRA COMPACT */
-/* ============================================ */
-.stats-content {
-  background: white;
-  border-radius: 12px;
-  padding: 0.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* ============================================ */
-/* EN-TÊTE PRODUCTIVITÉ - COMPACT */
-/* ============================================ */
-.productivite-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8px;
-  padding: 0.8rem;
-  margin-bottom: 0.5rem;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
-
-.productivite-header h1 {
+/* ============================================================ */
+/* TOP BAR                                                     */
+/* ============================================================ */
+.top-bar {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin: 0;
-  color: white;
-  font-size: 1.3rem;
+  gap: 1rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.top-bar-title {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1rem;
   font-weight: 700;
-  justify-content: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-primary);
 }
 
-.productivite-header svg {
-  width: 24px;
-  height: 24px;
-  stroke: white;
+.top-bar-icon {
+  font-size: 1.1rem;
+  color: var(--accent-green);
+  line-height: 1;
 }
 
-.periode-info {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.95);
-  font-size: 0.9rem;
+.top-bar-date {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
   font-weight: 500;
-  margin: 0.4rem 0 0 0;
-  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  letter-spacing: 0.05em;
+  background: var(--bg-row);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
 }
 
-/* ============================================ */
-/* TABLEAU PRODUCTIVITÉ - VERSION ULTRA COMPACTE */
-/* ============================================ */
+.count-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent-blue);
+  background: rgba(77,184,255,0.08);
+  border: 1px solid rgba(77,184,255,0.2);
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
+  white-space: nowrap;
+}
+
+/* ============================================================ */
+/* LÉGENDE DES CAUSES                                          */
+/* ============================================================ */
+.legend-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.8rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.legend-sep {
+  color: var(--border-bright);
+  font-size: 0.8rem;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.legend-dot.m1 { background: #e879f9; }
+.legend-dot.m2 { background: #38bdf8; }
+.legend-dot.m3 { background: #fb923c; }
+.legend-dot.m4 { background: #a78bfa; }
+.legend-dot.m5 { background: #f43f5e; }
+.legend-dot.m6 { background: #fbbf24; }
+.legend-dot.m7 { background: #34d399; }
+
+/* ============================================================ */
+/* TABLEAU WRAPPER                                              */
+/* ============================================================ */
 .tableau-container {
+  flex: 1;
   overflow-x: auto;
   overflow-y: auto;
-  max-height: calc(100vh - 180px); /* Maximiser la hauteur visible */
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-panel);
+  min-height: 0;
 }
 
-/* Scrollbar personnalisée */
-.tableau-container::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* Scrollbar */
+.tableau-container::-webkit-scrollbar { width: 6px; height: 6px; }
+.tableau-container::-webkit-scrollbar-track { background: var(--bg-deep); }
+.tableau-container::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+.tableau-container::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-.tableau-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 4px;
-}
-
-.tableau-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-.tableau-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* TABLE - ULTRA COMPACT */
+/* ============================================================ */
+/* TABLE                                                        */
+/* ============================================================ */
 .productivite-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px; /* Police réduite pour plus de densité */
   table-layout: fixed;
-  min-width: 100%;
+  font-family: var(--font-ui);
+  font-size: 15px;
 }
 
-/* THEAD - EN-TÊTE FIXE */
+/* ---- THEAD ---- */
 .productivite-table thead {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--thead-bg);
+}
+
+.productivite-table thead tr {
+  border-bottom: 2px solid var(--accent-green);
 }
 
 .productivite-table thead th {
-  padding: 6px 4px; /* Padding très réduit */
+  padding: 10px 8px;
   text-align: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
   font-weight: 600;
-  font-size: 10px; /* Header encore plus petit */
-  color: white;
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.12em;
+  color: var(--thead-text);
+  text-transform: uppercase;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
+  border-right: 1px solid var(--border);
 }
 
-.productivite-table thead th:last-child {
-  border-right: none;
-}
+.productivite-table thead th:last-child { border-right: none; }
 
-/* COLONNES - LARGEURS OPTIMISÉES */
-.date-col { 
-  width: 75px; 
-  min-width: 75px;
-}
+/* ---- WIDTHS ---- */
+.col-date  { width: 82px; min-width: 80px; }
+.col-mat   { width: 54px; min-width: 50px; }
+.col-nom   { width: 175px; min-width: 160px; text-align: left !important; }
+.col-h     { width: 38px; min-width: 36px; }
+.col-ligne { width: 100px; min-width: 90px; }
+.col-prod  { width: 120px; min-width: 110px; }
+.col-m     { width: 56px; min-width: 52px; }
 
-.matricule-col { 
-  width: 50px; 
-  min-width: 50px;
-}
-
-.nom-col { 
-  width: 140px; 
-  min-width: 140px;
-  text-align: left !important;
-}
-
-.heures-col { 
-  width: 40px; 
-  min-width: 40px;
-}
-
-.ligne-col { 
-  width: 45px; 
-  min-width: 45px;
-}
-
-.productivite-col { 
-  width: 65px; 
-  min-width: 65px;
-}
-
-.m-col { 
-  width: 50px; 
-  min-width: 50px;
-}
-
-/* TBODY - LIGNES COMPACTES */
-.productivite-table tbody td {
-  padding: 4px 4px; /* Padding minimal */
-  text-align: center;
-  border-bottom: 1px solid #f1f5f9;
-  border-right: 1px solid #f1f5f9;
-  font-size: 11px;
-  line-height: 1.3;
-  color: #1e293b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  height: 28px; /* Hauteur de ligne ultra compacte */
-}
-
-.productivite-table tbody td:last-child {
-  border-right: none;
-}
-
-/* Nom aligné à gauche */
-.nom-col {
-  text-align: left !important;
-  padding-left: 6px !important;
-}
-
-/* Colonne Productivité - mise en valeur */
-.productivite-col {
-  font-weight: 700;
-  font-size: 11.5px;
-}
-
-/* Colonnes M - valeurs */
-.m-value-col {
-  font-size: 10.5px;
-  color: #64748b;
-}
-
-.m-value-col.has-value {
-  color: #1e293b;
-  font-weight: 500;
-}
-
-/* LIGNES ALTERNÉES */
+/* ---- TBODY ---- */
 .productivite-table tbody tr {
-  transition: background-color 0.15s ease;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
 }
 
-.productivite-table tbody tr.row-even {
-  background-color: #f8fafc;
+.productivite-table tbody tr.row-alt {
+  background: var(--bg-row-alt);
 }
 
 .productivite-table tbody tr:hover {
-  background-color: #e0e7ff !important;
-  transform: scale(1.002);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: rgba(77,184,255,0.05) !important;
 }
 
-/* COLORISATION PAR PERFORMANCE */
-.productivite-table tbody tr.high-productivity {
-  border-left: 3px solid #10b981;
+.productivite-table tbody td {
+  padding: 6px 7px;
+  text-align: center;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 36px;
+  border-right: 1px solid var(--border);
 }
 
-.productivite-table tbody tr.medium-productivity {
-  border-left: 3px solid #3b82f6;
+.productivite-table tbody td:last-child { border-right: none; }
+
+/* Nom aligné à gauche */
+.nom-cell {
+  text-align: left !important;
+  padding-left: 8px !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
-.productivite-table tbody tr.low-productivity {
-  border-left: 3px solid #f59e0b;
+/* Matricule en monospace */
+.col-mat {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-/* INDICATEUR DE TRI */
+/* Date en monospace */
+.col-date {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* Ligne en monospace */
+.col-ligne {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ---- BORDURE GAUCHE PERFORMANCE ---- */
+.productivite-table tbody tr.perf-top  { border-left: 3px solid var(--accent-green); }
+.productivite-table tbody tr.perf-mid  { border-left: 3px solid var(--accent-blue); }
+.productivite-table tbody tr.perf-low  { border-left: 3px solid var(--accent-orange); }
+
+/* ---- CELLULE PRODUCTIVITÉ ---- */
+.prod-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 4px;
+}
+
+.prod-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.prod-value.prod-top  { color: var(--accent-green); }
+.prod-value.prod-mid  { color: var(--accent-blue); }
+.prod-value.prod-low  { color: var(--accent-orange); }
+
+.prod-bar-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.prod-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.prod-bar-fill.bar-top  { background: var(--accent-green); box-shadow: 0 0 6px rgba(0,229,160,0.5); }
+.prod-bar-fill.bar-mid  { background: var(--accent-blue); box-shadow: 0 0 6px rgba(77,184,255,0.4); }
+.prod-bar-fill.bar-low  { background: var(--accent-orange); box-shadow: 0 0 6px rgba(255,140,66,0.4); }
+
+/* ---- COLONNES M ---- */
+.col-m {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.col-m.m-active {
+  color: var(--accent-orange);
+  font-weight: 600;
+}
+
+/* ---- TRI ---- */
 .sortable {
   cursor: pointer;
   user-select: none;
-  position: relative;
 }
 
 .sortable:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--accent-green) !important;
+  background: rgba(0,229,160,0.05);
 }
 
-.sort-indicator {
-  font-size: 12px;
-  margin-left: 3px;
-  font-weight: bold;
+.sort-arrow {
+  font-size: 10px;
+  margin-left: 2px;
+  color: var(--accent-green);
 }
 
-/* MESSAGE "AUCUNE DONNÉE" */
-.no-data-message {
-  text-align: center;
-  padding: 40px 20px;
-  color: #64748b;
-}
-
-.no-data-message svg {
-  width: 48px;
-  height: 48px;
-  stroke: #cbd5e1;
-  margin-bottom: 12px;
-}
-
-.no-data-message p {
-  font-size: 1rem;
-  font-weight: 500;
-}
-
-/* ============================================ */
-/* RESPONSIVE - OPTIMISATIONS */
-/* ============================================ */
+/* ============================================================ */
+/* RESPONSIVE                                                   */
+/* ============================================================ */
 @media (max-width: 1400px) {
-  .productivite-table {
-    font-size: 10px;
-  }
-  
-  .productivite-table thead th {
-    font-size: 9px;
-    padding: 5px 3px;
-  }
-  
-  .productivite-table tbody td {
-    font-size: 10px;
-    padding: 3px 3px;
-    height: 26px;
-  }
+  .productivite-table { font-size: 13.5px; }
+  .productivite-table thead th { font-size: 11px; }
+  .productivite-table tbody td { font-size: 13px; height: 33px; }
 }
 
 @media (max-width: 1200px) {
-  .nom-col {
-    width: 120px;
-    min-width: 120px;
-  }
-  
-  .m-col {
-    width: 45px;
-    min-width: 45px;
-  }
+  .col-nom  { width: 120px; min-width: 120px; }
+  .col-m    { width: 42px; min-width: 40px; }
 }
 
 @media (max-width: 768px) {
-  .stats-container {
-    padding: 0.25rem;
-  }
-  
-  .productivite-header h1 {
-    font-size: 1.1rem;
-  }
-  
-  .periode-info {
-    font-size: 0.8rem;
-  }
-  
-  .tableau-container {
-    max-height: calc(100vh - 160px);
-  }
+  .stats-container { padding: 0.3rem; }
+  .legend-strip { gap: 0.3rem; }
+  .legend-sep { display: none; }
+  .top-bar-date { display: none; }
 }
 
-/* ============================================ */
-/* ANIMATIONS - RÉDUITES POUR PERFORMANCE */
-/* ============================================ */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.productivite-table tbody tr {
-  animation: slideInUp 0.2s ease forwards;
-  opacity: 0;
-}
-
-/* Limite l'animation aux 50 premières lignes pour la performance */
-.productivite-table tbody tr:nth-child(-n+50) { 
-  animation-delay: calc(var(--row-index, 0) * 0.01s); 
-}
-
-.productivite-table tbody tr:nth-child(n+51) { 
-  animation: none; 
-  opacity: 1; 
-}
-
-/* ============================================ */
-/* OPTIMISATIONS POUR GRANDS ÉCRANS */
-/* ============================================ */
+/* ============================================================ */
+/* GRANDS ÉCRANS                                               */
+/* ============================================================ */
 @media (min-width: 1920px) {
-  .tableau-container {
-    max-height: calc(100vh - 200px);
-  }
-  
-  .productivite-table {
-    font-size: 12px;
-  }
-  
-  .productivite-table thead th {
-    font-size: 11px;
-    padding: 7px 5px;
-  }
-  
-  .productivite-table tbody td {
-    font-size: 12px;
-    padding: 5px 5px;
-    height: 32px;
-  }
+  .productivite-table { font-size: 16px; }
+  .productivite-table thead th { font-size: 13px; padding: 11px 9px; }
+  .productivite-table tbody td { font-size: 15px; height: 40px; }
 }
 
-/* ============================================ */
-/* PRINT STYLES - Pour impression */
-/* ============================================ */
+/* ============================================================ */
+/* ANIMATION D'ENTRÉE DES LIGNES                              */
+/* ============================================================ */
+@keyframes rowIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.productivite-table tbody tr:nth-child(-n+60) {
+  animation: rowIn 0.25s ease forwards;
+  animation-delay: calc(var(--row-index, 0) * 0.008s);
+}
+
+.productivite-table tbody tr:nth-child(n+61) {
+  animation: none;
+  opacity: 1;
+}
+
+/* ============================================================ */
+/* PRINT                                                        */
+/* ============================================================ */
 @media print {
-  .stats-container {
-    padding: 0;
-  }
-  
-  .btn-retour-choix {
-    display: none;
-  }
-  
-  .productivite-table {
-    font-size: 8pt;
-  }
-  
-  .productivite-table thead {
-    position: static;
-  }
-  
-  .tableau-container {
-    max-height: none;
-    overflow: visible;
-  }
+  .stats-container { background: white; color: black; padding: 0; }
+  .btn-retour-choix, .legend-strip { display: none; }
+  .productivite-table { font-size: 8pt; color: black; }
+  .tableau-container { border: none; overflow: visible; max-height: none; }
+  .prod-bar-track { display: none; }
+  .prod-value { color: black !important; }
 }

@@ -45,33 +45,46 @@ export class AuthService {
    * Connexion Admin
    */
  adminLogin(credentials: LoginCredentials): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials)
-      .pipe(
-        tap(response => {
-          this.saveAuthData(response);
-          
-          // 🎯 NOUVEAU: Vérifier si l'admin doit aller vers choix1
-          const matricule = response.user.nom; // Le matricule est dans user.nom
-          
-          // Liste des matricules qui vont vers choix1
-          const choix1Matricules = ['9001', '1194'];
-          
-          // 🎯 NOUVEAU AJOUT: Vérifier si le matricule est 1922 pour rediriger vers statP
-          if (matricule === '1922') {
-            this.router.navigate(['/statP']); // Route pour admin vers statP
-          }
-          else if (choix1Matricules.includes(matricule)) {
-            this.router.navigate(['/choix1']); // Route pour admin vers choix1
-          } else {
-            this.router.navigate(['/prod']); // Route pour admin standard
-          }
-        }),
-        catchError(error => {
-          console.error('Admin login error:', error);
-          return throwError(() => error);
-        })
-      );
-  }
+  return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials)
+    .pipe(
+      tap(response => {
+        this.saveAuthData(response);
+        
+        // 🎯 Récupérer le matricule
+        const matricule = response.user.nom;
+        
+        // Liste des matricules qui vont vers choix1
+        const choix1Matricules = ['9001', '1194'];
+        
+        // ✅ CORRECTION: Utiliser if/else if/else pour éviter les conflits
+        if (matricule === '1952') {
+          console.log('✅ Redirection 1952 vers ecran');
+          this.router.navigate(['/ecran']); // Route pour admin 1952
+        }
+        else if (matricule === '1922') {
+          console.log('✅ Redirection 1922 vers statP');
+          this.router.navigate(['/ch2']); // Route pour admin 1922
+        }
+        else if (choix1Matricules.includes(matricule)) {
+          console.log('✅ Redirection vers choix1');
+          this.router.navigate(['/choix1']); // Route pour admin spécifiques
+        }
+        else {
+          console.log('✅ Redirection admin standard vers prod');
+          this.router.navigate(['/prod']); // Route pour admin standard
+        }
+      }),
+      catchError(error => {
+        console.error('Admin login error:', error);
+        return throwError(() => error);
+      })
+    );
+}
+ getUserData(): any {
+  // Utilisez USER_KEY au lieu de 'userData'
+  const userData = localStorage.getItem(this.USER_KEY); // Changez cette ligne
+  return userData ? JSON.parse(userData) : null;
+}
 
 
   /**

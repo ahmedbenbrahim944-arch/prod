@@ -1611,3 +1611,28 @@ body {
     grid-template-columns: repeat(1, 1fr) !important;
   }
 }
+/* Style pour les cellules DP problématiques */
+.dp-error {
+  position: relative;
+  background-color: rgba(220, 38, 38, 0.15) !important;
+  border-color: #f87171 !important;
+}
+
+.dp-error::after {
+  content: "⚠️";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  color: #fca5a5;
+}
+
+/* Style pour la bannière d'erreur */
+.error-banner {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}

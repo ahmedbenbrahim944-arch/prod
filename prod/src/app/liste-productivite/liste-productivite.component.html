@@ -1,11 +1,8 @@
 <div class="stats-container">
 
-  <!-- ============================================ -->
   <!-- PAGE DE SÉLECTION DE DATES -->
-  <!-- ============================================ -->
   <div *ngIf="!productiviteOuvriers || !productiviteOuvriers.tableau || productiviteOuvriers.tableau.length === 0" class="filter-page">
-    
-    <!-- Bouton retour -->
+
     <button class="btn-retour-choix" (click)="retourChoix()">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -13,222 +10,203 @@
       Retour
     </button>
 
-    <!-- Header -->
-    <div class="header">
-      <h1>Productivité des Ouvriers</h1>
-      
-      <!-- Formulaire de sélection de dates -->
-      <div class="controls">
-        <div class="filter-group">
-          <div class="filter-header">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span>Sélectionner la période</span>
-          </div>
-          
-          <div class="filter-inputs">
-            <div class="date-range-inputs">
-              <div class="input-group">
-                <label for="dateDebut">Date début :</label>
-                <input 
-                  type="date" 
-                  id="dateDebut" 
-                  [(ngModel)]="dateDebutProductivite"
-                  [max]="dateFinProductivite"
-                  class="filter-input"
-                />
-              </div>
-              
-              <div class="input-group">
-                <label for="dateFin">Date fin :</label>
-                <input 
-                  type="date" 
-                  id="dateFin" 
-                  [(ngModel)]="dateFinProductivite"
-                  [min]="dateDebutProductivite"
-                  [max]="maxDate"
-                  class="filter-input"
-                />
-              </div>
-            </div>
-            
-            <button 
-              type="button"
-              class="btn-filter btn-charger-productivite"
-              (click)="chargerProductiviteOuvriers()"
-              [disabled]="isLoadingProductivite || !dateDebutProductivite || !dateFinProductivite">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-              </svg>
-              <span *ngIf="!isLoadingProductivite">Charger la productivité</span>
-              <span *ngIf="isLoadingProductivite">Chargement...</span>
-            </button>
-          </div>
+    <div class="filter-card">
+      <div class="filter-card-header">
+        <div class="header-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="8.5" cy="7" r="4"/>
+            <polyline points="17 11 19 13 23 9"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Productivité des Ouvriers</h1>
+          <p class="filter-subtitle">Sélectionnez la période d'analyse</p>
         </div>
       </div>
-    </div>
 
-    <!-- Loading -->
-    <div *ngIf="isLoadingProductivite" class="loading">
-      <div class="spinner"></div>
-      <p>Chargement des données...</p>
+      <div class="filter-body">
+        <div class="date-row">
+          <div class="input-group">
+            <label for="dateDebut">Date début</label>
+            <input type="date" id="dateDebut" [(ngModel)]="dateDebutProductivite" [max]="dateFinProductivite" class="filter-input"/>
+          </div>
+          <div class="date-separator">→</div>
+          <div class="input-group">
+            <label for="dateFin">Date fin</label>
+            <input type="date" id="dateFin" [(ngModel)]="dateFinProductivite" [min]="dateDebutProductivite" [max]="maxDate" class="filter-input"/>
+          </div>
+        </div>
+
+        <button type="button" class="btn-charger"
+          (click)="chargerProductiviteOuvriers()"
+          [disabled]="isLoadingProductivite || !dateDebutProductivite || !dateFinProductivite">
+          <span *ngIf="!isLoadingProductivite" class="btn-charger-content">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            Charger la productivité
+          </span>
+          <span *ngIf="isLoadingProductivite" class="btn-charger-content">
+            <span class="btn-spinner"></span>
+            Chargement...
+          </span>
+        </button>
+      </div>
     </div>
 
   </div>
 
-  <!-- ============================================ -->
   <!-- PAGE DES RÉSULTATS -->
-  <!-- ============================================ -->
-  <div *ngIf="productiviteOuvriers && productiviteOuvriers.tableau && productiviteOuvriers.tableau.length > 0" class="stats-content">
-    
-    <!-- Bouton retour -->
-    <button class="btn-retour-choix" (click)="productiviteOuvriers = null">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-      Retour aux filtres
-    </button>
+  <div *ngIf="productiviteOuvriers && productiviteOuvriers.tableau && productiviteOuvriers.tableau.length > 0" class="results-page">
 
-    <!-- En-tête -->
-    <div class="productivite-header">
-      <h1>
+    <!-- Top bar -->
+    <div class="top-bar">
+      <button class="btn-retour-choix" (click)="productiviteOuvriers = null">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-          <circle cx="8.5" cy="7" r="4"></circle>
-          <polyline points="17 11 19 13 23 9"></polyline>
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
-        Productivité des Ouvriers
-      </h1>
-      <p class="periode-info">
-        Période : {{ dateDebutProductivite | date:'dd/MM/yyyy' }} - {{ dateFinProductivite | date:'dd/MM/yyyy' }}
-      </p>
+        Retour
+      </button>
+      <div class="top-bar-title">
+        <span class="top-bar-icon">⚙</span>
+        <span>Productivité des Ouvriers</span>
+        <span class="top-bar-date">{{ dateDebutProductivite | date:'dd/MM/yyyy' }} → {{ dateFinProductivite | date:'dd/MM/yyyy' }}</span>
+      </div>
+      <div class="top-bar-count">
+        <span class="count-badge">{{ (productiviteOuvriers?.tableau?.length || 0) }} entrées</span>
+      </div>
     </div>
 
-     <div class="m-legend">
-      M1:Matière Première M2:Méthode M2:Maintenance M3:Qualité M4:Absence M5:Rendement M6:Environnement
+    <!-- Légende des causes -->
+    <div class="legend-strip">
+      <span class="legend-item"><span class="legend-dot m1"></span>M1 · Matière Première</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-item"><span class="legend-dot m2"></span>M2 · Méthode</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-item"><span class="legend-dot m3"></span>M3 · Maintenance</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-item"><span class="legend-dot m4"></span>M4 · Qualité</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-item"><span class="legend-dot m5"></span>M5 · Absence</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-item"><span class="legend-dot m6"></span>M6 · Rendement</span>
+      <span class="legend-sep">|</span>
+      <span class="legend-item"><span class="legend-dot m7"></span>M7 · Environnement</span>
     </div>
 
-    <!-- Tableau des résultats - VERSION COMPACTE -->
-    <div class="tableau-container">
+    <!-- Tableau des résultats -->
+    <div class="tableau-container"
+      (mouseenter)="onUserInteraction()"
+      (mouseleave)="onUserInteraction()"
+      (wheel)="onUserInteraction()"
+      (touchstart)="onUserInteraction()"
+      (keydown)="onUserInteraction()">
+
       <table class="productivite-table">
         <thead>
           <tr>
-            <th class="date-col">Jours</th>
-            <th class="matricule-col">MAT</th>
-            <th class="nom-col">Nom & Prénom</th>
-            <th class="heures-col">N°H</th>
-            <th class="ligne-col">Ligne</th>
-            <th class="productivite-col sortable" (click)="toggleProductiviteSort()">
-              Prod. (%)
-              <span class="sort-indicator" *ngIf="productiviteSortDirection === 'asc'">↑</span>
-              <span class="sort-indicator" *ngIf="productiviteSortDirection === 'desc'">↓</span>
+            <th class="col-date">DATE</th>
+            <th class="col-mat">MAT</th>
+            <th class="col-nom">NOM & PRÉNOM</th>
+            <th class="col-h">H</th>
+            <th class="col-ligne">LIGNE</th>
+            <th class="col-prod sortable" (click)="toggleProductiviteSort()">
+              PROD.
+              <span class="sort-arrow" *ngIf="productiviteSortDirection === 'asc'">▲</span>
+              <span class="sort-arrow" *ngIf="productiviteSortDirection === 'desc'">▼</span>
             </th>
-            <th class="m-col">M1</th>
-            <th class="m-col">M2</th>
-            <th class="m-col">M2</th>
-            <th class="m-col">M3</th>
-            <th class="m-col">M4</th>
-            <th class="m-col">M5</th>
-            <th class="m-col">M6</th>
+            <th class="col-m">M1</th>
+            <th class="col-m">M2</th>
+            <th class="col-m">M3</th>
+            <th class="col-m">M4</th>
+            <th class="col-m">M5</th>
+            <th class="col-m">M6</th>
+            <th class="col-m">M7</th>
           </tr>
         </thead>
         <tbody>
-          <!-- AVEC FILTRE OU TRI : Afficher les données filtrées/triées -->
+
+          <!-- AVEC FILTRE OU TRI -->
           <ng-container *ngIf="hasActiveFilter || productiviteSortDirection">
-            <tr *ngFor="let ligne of (productiviteSortDirection ? productiviteDataSorted : productiviteFiltree); let i = index" 
-                [class.row-even]="i % 2 === 0"
-                [class.high-productivity]="ligne.PRODUCTIVITE >= 90"
-                [class.medium-productivity]="ligne.PRODUCTIVITE >= 70 && ligne.PRODUCTIVITE < 90"
-                [class.low-productivity]="ligne.PRODUCTIVITE < 70">
-              
-              <td class="date-col">{{ ligne.JOURS | date:'dd/MM/yyyy' }}</td>
-              <td class="matricule-col">{{ ligne.MAT }}</td>
-              <td class="nom-col">{{ ligne["NOM ET PRENOM"] }}</td>
-              <td class="heures-col">{{ ligne["N°HEURS"] }}</td>
-              <td class="ligne-col">{{ ligne.LIGNES }}</td>
-              <td class="productivite-col" [style.color]="getColorForProductivite(ligne.PRODUCTIVITE)">
-                <strong>{{ ligne.PRODUCTIVITE | number:'1.1-1' }}%</strong>
+            <tr *ngFor="let ligne of (productiviteSortDirection ? productiviteDataSorted : productiviteFiltree); let i = index"
+                [class.row-alt]="i % 2 !== 0"
+                [class.perf-top]="getProd(ligne) >= 90"
+                [class.perf-mid]="getProd(ligne) >= 70 && getProd(ligne) < 90"
+                [class.perf-low]="getProd(ligne) < 70">
+              <td class="col-date">{{ ligne.JOURS | date:'dd/MM/yy' }}</td>
+              <td class="col-mat">{{ ligne.MAT }}</td>
+              <td class="col-nom nom-cell">{{ ligne["NOM ET PRENOM"] }}</td>
+              <td class="col-h">{{ ligne["N°HEURS"] }}</td>
+              <td class="col-ligne">{{ ligne.LIGNES }}</td>
+              <td class="col-prod">
+                <div class="prod-cell">
+                  <span class="prod-value"
+                    [class.prod-top]="getProd(ligne) >= 90"
+                    [class.prod-mid]="getProd(ligne) >= 70 && getProd(ligne) < 90"
+                    [class.prod-low]="getProd(ligne) < 70">
+                    {{ getProd(ligne) | number:'1.1-1' }}%
+                  </span>
+                  <div class="prod-bar-track">
+                    <div class="prod-bar-fill"
+                         [class.bar-top]="getProd(ligne) >= 90"
+                         [class.bar-mid]="getProd(ligne) >= 70 && getProd(ligne) < 90"
+                         [class.bar-low]="getProd(ligne) < 70"
+                         [style.width.%]="getProd(ligne)"></div>
+                  </div>
+                </div>
               </td>
-              <td class="m-value-col" [class.has-value]="ligne.M1 > 0">
-                {{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
-                {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
-                {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
-                {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M5 > 0">
-                {{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M6 > 0">
-                {{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M7 > 0">
-                {{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '-' }}
-              </td>
+              <td class="col-m" [class.m-active]="ligne.M1 > 0">{{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M2 > 0">{{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M3 > 0">{{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M4 > 0">{{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M5 > 0">{{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M6 > 0">{{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M7 > 0">{{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '·' }}</td>
             </tr>
           </ng-container>
 
-          <!-- PAS DE FILTRE : Afficher toutes les données -->
+          <!-- PAS DE FILTRE -->
           <ng-container *ngIf="!hasActiveFilter && !productiviteSortDirection">
-            <tr *ngFor="let ligne of (productiviteOuvriers?.tableau || []); let i = index" 
-                [class.row-even]="i % 2 === 0"
-                [class.high-productivity]="ligne.PRODUCTIVITE >= 90"
-                [class.medium-productivity]="ligne.PRODUCTIVITE >= 70 && ligne.PRODUCTIVITE < 90"
-                [class.low-productivity]="ligne.PRODUCTIVITE < 70">
-              
-              <td class="date-col">{{ ligne.JOURS | date:'dd/MM/yyyy' }}</td>
-              <td class="matricule-col">{{ ligne.MAT }}</td>
-              <td class="nom-col">{{ ligne["NOM ET PRENOM"] }}</td>
-              <td class="heures-col">{{ ligne["N°HEURS"] }}</td>
-              <td class="ligne-col">{{ ligne.LIGNES }}</td>
-              <td class="productivite-col" [style.color]="getColorForProductivite(ligne.PRODUCTIVITE)">
-                <strong>{{ ligne.PRODUCTIVITE | number:'1.1-1' }}%</strong>
+            <tr *ngFor="let ligne of (productiviteOuvriers?.tableau || []); let i = index"
+                [class.row-alt]="i % 2 !== 0"
+                [class.perf-top]="getProd(ligne) >= 90"
+                [class.perf-mid]="getProd(ligne) >= 70 && getProd(ligne) < 90"
+                [class.perf-low]="getProd(ligne) < 70">
+              <td class="col-date">{{ ligne.JOURS | date:'dd/MM/yy' }}</td>
+              <td class="col-mat">{{ ligne.MAT }}</td>
+              <td class="col-nom nom-cell">{{ ligne["NOM ET PRENOM"] }}</td>
+              <td class="col-h">{{ ligne["N°HEURS"] }}</td>
+              <td class="col-ligne">{{ ligne.LIGNES }}</td>
+              <td class="col-prod">
+                <div class="prod-cell">
+                  <span class="prod-value"
+                    [class.prod-top]="getProd(ligne) >= 90"
+                    [class.prod-mid]="getProd(ligne) >= 70 && getProd(ligne) < 90"
+                    [class.prod-low]="getProd(ligne) < 70">
+                    {{ getProd(ligne) | number:'1.1-1' }}%
+                  </span>
+                  <div class="prod-bar-track">
+                    <div class="prod-bar-fill"
+                         [class.bar-top]="getProd(ligne) >= 90"
+                         [class.bar-mid]="getProd(ligne) >= 70 && getProd(ligne) < 90"
+                         [class.bar-low]="getProd(ligne) < 70"
+                         [style.width.%]="getProd(ligne)"></div>
+                  </div>
+                </div>
               </td>
-              <td class="m-value-col" [class.has-value]="ligne.M1 > 0">
-                {{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
-                {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
-                {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
-                {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M5 > 0">
-                {{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M6 > 0">
-                {{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '-' }}
-              </td>
-              <td class="m-value-col" [class.has-value]="ligne.M7 > 0">
-                {{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '-' }}
-              </td>
+              <td class="col-m" [class.m-active]="ligne.M1 > 0">{{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M2 > 0">{{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M3 > 0">{{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M4 > 0">{{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M5 > 0">{{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M6 > 0">{{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" [class.m-active]="ligne.M7 > 0">{{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '·' }}</td>
             </tr>
           </ng-container>
+
         </tbody>
       </table>
-    </div>
-
-    <!-- Message si aucune donnée -->
-    <div *ngIf="!productiviteOuvriers || !productiviteOuvriers.tableau || productiviteOuvriers.tableau.length === 0" 
-         class="no-data-message">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="12" y1="8" x2="12" y2="12"></line>
-        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-      </svg>
-      <p>Aucune donnée de productivité disponible pour cette période</p>
     </div>
 
   </div>

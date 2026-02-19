@@ -1,0 +1,118 @@
+/* Custom animations that Tailwind doesn't provide by default */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@keyframes slide-in-right {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.6s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-modal-slide-up {
+  animation: modal-slide-up 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* ng-select Tailwind styling */
+.custom-ng-select-tailwind ::ng-deep .ng-select-container {
+  @apply border-2 border-gray-200 rounded-xl p-3 transition-all bg-gray-50;
+}
+
+.custom-ng-select-tailwind ::ng-deep .ng-select-container:hover {
+  @apply border-blue-400 bg-white;
+}
+
+.custom-ng-select-tailwind ::ng-deep .ng-select-container.ng-has-value {
+  @apply border-blue-600 bg-white;
+}
+
+.custom-ng-select-tailwind ::ng-deep .ng-dropdown-panel {
+  @apply rounded-xl border-2 border-gray-200 shadow-2xl;
+}
+
+.custom-ng-select-tailwind ::ng-deep .ng-option {
+  @apply px-4 py-3 hover:bg-blue-50 transition-colors;
+}
+
+.custom-ng-select-tailwind ::ng-deep .ng-option.ng-option-selected {
+  @apply bg-blue-100 font-semibold;
+}
+
+.custom-ng-select-tailwind ::ng-deep .ng-option.ng-option-marked {
+  @apply bg-blue-50;
+}

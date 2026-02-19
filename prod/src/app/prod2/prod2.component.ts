@@ -34,9 +34,12 @@ interface Causes5M {
   m1MatierePremiere: number;
   m1References: MatierePremiere[];
   m2Absence: number;
+  matriculesAbsence: string[];
   m2Rendement: number;
+  matriculesRendement: string[];
   m3Methode: number;
   m4Maintenance: number;
+  phasesMaintenance: string[];
   m5Qualite: number;
   qualiteReferences: { reference: string; quantite: number }[];
    m6Environnement: number; 
@@ -193,9 +196,12 @@ export class Prod2Component implements AfterViewInit, OnInit {
   m1MatierePremiere: 0,
   m1References: [],
   m2Absence: 0,
+matriculesAbsence: [],
   m2Rendement: 0,
+matriculesRendement: [],
   m3Methode: 0,
   m4Maintenance: 0,
+  phasesMaintenance: [], // 🆕 Ajouter les phases de maintenance
   m5Qualite: 0,
   qualiteReferences: [],
   m6Environnement: 0 // Ajoutez cette ligne
@@ -858,16 +864,22 @@ toggleEditMode(): void {
     console.log('📝 Mode édition activé');
     this.isEditing.set(true);
   } else {
-    // En mode enregistrement
-    console.log('💾 Enregistrement des modifications...');
+    this.checkDPIncoherences();
     
-    // 1. Sauvegarder D'ABORD (toujours)
+    if (this.hasIncoherences()) {
+      // Afficher l'erreur et NE PAS sauvegarder
+      alert(this.errorMessage());
+      return; // ⛔ Bloquer la sauvegarde
+    }
+    
+    // 2. Si pas d'incohérences, sauvegarder
+    console.log('💾 Enregistrement des modifications...');
     this.sauvegarderPlanifications();
     
-    // 2. Après sauvegarde, chercher les écarts DP < C sans causes
+    // 3. Chercher les écarts DP < C sans causes
     setTimeout(() => {
       this.ouvrirModalEcartsSequentiels();
-    }, 1200); // petit délai pour laisser la sauvegarde se terminer
+    }, 1200); 
   }
 }
 
@@ -1084,6 +1096,12 @@ updateDayEntry(reference: ReferenceProduction, day: string, field: string, value
     console.warn('⚠️ Vous n\'avez pas la permission de modifier DM');
     this.showSuccessMessage('⚠️ Seul le matricule 2603 peut modifier DM');
     return;
+  }
+  if (field === 'dp' || field === 'c') {
+    // Vérifier les incohérences après modification
+    setTimeout(() => {
+      this.checkDPIncoherences();
+    }, 100);
   }
   
   if (this.weekPlanification()) {
@@ -1976,27 +1994,40 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
 
   const ligne = this.selectedLigne()!.ligne;
   
-  // Réinitialiser tous les champs
+  // ========== RÉINITIALISATION COMPLÈTE ==========
+  // Matière première
   this.currentMPReference.set('');
   this.currentMPQuantite.set(0);
+  this.selectedMPReferences.set([]);
+  this.currentMPSearchQuery.set('');
+  this.showMPSuggestions.set(false);
+  
+  // Qualité
   this.currentQualiteReference.set('');
   this.currentQualiteQuantite.set(0);
-  this.searchMPQuery.set('');
-  this.showMPSuggestions.set(false);
-  this.showQualiteSuggestions.set(false); // 🆕 Réinitialiser suggestions qualité
-  
-  // Réinitialiser les multi-références
-  this.selectedMPReferences.set([]);
   this.selectedQualiteReferences.set([]);
-  this.currentMPSearchQuery.set('');
   this.currentQualiteSearchQuery.set('');
-
-  // Charger les matières premières (utilisées pour MP ET Qualité)
+  this.showQualiteSuggestions.set(false);
+  this.selectedCommentaireId.set(null);
+  
+  // 🆕 MATRICULES ABSENCE
+  this.selectedMatriculesAbsence.set([]);
+  this.currentAbsenceSearchQuery.set('');
+  this.showAbsenceSuggestions.set(false);
+  
+  // 🆕 MATRICULES RENDEMENT
+  this.selectedMatriculesRendement.set([]);
+  this.currentRendementSearchQuery.set('');
+  this.showRendementSuggestions.set(false);
+  
+  // 🆕 PHASES MAINTENANCE
+  this.selectedPhasesMaintenance.set([]);
+  this.currentPhasesSearchQuery.set('');
+  this.showPhasesSuggestions.set(false);
+  
+  // Charger les données
   this.loadMatieresPremieres(ligne);
-
-   this.selectedCommentaireId.set(null);
-
-   this.loadAvailableCommentaires();
+  this.loadAvailableCommentaires();
 
   // Vérifier si une non-conformité existe déjà
   const dto = {
@@ -2011,21 +2042,25 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
       if (response.exists && response.data) {
         const details = response.data.details;
         
+        // ========== CHARGER LES DONNÉES EXISTANTES ==========
+        
         // Mettre à jour currentCauses
         this.currentCauses.set({
           m1MatierePremiere: details.matierePremiere || 0,
           m1References: [],
           m2Absence: details.absence || 0,
+          matriculesAbsence: [], // Sera rempli après parsing
           m2Rendement: details.rendement || 0,
-           m3Methode: details.methode || 0,
+          matriculesRendement: [], // Sera rempli après parsing
+          m3Methode: details.methode || 0,
           m4Maintenance: details.maintenance || 0,
+          phasesMaintenance: [], // Sera rempli après parsing
           m5Qualite: details.qualite || 0,
-          m6Environnement: details.environnement || 0,  // ✅ AJOUT ICI
-
+          m6Environnement: details.environnement || 0,
           qualiteReferences: []
         });
         
-        // Mettre à jour les quantités
+        // Quantités
         if (details.matierePremiere > 0) {
           this.currentMPQuantite.set(details.matierePremiere);
         }
@@ -2033,68 +2068,115 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
           this.currentQualiteQuantite.set(details.qualite);
         }
         
-        // Parser les références MP
+        // 🟠 MATRICULES ABSENCE
+        if (details.matriculesAbsence) {
+          console.log('Matricules absence trouvés:', details.matriculesAbsence);
+          this.parseMatriculesAbsenceString(details.matriculesAbsence);
+        }
+        
+        // 🟡 MATRICULES RENDEMENT
+        if (details.matriculesRendement) {
+          console.log('Matricules rendement trouvés:', details.matriculesRendement);
+          this.parseMatriculesRendementString(details.matriculesRendement);
+        }
+        
+        // 🔵 PHASES MAINTENANCE
+        if (details.phasesMaintenance) {
+          console.log('Phases maintenance trouvées:', details.phasesMaintenance);
+          this.parsePhasesMaintenanceString(details.phasesMaintenance);
+        } else if (response.data.phasesMaintenance) {
+          console.log('Phases maintenance trouvées (autre niveau):', response.data.phasesMaintenance);
+          this.parsePhasesMaintenanceString(response.data.phasesMaintenance);
+        }
+        
+        // Références MP
         if (details.referenceMatierePremiere) {
           this.parseMPReferencesString(details.referenceMatierePremiere);
         }
         
-        // Parser les références Qualité
+        // Références Qualité
         if (details.referenceQualite) {
           this.parseQualiteReferencesString(details.referenceQualite);
         }
-        let commentaireId = null;
-
-// Essayer de récupérer l'ID du commentaire de différentes façons
-if (details.commentaire) {
-  if (details.commentaire.id) {
-    commentaireId = details.commentaire.id;
-  } else if (typeof details.commentaire === 'number') {
-    commentaireId = details.commentaire;
-  }
-} else if (response.data.commentaireObjet && response.data.commentaireObjet.id) {
-  commentaireId = response.data.commentaireObjet.id;
-} else if (response.data.commentaireId) {
-  commentaireId = response.data.commentaireId;
-}
-
-console.log('Commentaire ID récupéré:', commentaireId);
-this.selectedCommentaireId.set(commentaireId);
         
-        console.log('Données chargées:', {
-          mpQuantite: details.matierePremiere,
+        // Commentaire
+        let commentaireId = null;
+        if (details.commentaire?.id) {
+          commentaireId = details.commentaire.id;
+        } else if (response.data.commentaireObjet?.id) {
+          commentaireId = response.data.commentaireObjet.id;
+        } else if (response.data.commentaireId) {
+          commentaireId = response.data.commentaireId;
+        }
+        this.selectedCommentaireId.set(commentaireId);
+        
+        console.log('✅ Données chargées:', {
+          mp: this.currentMPQuantite(),
           mpRefs: this.selectedMPReferences(),
-          qualiteQuantite: details.qualite,
-          qualiteRefs: this.selectedQualiteReferences()
+          absence: details.absence,
+          matriculesAbsence: this.selectedMatriculesAbsence(),
+          rendement: details.rendement,
+          matriculesRendement: this.selectedMatriculesRendement(),
+          maintenance: details.maintenance,
+          phasesMaintenance: this.selectedPhasesMaintenance(),
+          qualite: details.qualite,
+          qualiteRefs: this.selectedQualiteReferences(),
+          environnement: details.environnement
         });
+        
       } else {
-        // Réinitialiser si pas de données
+        // ========== RÉINITIALISATION COMPLÈTE ==========
         this.currentCauses.set({
           m1MatierePremiere: 0,
           m1References: [],
           m2Absence: 0,
+          matriculesAbsence: [],
           m2Rendement: 0,
+          matriculesRendement: [],
           m3Methode: 0,
           m4Maintenance: 0,
+          phasesMaintenance: [],
           m5Qualite: 0,
-          m6Environnement: 0,  // ✅ AJOUT ICI
+          m6Environnement: 0,
           qualiteReferences: []
         });
+        
+        this.selectedMatriculesAbsence.set([]);
+        this.selectedMatriculesRendement.set([]);
+        this.selectedPhasesMaintenance.set([]);
+        this.selectedMPReferences.set([]);
+        this.selectedQualiteReferences.set([]);
+        this.selectedCommentaireId.set(null);
       }
+      
       this.showCausesModal.set(true);
     },
     error: (error) => {
-      console.error('Erreur vérification non-conformité:', error);
+      console.error('❌ Erreur vérification non-conformité:', error);
+      
+      // Réinitialisation en cas d'erreur
       this.currentCauses.set({
         m1MatierePremiere: 0,
         m1References: [],
         m2Absence: 0,
+        matriculesAbsence: [],
         m2Rendement: 0,
+        matriculesRendement: [],
         m3Methode: 0,
         m4Maintenance: 0,
+        phasesMaintenance: [],
         m5Qualite: 0,
-        m6Environnement: 0,  // ✅ AJOUT ICI
+        m6Environnement: 0,
         qualiteReferences: []
       });
+      
+      this.selectedMatriculesAbsence.set([]);
+      this.selectedMatriculesRendement.set([]);
+      this.selectedPhasesMaintenance.set([]);
+      this.selectedMPReferences.set([]);
+      this.selectedQualiteReferences.set([]);
+      this.selectedCommentaireId.set(null);
+      
       this.showCausesModal.set(true);
     }
   });
@@ -2224,16 +2306,71 @@ updateMPQuantite(value: string): void {
   }
 
 updateCause(field: keyof Causes5M, value: string): void {
-  const numValue = parseInt(value) || 0;
+  const numValue = value === '' ? 0 : Math.max(0, parseInt(value) || 0);
   const current = { ...this.currentCauses() };
   
-  if (field === 'm2Absence') current.m2Absence = numValue;
-  else if (field === 'm2Rendement') current.m2Rendement = numValue;
-  else if (field === 'm3Methode') current.m3Methode = numValue;
-  else if (field === 'm4Maintenance') current.m4Maintenance = numValue;
-  else if (field === 'm6Environnement') current.m6Environnement = numValue;  // ✅ AJOUT ICI
+  switch(field) {
+    case 'm2Absence':
+      current.m2Absence = numValue;
+      // Si quantité = 0, vider les matricules
+      if (numValue === 0) {
+        this.selectedMatriculesAbsence.set([]);
+        current.matriculesAbsence = [];
+      }
+      break;
+      
+    case 'm2Rendement':
+      current.m2Rendement = numValue;
+      // Si quantité = 0, vider les matricules
+      if (numValue === 0) {
+        this.selectedMatriculesRendement.set([]);
+        current.matriculesRendement = [];
+      }
+      break;
+      
+    case 'm3Methode':
+      current.m3Methode = numValue;
+      break;
+      
+    case 'm4Maintenance':
+      current.m4Maintenance = numValue;
+      // Si quantité = 0, vider les phases
+      if (numValue === 0) {
+        this.selectedPhasesMaintenance.set([]);
+        current.phasesMaintenance = [];
+        this.currentPhasesSearchQuery.set('');
+        this.showPhasesSuggestions.set(false);
+      }
+      break;
+      
+    case 'm6Environnement':
+      current.m6Environnement = numValue;
+      break;
+      
+    case 'm1MatierePremiere':
+      current.m1MatierePremiere = numValue;
+      // Si quantité = 0, vider les références MP
+      if (numValue === 0) {
+        this.selectedMPReferences.set([]);
+        this.currentMPSearchQuery.set('');
+        this.showMPSuggestions.set(false);
+      }
+      break;
+      
+    case 'm5Qualite':
+      current.m5Qualite = numValue;
+      // Si quantité = 0, vider les références qualité
+      if (numValue === 0) {
+        this.selectedQualiteReferences.set([]);
+        this.currentQualiteSearchQuery.set('');
+        this.showQualiteSuggestions.set(false);
+        this.selectedCommentaireId.set(null);
+      }
+      break;
+  }
   
   this.currentCauses.set(current);
+  console.log(`🔄 Cause mise à jour - ${field}:`, numValue);
 }
 
   incrementCause(causeKey: keyof Causes5M, amount: number = 100): void {
@@ -2361,7 +2498,7 @@ saveCauses(): void {
     return;
   }
 
-  // Créer le DTO
+  // ========== CRÉER LE DTO ==========
   const dto: any = {
     semaine: `semaine${planif.weekNumber}`,
     jour: selected.day,
@@ -2374,85 +2511,93 @@ saveCauses(): void {
   const qualiteQuantite = this.currentQualiteQuantite();
   const causes = this.currentCauses();
 
-  // Obtenir les strings de références séparées par virgule
-  const mpRefsString = this.getMPReferencesString();
-  const qualiteRefsString = this.getQualiteReferencesString();
-
-  dto.matierePremiere = mpQuantite;
-
-  // Matière première
+  // ========== MATIÈRE PREMIÈRE ==========
   if (mpQuantite > 0) {
     dto.matierePremiere = mpQuantite;
+    const mpRefsString = this.getMPReferencesString();
     if (mpRefsString) {
       dto.referenceMatierePremiere = mpRefsString;
     }
   }
 
-  // Absence
+  // ========== ABSENCE AVEC MATRICULES ==========
   if (causes.m2Absence > 0) {
     dto.absence = causes.m2Absence;
-  }
-  
-  // Rendement
-  if (causes.m2Rendement > 0) {
-    dto.rendement = causes.m2Rendement;
+    const matriculesAbsenceString = this.getMatriculesAbsenceString();
+    if (matriculesAbsenceString) {
+      dto.matriculesAbsence = matriculesAbsenceString;
+    }
   }
 
-  // Méthode
+  // ========== RENDEMENT AVEC MATRICULES ==========
+  if (causes.m2Rendement > 0) {
+    dto.rendement = causes.m2Rendement;
+    const matriculesRendementString = this.getMatriculesRendementString();
+    if (matriculesRendementString) {
+      dto.matriculesRendement = matriculesRendementString;
+    }
+  }
+
+  // ========== MÉTHODE ==========
   if (causes.m3Methode > 0) {
     dto.methode = causes.m3Methode;
   }
-  
-  // Maintenance
+
+  // ========== MAINTENANCE AVEC PHASES ==========
   if (causes.m4Maintenance > 0) {
     dto.maintenance = causes.m4Maintenance;
+    const phasesString = this.getPhasesMaintenanceString();
+    if (phasesString) {
+      dto.phasesMaintenance = phasesString;
+    }
   }
-  
-  // Qualité avec références
+
+  // ========== QUALITÉ AVEC RÉFÉRENCES ET COMMENTAIRE ==========
   if (qualiteQuantite > 0) {
     dto.qualite = qualiteQuantite;
     
+    const qualiteRefsString = this.getQualiteReferencesString();
     if (qualiteRefsString) {
       dto.referenceQualite = qualiteRefsString;
     }
     
-    // ✅ VÉRIFICATION OBLIGATOIRE DU COMMENTAIRE
+    // ✅ COMMENTAIRE OBLIGATOIRE
     if (!this.selectedCommentaireId()) {
       alert('Un commentaire est obligatoire lorsque la quantité Qualité > 0');
       return;
     }
-     dto.commentaireId = this.selectedCommentaireId(); // AJOUTÉ
+    dto.commentaireId = this.selectedCommentaireId();
   }
 
-// ✅ ENVIRONNEMENT - SÉPARÉ DU BLOC QUALITÉ
-if (causes.m6Environnement > 0) {
-  dto.environnement = causes.m6Environnement;
-}
+  // ========== ENVIRONNEMENT ==========
+  if (causes.m6Environnement > 0) {
+    dto.environnement = causes.m6Environnement;
+  }
 
   const totalCauses = this.getTotalCauses();
-  console.log('DTO complet à envoyer:', dto);
+  console.log('📦 DTO complet à envoyer:', dto);
+  console.log('📊 Total causes:', totalCauses);
+  console.log('📉 Écart CDP:', this.getEcartCDP());
 
-  // SOLUTION SIMPLE : Si tout est à 0, gérer proprement
+  // ========== GESTION TOTAL = 0 ==========
   if (totalCauses === 0) {
     const hasExistingData = selected.entry.causes;
     
     if (!hasExistingData) {
-      // Pas de données existantes, tout est à 0
       this.showSuccessMessage('Aucune donnée à sauvegarder');
       this.closeCausesModal();
       return;
     } else {
-      // Confirmer la suppression
       if (!confirm('Voulez-vous supprimer ce rapport ?')) {
         return;
       }
     }
   }
 
-  // Envoyer au backend
+  // ========== ENVOI AU BACKEND ==========
   this.nonConfService.createOrUpdateNonConformite(dto).subscribe({
     next: (response) => {
-      console.log('Causes sauvegardées avec succès:', response);
+      console.log('✅ Causes sauvegardées avec succès:', response);
       
       // Mettre à jour localement
       const updatedPlanif = { ...planif };
@@ -2464,10 +2609,9 @@ if (causes.m6Environnement > 0) {
         const dayEntry = updatedPlanif.references[refIndex][selected.day] as DayEntry;
         if (dayEntry) {
           if (response.action === 'deleted') {
-            // Suppression
             dayEntry.causes = undefined;
           } else {
-            // Création/Mise à jour
+            // Création/Mise à jour avec TOUTES les données
             dayEntry.causes = { 
               m1MatierePremiere: mpQuantite,
               m1References: this.selectedMPReferences().map(ref => ({ 
@@ -2475,11 +2619,14 @@ if (causes.m6Environnement > 0) {
                 quantite: mpQuantite 
               })),
               m2Absence: causes.m2Absence,
+              matriculesAbsence: this.selectedMatriculesAbsence(),
               m2Rendement: causes.m2Rendement,
+              matriculesRendement: this.selectedMatriculesRendement(),
               m3Methode: causes.m3Methode,
               m4Maintenance: causes.m4Maintenance,
+              phasesMaintenance: this.selectedPhasesMaintenance(),
               m5Qualite: qualiteQuantite,
-              m6Environnement: causes.m6Environnement,  // ✅ AJOUT ICI
+              m6Environnement: causes.m6Environnement,
               qualiteReferences: this.selectedQualiteReferences().map(ref => ({ 
                 reference: ref, 
                 quantite: qualiteQuantite 
@@ -2499,13 +2646,10 @@ if (causes.m6Environnement > 0) {
       this.closeCausesModal();
     },
     error: (error) => {
-      console.error('Erreur sauvegarde causes:', error);
+      console.error('❌ Erreur sauvegarde causes:', error);
       
-      // GESTION SIMPLIFIÉE DE L'ERREUR
       if (error.status === 400) {
         const errorMessage = error.error?.message || '';
-        
-        // Si l'erreur est "tout à 0", ignorer (déjà géré avant)
         if (errorMessage.includes('toutes les valeurs à 0')) {
           this.showSuccessMessage('Aucune donnée à sauvegarder');
           this.closeCausesModal();
@@ -3365,10 +3509,549 @@ getSelectedCommentaireText(): string {
   const commentaire = this.availableCommentaires().find(c => c.id === commentaireId);
   return commentaire ? commentaire.commentaire : 'Commentaire non trouvé';
 }
+incoherencesDP = signal<Array<{
+  reference: string;
+  day: string;
+  c: number;
+  dp: number;
+  difference: number;
+}>>([]);
 
+hasIncoherences = computed(() => this.incoherencesDP().length > 0);
+errorMessage = signal<string>('');
+private checkDPIncoherences(): void {
+  const planif = this.weekPlanification();
+  if (!planif) {
+    this.incoherencesDP.set([]);
+    return;
+  }
 
+  const incoherences: Array<{
+    reference: string;
+    day: string;
+    c: number;
+    dp: number;
+    difference: number;
+  }> = [];
 
+  planif.references.forEach(ref => {
+    this.weekDays.forEach(day => {
+      const entry = ref[day] as DayEntry;
+      if (entry && entry.dp > 0 && entry.c > 0 && entry.dp > entry.c) {
+        incoherences.push({
+          reference: ref.reference,
+          day: day,
+          c: entry.c,
+          dp: entry.dp,
+          difference: entry.dp - entry.c
+        });
+      }
+    });
+  });
 
+  this.incoherencesDP.set(incoherences);
+  
+  // Mettre à jour le message d'erreur
+  if (incoherences.length > 0) {
+    this.updateErrorMessage(incoherences);
+  }
+}
+
+private updateErrorMessage(incoherences: any[]): void {
+  const messages = incoherences.map(inc => 
+    `${inc.reference} - ${inc.day.charAt(0).toUpperCase() + inc.day.slice(1)} : DP(${inc.dp}) > C(${inc.c})`
+  ).join('\n');
+  
+  this.errorMessage.set(`⚠️ Incohérence(s) détectée(s) :\n${messages}\nCorrigez avant de sauvegarder.`);
+}
+selectedPhasesMaintenance = signal<string[]>([]);
+currentPhasesSearchQuery = signal<string>('');
+showPhasesSuggestions = signal(false);
+
+filteredPhasesRefs = computed(() => {
+  const query = this.currentPhasesSearchQuery().toLowerCase();
+  const allPhases = this.availablePhases();
+  
+  // 🔴 NE GARDER QUE LES PHASES QUI SONT DES NOMBRES
+  const numericPhases = allPhases.filter(phase => {
+    // Vérifier si la phase ne contient que des chiffres
+    return /^\d+$/.test(phase.trim());
+  });
+  
+  if (!query.trim()) {
+    return numericPhases;
+  }
+  
+  return numericPhases.filter(phase => 
+    phase.toLowerCase().includes(query)
+  );
+});
+
+/**
+ * Ajouter une phase maintenance à la liste
+ */
+addPhasesMaintenance(phase: string): void {
+  const trimmedPhase = phase.trim();
+  
+  if (!trimmedPhase) {
+    return;
+  }
+  
+  // 🔴 CONVERTIR EN NOMBRE - Ne garder que les caractères numériques
+  const phaseNumber = trimmedPhase.replace(/\D/g, ''); // Enlève tout ce qui n'est pas un chiffre
+  
+  if (!phaseNumber) {
+    alert('La phase doit contenir des chiffres');
+    return;
+  }
+  
+  const current = this.selectedPhasesMaintenance();
+  
+  // Vérifier si déjà présente (comparer les nombres)
+  if (current.includes(phaseNumber)) {
+    alert('Cette phase est déjà ajoutée');
+    return;
+  }
+  
+  // Limite de 3 phases
+  if (current.length >= 3) {
+    alert('Maximum 3 phases autorisées');
+    return;
+  }
+  
+  // Ajouter la phase (en tant que nombre en string)
+  this.selectedPhasesMaintenance.set([...current, phaseNumber]);
+  this.currentPhasesSearchQuery.set('');
+  this.showPhasesSuggestions.set(false);
+  
+  console.log('Phase maintenance ajoutée:', phaseNumber);
+}
+
+/**
+ * Supprimer une phase maintenance de la liste
+ */
+removePhasesMaintenance(index: number): void {
+  const current = this.selectedPhasesMaintenance();
+  const updated = current.filter((_, i) => i !== index);
+  this.selectedPhasesMaintenance.set(updated);
+  console.log('Phase maintenance supprimée, restantes:', updated.length);
+}
+
+/**
+ * Obtenir la string des phases maintenance séparées par virgule
+ */
+getPhasesMaintenanceString(): string {
+  const phases = this.selectedPhasesMaintenance();
+  return phases.length > 0 ? phases.join(', ') : '';
+}
+
+/**
+ * Parser une string de phases maintenance en tableau
+ */
+parsePhasesMaintenanceString(phasesInput: string | string[] | number[] | null): void {
+  console.log('Parsing phases maintenance - Input:', phasesInput);
+  
+  // ✅ CAS 1: null ou undefined
+  if (!phasesInput) {
+    console.log('Phases maintenance: null ou undefined');
+    this.selectedPhasesMaintenance.set([]);
+    return;
+  }
+  
+  let phases: string[] = [];
+  
+  // ✅ CAS 2: Déjà un tableau
+  if (Array.isArray(phasesInput)) {
+    console.log('Phases maintenance est un tableau:', phasesInput);
+    
+    phases = phasesInput
+      .map(p => {
+        // Convertir chaque élément en string et garder seulement les chiffres
+        const str = String(p).trim();
+        return str.replace(/\D/g, ''); // Enlève tout sauf les chiffres
+      })
+      .filter(p => p !== ''); // Enlever les vides
+    
+  // ✅ CAS 3: C'est une string (format "1,2,3")
+  } else if (typeof phasesInput === 'string') {
+    console.log('Phases maintenance est une string:', phasesInput);
+    
+    phases = phasesInput
+      .split(',')
+      .map(p => p.trim())
+      .filter(p => p !== '')
+      .map(p => p.replace(/\D/g, '')) // Garder seulement les chiffres
+      .filter(p => p !== '');
+  }
+  
+  // 🔴 IMPORTANT: Si c'est un nombre, le convertir en string
+  else if (typeof phasesInput === 'number') {
+    console.log('Phases maintenance est un nombre:', phasesInput);
+    phases = [String(phasesInput).replace(/\D/g, '')].filter(p => p !== '');
+  }
+  
+  console.log('Phases maintenance parsées et nettoyées:', phases);
+  
+  // Mettre à jour le signal
+  this.selectedPhasesMaintenance.set(phases);
+  
+  // Mettre à jour aussi dans currentCauses pour cohérence
+  this.currentCauses.update(causes => ({
+    ...causes,
+    phasesMaintenance: phases
+  }));
+}
+
+/**
+ * Recherche de phases
+ */
+onSearchPhasesChange(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const value = target.value;
+  
+  this.currentPhasesSearchQuery.set(value);
+  
+  // Afficher les suggestions si la query n'est pas vide
+  if (value.trim()) {
+    this.showPhasesSuggestions.set(true);
+  } else {
+    this.showPhasesSuggestions.set(false);
+  }
+}
+
+/**
+ * Fermer les suggestions
+ */
+closePhasesSuggestions(): void {
+  setTimeout(() => {
+    this.showPhasesSuggestions.set(false);
+  }, 200);
+}
+
+/**
+ * Validation des phases maintenance avant sauvegarde
+ */
+validatePhasesMaintenance(): { valid: boolean; message?: string } {
+  const phases = this.selectedPhasesMaintenance();
+  const maintenanceQuantite = this.currentCauses().m4Maintenance;
+  
+  // Si maintenance > 0 et phases fournies
+  if (maintenanceQuantite > 0 && phases.length > 0) {
+    // 🔴 Vérifier que toutes les phases sont des nombres valides
+    for (const phase of phases) {
+      if (!/^\d+$/.test(phase)) {
+        return {
+          valid: false,
+          message: `Format invalide: "${phase}" doit être un nombre`
+        };
+      }
+    }
+    
+    // Optionnel: Vérifier que les phases existent dans availablePhases()
+    const available = this.availablePhases()
+      .filter(p => /^\d+$/.test(p.trim())); // Nombres uniquement
+    
+    const invalidPhases = phases.filter(p => !available.includes(p));
+    
+    if (invalidPhases.length > 0) {
+      return {
+        valid: false,
+        message: `Phases non trouvées pour cette ligne: ${invalidPhases.join(', ')}`
+      };
+    }
+  }
+  
+  return { valid: true };
+}
+selectedMatriculesAbsence = signal<string[]>([]);
+selectedMatriculesRendement = signal<string[]>([]);
+currentAbsenceSearchQuery = signal<string>('');
+currentRendementSearchQuery = signal<string>('');
+showAbsenceSuggestions = signal(false);
+showRendementSuggestions = signal(false);
+
+// Liste des ouvriers disponibles pour suggestions
+filteredAbsenceMatricules = computed(() => {
+  const query = this.currentAbsenceSearchQuery().toLowerCase();
+  const allOperators = this.operators().map(op => op.matricule);
+  
+  if (!query.trim()) {
+    return allOperators;
+  }
+  
+  return allOperators.filter(mat => 
+    mat.toLowerCase().includes(query)
+  );
+});
+
+filteredRendementMatricules = computed(() => {
+  const query = this.currentRendementSearchQuery().toLowerCase();
+  const allOperators = this.operators().map(op => op.matricule);
+  
+  if (!query.trim()) {
+    return allOperators;
+  }
+  
+  return allOperators.filter(mat => 
+    mat.toLowerCase().includes(query)
+  );
+});
+addMatriculeAbsence(matricule: string): void {
+  const trimmedMat = matricule.trim();
+  
+  if (!trimmedMat) {
+    return;
+  }
+  
+  // Extraire seulement les chiffres
+  const matNumber = trimmedMat.replace(/\D/g, '');
+  
+  if (!matNumber) {
+    alert('Le matricule doit contenir des chiffres');
+    return;
+  }
+  
+  const current = this.selectedMatriculesAbsence();
+  
+  // Vérifier si déjà présent
+  if (current.includes(matNumber)) {
+    alert('Ce matricule est déjà ajouté');
+    return;
+  }
+  
+  // Pas de limite stricte, mais on peut mettre une limite raisonnable
+  if (current.length >= 10) {
+    alert('Maximum 10 matricules par cause');
+    return;
+  }
+  
+  // Ajouter le matricule
+  this.selectedMatriculesAbsence.set([...current, matNumber]);
+  this.currentAbsenceSearchQuery.set('');
+  this.showAbsenceSuggestions.set(false);
+  
+  // Synchroniser avec currentCauses
+  this.currentCauses.update(causes => ({
+    ...causes,
+    matriculesAbsence: this.selectedMatriculesAbsence()
+  }));
+  
+  console.log('Matricule absence ajouté:', matNumber);
+}
+
+/**
+ * Supprimer un matricule absence
+ */
+removeMatriculeAbsence(index: number): void {
+  const current = this.selectedMatriculesAbsence();
+  const updated = current.filter((_, i) => i !== index);
+  this.selectedMatriculesAbsence.set(updated);
+  
+  // Synchroniser avec currentCauses
+  this.currentCauses.update(causes => ({
+    ...causes,
+    matriculesAbsence: updated
+  }));
+  
+  console.log('Matricule absence supprimé, restants:', updated.length);
+}
+
+/**
+ * Obtenir la string des matricules absence séparés par virgule
+ */
+getMatriculesAbsenceString(): string {
+  const mats = this.selectedMatriculesAbsence();
+  return mats.length > 0 ? mats.join(', ') : '';
+}
+
+/**
+ * Parser une string de matricules absence
+ */
+parseMatriculesAbsenceString(matriculesInput: string | string[] | number[] | null): void {
+  console.log('Parsing matricules absence - Input:', matriculesInput);
+  
+  if (!matriculesInput) {
+    this.selectedMatriculesAbsence.set([]);
+    return;
+  }
+  
+  let matricules: string[] = [];
+  
+  if (Array.isArray(matriculesInput)) {
+    matricules = matriculesInput
+      .map(m => {
+        const str = String(m).trim();
+        return str.replace(/\D/g, '');
+      })
+      .filter(m => m !== '');
+  } else if (typeof matriculesInput === 'string') {
+    matricules = matriculesInput
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m !== '')
+      .map(m => m.replace(/\D/g, ''))
+      .filter(m => m !== '');
+  } else if (typeof matriculesInput === 'number') {
+    matricules = [String(matriculesInput).replace(/\D/g, '')].filter(m => m !== '');
+  }
+  
+  console.log('Matricules absence parsés:', matricules);
+  this.selectedMatriculesAbsence.set(matricules);
+  
+  // Synchroniser avec currentCauses
+  this.currentCauses.update(causes => ({
+    ...causes,
+    matriculesAbsence: matricules
+  }));
+}
+
+/**
+ * Recherche de matricules absence
+ */
+onSearchAbsenceChange(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const value = target.value;
+  
+  this.currentAbsenceSearchQuery.set(value);
+  this.showAbsenceSuggestions.set(value.trim().length > 0);
+}
+
+/**
+ * Fermer les suggestions absence
+ */
+closeAbsenceSuggestions(): void {
+  setTimeout(() => {
+    this.showAbsenceSuggestions.set(false);
+  }, 200);
+}
+addMatriculeRendement(matricule: string): void {
+  const trimmedMat = matricule.trim();
+  
+  if (!trimmedMat) {
+    return;
+  }
+  
+  // Extraire seulement les chiffres
+  const matNumber = trimmedMat.replace(/\D/g, '');
+  
+  if (!matNumber) {
+    alert('Le matricule doit contenir des chiffres');
+    return;
+  }
+  
+  const current = this.selectedMatriculesRendement();
+  
+  // Vérifier si déjà présent
+  if (current.includes(matNumber)) {
+    alert('Ce matricule est déjà ajouté');
+    return;
+  }
+  
+  // Limite raisonnable
+  if (current.length >= 10) {
+    alert('Maximum 10 matricules par cause');
+    return;
+  }
+  
+  // Ajouter le matricule
+  this.selectedMatriculesRendement.set([...current, matNumber]);
+  this.currentRendementSearchQuery.set('');
+  this.showRendementSuggestions.set(false);
+  
+  // Synchroniser avec currentCauses
+  this.currentCauses.update(causes => ({
+    ...causes,
+    matriculesRendement: this.selectedMatriculesRendement()
+  }));
+  
+  console.log('Matricule rendement ajouté:', matNumber);
+}
+
+/**
+ * Supprimer un matricule rendement
+ */
+removeMatriculeRendement(index: number): void {
+  const current = this.selectedMatriculesRendement();
+  const updated = current.filter((_, i) => i !== index);
+  this.selectedMatriculesRendement.set(updated);
+  
+  // Synchroniser avec currentCauses
+  this.currentCauses.update(causes => ({
+    ...causes,
+    matriculesRendement: updated
+  }));
+  
+  console.log('Matricule rendement supprimé, restants:', updated.length);
+}
+
+/**
+ * Obtenir la string des matricules rendement séparés par virgule
+ */
+getMatriculesRendementString(): string {
+  const mats = this.selectedMatriculesRendement();
+  return mats.length > 0 ? mats.join(', ') : '';
+}
+
+/**
+ * Parser une string de matricules rendement
+ */
+parseMatriculesRendementString(matriculesInput: string | string[] | number[] | null): void {
+  console.log('Parsing matricules rendement - Input:', matriculesInput);
+  
+  if (!matriculesInput) {
+    this.selectedMatriculesRendement.set([]);
+    return;
+  }
+  
+  let matricules: string[] = [];
+  
+  if (Array.isArray(matriculesInput)) {
+    matricules = matriculesInput
+      .map(m => {
+        const str = String(m).trim();
+        return str.replace(/\D/g, '');
+      })
+      .filter(m => m !== '');
+  } else if (typeof matriculesInput === 'string') {
+    matricules = matriculesInput
+      .split(',')
+      .map(m => m.trim())
+      .filter(m => m !== '')
+      .map(m => m.replace(/\D/g, ''))
+      .filter(m => m !== '');
+  } else if (typeof matriculesInput === 'number') {
+    matricules = [String(matriculesInput).replace(/\D/g, '')].filter(m => m !== '');
+  }
+  
+  console.log('Matricules rendement parsés:', matricules);
+  this.selectedMatriculesRendement.set(matricules);
+  
+  // Synchroniser avec currentCauses
+  this.currentCauses.update(causes => ({
+    ...causes,
+    matriculesRendement: matricules
+  }));
+}
+
+/**
+ * Recherche de matricules rendement
+ */
+onSearchRendementChange(event: Event): void {
+  const target = event.target as HTMLInputElement;
+  const value = target.value;
+  
+  this.currentRendementSearchQuery.set(value);
+  this.showRendementSuggestions.set(value.trim().length > 0);
+}
+
+/**
+ * Fermer les suggestions rendement
+ */
+closeRendementSuggestions(): void {
+  setTimeout(() => {
+    this.showRendementSuggestions.set(false);
+  }, 200);
+}
 
 
 

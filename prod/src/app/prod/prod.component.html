@@ -83,6 +83,14 @@
         </button>
 
         <button 
+          [routerLink]="['/pl1']"
+          class="nav-button"
+          [class.active]="activeTab() === 'planning'">
+          <img src="assets/icons/planifier.png" alt="View" class="nav-button-icon">
+          Creation Planning
+        </button>
+
+         <button 
           [routerLink]="['/planification']"
           class="nav-button"
           [class.active]="activeTab() === 'planning'">
@@ -144,7 +152,7 @@
  (click)="setActiveTab('stats-5m-annuelles')"
   class="nav-button"
   [class.active]="activeTab() === 'stats-5m-annuelles'">
-  <img src="assets/icons/6M.png" alt="View" class="nav-button-icon">
+  <img src="assets/icons/stat.png" alt="View" class="nav-button-icon">
   Non Productivité Annuelle
 </button>
 
@@ -152,7 +160,7 @@
           (click)="setActiveTab('stats-annuelles')"
           class="nav-button"
           [class.active]="activeTab() === 'stats-annuelles'">
-          <img src="assets/icons/pro.png" alt="View" class="nav-button-icon">
+          <img src="assets/icons/stat.png" alt="View" class="nav-button-icon">
           Productivité Annuelle
         </button>
 
@@ -180,6 +188,14 @@
           [class.active]="activeTab() === 'view-stats'">
           <img src="assets/icons/stat.png" alt="View" class="nav-button-icon">
            Statistiques période
+        </button>
+        <button 
+          *ngIf="isAdmin()"
+         [routerLink]="['/ad']"
+          class="nav-button"
+          [class.active]="activeTab() === 'view-stats'">
+          <img src="assets/icons/stat.png" alt="View" class="nav-button-icon">
+           Statistiques Temps
         </button>
          <button 
           *ngIf="isAdmin()"

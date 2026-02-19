@@ -29,12 +29,21 @@ export class NonConformite {
 
   @Column({ type: 'float', default: 0 })
   rendement: number;
+  
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  matriculesAbsence: string | null; // Format: "1234,5678,91011"
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  matriculesRendement: string | null;
 
   @Column({ type: 'float', default: 0 })
   methode: number;
 
   @Column({ type: 'float', default: 0 })
   maintenance: number;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+phasesMaintenance: string | null;
 
   @Column({ type: 'float', default: 0 })
   qualite: number;

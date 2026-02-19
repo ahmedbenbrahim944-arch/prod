@@ -1,5 +1,5 @@
 // src/non-conf/dto/create-or-update-non-conf.dto.ts
-import { IsString, IsNumber, IsNotEmpty, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsNotEmpty, IsOptional, Min, Matches } from 'class-validator';
 
 export class CreateOrUpdateNonConfDto {
   @IsString()
@@ -32,10 +32,24 @@ export class CreateOrUpdateNonConfDto {
   @IsOptional()
   absence?: number;
 
+  @IsString()
+  @IsOptional()
+  @Matches(/^(\d+(,\d+)*)?$/, {
+    message: 'Format invalide pour les matricules. Utilisez: 1234,5678,91011'
+  })
+  matriculesAbsence?: string;
+
   @IsNumber()
   @Min(0, { message: 'Rendement doit être positif ou zéro' })
   @IsOptional()
   rendement?: number;
+
+   @IsString()
+  @IsOptional()
+  @Matches(/^(\d+(,\d+)*)?$/, {
+    message: 'Format invalide pour les matricules. Utilisez: 1234,5678,91011'
+  })
+  matriculesRendement?: string; 
 
   @IsNumber()
   @Min(0, { message: 'Méthode doit être positif ou zéro' })
@@ -46,6 +60,13 @@ export class CreateOrUpdateNonConfDto {
   @Min(0, { message: 'Maintenance doit être positif ou zéro' })
   @IsOptional()
   maintenance?: number;
+
+  @IsString()
+@IsOptional()
+@Matches(/^(\d+(,\d+)*)?$/, {
+  message: 'Format invalide pour les phases maintenance. Utilisez: 1,2,3'
+})
+phasesMaintenance?: string;
 
   @IsNumber()
   @Min(0, { message: 'Qualité doit être positif ou zéro' })

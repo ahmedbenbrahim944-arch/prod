@@ -1271,11 +1271,11 @@
         <option value="LIGNES">Lignes</option>
         <option value="PRODUCTIVITE">Productivité (%)</option>
         <option value="M1">M1 - Matière Première</option>
-        <option value="M2">M2 - Méthode</option>
-        <option value="M3">M3 - Maintenance</option>
-        <option value="M4">M4 - Qualité</option>
-        <option value="M5">M5 - Absence</option>
-        <option value="M6">M6 - Rendement</option>
+        <option value="M2">M2 - Absence</option>
+        <option value="M3">M3 - Rendement</option>
+        <option value="M4">M4 - Méthode</option>
+        <option value="M5">M5 - Maintenance</option>
+        <option value="M6">M6 - Qualité</option>
         <option value="M7">M7 - Environnement</option>
         <option value="PRODUCTIVITE_MOYENNE">Productivité Moyenne</option>
         <option value="NOTE">Note</option>
@@ -1338,12 +1338,12 @@
   Productivité (%)
 </th>
           <th class="m-col">M1<br><small>Mat. Prem.</small></th>
-          <th class="m-col">M2<br><small>Méthode</small></th>
-          <th class="m-col">M3<br><small>Maintenance</small></th>
-          <th class="m-col">M4<br><small>Qualité</small></th>
-          <th class="m-col">M5<br><small>Absence</small></th>
-          <th class="m-col">M6<br><small>Rendement</small></th>
-          <th class="m-col">M7<br><small>Environnement</small></th>
+          <th class="m-col">M2<br><small>Absence</small></th>
+          <th class="m-col">M2<br><small>Rendement</small></th>
+          <th class="m-col">M3<br><small>Méthode</small></th>
+          <th class="m-col">M4<br><small>Maintenance</small></th>
+          <th class="m-col">M5<br><small>Qualité</small></th>
+          <th class="m-col">M6<br><small>Environnement</small></th>
           <th>Prod. Moy.</th>
           <th>Note</th>
           </tr>
@@ -1384,31 +1384,32 @@
       {{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '-' }}
     </td>
     
-    <!-- M2 - Méthode -->
-    <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
-      {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
-    </td>
-    
-    <!-- M3 - Maintenance -->
-    <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
-      {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
-    </td>
-    
-    <!-- M4 - Qualité -->
-    <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
-      {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
-    </td>
-    
-    <!-- M5 - Absence -->
+    <!-- M2 - Absence -->
     <td class="m-value-col" [class.has-value]="ligne.M5 > 0">
       {{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '-' }}
     </td>
     
-    <!-- M6 - Rendement -->
+    <!-- M3 - Rendement -->
     <td class="m-value-col" [class.has-value]="ligne.M6 > 0">
       {{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '-' }}
     </td>
+    
+    <!-- M4 - Méthode -->
+    <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
+      {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
+    </td>
+    
+    <!-- M5 - Maintenance -->
+    <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
+      {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
+    </td>
+    
+    <!-- M6 - Qualité -->
+    <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
+      {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
+    </td>
 
+    <!-- M7 - Environnement -->
     <td class="m-value-col" [class.has-value]="ligne.M7 > 0">
   {{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '-' }}
 </td>
@@ -1457,31 +1458,32 @@
       {{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '-' }}
     </td>
     
-    <!-- M2 - Méthode -->
-    <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
-      {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
-    </td>
-    
-    <!-- M3 - Maintenance -->
-    <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
-      {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
-    </td>
-    
-    <!-- M4 - Qualité -->
-    <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
-      {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
-    </td>
-    
-    <!-- M5 - Absence -->
+    <!-- M2 - Absence -->
     <td class="m-value-col" [class.has-value]="ligne.M5 > 0">
       {{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '-' }}
     </td>
     
-    <!-- M6 - Rendement -->
+    <!-- M3 - Rendement -->
     <td class="m-value-col" [class.has-value]="ligne.M6 > 0">
       {{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '-' }}
     </td>
+    
+    <!-- M4 - Méthode -->
+    <td class="m-value-col" [class.has-value]="ligne.M2 > 0">
+      {{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '-' }}
+    </td>
+    
+    <!-- M5 - Maintenance -->
+    <td class="m-value-col" [class.has-value]="ligne.M3 > 0">
+      {{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '-' }}
+    </td>
+    
+    <!-- M6 - Qualité -->
+    <td class="m-value-col" [class.has-value]="ligne.M4 > 0">
+      {{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '-' }}
+    </td>
 
+    <!-- M7 - Environnement -->
     <td class="m-value-col" [class.has-value]="ligne.M7 > 0">
   {{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '-' }}
 

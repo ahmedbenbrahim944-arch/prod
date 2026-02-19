@@ -1,46 +1,38 @@
 <div class="flex items-center justify-center min-h-screen text-white relative overflow-hidden">
-  
+
   <!-- Background -->
   <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
-       style="background-image:url('https://www.tannerag.ch/Marketing/News%20and%20Social%20Media/38748/image-thumb__38748__contentImageLarge/production-process.e47f5cea.jpg')">
+    style="background-image:url('https://www.tannerag.ch/Marketing/News%20and%20Social%20Media/38748/image-thumb__38748__contentImageLarge/production-process.e47f5cea.jpg')">
   </div>
 
   <!-- Particules -->
   <div id="particles" class="absolute inset-0 pointer-events-none overflow-hidden">
-    <div *ngFor="let particle of particles" 
-         class="particle"
-         [style.left]="particle.left"
-         [style.animation-delay]="particle.animationDelay"
-         [style.width]="particle.size"
-         [style.height]="particle.size"
-         [style.opacity]="particle.opacity">
+    <div *ngFor="let particle of particles" class="particle" [style.left]="particle.left"
+      [style.animation-delay]="particle.animationDelay" [style.width]="particle.size" [style.height]="particle.size"
+      [style.opacity]="particle.opacity">
     </div>
   </div>
 
   <!-- Container principal -->
   <div class="card-container z-10 relative">
     <div class="flip" [class.flipped]="isFlipped()">
-      
+
       <!-- ============================================
            FACE AVANT - LOGIN
            ============================================ -->
       <div class="face front bg-gray-900/85 backdrop-blur-md border border-gray-600/40">
-        
+
         <!-- Sélecteur Type de Connexion -->
         <div class="login-type-selector">
           <div class="flex justify-start gap-4">
-            <button 
-              (click)="toggleLoginType('admin')"
-              [ngClass]="{
+            <button (click)="toggleLoginType('admin')" [ngClass]="{
                 'type-button': true,
                 'admin': loginType === 'admin',
                 'inactive': loginType !== 'admin'
               }">
               Administrateur
             </button>
-            <button 
-              (click)="toggleLoginType('user')"
-              [ngClass]="{
+            <button (click)="toggleLoginType('user')" [ngClass]="{
                 'type-button': true,
                 'user': loginType === 'user',
                 'inactive': loginType !== 'user'
@@ -58,7 +50,7 @@
         <!-- Contenu principal -->
         <div class="flex-1 w-full p-10">
           <div class="flex gap-10 items-start">
-            
+
             <!-- Formulaire -->
             <div class="flex-1 flex flex-col justify-center">
               <h2 class="text-4xl font-bold text-cyan-400 mb-4 neon">CONNEXION</h2>
@@ -67,17 +59,11 @@
               <form (ngSubmit)="onLogin()" class="space-y-6">
                 <!-- Matricule -->
                 <div>
-                  <input 
-                    class="input-industrial w-full" 
-                    placeholder="Matricule" 
-                    [(ngModel)]="loginForm.nom" 
-                    name="nom"
+                  <input class="input-industrial w-full" placeholder="Matricule" [(ngModel)]="loginForm.nom" name="nom"
                     [ngClass]="{
                       'error': loginForm.errors.nom,
                       'active': currentInputField === 'email'
-                    }"
-                    (click)="openNumpad('email')"
-                    readonly>
+                    }" (click)="openNumpad('email')" readonly>
                   <div *ngIf="loginForm.errors.nom" class="text-red-400 text-base mt-2">
                     {{ loginForm.errors.nom }}
                   </div>
@@ -85,18 +71,11 @@
 
                 <!-- Mot de passe -->
                 <div>
-                  <input 
-                    class="input-industrial w-full" 
-                    type="password" 
-                    placeholder="Mot de passe" 
-                    [(ngModel)]="loginForm.password" 
-                    name="password"
-                    [ngClass]="{
+                  <input class="input-industrial w-full" type="password" placeholder="Mot de passe"
+                    [(ngModel)]="loginForm.password" name="password" [ngClass]="{
                       'error': loginForm.errors.password,
                       'active': currentInputField === 'password'
-                    }"
-                    (click)="openNumpad('password')"
-                    readonly>
+                    }" (click)="openNumpad('password')" readonly>
                   <div *ngIf="loginForm.errors.password" class="text-red-400 text-base mt-2">
                     {{ loginForm.errors.password }}
                   </div>
@@ -107,7 +86,8 @@
                   <span class="flex items-center justify-center gap-3">
                     SE CONNECTER
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </span>
                 </button>
@@ -117,8 +97,9 @@
               <div class="text-center mt-8 pt-8 border-t border-gray-600/50">
                 <p class="text-base text-gray-300">
                   Pas de compte ?
-                  <span (click)="toggleFlip()" class="text-cyan-400 cursor-pointer hover:text-cyan-300 transition-colors ml-2 font-bold">
-                    
+                  <span (click)="toggleFlip()"
+                    class="text-cyan-400 cursor-pointer hover:text-cyan-300 transition-colors ml-2 font-bold">
+
                   </span>
                 </p>
               </div>
@@ -126,26 +107,24 @@
 
             <!-- Clavier numérique -->
             <div class="w-auto flex-shrink-0">
-              <div class="numpad-large bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-gray-600/30">
-                
+              <div
+                class="numpad-large bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-gray-600/30">
+
                 <!-- Indicateur champ -->
                 <div class="current-field-indicator">
                   <div class="current-field-text">
                     {{ getCurrentFieldName() }}
                   </div>
                 </div>
-                
+
                 <!-- Afficheur -->
                 <div class="value-display">
-                  {{ numpadValue || '---' }}
-                </div>
-                
+  {{ isPasswordField() ? maskPassword(numpadValue) : (numpadValue || '---') }}
+</div>
+
                 <!-- Touches -->
                 <div class="grid grid-cols-3 gap-3">
-                  <button 
-                    *ngFor="let button of numpadButtons" 
-                    (click)="onNumpadButtonClick(button)"
-                    [ngClass]="{
+                  <button *ngFor="let button of numpadButtons" (click)="onNumpadButtonClick(button)" [ngClass]="{
                       'numpad-btn-large text-white': true,
                       'bg-red-500 hover:bg-red-400': button === '⌫',
                       'bg-green-500 hover:bg-green-400': button === '✓',
@@ -164,7 +143,7 @@
            FACE ARRIÈRE - REGISTER
            ============================================ -->
       <div class="face back bg-gray-900/85 backdrop-blur-md border border-gray-600/40">
-        
+
         <!-- En-tête -->
         <div class="login-type-selector">
           <div class="text-center">
@@ -175,7 +154,7 @@
         <!-- Contenu principal -->
         <div class="flex-1 w-full p-10">
           <div class="flex gap-10 items-start">
-            
+
             <!-- Formulaire -->
             <div class="flex-1 flex flex-col justify-center">
               <h2 class="text-4xl font-bold text-indigo-400 mb-4">CRÉER UN COMPTE</h2>
@@ -185,33 +164,21 @@
                 <!-- Prénom & Nom -->
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <input 
-                      class="input-industrial w-full" 
-                      placeholder="Prénom" 
-                      [(ngModel)]="registerForm.firstName" 
-                      name="firstName"
-                      [ngClass]="{
+                    <input class="input-industrial w-full" placeholder="Prénom" [(ngModel)]="registerForm.firstName"
+                      name="firstName" [ngClass]="{
                         'error': registerForm.errors.firstName,
                         'active': currentInputField === 'firstName'
-                      }"
-                      (click)="openNumpad('firstName')"
-                      readonly>
+                      }" (click)="openNumpad('firstName')" readonly>
                     <div *ngIf="registerForm.errors.firstName" class="text-red-400 text-sm mt-2">
                       {{ registerForm.errors.firstName }}
                     </div>
                   </div>
                   <div>
-                    <input 
-                      class="input-industrial w-full" 
-                      placeholder="Nom" 
-                      [(ngModel)]="registerForm.lastName" 
-                      name="lastName"
-                      [ngClass]="{
+                    <input class="input-industrial w-full" placeholder="Nom" [(ngModel)]="registerForm.lastName"
+                      name="lastName" [ngClass]="{
                         'error': registerForm.errors.lastName,
                         'active': currentInputField === 'lastName'
-                      }"
-                      (click)="openNumpad('lastName')"
-                      readonly>
+                      }" (click)="openNumpad('lastName')" readonly>
                     <div *ngIf="registerForm.errors.lastName" class="text-red-400 text-sm mt-2">
                       {{ registerForm.errors.lastName }}
                     </div>
@@ -220,17 +187,11 @@
 
                 <!-- Matricule -->
                 <div>
-                  <input 
-                    class="input-industrial w-full" 
-                    placeholder="Matricule" 
-                    [(ngModel)]="registerForm.nom" 
-                    name="registerEmail"
-                    [ngClass]="{
+                  <input class="input-industrial w-full" placeholder="Matricule" [(ngModel)]="registerForm.nom"
+                    name="registerEmail" [ngClass]="{
                       'error': registerForm.errors.nom,
                       'active': currentInputField === 'registerEmail'
-                    }"
-                    (click)="openNumpad('registerEmail')"
-                    readonly>
+                    }" (click)="openNumpad('registerEmail')" readonly>
                   <div *ngIf="registerForm.errors.nom" class="text-red-400 text-base mt-2">
                     {{ registerForm.errors.nom }}
                   </div>
@@ -238,18 +199,11 @@
 
                 <!-- Mot de passe -->
                 <div>
-                  <input 
-                    class="input-industrial w-full" 
-                    type="password" 
-                    placeholder="Mot de passe" 
-                    [(ngModel)]="registerForm.password" 
-                    name="registerPassword"
-                    [ngClass]="{
+                  <input class="input-industrial w-full" type="password" placeholder="Mot de passe"
+                    [(ngModel)]="registerForm.password" name="registerPassword" [ngClass]="{
                       'error': registerForm.errors.password,
                       'active': currentInputField === 'registerPassword'
-                    }"
-                    (click)="openNumpad('registerPassword')"
-                    readonly>
+                    }" (click)="openNumpad('registerPassword')" readonly>
                   <div *ngIf="registerForm.errors.password" class="text-red-400 text-base mt-2">
                     {{ registerForm.errors.password }}
                   </div>
@@ -257,18 +211,11 @@
 
                 <!-- Confirmation -->
                 <div>
-                  <input 
-                    class="input-industrial w-full" 
-                    type="password" 
-                    placeholder="Confirmer le mot de passe" 
-                    [(ngModel)]="registerForm.confirm" 
-                    name="confirmPassword"
-                    [ngClass]="{
+                  <input class="input-industrial w-full" type="password" placeholder="Confirmer le mot de passe"
+                    [(ngModel)]="registerForm.confirm" name="confirmPassword" [ngClass]="{
                       'error': registerForm.errors.confirm,
                       'active': currentInputField === 'confirmPassword'
-                    }"
-                    (click)="openNumpad('confirmPassword')"
-                    readonly>
+                    }" (click)="openNumpad('confirmPassword')" readonly>
                   <div *ngIf="registerForm.errors.confirm" class="text-red-400 text-base mt-2">
                     {{ registerForm.errors.confirm }}
                   </div>
@@ -279,7 +226,8 @@
                   <span class="flex items-center justify-center gap-3">
                     S'INSCRIRE
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                   </span>
                 </button>
@@ -289,7 +237,8 @@
               <div class="text-center mt-8 pt-8 border-t border-gray-600/50">
                 <p class="text-base text-gray-300">
                   Déjà un compte ?
-                  <span (click)="toggleFlip()" class="text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors ml-2 font-bold">
+                  <span (click)="toggleFlip()"
+                    class="text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors ml-2 font-bold">
                     Se connecter
                   </span>
                 </p>
@@ -298,26 +247,22 @@
 
             <!-- Clavier numérique -->
             <div class="w-auto flex-shrink-0">
-              <div class="numpad-large bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-gray-600/30">
-                
+              <div
+                class="numpad-large bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-gray-600/30">
+
                 <!-- Indicateur champ -->
                 <div class="current-field-indicator">
                   <div class="current-field-text">
                     {{ getCurrentFieldName() }}
                   </div>
                 </div>
-                
+
                 <!-- Afficheur -->
-                <div class="value-display">
-                  {{ numpadValue || '---' }}
-                </div>
                 
+
                 <!-- Touches -->
                 <div class="grid grid-cols-3 gap-3">
-                  <button 
-                    *ngFor="let button of numpadButtons" 
-                    (click)="onNumpadButtonClick(button)"
-                    [ngClass]="{
+                  <button *ngFor="let button of numpadButtons" (click)="onNumpadButtonClick(button)" [ngClass]="{
                       'numpad-btn-large text-white': true,
                       'bg-red-500 hover:bg-red-400': button === '⌫',
                       'bg-green-500 hover:bg-green-400': button === '✓',

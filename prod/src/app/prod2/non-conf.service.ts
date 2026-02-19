@@ -14,6 +14,7 @@ export interface CreateOrUpdateNonConfDto {
   rendement?: number;
   methode?: number;
   maintenance?: number;
+  phasesMaintenance?: string;
   qualite?: number;
   environnement?: number;
   referenceMatierePremiere?: string;
@@ -42,6 +43,7 @@ export interface NonConformiteResponse {
     rendement: number;
     methode: number;
     maintenance: number;
+    phasesMaintenance: string[];
     qualite: number;
     environnement: number;
     referenceQualite: string | null; // AJOUT: Référence qualité
