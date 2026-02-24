@@ -53,6 +53,10 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
   private isUserInteracting: boolean = false;
   private scrollTimeout: any = null;
   
+  // Propriétés pour le rechargement automatique
+  private autoReloadTimer: any;
+  private derniereDateChargee: string = '';
+  
   // ============================================
   // CONSTRUCTOR & LIFECYCLE
   // ============================================
@@ -63,17 +67,14 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
   ) {}
   
   ngOnInit(): void {
-    const today = new Date();
-    this.maxDate = today.toISOString().split('T')[0];
+    // 1. Initialiser avec la date d'hier (en évitant dimanche)
+    this.initialiserDatesHier();
     
-    // Initialiser les dates de productivité
-    // Date de début = il y a 7 jours
-    const dateDebut = new Date(today);
-    dateDebut.setDate(dateDebut.getDate() - 7);
-    this.dateDebutProductivite = dateDebut.toISOString().split('T')[0];
+    // 2. Charger immédiatement les stats
+    this.chargerProductiviteOuvriers();
     
-    // Date de fin = aujourd'hui
-    this.dateFinProductivite = this.maxDate;
+    // 3. Programmer le rechargement automatique à 10h00
+    this.programmerRechargement10h();
   }
   
   ngOnDestroy(): void {
@@ -81,6 +82,141 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     if (this.scrollTimeout) {
       clearTimeout(this.scrollTimeout);
     }
+    if (this.autoReloadTimer) {
+      clearInterval(this.autoReloadTimer);
+    }
+  }
+  
+  /**
+   * Initialise avec le dernier jour ouvré (hier, sauf si hier est dimanche)
+   */
+  private initialiserDatesHier(): void {
+    const today = new Date();
+    let hier = new Date(today);
+    hier.setDate(today.getDate() - 1);
+    
+    // Vérifier si hier est dimanche (0 = dimanche en JavaScript)
+    while (hier.getDay() === 0) { // 0 = Dimanche
+      console.log(`📅 ${this.formatDate(hier)} est un dimanche (pas de données), on prend la veille`);
+      hier.setDate(hier.getDate() - 1);
+    }
+    
+    const hierFormatted = this.formatDate(hier);
+    
+    this.dateDebutProductivite = hierFormatted;
+    this.dateFinProductivite = hierFormatted;
+    this.maxDate = this.formatDate(today);
+    
+    console.log(`📅 Dates initialisées: ${this.dateDebutProductivite} (${this.getNomJourSemaine(hier)})`);
+  }
+
+  /**
+   * Formatte une date en YYYY-MM-DD
+   */
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Fonction utilitaire pour obtenir le nom du jour de la semaine
+   */
+  private getNomJourSemaine(date: Date): string {
+    const jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    return jours[date.getDay()];
+  }
+
+  /**
+   * Programme le rechargement automatique à 10h00 pile
+   * avec adaptation pour éviter les dimanches
+   */
+  private programmerRechargement10h(): void {
+    const maintenant = new Date();
+    
+    // Calculer le prochain 10h00
+    const prochain10h = new Date();
+    prochain10h.setHours(10, 0, 0, 0); // 10:00:00.000
+    
+    // Si on est déjà après 10h aujourd'hui, programmer pour demain
+    if (maintenant >= prochain10h) {
+      prochain10h.setDate(prochain10h.getDate() + 1);
+    }
+    
+    // Vérifier que le jour de rechargement n'est pas un dimanche
+    // Si le prochain rechargement tombe un dimanche, on passe au lundi
+    if (prochain10h.getDay() === 0) { // 0 = Dimanche
+      console.log(`📅 ${this.formatDate(prochain10h)} est un dimanche, rechargement reporté au lundi`);
+      prochain10h.setDate(prochain10h.getDate() + 1);
+    }
+    
+    const tempsAttente = prochain10h.getTime() - maintenant.getTime();
+    
+    console.log(`⏰ Prochain rechargement automatique à 10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
+    
+    // Programmer le rechargement
+    setTimeout(() => {
+      this.executerRechargement10h();
+      
+      // Puis re-programmer tous les jours à 10h00 (en évitant les dimanches)
+      setInterval(() => {
+        this.executerRechargement10h();
+      }, 24 * 60 * 60 * 1000); // Toutes les 24h
+      
+    }, tempsAttente);
+  }
+
+  /**
+   * Exécute le rechargement complet à 10h00 avec gestion des dimanches
+   */
+  private executerRechargement10h(): void {
+    console.log('🕙 10h00 - DÉCLENCHEMENT DU RECHARGEMENT AUTOMATIQUE');
+    
+    // Vérifier si aujourd'hui est dimanche (ne devrait pas arriver avec notre logique)
+    const aujourdhui = new Date();
+    if (aujourdhui.getDay() === 0) {
+      console.log('⚠️ Aujourd\'hui est dimanche, pas de rechargement automatique');
+      return;
+    }
+    
+    // 1. Retour à l'écran filtre
+    this.productiviteOuvriers = null;
+    
+    // 2. Mise à jour des dates avec la logique anti-dimanche
+    this.initialiserDatesHier();
+    
+    // 3. Petit délai pour que l'UI se mette à jour
+    setTimeout(() => {
+      // 4. Rechargement automatique des statistiques
+      this.chargerProductiviteOuvriers();
+      
+      console.log('✅ Statistiques rechargées automatiquement à 10h00');
+    }, 100);
+  }
+
+  /**
+   * Surcharge de retour à la sélection avec réinitialisation
+   */
+  retourChoix(): void {
+    this.productiviteOuvriers = null;
+    this.reinitialiserFiltres();
+    this.router.navigate(['/choix']); // Adaptez selon votre routing
+  }
+
+  /**
+   * Réinitialiser manuellement (comme le bouton de réinitialisation)
+   */
+  reinitialiser(): void {
+    this.initialiserDatesHier();
+    this.productiviteOuvriers = null;
+    this.reinitialiserFiltres();
+    
+    // Recharger automatiquement
+    this.chargerProductiviteOuvriers();
+    
+    const date = new Date(this.dateDebutProductivite);
+    console.log(`🔄 Réinitialisation manuelle avec ${this.dateDebutProductivite} (${this.getNomJourSemaine(date)})`);
   }
   
   // ============================================
@@ -98,6 +234,16 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
 
     if (new Date(this.dateDebutProductivite) > new Date(this.dateFinProductivite)) {
       alert('La date de début doit être antérieure à la date de fin');
+      return;
+    }
+
+    // Vérification supplémentaire : ne pas charger si c'est un dimanche
+    const dateDebut = new Date(this.dateDebutProductivite);
+    if (dateDebut.getDay() === 0) {
+      console.warn('⚠️ Tentative de chargement pour un dimanche, ajustement automatique');
+      this.initialiserDatesHier();
+      // Recharger avec les nouvelles dates
+      this.chargerProductiviteOuvriers();
       return;
     }
 
@@ -169,14 +315,11 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
         this.reinitialiserFiltres();
         
         // ✅ Démarrer le défilement automatique après un court délai
-        // (pour laisser le temps au DOM de se mettre à jour)
         setTimeout(() => {
-          // Revenir en haut du tableau
           const tableauContainer = document.querySelector('.tableau-container');
           if (tableauContainer) {
             tableauContainer.scrollTop = 0;
           }
-          // Démarrer le défilement
           this.startAutoScroll();
         }, 100);
       },
@@ -237,9 +380,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
   /**
    * Retour à la page précédente
    */
-  retourChoix(): void {
-    this.router.navigate(['/choix']); // Adaptez selon votre routing
-  }
+  /* retourChoix déjà défini plus haut */
   
   // ============================================
   // MÉTHODES DE FILTRAGE
@@ -390,24 +531,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
    * Réinitialiser tous les filtres
    */
   resetFilters(): void {
-    this.champFiltre = '';
-    this.valeurFiltre = '';
-    this.ligneSelectionnee = null;
-    this.productiviteMin = null;
-    this.productiviteMax = null;
-    this.productiviteFiltree = [];
-    this.productiviteSortDirection = null;
-    this.productiviteDataSorted = [];
-    
-    // Réinitialiser le scroll et redémarrer le défilement
-    setTimeout(() => {
-      const tableauContainer = document.querySelector('.tableau-container');
-      if (tableauContainer) {
-        tableauContainer.scrollTop = 0;
-      }
-      this.isUserInteracting = false;
-      this.startAutoScroll();
-    }, 100);
+    this.reinitialiserFiltres();
   }
   
   // ============================================
@@ -550,15 +674,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
       this.isUserInteracting = false;
     }, 10000); // 10 secondes d'inactivité
   }
-  
-  // ============================================
-  // MÉTHODES UTILITAIRES
-  // ============================================
-  
-  /**
-   * Obtenir la couleur pour la productivité
-   */
- 
   
   // ============================================
   // MÉTHODES D'EXPORT
@@ -730,18 +845,19 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
   get safeProductiviteStats(): any {
     return this.productiviteOuvriers?.statistiques?.resume || {};
   }
+  
   getProd(ligne: LigneProductivite): number {
-  const val = ligne.PRODUCTIVITE ?? 0;
-  return val === 0 ? 100 : val;
-}
+    const val = ligne.PRODUCTIVITE ?? 0;
+    return val === 0 ? 100 : val;
+  }
 
-/**
- * Couleur selon la productivité réelle (après conversion 0→100)
- */
-getColorForProductivite(productivite: number): string {
-  const real = productivite === 0 ? 100 : productivite;
-  if (real >= 90) return '#00e5a0'; // vert
-  if (real >= 70) return '#4db8ff'; // bleu
-  return '#ff8c42';                 // orange
-}
+  /**
+   * Couleur selon la productivité réelle (après conversion 0→100)
+   */
+  getColorForProductivite(productivite: number): string {
+    const real = productivite === 0 ? 100 : productivite;
+    if (real >= 90) return '#00e5a0'; // vert
+    if (real >= 70) return '#4db8ff'; // bleu
+    return '#ff8c42';                 // orange
+  }
 }

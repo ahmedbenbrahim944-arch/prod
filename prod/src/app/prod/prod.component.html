@@ -143,7 +143,7 @@
           (click)="setActiveTab('download-phase')"
           class="nav-button"
           [class.active]="activeTab() === 'download-phase'">
-          <img src="assets/icons/phase.png" alt="View" class="nav-button-icon">
+          <img src="assets/icons/pahse.png" alt="View" class="nav-button-icon">
           Rapport Phase
         </button>
 
@@ -204,6 +204,14 @@
           [class.active]="activeTab() === 'view-stats'">
           <img src="assets/icons/ouvriers.png" alt="View" class="nav-button-icon">
            List Ouvrier
+        </button>
+         <button 
+          *ngIf="isAdmin()"
+         [routerLink]="['/admin/tracking']"
+          class="nav-button"
+          [class.active]="activeTab() === 'view-stats'">
+          <img src="assets/icons/ouvriers.png" alt="View" class="nav-button-icon">
+           traking super admin
         </button>
       </div>
     </nav>

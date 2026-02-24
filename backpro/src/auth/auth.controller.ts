@@ -1,5 +1,5 @@
-// src/auth/auth.controller.ts
-import { Controller, Post, Body, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Post, Body, UsePipes, ValidationPipe, Req } from '@nestjs/common';
+import type { Request } from 'express'; // ✅ Utilisation de 'import type' pour les types uniquement
 import { AuthService } from './auth.service';
 import { LoginAdminDto } from '../admin/dto/login-admin.dto';
 import { LoginUserDto } from '../user/dto/login-user.dto';
@@ -10,13 +10,13 @@ export class AuthController {
 
   @Post('admin/login')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async loginAdmin(@Body() loginAdminDto: LoginAdminDto) {
-    return this.authService.loginAdmin(loginAdminDto);
+  async loginAdmin(@Body() loginAdminDto: LoginAdminDto, @Req() req: Request) {
+    return this.authService.loginAdmin(loginAdminDto, req);
   }
 
   @Post('user/login')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async loginUser(@Body() loginUserDto: LoginUserDto) {
-    return this.authService.loginUser(loginUserDto);
+  async loginUser(@Body() loginUserDto: LoginUserDto, @Req() req: Request) {
+    return this.authService.loginUser(loginUserDto, req);
   }
 }

@@ -352,122 +352,153 @@ async create(createDto: CreatePlanningSelectionDto): Promise<PlanningSelection> 
   /**
    * Mettre à jour un planning par ID
    */
-  async update(id: number, updateDto: any): Promise<PlanningSelection> {
-    const planning = await this.findOne(id);
+ async update(id: number, updateDto: UpdatePlanningSelectionDto): Promise<PlanningSelection> {
+  const planning = await this.findOne(id);
 
-    // Mettre à jour la référence si fournie
-    if (updateDto.reference !== undefined) {
-      const refInfo = await this.findReferenceAndLine(updateDto.reference);
-      planning.reference = updateDto.reference;
-      planning.ligneRef = refInfo.ligne;
-      planning.typeReference = refInfo.type;
-      
-      // ✅ CORRECTION: Assigner null au lieu de 0
-      if (refInfo.type === 'product') {
-        planning.productId = refInfo.id;
-        planning.matierePremierId = null;
-      } else {
-        planning.matierePremierId = refInfo.id;
-        planning.productId = null;
-      }
-    }
-
-    if (updateDto.qteASelectionne !== undefined) {
-      planning.qteASelectionne = updateDto.qteASelectionne;
-    }
-
-    if (updateDto.objectifHeure !== undefined) {
-      planning.objectifHeure = updateDto.objectifHeure;
-    }
-
-    if (updateDto.numTicket !== undefined) {
-      planning.numTicket = updateDto.numTicket;
-    }
-
-    if (updateDto.statut !== undefined) {
-      planning.statut = updateDto.statut;
-    }
-
-    if (updateDto.nHeures !== undefined) {
-      planning.nHeures = updateDto.nHeures;
-    }
-
-    if (updateDto.qteSelection !== undefined) {
-      planning.qteSelection = updateDto.qteSelection;
-    }
-
-    if (updateDto.rebut !== undefined) {
-      planning.rebut = updateDto.rebut;
-    }
-
-    // Recalculer le rendement
-    const nHeures = Number(planning.nHeures);
-    const objectifHeure = Number(planning.objectifHeure ?? 0);
+  // Mettre à jour la référence si fournie
+  if (updateDto.reference !== undefined) {
+    const refInfo = await this.findReferenceAndLine(updateDto.reference);
+    planning.reference = updateDto.reference;
+    planning.ligneRef = refInfo.ligne;
+    planning.typeReference = refInfo.type;
     
-    if (nHeures > 0 && objectifHeure > 0) {
-      const totalProduction = planning.qteSelection + planning.rebut;
-      planning.rendement = Number(((totalProduction / (nHeures * objectifHeure)) * 100).toFixed(2));
+    if (refInfo.type === 'product') {
+      planning.productId = refInfo.id;
+      planning.matierePremierId = null;
     } else {
-      planning.rendement = 0;
+      planning.matierePremierId = refInfo.id;
+      planning.productId = null;
     }
-
-    const updatedPlanning = await this.planningRepository.save(planning);
-    await this.loadRelationsForPlanning(updatedPlanning);
-
-    return updatedPlanning;
   }
+
+  if (updateDto.qteASelectionne !== undefined) {
+    planning.qteASelectionne = updateDto.qteASelectionne;
+  }
+
+  if (updateDto.objectifHeure !== undefined) {
+    planning.objectifHeure = updateDto.objectifHeure;
+  }
+
+  if (updateDto.numTicket !== undefined) {
+    planning.numTicket = updateDto.numTicket;
+  }
+
+  if (updateDto.nHeures !== undefined) {
+    planning.nHeures = updateDto.nHeures;
+  }
+
+  if (updateDto.qteSelection !== undefined) {
+    planning.qteSelection = updateDto.qteSelection;
+  }
+
+  if (updateDto.rebut !== undefined) {
+    planning.rebut = updateDto.rebut;
+  }
+
+  if (updateDto.terminer !== undefined) {
+    planning.terminer = updateDto.terminer;
+  }
+
+  // ✅ AJOUTER CETTE CONDITION
+  if (updateDto.statut !== undefined) {
+    planning.statut = updateDto.statut;
+  }
+
+  // Recalculer le rendement
+  const nHeures = Number(planning.nHeures);
+  const objectifHeure = Number(planning.objectifHeure ?? 0);
+  
+  if (nHeures > 0 && objectifHeure > 0) {
+    const totalProduction = planning.qteSelection + planning.rebut;
+    planning.rendement = Number(((totalProduction / (nHeures * objectifHeure)) * 100).toFixed(2));
+  } else {
+    planning.rendement = 0;
+  }
+
+  const updatedPlanning = await this.planningRepository.save(planning);
+  await this.loadRelationsForPlanning(updatedPlanning);
+
+  return updatedPlanning;
+}
 
   /**
    * Mettre à jour un planning par matricule, référence et date
    */
   async updateByMatriculeReferenceDate(
-    matricule: number,
-    reference: string,
-    date: string,
-    updateDto: UpdatePlanningSelectionDto
-  ): Promise<PlanningSelection> {
-    const planning = await this.planningRepository.findOne({
-      where: {
-        matricule,
-        reference,
-        date
-      }
-    });
+  matricule: number,
+  reference: string,
+  date: string,
+  updateDto: UpdatePlanningSelectionDto
+): Promise<PlanningSelection> {
+  const planning = await this.planningRepository.findOne({
+    where: { matricule, reference, date }
+  });
 
-    if (!planning) {
-      throw new NotFoundException(
-        `Planning introuvable pour matricule=${matricule}, référence=${reference}, date=${date}`
-      );
-    }
-
-    if (updateDto.nHeures !== undefined) {
-      planning.nHeures = updateDto.nHeures;
-    }
-
-    if (updateDto.qteSelection !== undefined) {
-      planning.qteSelection = updateDto.qteSelection;
-    }
-
-    if (updateDto.rebut !== undefined) {
-      planning.rebut = updateDto.rebut;
-    }
-
-    // Recalculer le rendement avec rebut
-    const nHeures = Number(planning.nHeures);
-    const objectifHeure = Number(planning.objectifHeure ?? 0);
-    
-    if (nHeures > 0 && objectifHeure > 0) {
-      const totalProduction = planning.qteSelection + planning.rebut;
-      planning.rendement = Number(((totalProduction / (nHeures * objectifHeure)) * 100).toFixed(2));
-    } else {
-      planning.rendement = 0;
-    }
-
-    const updatedPlanning = await this.planningRepository.save(planning);
-    await this.loadRelationsForPlanning(updatedPlanning);
-
-    return updatedPlanning;
+  if (!planning) {
+    throw new NotFoundException(
+      `Planning introuvable pour matricule=${matricule}, référence=${reference}, date=${date}`
+    );
   }
+
+  if (updateDto.reference !== undefined) {
+    const refInfo = await this.findReferenceAndLine(updateDto.reference);
+    planning.reference = updateDto.reference;
+    planning.ligneRef = refInfo.ligne;
+    planning.typeReference = refInfo.type;
+
+    if (refInfo.type === 'product') {
+      planning.productId = refInfo.id;
+      planning.matierePremierId = null;
+    } else {
+      planning.matierePremierId = refInfo.id;
+      planning.productId = null;
+    }
+  }
+
+  if (updateDto.qteASelectionne !== undefined) {
+    planning.qteASelectionne = updateDto.qteASelectionne;
+  }
+
+  if (updateDto.objectifHeure !== undefined) {
+    planning.objectifHeure = updateDto.objectifHeure;
+  }
+
+  if (updateDto.numTicket !== undefined) {
+    planning.numTicket = updateDto.numTicket;
+  }
+
+  if (updateDto.terminer !== undefined) {
+    planning.terminer = updateDto.terminer;
+  }
+
+  if (updateDto.nHeures !== undefined) {
+    planning.nHeures = updateDto.nHeures;
+  }
+
+  if (updateDto.qteSelection !== undefined) {
+    planning.qteSelection = updateDto.qteSelection;
+  }
+
+  if (updateDto.rebut !== undefined) {
+    planning.rebut = updateDto.rebut;
+  }
+
+  // Recalculer le rendement avec rebut
+  const nHeures = Number(planning.nHeures);
+  const objectifHeure = Number(planning.objectifHeure ?? 0);
+  
+  if (nHeures > 0 && objectifHeure > 0) {
+    const totalProduction = planning.qteSelection + planning.rebut;
+    planning.rendement = Number(((totalProduction / (nHeures * objectifHeure)) * 100).toFixed(2));
+  } else {
+    planning.rendement = 0;
+  }
+
+  const updatedPlanning = await this.planningRepository.save(planning);
+  await this.loadRelationsForPlanning(updatedPlanning);
+
+  return updatedPlanning;
+}
 
   /**
    * Supprimer un planning

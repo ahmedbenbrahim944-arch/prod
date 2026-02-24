@@ -100,6 +100,9 @@ export class PlanningSelection {
 
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   rendement: number;
+  
+  @Column({ type: 'varchar', length: 3, default: 'non' })
+terminer: string;
 
   @CreateDateColumn()
   createdAt: Date;

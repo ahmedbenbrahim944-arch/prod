@@ -54,6 +54,7 @@ export interface PlanningSelection {
   rebut?: number;
   nHeures?: number;
   rendement?: number;
+  terminer?: string; // 'oui' ou 'non'
 }
 
 export interface CreatePlanningSelectionDto {
@@ -72,6 +73,12 @@ export interface UpdatePlanningSelectionDto {
   nHeures?: number;
   qteSelection?: number;
   rebut?: number;
+  qteASelectionne?: number;
+  objectifHeure?: number;
+  reference?: string;
+  numTicket?: string;
+  terminer?: string; // 'oui' ou 'non'
+  statut?: string;
 }
 
 @Injectable({

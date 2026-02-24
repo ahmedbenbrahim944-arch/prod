@@ -8,7 +8,8 @@ import {
   Ouvrier, 
   ReferenceItem, 
   PlanningSelection, 
-  CreatePlanningSelectionDto 
+  CreatePlanningSelectionDto ,
+  UpdatePlanningSelectionDto
 } from './selection.service';
 import { AuthService } from '../login/auth.service';
 
@@ -384,38 +385,84 @@ export class SelectionComponent implements OnInit {
   }
 
   // 🆕 Compléter un planning en attente
-  completePlanning(): void {
-    if (!this.isCompletionFormValid() || !this.selectedPlanningEnAttente) {
-      this.showError('Veuillez remplir tous les champs obligatoires');
+completePlanning(): void {
+  if (!this.isCompletionFormValid() || !this.selectedPlanningEnAttente) {
+    this.showError('Veuillez remplir tous les champs obligatoires');
+    return;
+  }
+
+  const planningId = this.selectedPlanningEnAttente.id;
+  if (!planningId) return;
+
+  const updateData: UpdatePlanningSelectionDto = {
+    reference: this.completionFormData.reference,
+    qteASelectionne: this.completionFormData.qteASelectionne!,
+    objectifHeure: this.completionFormData.objectifHeure!,
+    numTicket: this.completionFormData.numTicket || 'non num',
+    statut: 'selection' // ✅ Maintenant reconnu par le DTO
+  };
+
+  this.isLoading = true;
+  this.selectionService.updatePlanningById(planningId, updateData).subscribe({
+    next: (result) => {
+      this.showSuccess('Planning complété avec succès !');
+      this.closeCompletionModal();
+      this.loadPlanningsEnAttente(); // Recharger les plannings en attente
+      if (this.selectedSemaine) {
+        this.loadPlanningsBySemaine(this.selectedSemaine.number); // Recharger le tableau
+      }
+      this.isLoading = false;
+    },
+    error: (error) => {
+      console.error('❌ Erreur complétion planning:', error);
+      this.showError('Erreur lors de la complétion du planning');
+      this.isLoading = false;
+    }
+  });
+}
+
+  // Mettre à jour qteASelectionne
+  updateQteASelectionne(planning: PlanningSelection, value: number): void {
+    if (!value || value < 1) {
+      this.showError('La quantité à sélectionner doit être supérieure à 0');
       return;
     }
-
-    const planningId = this.selectedPlanningEnAttente.id;
-    if (!planningId) return;
-
-    const updateData = {
-      reference: this.completionFormData.reference,
-      qteASelectionne: this.completionFormData.qteASelectionne!,
-      objectifHeure: this.completionFormData.objectifHeure!,
-      numTicket: this.completionFormData.numTicket || 'non num',
-      statut: 'selection' // Changer le statut de "en attente" à "selection"
-    };
-
-    this.isLoading = true;
-    this.selectionService.updatePlanningById(planningId, updateData).subscribe({
-      next: (result) => {
-        this.showSuccess('Planning complété avec succès !');
-        this.closeCompletionModal();
-        this.loadPlanningsEnAttente(); // Recharger la liste des plannings en attente
-        if (this.selectedSemaine) {
-          this.loadPlanningsBySemaine(this.selectedSemaine.number); // Recharger le tableau principal
-        }
-        this.isLoading = false;
+    this.selectionService.updatePlanningByInfo(
+      planning.matricule,
+      planning.reference,
+      planning.date,
+      { qteASelectionne: Number(value) }
+    ).subscribe({
+      next: () => {
+        planning.qteASelectionne = Number(value);
+        this.showSuccess('Quantité à sélectionner mise à jour');
       },
       error: (error) => {
-        console.error('❌ Erreur complétion planning:', error);
-        this.showError('Erreur lors de la complétion du planning');
-        this.isLoading = false;
+        console.error('Erreur mise à jour qteASelectionne:', error);
+        this.showError('Erreur lors de la mise à jour');
+      }
+    });
+  }
+
+  // Mettre à jour objectifHeure
+  updateObjectifHeure(planning: PlanningSelection, value: number): void {
+    if (!value || value < 1) {
+      this.showError("L'objectif par heure doit être supérieur à 0");
+      return;
+    }
+    this.selectionService.updatePlanningByInfo(
+      planning.matricule,
+      planning.reference,
+      planning.date,
+      { objectifHeure: Number(value) }
+    ).subscribe({
+      next: () => {
+        planning.objectifHeure = Number(value);
+        this.showSuccess('Objectif par heure mis à jour');
+      },
+      error: (error) => {
+        console.error('Erreur mise à jour objectifHeure:', error);
+        this.showError('Erreur lors de la mise à jour');
       }
     });
   }
@@ -494,6 +541,25 @@ export class SelectionComponent implements OnInit {
       error: (error) => {
         console.error('Erreur mise à jour rebut:', error);
         this.showError('Erreur lors de la mise à jour du rebut');
+      }
+    });
+  }
+
+  // Mettre à jour terminer (oui/non)
+  updateTerminer(planning: PlanningSelection, value: string): void {
+    this.selectionService.updatePlanningByInfo(
+      planning.matricule,
+      planning.reference,
+      planning.date,
+      { terminer: value }
+    ).subscribe({
+      next: () => {
+        planning.terminer = value;
+        this.showSuccess(`Planning marqué comme "${value === 'oui' ? 'Terminé' : 'Non terminé'}"`);
+      },
+      error: (error) => {
+        console.error('Erreur mise à jour terminer:', error);
+        this.showError('Erreur lors de la mise à jour');
       }
     });
   }

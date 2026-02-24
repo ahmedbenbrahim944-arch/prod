@@ -33,8 +33,11 @@ export class AuthService {
   private readonly TOKEN_KEY = 'access_token';
   private readonly USER_KEY = 'current_user';
   
-  // 🎯 NOUVEAU: Matricule spécial pour DM
+  // 🎯 Matricule spécial pour DM
   private readonly SPECIAL_MATRICULE_DM = '2603';
+  
+  // 🎯 NOUVEAU: Matricule pour listP
+  private readonly SPECIAL_MATRICULE_LISTP = '7777';
 
   constructor(
     private http: HttpClient,
@@ -44,48 +47,53 @@ export class AuthService {
   /**
    * Connexion Admin
    */
- adminLogin(credentials: LoginCredentials): Observable<AuthResponse> {
-  return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials)
-    .pipe(
-      tap(response => {
-        this.saveAuthData(response);
-        
-        // 🎯 Récupérer le matricule
-        const matricule = response.user.nom;
-        
-        // Liste des matricules qui vont vers choix1
-        const choix1Matricules = ['9001', '1194'];
-        
-        // ✅ CORRECTION: Utiliser if/else if/else pour éviter les conflits
-        if (matricule === '1952') {
-          console.log('✅ Redirection 1952 vers ecran');
-          this.router.navigate(['/ecran']); // Route pour admin 1952
-        }
-        else if (matricule === '1922') {
-          console.log('✅ Redirection 1922 vers statP');
-          this.router.navigate(['/ch2']); // Route pour admin 1922
-        }
-        else if (choix1Matricules.includes(matricule)) {
-          console.log('✅ Redirection vers choix1');
-          this.router.navigate(['/choix1']); // Route pour admin spécifiques
-        }
-        else {
-          console.log('✅ Redirection admin standard vers prod');
-          this.router.navigate(['/prod']); // Route pour admin standard
-        }
-      }),
-      catchError(error => {
-        console.error('Admin login error:', error);
-        return throwError(() => error);
-      })
-    );
-}
- getUserData(): any {
-  // Utilisez USER_KEY au lieu de 'userData'
-  const userData = localStorage.getItem(this.USER_KEY); // Changez cette ligne
-  return userData ? JSON.parse(userData) : null;
-}
+  adminLogin(credentials: LoginCredentials): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials)
+      .pipe(
+        tap(response => {
+          this.saveAuthData(response);
+          
+          // 🎯 Récupérer le matricule
+          const matricule = response.user.nom;
+          
+          // Liste des matricules qui vont vers choix1
+          const choix1Matricules = ['9001', '1194'];
+          
+          // ✅ Redirection basée sur le matricule
+          if (matricule === '1952') {
+            console.log('✅ Redirection 1952 vers ecran');
+            this.router.navigate(['/ecran']); // Route pour admin 1952
+          }
+          else if (matricule === '1922') {
+            console.log('✅ Redirection 1922 vers statP');
+            this.router.navigate(['/statP']); // Route pour admin 1922
+          }
+          // 🎯 NOUVEAU: Redirection pour 7777 vers listP
+          else if (matricule === this.SPECIAL_MATRICULE_LISTP) {
+            console.log('✅ Redirection 7777 vers listP');
+            this.router.navigate(['/listP']); // Route pour admin 7777
+          }
+          else if (choix1Matricules.includes(matricule)) {
+            console.log('✅ Redirection vers choix1');
+            this.router.navigate(['/choix1']); // Route pour admin spécifiques
+          }
+          else {
+            console.log('✅ Redirection admin standard vers prod');
+            this.router.navigate(['/prod']); // Route pour admin standard
+          }
+        }),
+        catchError(error => {
+          console.error('Admin login error:', error);
+          return throwError(() => error);
+        })
+      );
+  }
 
+  getUserData(): any {
+    // Utilisez USER_KEY au lieu de 'userData'
+    const userData = localStorage.getItem(this.USER_KEY);
+    return userData ? JSON.parse(userData) : null;
+  }
 
   /**
    * Connexion User (Chef Secteur)
@@ -149,7 +157,7 @@ export class AuthService {
   }
 
   /**
-   * 🎯 NOUVEAU: Récupérer le matricule de l'utilisateur connecté
+   * 🎯 Récupérer le matricule de l'utilisateur connecté
    */
   getUserMatricule(): string | null {
     const user = this.getCurrentUser();
@@ -178,7 +186,7 @@ export class AuthService {
   }
 
   /**
-   * 🎯 NOUVEAU: Vérifier si l'utilisateur peut modifier DP (Production)
+   * 🎯 Vérifier si l'utilisateur peut modifier DP (Production)
    * Un chef secteur NORMAL peut modifier DP
    * Le matricule 2603 ne peut PAS modifier DP (uniquement DM)
    */
@@ -193,7 +201,7 @@ export class AuthService {
   }
 
   /**
-   * 🎯 NOUVEAU: Vérifier si l'utilisateur peut modifier DM (Magasin)
+   * 🎯 Vérifier si l'utilisateur peut modifier DM (Magasin)
    * Seul le matricule 2603 peut modifier DM
    */
   canEditDM(): boolean {
@@ -207,11 +215,19 @@ export class AuthService {
   }
 
   /**
-   * 🎯 NOUVEAU: Vérifier si c'est le matricule spécial pour DM
+   * 🎯 Vérifier si c'est le matricule spécial pour DM
    */
   isSpecialMatriculeDM(): boolean {
     const matricule = this.getUserMatricule();
     return matricule === this.SPECIAL_MATRICULE_DM;
+  }
+
+  /**
+   * 🎯 NOUVEAU: Vérifier si c'est le matricule spécial pour listP
+   */
+  isSpecialMatriculeListP(): boolean {
+    const matricule = this.getUserMatricule();
+    return matricule === this.SPECIAL_MATRICULE_LISTP;
   }
 
   /**

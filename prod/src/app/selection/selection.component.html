@@ -197,9 +197,9 @@
             <small class="help-text">Rempli automatiquement</small>
           </div>
 
-          <!-- Quantité à sélectionner -->
+          <!-- Quantité Total -->
           <div class="form-group">
-            <label>Quantité à sélectionner * <span class="required-indicator">●</span></label>
+            <label>Quantité Total <span class="required-indicator">●</span></label>
             <input 
               type="number" 
               [(ngModel)]="formData.qteASelectionne"
@@ -342,6 +342,7 @@
                 <th class="text-right">Rebut</th>
                 <th class="text-right">Heures</th>
                 <th class="text-right">Rendement</th>
+                <th class="text-center">Terminé</th>
                 <th class="text-center">Actions</th>
               </tr>
             </thead>
@@ -364,8 +365,24 @@
                 <td>
                   <span class="ticket-badge">{{ planning.numTicket || 'non num' }}</span>
                 </td>
-                <td class="text-right qty-cell">{{ planning.qteASelectionne }}</td>
-                <td class="text-right obj-cell">{{ planning.objectifHeure }}</td>
+                <!-- Qté à sélectionner éditable -->
+                <td class="text-right qty-cell">
+                  <input 
+                    type="number" 
+                    [value]="planning.qteASelectionne || 0"
+                    (blur)="updateQteASelectionne(planning, $any($event.target).value)"
+                    class="inline-input"
+                    min="1">
+                </td>
+                <!-- Objectif/heure éditable -->
+                <td class="text-right obj-cell">
+                  <input 
+                    type="number" 
+                    [value]="planning.objectifHeure || 0"
+                    (blur)="updateObjectifHeure(planning, $any($event.target).value)"
+                    class="inline-input"
+                    min="1">
+                </td>
                 <!-- ✅ Qté sélectionnée éditable -->
                 <td class="text-right selected-cell">
                   <input 
@@ -396,6 +413,17 @@
                 </td>
                 <td class="text-right">
                   {{ planning.rendement ? (planning.rendement + '%') : '-' }}
+                </td>
+                <!-- Colonne Terminé -->
+                <td class="text-center">
+                  <button
+                    class="btn-terminer"
+                    [class.terminer-oui]="planning.terminer === 'oui'"
+                    [class.terminer-non]="planning.terminer !== 'oui'"
+                    (click)="updateTerminer(planning, planning.terminer === 'oui' ? 'non' : 'oui')"
+                    [title]="planning.terminer === 'oui' ? 'Marquer comme non terminé' : 'Marquer comme terminé'">
+                    {{ planning.terminer === 'oui' ? '✅ Oui' : '❌ Non' }}
+                  </button>
                 </td>
                 <td class="text-center">
                   <button 
@@ -480,9 +508,9 @@
           <small class="help-text success" *ngIf="completionFormData.reference">✓ Référence sélectionnée: {{ completionFormData.reference }}</small>
         </div>
 
-        <!-- Quantité à sélectionner -->
+        <!-- Quantité Total -->
         <div class="form-group">
-          <label>Quantité à sélectionner * <span class="required-indicator">●</span></label>
+          <label>Quantité Total * <span class="required-indicator">●</span></label>
           <input 
             type="number" 
             [(ngModel)]="completionFormData.qteASelectionne"
@@ -503,7 +531,7 @@
             [class.has-value]="completionFormData.objectifHeure"
             min="1"
             placeholder="0">
-          <small class="help-text">Quantité à sélectionner par heure</small>
+          <small class="help-text">Quantité Total par heure</small>
         </div>
 
         <!-- Numéro de ticket -->

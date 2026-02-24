@@ -902,8 +902,14 @@ ngOnInit(): void {
  */
 private initialiserDatesHier(): void {
   const today = new Date();
-  const hier = new Date(today);
+  let hier = new Date(today);
   hier.setDate(today.getDate() - 1);
+  
+  // Vérifier si hier est dimanche (0 = dimanche en JavaScript)
+  while (hier.getDay() === 0) { // 0 = Dimanche
+    console.log(`📅 ${this.formatDate(hier)} est un dimanche (pas de données), on prend la veille`);
+    hier.setDate(hier.getDate() - 1);
+  }
   
   const hierFormatted = this.formatDate(hier);
   
@@ -911,7 +917,9 @@ private initialiserDatesHier(): void {
   this.dateFin = hierFormatted;
   this.maxDate = this.formatDate(today);
   
-  console.log(`📅 Dates initialisées: ${this.dateDebut} (hier)`);
+  // Message informatif pour le debug
+  const jourSemaine = this.getNomJourSemaine(hier);
+  console.log(`📅 Dates initialisées: ${this.dateDebut} (${jourSemaine})`);
 }
 
 /**
@@ -929,15 +937,22 @@ private programmerRechargement10h(): void {
     prochain10h.setDate(prochain10h.getDate() + 1);
   }
   
+  // Vérifier que le jour de rechargement n'est pas un dimanche
+  // Si le prochain rechargement tombe un dimanche, on passe au lundi
+  if (prochain10h.getDay() === 0) { // 0 = Dimanche
+    console.log(`📅 ${this.formatDate(prochain10h)} est un dimanche, rechargement reporté au lundi`);
+    prochain10h.setDate(prochain10h.getDate() + 1);
+  }
+  
   const tempsAttente = prochain10h.getTime() - maintenant.getTime();
   
-  console.log(`⏰ Prochain rechargement automatique à 10h00 (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
+  console.log(`⏰ Prochain rechargement automatique à 10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
   
   // Programmer le rechargement
   setTimeout(() => {
     this.executerRechargement10h();
     
-    // Puis re-programmer tous les jours à 10h00
+    // Puis re-programmer tous les jours à 10h00 (en évitant les dimanches)
     setInterval(() => {
       this.executerRechargement10h();
     }, 24 * 60 * 60 * 1000); // Toutes les 24h
@@ -954,26 +969,38 @@ private programmerRechargement10h(): void {
 private executerRechargement10h(): void {
   console.log('🕙 10h00 - DÉCLENCHEMENT DU RECHARGEMENT AUTOMATIQUE');
   
+  // Vérifier si aujourd'hui est dimanche (ne devrait pas arriver avec notre logique)
+  const aujourdhui = new Date();
+  if (aujourdhui.getDay() === 0) {
+    console.log('⚠️ Aujourd\'hui est dimanche, pas de rechargement automatique');
+    return;
+  }
+  
   // 1. Retour à l'écran filtre
   this.statsData = null;
   
-  // 2. Mise à jour des dates (toujours hier)
+  // 2. Mise à jour des dates avec la logique anti-dimanche
   this.initialiserDatesHier();
   
   // 3. Petit délai pour que l'UI se mette à jour
   setTimeout(() => {
-    // 4. Rechargement automatique des statistiques (maintenant complètes!)
+    // 4. Rechargement automatique des statistiques
     this.chargerStatsPeriode();
     
     console.log('✅ Statistiques rechargées automatiquement à 10h00');
   }, 100);
 }
 
+private getNomJourSemaine(date: Date): string {
+  const jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  return jours[date.getDay()];
+}
+
 /**
  * Surcharge de reinitialiser() pour garder le comportement manuel
  */
 reinitialiser(): void {
-  // Réinitialiser avec hier
+  // Réinitialiser avec le dernier jour ouvré
   this.initialiserDatesHier();
   this.statsData = null;
   this.errorMessage = '';
@@ -987,7 +1014,8 @@ reinitialiser(): void {
   // Recharger automatiquement
   this.chargerStatsPeriode();
   
-  console.log('🔄 Réinitialisation manuelle avec date d\'hier');
+  const date = new Date(this.dateDebut);
+  console.log(`🔄 Réinitialisation manuelle avec ${this.dateDebut} (${this.getNomJourSemaine(date)})`);
 }
 
 /**

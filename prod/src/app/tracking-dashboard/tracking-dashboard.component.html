@@ -1,0 +1,322 @@
+<div class="min-h-screen bg-gray-100 dark:bg-gray-900 p-6">
+  <!-- En-tête -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+        <span class="text-cyan-500">📊</span>
+        Dashboard de Tracking
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-1">
+        Supervision des activités utilisateurs en temps réel
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <button 
+        (click)="exportToExcel()" 
+        [disabled]="loading"
+        class="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+        <span>📊</span>
+        Export Excel
+      </button>
+      <button 
+        (click)="exportToCSV()" 
+        [disabled]="loading"
+        class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+        <span>📄</span>
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Cartes de statistiques -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Activités -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Total Activités</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.totalActivities | number }}</p>
+        </div>
+        <div class="text-3xl text-blue-500">📈</div>
+      </div>
+      <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <span class="text-green-500">↑</span> en temps réel
+      </div>
+    </div>
+
+    <!-- Utilisateurs uniques -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Utilisateurs uniques</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.uniqueUsers | number }}</p>
+        </div>
+        <div class="text-3xl text-green-500">👥</div>
+      </div>
+      <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <span class="text-blue-500">{{ stats.activitiesByType?.length || 0 }}</span> types d'actions
+      </div>
+    </div>
+
+    <!-- Erreurs 24h -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-red-500">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Erreurs (24h)</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.recentErrors?.length || 0 }}</p>
+        </div>
+        <div class="text-3xl text-red-500">🚨</div>
+      </div>
+      <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <span class="text-red-500">⚠️</span> à surveiller
+      </div>
+    </div>
+
+    <!-- Pages populaires -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 uppercase tracking-wider">Pages populaires</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">{{ stats.topPages?.length || 0 }}</p>
+        </div>
+        <div class="text-3xl text-purple-500">📄</div>
+      </div>
+      <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <span class="text-purple-500">★</span> top 10 des visites
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+      <span class="text-cyan-500">🔍</span>
+      Filtres
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Matricule
+        </label>
+        <input 
+          type="text" 
+          [(ngModel)]="filters.matricule" 
+          placeholder="Rechercher..."
+          class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Type utilisateur
+        </label>
+        <select 
+          [(ngModel)]="filters.userType"
+          class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+          <option value="">Tous</option>
+          <option *ngFor="let type of userTypes" [value]="type">
+            {{ type === 'admin' ? 'Administrateur' : 'Chef Secteur' }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Type action
+        </label>
+        <select 
+          [(ngModel)]="filters.actionType"
+          class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+          <option value="">Toutes</option>
+          <option *ngFor="let type of actionTypes" [value]="type">
+            {{ type }}
+          </option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Date début
+        </label>
+        <input 
+          type="date" 
+          [(ngModel)]="filters.startDate"
+          class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Date fin
+        </label>
+        <input 
+          type="date" 
+          [(ngModel)]="filters.endDate"
+          class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all">
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button 
+        (click)="resetFilters()"
+        class="px-6 py-2.5 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors flex items-center gap-2">
+        <span>↺</span>
+        Réinitialiser
+      </button>
+      <button 
+        (click)="applyFilters()"
+        class="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors flex items-center gap-2">
+        <span>🔍</span>
+        Appliquer
+      </button>
+    </div>
+  </div>
+
+  <!-- Top pages -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+      <span class="text-purple-500">📊</span>
+      Top 10 pages visitées
+    </h2>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Page</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Visites</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Visiteurs uniques</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Taux</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr *ngFor="let page of stats.topPages; let i = index" class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-3">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ i + 1 }}.</span>
+                <span class="text-sm text-gray-600 dark:text-gray-300 font-mono">{{ page.route || 'N/A' }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 dark:text-white font-mono">
+              {{ page.visits | number }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-600 dark:text-gray-300 font-mono">
+              {{ page.uniqueVisitors | number }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+              <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 rounded-full text-xs">
+                {{ ((page.uniqueVisitors / page.visits) * 100).toFixed(1) }}%
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tableau des activités -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+      <span class="text-cyan-500">📋</span>
+      Activités récentes
+    </h2>
+
+    <!-- Loader -->
+    <div *ngIf="loading" class="flex flex-col items-center justify-center py-16">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mb-4"></div>
+      <p class="text-gray-600 dark:text-gray-400">Chargement des activités...</p>
+    </div>
+
+    <!-- Tableau -->
+    <div *ngIf="!loading" class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Utilisateur</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">URL</th>
+            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Temps</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          <tr *ngFor="let activity of activities" class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-white">{{ formatDate(activity.createdAt) }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">ID: {{ activity.id }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-medium text-gray-900 dark:text-white">{{ activity.matricule || 'N/A' }}</span>
+                <span [class]="getUserTypeClass(activity.userType)">
+                  {{ activity.userType === 'admin' ? 'Admin' : 'Chef' }}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span [class]="getActionTypeClass(activity.actionType)" class="flex items-center gap-1">
+                {{ getActionIcon(activity.actionType) }}
+                {{ activity.actionType }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs font-mono">
+                {{ activity.method }}
+              </span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="text-sm text-gray-600 dark:text-gray-300 truncate max-w-xs" [title]="activity.url">
+                {{ activity.route || activity.url }}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="flex items-center justify-center gap-1">
+                <span>{{ getStatusIcon(activity.statusCode) }}</span>
+                <span [class]="getStatusClass(activity.statusCode)">
+                  {{ activity.statusCode }}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right">
+              <span class="font-mono text-sm text-gray-900 dark:text-white">
+                {{ activity.responseTime || '-' }} ms
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Message si aucune donnée -->
+    <div *ngIf="!loading && activities.length === 0" class="text-center py-16">
+      <div class="text-6xl mb-4">📭</div>
+      <p class="text-gray-600 dark:text-gray-400 text-lg">Aucune activité trouvée</p>
+      <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Essayez de modifier vos filtres</p>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!loading && activities.length > 0" class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="text-sm text-gray-600 dark:text-gray-400">
+        Affichage <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span> - 
+        <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, totalItems) }}</span> 
+        sur <span class="font-medium">{{ totalItems }}</span> entrées
+      </div>
+      <div class="flex gap-2">
+        <button 
+          (click)="onPageChange(currentPage - 1)" 
+          [disabled]="currentPage === 1"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          ← Précédent
+        </button>
+        <span class="px-4 py-2 bg-cyan-600 text-white rounded-lg">
+          {{ currentPage }}
+        </span>
+        <button 
+          (click)="onPageChange(currentPage + 1)" 
+          [disabled]="currentPage * itemsPerPage >= totalItems"
+          class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+          Suivant →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

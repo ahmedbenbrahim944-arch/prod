@@ -22,6 +22,7 @@ import { PlanningSelectionModule } from './planning-selection/planning-selection
 import { CommentaireModule } from './commentaire/commentaire.module';
 import { SaisieNonConfModule } from './saisie-non-conf/saisie-non-conf.module';
 import { ProductionTimeModule } from './production-time/production-time.module';
+import { TrackingModule } from './tracking/tracking.module';
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { ProductionTimeModule } from './production-time/production-time.module';
     PlanningSelectionModule,
     CommentaireModule,
     SaisieNonConfModule,
-    ProductionTimeModule
+    ProductionTimeModule,
+    TrackingModule
 
   ],
   controllers: [],
