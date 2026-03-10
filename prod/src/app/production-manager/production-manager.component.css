@@ -88,6 +88,22 @@
   animation: spin-slow 20s linear infinite;
 }
 
+/* Fix: flex-1 + overflow-y-auto dans un flex-col nécessite min-height: 0
+   Sans ça, le contenu dépasse max-h-[90vh] et le footer (boutons) disparaît */
+.flex-1.overflow-y-auto {
+  min-height: 0;
+}
+
+/* Fix zoom navigateur: vh ne se recalcule pas correctement lors du zoom.
+   dvh (dynamic viewport height) prend en compte le zoom réel du navigateur.
+   min() garantit que l'une ou l'autre limite est toujours respectée. */
+.animate-modal-slide-up {
+  max-height: min(90vh, 90dvh) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ng-select Tailwind styling */
 .custom-ng-select-tailwind ::ng-deep .ng-select-container {
   @apply border-2 border-gray-200 rounded-xl p-3 transition-all bg-gray-50;

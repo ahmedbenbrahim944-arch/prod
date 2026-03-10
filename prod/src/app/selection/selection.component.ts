@@ -34,7 +34,7 @@ export class SelectionComponent implements OnInit {
   ouvriers: Ouvrier[] = [];
   references: ReferenceItem[] = [];
   plannings: PlanningSelection[] = [];
-  planningsEnAttente: PlanningSelection[] = []; // 🆕 Plannings incomplets
+  planningsEnAttente: PlanningSelection[] = []; //  Plannings incomplets
   
   // Sélections
   selectedSemaine: WeekInfo | null = null;
@@ -52,7 +52,7 @@ export class SelectionComponent implements OnInit {
     numTicket: ''
   };
   
-  // 🆕 Formulaire de complétion (modal)
+  //  Formulaire de complétion (modal)
   completionFormData = {
     planningId: null as number | null,
     reference: '',
@@ -71,11 +71,11 @@ export class SelectionComponent implements OnInit {
   filteredOuvriers: Ouvrier[] = [];
   showOuvrierDropdown = false;
   
-  // 🆕 Modal de complétion
+  //  Modal de complétion
   showCompletionModal = false;
   selectedPlanningEnAttente: PlanningSelection | null = null;
   
-  // 🆕 Recherche de référence dans le modal
+  //  Recherche de référence dans le modal
   searchReferenceModal = '';
   filteredReferencesModal: ReferenceItem[] = [];
   showReferenceDropdownModal = false;
@@ -96,7 +96,7 @@ export class SelectionComponent implements OnInit {
     this.loadOuvriers();
     this.loadReferences();
     this.setDefaultDate();
-    this.loadPlanningsEnAttente(); // 🆕 Charger les plannings incomplets
+    this.loadPlanningsEnAttente(); //  Charger les plannings incomplets
   }
 
   setDefaultDate(): void {
@@ -109,10 +109,8 @@ export class SelectionComponent implements OnInit {
     this.selectionService.getSemainesForPlanning().subscribe({
       next: (response) => {
         this.semaines = this.parseWeeksFromAPI(response);
-        console.log('Semaines chargées:', this.semaines);
       },
       error: (error) => {
-        console.error('Erreur chargement semaines:', error);
         this.showError('Erreur lors du chargement des semaines');
       }
     });
@@ -123,10 +121,8 @@ export class SelectionComponent implements OnInit {
     this.selectionService.getOuvriers().subscribe({
       next: (ouvriers) => {
         this.ouvriers = ouvriers;
-        console.log('✅ Ouvriers chargés:', ouvriers.length);
       },
       error: (error) => {
-        console.error('Erreur chargement ouvriers:', error);
       }
     });
   }
@@ -136,24 +132,20 @@ export class SelectionComponent implements OnInit {
     this.selectionService.getAllReferences().subscribe({
       next: (references) => {
         this.references = references;
-        console.log('✅ Références chargées:', references.length);
       },
       error: (error) => {
-        console.error('Erreur chargement références:', error);
         this.showError('Erreur lors du chargement des références');
       }
     });
   }
 
-  // 🆕 Charger les plannings en attente (statut = "en attente")
+  //  Charger les plannings en attente (statut = "en attente")
   loadPlanningsEnAttente(): void {
     this.selectionService.getPlanningsIncomplets().subscribe({
       next: (plannings) => {
         this.planningsEnAttente = plannings;
-        console.log('🔔 Plannings en attente:', plannings.length);
       },
       error: (error) => {
-        console.error('Erreur chargement plannings en attente:', error);
       }
     });
   }
@@ -169,13 +161,11 @@ export class SelectionComponent implements OnInit {
     this.isLoading = true;
     this.selectionService.getPlanningsBySemaine(semaineNumber).subscribe({
       next: (plannings) => {
-        // 🆕 Filtrer les plannings complets uniquement
+        //  Filtrer les plannings complets uniquement
         this.plannings = plannings.filter(p => p.statut !== 'en attente');
-        console.log('✅ Plannings chargés:', this.plannings.length);
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Erreur chargement plannings:', error);
         this.showError('Erreur lors du chargement des plannings');
         this.isLoading = false;
       }
@@ -263,7 +253,7 @@ export class SelectionComponent implements OnInit {
     this.showReferenceDropdown = false;
   }
 
-  // 🆕 Recherche de référence dans le modal
+  //  Recherche de référence dans le modal
   onReferenceSearchModal(event: any): void {
     const value = event.target.value;
     this.searchReferenceModal = value;
@@ -280,7 +270,7 @@ export class SelectionComponent implements OnInit {
     }
   }
 
-  // 🆕 Sélectionner une référence dans le modal
+  //  Sélectionner une référence dans le modal
   selectReferenceModal(refItem: ReferenceItem): void {
     this.completionFormData.reference = refItem.reference;
     this.searchReferenceModal = refItem.reference;
@@ -299,7 +289,7 @@ export class SelectionComponent implements OnInit {
     );
   }
 
-  // 🆕 Valider le formulaire de complétion
+  //  Valider le formulaire de complétion
   isCompletionFormValid(): boolean {
     return !!(
       this.completionFormData.reference &&
@@ -335,7 +325,6 @@ export class SelectionComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Erreur création planning:', error);
         
         let errorMessage = 'Erreur lors de la création du planning';
         
@@ -357,7 +346,7 @@ export class SelectionComponent implements OnInit {
     });
   }
 
-  // 🆕 Ouvrir le modal de complétion
+  //  Ouvrir le modal de complétion
   openCompletionModal(planning: PlanningSelection): void {
     this.selectedPlanningEnAttente = planning;
     this.completionFormData = {
@@ -371,7 +360,7 @@ export class SelectionComponent implements OnInit {
     this.showCompletionModal = true;
   }
 
-  // 🆕 Fermer le modal de complétion
+  //  Fermer le modal de complétion
   closeCompletionModal(): void {
     this.showCompletionModal = false;
     this.selectedPlanningEnAttente = null;
@@ -384,7 +373,7 @@ export class SelectionComponent implements OnInit {
     };
   }
 
-  // 🆕 Compléter un planning en attente
+  //  Compléter un planning en attente
 completePlanning(): void {
   if (!this.isCompletionFormValid() || !this.selectedPlanningEnAttente) {
     this.showError('Veuillez remplir tous les champs obligatoires');
@@ -399,7 +388,7 @@ completePlanning(): void {
     qteASelectionne: this.completionFormData.qteASelectionne!,
     objectifHeure: this.completionFormData.objectifHeure!,
     numTicket: this.completionFormData.numTicket || 'non num',
-    statut: 'selection' // ✅ Maintenant reconnu par le DTO
+    statut: 'selection' //  Maintenant reconnu par le DTO
   };
 
   this.isLoading = true;
@@ -414,7 +403,6 @@ completePlanning(): void {
       this.isLoading = false;
     },
     error: (error) => {
-      console.error('❌ Erreur complétion planning:', error);
       this.showError('Erreur lors de la complétion du planning');
       this.isLoading = false;
     }
@@ -438,7 +426,6 @@ completePlanning(): void {
         this.showSuccess('Quantité à sélectionner mise à jour');
       },
       error: (error) => {
-        console.error('Erreur mise à jour qteASelectionne:', error);
         this.showError('Erreur lors de la mise à jour');
       }
     });
@@ -461,7 +448,6 @@ completePlanning(): void {
         this.showSuccess('Objectif par heure mis à jour');
       },
       error: (error) => {
-        console.error('Erreur mise à jour objectifHeure:', error);
         this.showError('Erreur lors de la mise à jour');
       }
     });
@@ -487,7 +473,6 @@ completePlanning(): void {
         }
       },
       error: (error) => {
-        console.error('Erreur mise à jour heures:', error);
         this.showError('Erreur lors de la mise à jour des heures');
       }
     });
@@ -513,7 +498,6 @@ completePlanning(): void {
         }
       },
       error: (error) => {
-        console.error('Erreur mise à jour qteSelection:', error);
         this.showError('Erreur lors de la mise à jour de la quantité');
       }
     });
@@ -539,7 +523,6 @@ completePlanning(): void {
         }
       },
       error: (error) => {
-        console.error('Erreur mise à jour rebut:', error);
         this.showError('Erreur lors de la mise à jour du rebut');
       }
     });
@@ -558,7 +541,6 @@ completePlanning(): void {
         this.showSuccess(`Planning marqué comme "${value === 'oui' ? 'Terminé' : 'Non terminé'}"`);
       },
       error: (error) => {
-        console.error('Erreur mise à jour terminer:', error);
         this.showError('Erreur lors de la mise à jour');
       }
     });
@@ -580,7 +562,6 @@ completePlanning(): void {
         }
       },
       error: (error) => {
-        console.error('Erreur suppression:', error);
         this.showError('Erreur lors de la suppression');
       }
     });
@@ -656,7 +637,6 @@ completePlanning(): void {
     } else if (Array.isArray(response)) {
       semainesArray = response;
     } else {
-      console.warn('Format de réponse inattendu:', response);
       return [];
     }
     

@@ -27,7 +27,6 @@ export class Planification {
   @Column({ type: 'int', default: 0 })
   qtePlanifiee: number;
 
-  // NOUVEAU CHAMP : Quantité Modifiée
   @Column({ type: 'int', default: 0 })
   qteModifiee: number;
 
@@ -46,6 +45,10 @@ export class Planification {
   @Column({ type: 'int', default: 0 })
   decMagasin: number;
 
+  // NOUVEAU CHAMP : Expédition
+  @Column({ type: 'int', default: 0 })
+  exp: number;
+
   // CHAMPS CALCULÉS
   @Column({ type: 'int', default: 0 })
   deltaProd: number; // qteModifiee - decProduction
@@ -61,7 +64,7 @@ export class Planification {
 
   @ManyToOne(() => Semaine, (semaine) => semaine.planifications, { onDelete: 'CASCADE' })
   semaineEntity: Semaine;
-  // Ajouter dans planification.entity.ts
-@OneToMany(() => NonConformite, (nonConformite) => nonConformite.planification, { cascade: true })
-nonConformites: NonConformite[];
+
+  @OneToMany(() => NonConformite, (nonConformite) => nonConformite.planification, { cascade: true })
+  nonConformites: NonConformite[];
 }

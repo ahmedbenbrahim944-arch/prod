@@ -84,7 +84,6 @@ export class PhaseComponent implements OnInit {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.log('Aucune statistique disponible pour cette semaine:', error);
           
           if (error.status === 404) {
             this.weekStats = {
@@ -137,7 +136,7 @@ export class PhaseComponent implements OnInit {
       }
       
       if (rapports.length === 0) {
-        this.errorMessage = `⚠️ Aucun rapport trouvé pour la semaine "${this.downloadPhaseForm.semaine}"`;
+        this.errorMessage = `️ Aucun rapport trouvé pour la semaine "${this.downloadPhaseForm.semaine}"`;
         this.loading = false;
         return;
       }
@@ -145,19 +144,18 @@ export class PhaseComponent implements OnInit {
       // 2. Générer le fichier Excel
       await this.generateExcelFile(rapports, this.downloadPhaseForm.semaine.trim());
       
-      this.showSuccessMessage(`✅ Rapports de la semaine "${this.downloadPhaseForm.semaine}" téléchargés avec succès !`);
+      this.showSuccessMessage(` Rapports de la semaine "${this.downloadPhaseForm.semaine}" téléchargés avec succès !`);
       
     } catch (error: any) {
-      console.error('Erreur lors du téléchargement:', error);
       
       if (error.status === 404) {
-        this.errorMessage = `❌ La semaine "${this.downloadPhaseForm.semaine}" n'existe pas dans la base de données`;
+        this.errorMessage = ` La semaine "${this.downloadPhaseForm.semaine}" n'existe pas dans la base de données`;
       } else if (error.status === 500) {
-        this.errorMessage = '❌ Erreur serveur. Veuillez réessayer plus tard';
+        this.errorMessage = ' Erreur serveur. Veuillez réessayer plus tard';
       } else if (error.message && error.message.includes('semaine')) {
-        this.errorMessage = `❌ Semaine "${this.downloadPhaseForm.semaine}" introuvable`;
+        this.errorMessage = ` Semaine "${this.downloadPhaseForm.semaine}" introuvable`;
       } else {
-        this.errorMessage = error.message || '❌ Erreur lors du téléchargement des rapports';
+        this.errorMessage = error.message || ' Erreur lors du téléchargement des rapports';
       }
     } finally {
       this.loading = false;
@@ -397,7 +395,6 @@ export class PhaseComponent implements OnInit {
         : 'Aucune phase valide';
       
     } catch (error) {
-      console.error('Erreur lors du formatage:', error);
       return typeof phasesData === 'string' 
         ? `Erreur: ${phasesData.substring(0, 50)}...` 
         : 'Format inconnu';

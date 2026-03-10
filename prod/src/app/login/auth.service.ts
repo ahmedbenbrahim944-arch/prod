@@ -29,14 +29,11 @@ export interface AuthResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly API_URL = 'http://102.207.250.53:3000'; // Changez selon votre configuration
+  private readonly API_URL = 'http://102.207.250.53:3000';
   private readonly TOKEN_KEY = 'access_token';
   private readonly USER_KEY = 'current_user';
   
-  // 🎯 Matricule spécial pour DM
   private readonly SPECIAL_MATRICULE_DM = '2603';
-  
-  // 🎯 NOUVEAU: Matricule pour listP
   private readonly SPECIAL_MATRICULE_LISTP = '7777';
 
   constructor(
@@ -53,44 +50,35 @@ export class AuthService {
         tap(response => {
           this.saveAuthData(response);
           
-          // 🎯 Récupérer le matricule
           const matricule = response.user.nom;
-          
-          // Liste des matricules qui vont vers choix1
           const choix1Matricules = ['9001', '1194'];
           
-          // ✅ Redirection basée sur le matricule
-          if (matricule === '1952') {
-            console.log('✅ Redirection 1952 vers ecran');
-            this.router.navigate(['/ecran']); // Route pour admin 1952
+          if (matricule === '0929') {
+            this.router.navigate(['/ch3']);
+          }
+          else if (matricule === '1952') {
+            this.router.navigate(['/ecran']);
           }
           else if (matricule === '1922') {
-            console.log('✅ Redirection 1922 vers statP');
-            this.router.navigate(['/statP']); // Route pour admin 1922
+            this.router.navigate(['/lan']);
           }
-          // 🎯 NOUVEAU: Redirection pour 7777 vers listP
           else if (matricule === this.SPECIAL_MATRICULE_LISTP) {
-            console.log('✅ Redirection 7777 vers listP');
-            this.router.navigate(['/listP']); // Route pour admin 7777
+            this.router.navigate(['/listP']);
           }
           else if (choix1Matricules.includes(matricule)) {
-            console.log('✅ Redirection vers choix1');
-            this.router.navigate(['/choix1']); // Route pour admin spécifiques
+            this.router.navigate(['/choix1']);
           }
           else {
-            console.log('✅ Redirection admin standard vers prod');
-            this.router.navigate(['/prod']); // Route pour admin standard
+            this.router.navigate(['/prod']);
           }
         }),
         catchError(error => {
-          console.error('Admin login error:', error);
           return throwError(() => error);
         })
       );
   }
 
   getUserData(): any {
-    // Utilisez USER_KEY au lieu de 'userData'
     const userData = localStorage.getItem(this.USER_KEY);
     return userData ? JSON.parse(userData) : null;
   }
@@ -103,10 +91,9 @@ export class AuthService {
       .pipe(
         tap(response => {
           this.saveAuthData(response);
-          this.router.navigate(['/choix']); // Route pour user
+          this.router.navigate(['/choix']);
         }),
         catchError(error => {
-          console.error('User login error:', error);
           return throwError(() => error);
         })
       );
@@ -119,7 +106,6 @@ export class AuthService {
     return this.http.post(`${this.API_URL}/admin/register`, data)
       .pipe(
         catchError(error => {
-          console.error('Register error:', error);
           return throwError(() => error);
         })
       );
@@ -157,7 +143,7 @@ export class AuthService {
   }
 
   /**
-   * 🎯 Récupérer le matricule de l'utilisateur connecté
+   * Récupérer le matricule de l'utilisateur connecté
    */
   getUserMatricule(): string | null {
     const user = this.getCurrentUser();
@@ -186,36 +172,29 @@ export class AuthService {
   }
 
   /**
-   * 🎯 Vérifier si l'utilisateur peut modifier DP (Production)
-   * Un chef secteur NORMAL peut modifier DP
-   * Le matricule 2603 ne peut PAS modifier DP (uniquement DM)
+   * Vérifier si l'utilisateur peut modifier DP (Production)
    */
   canEditDP(): boolean {
     if (!this.isUser()) {
-      return false; // Seuls les chefs secteurs peuvent modifier
+      return false;
     }
-    
     const matricule = this.getUserMatricule();
-    // Chef secteur normal (pas 2603) peut modifier DP
     return matricule !== this.SPECIAL_MATRICULE_DM;
   }
 
   /**
-   * 🎯 Vérifier si l'utilisateur peut modifier DM (Magasin)
-   * Seul le matricule 2603 peut modifier DM
+   * Vérifier si l'utilisateur peut modifier DM (Magasin)
    */
   canEditDM(): boolean {
     if (!this.isUser()) {
-      return false; // Seuls les chefs secteurs peuvent modifier
+      return false;
     }
-    
     const matricule = this.getUserMatricule();
-    // Seul le matricule 2603 peut modifier DM
     return matricule === this.SPECIAL_MATRICULE_DM;
   }
 
   /**
-   * 🎯 Vérifier si c'est le matricule spécial pour DM
+   * Vérifier si c'est le matricule spécial pour DM
    */
   isSpecialMatriculeDM(): boolean {
     const matricule = this.getUserMatricule();
@@ -223,7 +202,7 @@ export class AuthService {
   }
 
   /**
-   * 🎯 NOUVEAU: Vérifier si c'est le matricule spécial pour listP
+   * Vérifier si c'est le matricule spécial pour listP
    */
   isSpecialMatriculeListP(): boolean {
     const matricule = this.getUserMatricule();

@@ -44,7 +44,13 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
   // Tri
   productiviteSortDirection: 'asc' | 'desc' | null = null;
   productiviteDataSorted: LigneProductivite[] = [];
-  
+
+  // ============================================
+  // TICKER MÉTÉO — SOUSSE (Open-Meteo)
+  // ============================================
+  meteoTickerItems: string[] = []; // liste doublée pour défilement infini
+  isLoadingMeteo: boolean = false;
+
   // ============================================
   // PROPRIÉTÉS POUR LE DÉFILEMENT AUTOMATIQUE
   // ============================================
@@ -75,6 +81,9 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     
     // 3. Programmer le rechargement automatique à 10h00
     this.programmerRechargement10h();
+
+    // 4. Charger la météo de Sousse
+    this.chargerMeteo();
   }
   
   ngOnDestroy(): void {
@@ -97,7 +106,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     
     // Vérifier si hier est dimanche (0 = dimanche en JavaScript)
     while (hier.getDay() === 0) { // 0 = Dimanche
-      console.log(`📅 ${this.formatDate(hier)} est un dimanche (pas de données), on prend la veille`);
       hier.setDate(hier.getDate() - 1);
     }
     
@@ -107,7 +115,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     this.dateFinProductivite = hierFormatted;
     this.maxDate = this.formatDate(today);
     
-    console.log(`📅 Dates initialisées: ${this.dateDebutProductivite} (${this.getNomJourSemaine(hier)})`);
   }
 
   /**
@@ -147,13 +154,11 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     // Vérifier que le jour de rechargement n'est pas un dimanche
     // Si le prochain rechargement tombe un dimanche, on passe au lundi
     if (prochain10h.getDay() === 0) { // 0 = Dimanche
-      console.log(`📅 ${this.formatDate(prochain10h)} est un dimanche, rechargement reporté au lundi`);
       prochain10h.setDate(prochain10h.getDate() + 1);
     }
     
     const tempsAttente = prochain10h.getTime() - maintenant.getTime();
     
-    console.log(`⏰ Prochain rechargement automatique à 10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
     
     // Programmer le rechargement
     setTimeout(() => {
@@ -171,12 +176,10 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
    * Exécute le rechargement complet à 10h00 avec gestion des dimanches
    */
   private executerRechargement10h(): void {
-    console.log('🕙 10h00 - DÉCLENCHEMENT DU RECHARGEMENT AUTOMATIQUE');
     
     // Vérifier si aujourd'hui est dimanche (ne devrait pas arriver avec notre logique)
     const aujourdhui = new Date();
     if (aujourdhui.getDay() === 0) {
-      console.log('⚠️ Aujourd\'hui est dimanche, pas de rechargement automatique');
       return;
     }
     
@@ -191,7 +194,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
       // 4. Rechargement automatique des statistiques
       this.chargerProductiviteOuvriers();
       
-      console.log('✅ Statistiques rechargées automatiquement à 10h00');
     }, 100);
   }
 
@@ -201,7 +203,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
   retourChoix(): void {
     this.productiviteOuvriers = null;
     this.reinitialiserFiltres();
-    this.router.navigate(['/choix']); // Adaptez selon votre routing
+    this.router.navigate(['/login']); // Adaptez selon votre routing
   }
 
   /**
@@ -216,7 +218,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     this.chargerProductiviteOuvriers();
     
     const date = new Date(this.dateDebutProductivite);
-    console.log(`🔄 Réinitialisation manuelle avec ${this.dateDebutProductivite} (${this.getNomJourSemaine(date)})`);
   }
   
   // ============================================
@@ -240,7 +241,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     // Vérification supplémentaire : ne pas charger si c'est un dimanche
     const dateDebut = new Date(this.dateDebutProductivite);
     if (dateDebut.getDay() === 0) {
-      console.warn('⚠️ Tentative de chargement pour un dimanche, ajustement automatique');
       this.initialiserDatesHier();
       // Recharger avec les nouvelles dates
       this.chargerProductiviteOuvriers();
@@ -251,7 +251,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
 
     this.statsService.getProductiviteOuvriers(this.dateDebutProductivite, this.dateFinProductivite).subscribe({
       next: (response) => {
-        console.log('✅ Réponse brute du backend:', response);
         
         let tableauData: LigneProductivite[] = [];
         
@@ -308,13 +307,14 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
         this.productiviteOuvriers = responseAvecTableau;
         this.isLoadingProductivite = false;
         
-        console.log('✅ Productivité ouvriers chargée:', this.productiviteOuvriers);
-        console.log('✅ Nombre de lignes dans le tableau:', this.productiviteOuvriers?.tableau?.length);
         
-        // ✅ Réinitialiser les filtres après chargement
+        //  Réinitialiser les filtres après chargement
         this.reinitialiserFiltres();
+
+        //  Générer le ticker Météo (déjà chargé au init, ici on ne recharge pas)
+        // this.chargerMeteo(); // déjà actif depuis ngOnInit
         
-        // ✅ Démarrer le défilement automatique après un court délai
+        //  Démarrer le défilement automatique après un court délai
         setTimeout(() => {
           const tableauContainer = document.querySelector('.tableau-container');
           if (tableauContainer) {
@@ -324,14 +324,13 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
         }, 100);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement productivité:', error);
         this.isLoadingProductivite = false;
         alert('Erreur lors du chargement de la productivité des ouvriers');
       }
     });
   }
 
-  // ✅ Méthode pour réinitialiser les filtres
+  //  Méthode pour réinitialiser les filtres
   reinitialiserFiltres(): void {
     this.champFiltre = '';
     this.valeurFiltre = '';
@@ -353,7 +352,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     }, 100);
   }
 
-  // ✅ Vérifier si un filtre est actif
+  //  Vérifier si un filtre est actif
   get hasActiveFilter(): boolean {
     return !!(this.valeurFiltre || 
               this.ligneSelectionnee || 
@@ -361,12 +360,12 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
               this.productiviteMax !== null);
   }
 
-  // ✅ Calculer le total des heures
+  //  Calculer le total des heures
   private calculerTotalHeures(tableau: LigneProductivite[]): number {
     return tableau.reduce((total, ligne) => total + (ligne["N°HEURS"] || 0), 0);
   }
 
-  // ✅ Calculer la productivité moyenne
+  //  Calculer la productivité moyenne
   private calculerProductiviteMoyenne(tableau: LigneProductivite[]): number {
     if (tableau.length === 0) return 0;
     const total = tableau.reduce((sum, ligne) => sum + (ligne.PRODUCTIVITE || 0), 0);
@@ -731,7 +730,6 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     // Télécharger le fichier
     XLSX.writeFile(wb, nomFichier);
     
-    console.log(`✅ Export Excel réussi: ${donneesAExporter.length} lignes exportées`);
   }
   
   /**
@@ -818,7 +816,101 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     link.click();
     document.body.removeChild(link);
     
-    console.log(`✅ Export CSV réussi: ${donneesAExporter.length} lignes exportées`);
+  }
+
+  // ============================================
+  // TICKER — MÉTÉO SOUSSE (Open-Meteo, sans clé)
+  // ============================================
+
+  /**
+   * Charge les prévisions météo pour Sousse via Open-Meteo.
+   * Construit meteoTickerItems (doublé pour scroll CSS infini).
+   */
+  chargerMeteo(): void {
+    this.isLoadingMeteo = true;
+    const url =
+      'https://api.open-meteo.com/v1/forecast' +
+      '?latitude=35.8245&longitude=10.6346' +
+      '&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max,precipitation_probability_max' +
+      '&current_weather=true' +
+      '&timezone=Africa%2FTunis' +
+      '&forecast_days=7';
+
+    fetch(url)
+      .then(res => res.json())
+      .then((data: any) => {
+        const daily = data.daily;
+        const items: string[] = [];
+
+        const joursNoms = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const moisNoms  = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+
+        for (let i = 0; i < daily.time.length; i++) {
+          const dateStr: string = daily.time[i];          // "2026-02-27"
+          const d = new Date(dateStr + 'T00:00:00');
+          const nomJour = i === 0 ? "Auj." : joursNoms[d.getDay()];
+          const jourMois = `${d.getDate()} ${moisNoms[d.getMonth()]}`;
+
+          const code: number = daily.weathercode[i];
+          const emoji = this.wmoCodeToEmoji(code);
+          const desc  = this.wmoCodeToLabel(code);
+
+          const tmax = Math.round(daily.temperature_2m_max[i]);
+          const tmin = Math.round(daily.temperature_2m_min[i]);
+          const wind = Math.round(daily.windspeed_10m_max[i]);
+          const prec = daily.precipitation_probability_max[i] ?? 0;
+
+          // Format du ticker : "Auj. 27 Fév ☀ Ensoleillé 19°/12° 💨15km/h 🌧5%"
+          items.push(
+            `${nomJour} ${jourMois}  ${emoji} ${desc}  🌡 ${tmax}°/${tmin}°  💨 ${wind} km/h  🌧 ${prec}%`
+          );
+        }
+
+        // Doubler la liste pour le défilement infini sans saut visible
+        this.meteoTickerItems = [...items, ...items];
+        this.isLoadingMeteo = false;
+      })
+      .catch(() => {
+        // En cas d'erreur réseau, afficher un message de secours
+        const fallback = ['⚠ Météo indisponible · Sousse'];
+        this.meteoTickerItems = [...fallback, ...fallback];
+        this.isLoadingMeteo = false;
+      });
+  }
+
+  /**
+   * Convertit un code WMO en emoji météo
+   */
+  private wmoCodeToEmoji(code: number): string {
+    if (code === 0)                return '☀';
+    if (code <= 2)                 return '🌤';
+    if (code === 3)                return '☁';
+    if (code <= 48)                return '🌫';
+    if (code <= 55)                return '🌦';
+    if (code <= 67)                return '🌧';
+    if (code <= 77)                return '🌨';
+    if (code <= 82)                return '🌦';
+    if (code <= 86)                return '❄';
+    if (code <= 99)                return '⛈';
+    return '🌡';
+  }
+
+  /**
+   * Convertit un code WMO en label français court
+   */
+  private wmoCodeToLabel(code: number): string {
+    if (code === 0)              return 'Ensoleillé';
+    if (code === 1)              return 'Peu nuageux';
+    if (code === 2)              return 'Partiellement nuageux';
+    if (code === 3)              return 'Nuageux';
+    if (code <= 48)              return 'Brouillard';
+    if (code <= 57)              return 'Bruine';
+    if (code <= 67)              return 'Pluie';
+    if (code <= 77)              return 'Neige';
+    if (code <= 82)              return 'Averses';
+    if (code <= 86)              return 'Neige & averses';
+    if (code <= 99)              return 'Orage';
+    return 'Inconnu';
   }
 
   // ============================================

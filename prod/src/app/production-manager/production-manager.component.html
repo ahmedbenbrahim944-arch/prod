@@ -1,494 +1,424 @@
-<div class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-800 p-4 md:p-6">
-  
-  <!-- Alert Messages -->
-  <div *ngIf="alertMessage()" class="fixed top-4 right-4 z-50 animate-slide-in-right">
-    <div 
-      class="flex items-center gap-3 px-6 py-4 rounded-xl shadow-2xl min-w-[300px]"
-      [ngClass]="{
-        'bg-white border-l-4 border-green-500': alertMessage()!.type === 'success',
-        'bg-white border-l-4 border-red-500': alertMessage()!.type === 'error',
-        'bg-white border-l-4 border-blue-500': alertMessage()!.type === 'info'
-      }"
-    >
-      <span class="text-2xl">
-        <span *ngIf="alertMessage()!.type === 'success'" class="text-green-500">✓</span>
-        <span *ngIf="alertMessage()!.type === 'error'" class="text-red-500">✕</span>
-        <span *ngIf="alertMessage()!.type === 'info'" class="text-blue-500">ℹ</span>
-      </span>
-      <span class="flex-1 font-medium text-gray-800">{{ alertMessage()!.text }}</span>
-      <button 
-        (click)="closeAlert()"
-        class="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
-      >
-        ×
-      </button>
+<!-- production-manager.component.html -->
+<div class="min-h-screen bg-gradient-to-br from-purple-900 via-purple-700 to-indigo-800 p-4 md:p-8">
+
+  <!-- ========== HEADER ========== -->
+  <div class="mb-8 flex justify-center">
+    <div class="bg-white/10 backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-2xl w-full max-w-4xl">
+      <div class="flex items-center gap-4">
+        <span class="text-4xl">⚙️</span>
+        <div>
+          <h1 class="text-3xl font-bold text-white">Gestion de Production</h1>
+          <p class="text-white/70 text-sm mt-1">Contrôlez vos sessions de production en temps réel</p>
+        </div>
+        <!-- Bouton Admin -->
+        <div class="ml-auto flex items-center gap-3">
+          <span *ngIf="isAdmin()"
+                class="px-3 py-1 bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 rounded-full text-xs font-bold">
+            👑 Admin
+          </span>
+          <button *ngIf="isAdmin()" (click)="navigateToAdmin()"
+            class="px-4 py-2 bg-white/20 hover:bg-white hover:text-purple-900 text-white rounded-full transition-all text-sm font-semibold">
+            📊 Dashboard Admin
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Main Content -->
-  <div class="max-w-6xl mx-auto">
-    
-    <!-- Header Section -->
-    <div class="mb-8 animate-fade-in-down">
-      <div class="flex items-center gap-6 bg-white/10 backdrop-blur-xl p-8 rounded-3xl border border-white/20 shadow-2xl">
-        <div class="text-6xl animate-spin-slow">⚙️</div>
-        <div>
-          <h1 class="text-4xl font-bold text-white mb-2 tracking-tight">Gestion de Production</h1>
-          <p class="text-lg text-white/90">Contrôlez vos sessions de production en temps réel</p>
-        </div>
-      </div>
+  <!-- ========== ALERTE ========== -->
+  <div *ngIf="alertMessage()" class="mb-6 flex justify-center">
+    <div [ngClass]="{
+           'bg-green-500/20 border-green-400/40 text-green-200': alertMessage()!.type === 'success',
+           'bg-red-500/20 border-red-400/40 text-red-200':       alertMessage()!.type === 'error',
+           'bg-blue-500/20 border-blue-400/40 text-blue-200':    alertMessage()!.type === 'info'
+         }"
+         class="w-full max-w-4xl px-5 py-3 rounded-2xl border flex items-center justify-between">
+      <span class="font-medium">{{ alertMessage()!.text }}</span>
+      <button (click)="closeAlert()" class="ml-4 text-white/60 hover:text-white text-xl font-bold">×</button>
     </div>
+  </div>
 
-    <!-- Active Session Card -->
-    <div *ngIf="activeSession()" class="bg-white rounded-3xl p-8 shadow-2xl mb-8 animate-scale-in">
-      
-      <!-- Session Header -->
-      <div class="mb-8">
-        <div class="flex justify-between items-center mb-6 pb-6 border-b-2 border-gray-100">
-          <div class="flex items-center gap-4">
-            <span class="text-sm font-semibold text-gray-600 uppercase tracking-wider">Ligne:</span>
-            <span class="text-3xl font-bold text-gray-900 font-mono">{{ activeSession()!.ligne }}</span>
-          </div>
-          <div class="flex flex-col items-end gap-2">
-            <span 
-              class="px-6 py-2 rounded-full font-semibold text-sm uppercase tracking-wide shadow-md"
-              [ngClass]="getStatusColor(activeSession()!.status)"
-            >
-              {{ getStatusLabel(activeSession()!.status) }}
-            </span>
-            <!-- ✅ NOUVEAU - Compteur de pièces -->
-            <div class="flex items-center gap-2 px-4 py-1.5 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-full border-2 border-indigo-200">
-              <span class="text-lg">📦</span>
-              <span class="text-sm font-bold text-gray-700">Pièces:</span>
-              <span class="text-lg font-bold text-indigo-600 font-mono">{{ piecesProduced() }}</span>
-            </div>
-          </div>
+  <!-- ========== LOADING ========== -->
+  <div *ngIf="loading() && !activeSession()" class="text-center py-16">
+    <div class="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-white"></div>
+    <p class="text-white mt-4">Chargement...</p>
+  </div>
+
+  <!-- ========== SESSION ACTIVE ========== -->
+  <div *ngIf="activeSession()" class="flex justify-center">
+    <div class="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-4xl">
+
+      <!-- Header session -->
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Ligne:</span>
+          <h2 class="text-3xl font-black text-gray-900 font-mono mt-1">{{ activeSession()!.ligne }}</h2>
+          <!-- Badge Vue Admin -->
+          <span *ngIf="isAdmin()"
+                class="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold border border-yellow-300">
+            👑 Vue Admin
+          </span>
         </div>
-
-        <!-- Chronometers -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Session Timer -->
-          <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-2xl border-2 border-gray-200 relative overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-lg">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span>⏱️</span>
-              <span>Temps session</span>
-            </div>
-            <div class="text-4xl font-bold text-gray-900 font-mono tracking-wider">
-              {{ sessionElapsedTime() }}
-            </div>
-          </div>
-
-          <!-- Pause Timer (if paused) -->
-          <div 
-            *ngIf="activeSession()!.status === 'paused' && activeSession()!.currentPause"
-            class="bg-gradient-to-br from-orange-50 to-red-50 p-6 rounded-2xl border-2 border-orange-200 relative overflow-hidden transition-transform hover:-translate-y-1 hover:shadow-lg"
-          >
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
-            <div class="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2 flex items-center gap-2">
-              <span>⏸️</span>
-              <span>Temps pause</span>
-            </div>
-            <div class="text-4xl font-bold text-gray-900 font-mono tracking-wider mb-2">
-              {{ pauseElapsedTime() }}
-            </div>
-            <div class="inline-block px-3 py-1 bg-orange-500 text-white text-xs font-semibold rounded-full">
-              {{ activeSession()!.currentPause!.mCategory }}
-            </div>
+        <div class="flex flex-col items-end gap-2">
+          <span [ngClass]="activeSession()!.status === 'active' ? 'bg-green-500' : 'bg-orange-500'"
+                class="px-4 py-1.5 text-white text-sm font-bold rounded-full uppercase tracking-wide">
+            {{ activeSession()!.status === 'active' ? 'EN COURS' : 'EN PAUSE' }}
+          </span>
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-700 font-semibold">
+            📦 Pièces: {{ piecesProduced() }}
           </div>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <button 
-          *ngIf="canPauseSession()"
-          (click)="openPauseForm()"
-          [disabled]="loading()"
-          class="flex flex-col items-center gap-2 px-6 py-4 bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl font-semibold transition-all hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          <span class="text-2xl">⏸️</span>
+      <!-- Barre de progression -->
+      <div class="h-1 w-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full mb-6 opacity-60"></div>
+
+      <!-- Chrono -->
+      <div class="bg-gray-50 rounded-2xl p-5 mb-6 border border-gray-100">
+        <div class="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+          <span>🕐</span> TEMPS SESSION
+        </div>
+        <div class="text-5xl font-black text-gray-900 font-mono tracking-tight">{{ sessionElapsedTime() }}</div>
+
+        <!-- Pause en cours -->
+        <div *ngIf="activeSession()!.status === 'paused'"
+             class="mt-3 flex items-center gap-2 text-orange-600 text-sm font-semibold">
+          <span>⏸️</span>
+          <span>Pause en cours · {{ activeSession()!.currentPause?.mCategory || '' }}</span>
+          <span class="font-mono ml-2">{{ pauseElapsedTime() }}</span>
+        </div>
+      </div>
+
+      <!-- Boutons action -->
+      <div class="grid grid-cols-3 gap-3 mb-6">
+        <button *ngIf="canPauseSession()" (click)="openPauseForm()" [disabled]="loading()"
+          class="flex flex-col items-center justify-center gap-2 py-4 bg-gradient-to-b from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white rounded-2xl font-bold transition-all shadow-lg disabled:opacity-50">
+          <span class="text-2xl">⏸</span>
           <span>Pause</span>
         </button>
-
-        <button 
-          *ngIf="canResumeSession()"
-          (click)="openResumeForm()"
-          [disabled]="loading()"
-          class="flex flex-col items-center gap-2 px-6 py-4 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-2xl font-semibold transition-all hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          <span class="text-2xl">▶️</span>
+        <button *ngIf="canResumeSession()" (click)="openResumeForm()" [disabled]="loading()"
+          class="flex flex-col items-center justify-center gap-2 py-4 bg-gradient-to-b from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-2xl font-bold transition-all shadow-lg disabled:opacity-50">
+          <span class="text-2xl">▶</span>
           <span>Reprendre</span>
         </button>
-
-        <button 
-          *ngIf="canEndSession()"
-          (click)="openEndForm()"
-          [disabled]="loading()"
-          class="flex flex-col items-center gap-2 px-6 py-4 bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-2xl font-semibold transition-all hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          <span class="text-2xl">⏹️</span>
+        <button *ngIf="canEndSession()" (click)="openEndForm()" [disabled]="loading()"
+          class="flex flex-col items-center justify-center gap-2 py-4 bg-gradient-to-b from-red-400 to-red-600 hover:from-red-500 hover:to-red-700 text-white rounded-2xl font-bold transition-all shadow-lg disabled:opacity-50">
+          <span class="text-2xl">⏹</span>
           <span>Terminer</span>
         </button>
-
-        <button 
-          (click)="cancelSession()"
-          [disabled]="loading()"
-          class="flex flex-col items-center gap-2 px-6 py-4 bg-gradient-to-br from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-2xl font-semibold transition-all hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          <span class="text-2xl">✕</span>
+        <button *ngIf="canEndSession()" (click)="cancelSession()" [disabled]="loading()"
+          class="flex flex-col items-center justify-center gap-2 py-4 bg-gradient-to-b from-gray-400 to-gray-600 hover:from-gray-500 hover:to-gray-700 text-white rounded-2xl font-bold transition-all shadow-lg disabled:opacity-50">
+          <span class="text-2xl">✖</span>
           <span>Annuler</span>
         </button>
-      </div>
-
-      <!-- Quick Stats -->
-      <div *ngIf="sessionStats()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-  <!-- Temps production (inchangé) -->
-  <div class="flex items-center gap-4 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-    <div class="text-3xl">⏳</div>
-    <div>
-      <div class="text-xs font-semibold text-gray-600 uppercase">Temps production</div>
-      <div class="text-lg font-bold text-gray-900">{{ sessionStats()!.session.productionTime }}</div>
-    </div>
-  </div>
-
-  <!-- Temps pause (inchangé) -->
-  <div class="flex items-center gap-4 p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border border-orange-200">
-    <div class="text-3xl">⏸️</div>
-    <div>
-      <div class="text-xs font-semibold text-gray-600 uppercase">Temps pause</div>
-      <div class="text-lg font-bold text-gray-900">{{ sessionStats()!.session.pauseTime }}</div>
-    </div>
-  </div>
-
-  <!-- Efficacité (inchangé) -->
-  <div class="flex items-center gap-4 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
-    <div class="text-3xl">📊</div>
-    <div>
-      <div class="text-xs font-semibold text-gray-600 uppercase">Efficacité</div>
-      <div class="text-lg font-bold text-green-600">{{ sessionStats()!.session.efficiency }}</div>
-    </div>
-  </div>
-
-  <!-- ✅ MODIFIÉ - Nombre de pauses avec pièces perdues -->
-  <button 
-    (click)="viewPauseHistory()"
-    class="flex flex-col items-center gap-2 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:from-purple-100 hover:to-purple-200 hover:border-purple-300 transition-all hover:-translate-y-1 hover:shadow-lg cursor-pointer"
-  >
-    <div class="flex items-center justify-between w-full">
-      <div class="flex items-center gap-2">
-        <span class="text-3xl">🔄</span>
-        <span class="text-xs font-semibold text-gray-600 uppercase">Pauses</span>
-      </div>
-      <span class="text-2xl font-bold text-gray-900">{{ sessionStats()!.pauses.total }}</span>
-    </div>
-    
-    <!-- ✅ NOUVEAU - Affichage des pièces perdues totales -->
-    <div class="flex items-center justify-between w-full mt-2 pt-2 border-t border-purple-200">
-      <span class="text-sm font-semibold text-gray-600">Pièces perdues</span>
-      <span class="text-lg font-bold text-red-600">{{ totalLostPieces() }}</span>
-    </div>
-  </button>
-</div>
-    </div>
-
-    <!-- Start Session Card -->
-    <div *ngIf="!activeSession()" class="bg-white rounded-3xl p-8 shadow-2xl animate-scale-in">
-      <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-        <span>🚀</span>
-        <span>Démarrer une nouvelle session</span>
-      </h2>
-
-      <div class="mb-6">
-        <label class="block text-sm font-semibold text-gray-700 mb-3">Sélectionner une ligne</label>
-        <select 
-          [(ngModel)]="selectedLine"
-          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
-        >
-          <option [value]="null">-- Sélectionner --</option>
-          <option *ngFor="let line of lines()" [value]="line.ligne">
-            {{ line.ligne }}
-          </option>
-        </select>
-      </div>
-
-      <button 
-        (click)="startSession()"
-        [disabled]="!canStartSession() || loading()"
-        class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
-      >
-        <span class="text-xl">▶️</span>
-        <span>Démarrer la production</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Pause Modal -->
-  <div 
-    *ngIf="showPauseForm()" 
-    class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
-    (click)="closePauseForm()"
-  >
-    <div 
-      class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal-slide-up"
-      (click)="$event.stopPropagation()"
-    >
-      <!-- Modal Header -->
-      <div class="flex justify-between items-center p-6 border-b-2 border-gray-100">
-        <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <span>⏸️</span>
-          <span>Mettre en pause</span>
-        </h3>
-        <button 
-          (click)="closePauseForm()"
-          class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 text-2xl transition-all hover:rotate-90"
-        >
-          ×
+        <button *ngIf="sessionStats()" (click)="viewPauseHistory()"
+          class="flex flex-col items-center justify-center gap-2 py-4 bg-gradient-to-b from-indigo-400 to-indigo-600 hover:from-indigo-500 hover:to-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg col-span-1">
+          <span class="text-2xl">📋</span>
+          <span>Historique</span>
+        </button>
+        <!-- Retour liste pour admin -->
+        <button *ngIf="isAdmin()" (click)="activeSession.set(null); selectedLine.set(null)"
+          class="flex flex-col items-center justify-center gap-2 py-4 bg-gradient-to-b from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-white rounded-2xl font-bold transition-all shadow-lg">
+          <span class="text-2xl">←</span>
+          <span>Liste</span>
         </button>
       </div>
 
-      <!-- Modal Content -->
-      <div class="p-6 space-y-6">
-        <!-- Catégorie M -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-3">Catégorie M *</label>
-          <select 
-            [(ngModel)]="selectedMCategory"
-            (ngModelChange)="onMCategoryChange()"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
-          >
-            <option [value]="null">-- Sélectionner --</option>
-            <option *ngFor="let cat of mCategories()" [value]="cat.code">
-              {{ getMCategoryIcon(cat.code) }} {{ cat.code }} - {{ cat.name }}
-            </option>
+      <!-- Stats session -->
+      <div *ngIf="sessionStats()" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+          <div class="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase tracking-wide mb-1">
+            <span>⏱</span> TEMPS PRODUCTION
+          </div>
+          <div class="text-lg font-bold text-gray-800 font-mono">
+            {{ sessionStats()!.session.productionTime || '—' }}
+          </div>
+        </div>
+        <div class="bg-orange-50 rounded-2xl p-4 border border-orange-100">
+          <div class="flex items-center gap-2 text-xs font-bold text-orange-500 uppercase tracking-wide mb-1">
+            <span>⏸</span> TEMPS PAUSE
+          </div>
+          <div class="text-lg font-bold text-gray-800 font-mono">
+            {{ sessionStats()!.session.pauseTime || '—' }}
+          </div>
+        </div>
+        <div class="bg-green-50 rounded-2xl p-4 border border-green-100">
+          <div class="flex items-center gap-2 text-xs font-bold text-green-500 uppercase tracking-wide mb-1">
+            <span>📊</span> EFFICACITÉ
+          </div>
+          <div class="text-lg font-bold text-gray-800">
+            {{ sessionStats()!.session.efficiency || '—' }}
+          </div>
+        </div>
+        <div class="bg-purple-50 rounded-2xl p-4 border border-purple-100">
+          <div class="flex items-center gap-2 text-xs font-bold text-purple-500 uppercase tracking-wide mb-1">
+            <span>🔄</span> PAUSES
+          </div>
+          <div class="text-lg font-bold text-gray-800">{{ sessionStats()!.pauses.total }}</div>
+          <div class="text-xs text-red-500 font-semibold mt-1">Pièces perdues {{ totalLostPieces() }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LISTE DES LIGNES ACTIVES/EN PAUSE ========== -->
+  <!-- ✅ Visible quand pas de session OU admin -->
+  <div *ngIf="!activeSession() || isAdmin()">
+
+    <!-- Message aucune ligne active -->
+    <div *ngIf="filteredLines().length === 0 && !loading()" class="flex justify-center mt-4">
+      <div class="bg-white/10 rounded-3xl p-8 text-center border border-white/20 w-full max-w-4xl">
+        <div class="text-5xl mb-3">🏭</div>
+        <p class="text-white font-semibold text-lg">Aucune ligne active en ce moment</p>
+        <p class="text-white/60 text-sm mt-1">Les lignes inactives sont masquées</p>
+      </div>
+    </div>
+
+    <!-- ✅ Grille 5 colonnes — seulement lignes actives / en pause -->
+    <div *ngIf="filteredLines().length > 0" class="mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div
+          *ngFor="let line of filteredLines()"
+          (click)="selectLine(line.ligne, line.status || 'inactive')"
+          class="bg-white rounded-2xl p-4 shadow-xl cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-2xl border-2"
+          [ngClass]="line.status === 'active' ? 'border-green-400' : 'border-orange-400'">
+
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-3">
+            <h3 class="text-gray-900 font-bold text-base leading-tight">{{ line.ligne }}</h3>
+            <span [ngClass]="line.status === 'active' ? 'bg-green-500' : 'bg-orange-500'"
+                  class="px-2 py-0.5 text-white text-xs font-bold rounded-full ml-1 shrink-0">
+              <ng-container *ngIf="line.status === 'active'">EN COURS</ng-container>
+              <ng-container *ngIf="line.status === 'paused'">PAUSE</ng-container>
+            </span>
+          </div>
+
+          <!-- Infos session -->
+          <div *ngIf="getSessionForLine(line.ligne) as session" class="space-y-1 mb-3">
+            <div class="text-gray-500 text-xs">🔖 Session #{{ session.id }}</div>
+            <div class="text-gray-500 text-xs truncate">👤 {{ $any(session).startedBy || 'N/A' }}</div>
+          </div>
+
+          <!-- Indicateur actif -->
+          <div class="flex items-center gap-1.5 mb-3">
+            <span [ngClass]="line.status === 'active' ? 'bg-green-400 animate-pulse' : 'bg-orange-400'"
+                  class="w-2 h-2 rounded-full inline-block"></span>
+            <span class="text-xs text-gray-500">
+              {{ line.status === 'active' ? 'En production' : 'En attente' }}
+            </span>
+          </div>
+
+          <!-- Bouton -->
+          <button [ngClass]="line.status === 'active'
+                    ? 'bg-purple-600 hover:bg-purple-700'
+                    : 'bg-orange-500 hover:bg-orange-600'"
+                  class="w-full py-2 text-white text-xs font-bold rounded-xl transition-all">
+            <ng-container *ngIf="isAdmin()">👁 Accès Admin →</ng-container>
+            <ng-container *ngIf="!isAdmin() && line.status === 'active'">Gérer →</ng-container>
+            <ng-container *ngIf="!isAdmin() && line.status === 'paused'">Reprendre →</ng-container>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== DÉMARRER SESSION (utilisateur normal seulement) ========== -->
+    <div *ngIf="!isAdmin() && !activeSession()" class="flex justify-center mt-4">
+      <div class="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-4xl">
+        <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          🚀 Démarrer une nouvelle session
+        </h2>
+
+        <div class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Sélectionner une ligne</label>
+          <select
+            [ngModel]="selectedLine()"
+            (ngModelChange)="selectedLine.set($event)"
+            class="w-full px-4 py-3 border border-gray-200 rounded-2xl text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
+            <option value="">-- Sélectionner --</option>
+            <option *ngFor="let line of lines()" [value]="line.ligne">{{ line.ligne }}</option>
           </select>
         </div>
 
-        <!-- ✅ NOUVEAU - Sélection des références (M1, M4, M5) -->
-        <div *ngIf="currentCategoryRequiresReferences()" class="border-2 border-indigo-200 rounded-xl p-4 bg-indigo-50/30">
-          <label class="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <span>📋</span>
-            <span>{{ referenceTypeLabel() }} * (sélection multiple)</span>
-          </label>
-          
-          <!-- Loading state -->
-          <div *ngIf="loadingReferences()" class="flex items-center justify-center py-4">
-            <div class="w-6 h-6 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
-            <span class="ml-2 text-sm text-gray-600">Chargement des références...</span>
-          </div>
+        <button
+          (click)="startSession()"
+          [disabled]="!canStartSession() || loading()"
+          class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2">
+          <span *ngIf="loading()" class="animate-spin">⟳</span>
+          <span>▶ Démarrer la production</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
-          <!-- References list -->
-          <div *ngIf="!loadingReferences() && availableReferences().length > 0" class="space-y-2 max-h-64 overflow-y-auto">
-            <div 
-              *ngFor="let ref of availableReferences()" 
-              (click)="toggleReference(ref)"
-              class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer"
-              [ngClass]="{
-                'bg-indigo-100 border-indigo-500': selectedReferences().includes(ref),
-                'bg-white border-gray-200 hover:bg-gray-50': !selectedReferences().includes(ref)
-              }"
-            >
-              <div class="flex items-center justify-center w-5 h-5 rounded border-2 transition-all"
-                [ngClass]="{
-                  'bg-indigo-600 border-indigo-600': selectedReferences().includes(ref),
-                  'bg-white border-gray-300': !selectedReferences().includes(ref)
-                }"
-              >
-                <svg *ngIf="selectedReferences().includes(ref)" class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-              <span class="text-sm font-medium text-gray-700">{{ ref }}</span>
-            </div>
-          </div>
+  <!-- ========== MODAL PAUSE ========== -->
+  <div *ngIf="showPauseForm()"
+       class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-screen overflow-y-auto">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-900">⏸️ Mettre en Pause</h3>
+          <button (click)="closePauseForm()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold">×</button>
+        </div>
 
-          <!-- Empty state -->
-          <div *ngIf="!loadingReferences() && availableReferences().length === 0" class="text-center py-4 text-sm text-gray-500">
-            Aucune référence disponible
-          </div>
-
-          <!-- Selected count -->
-          <div *ngIf="selectedReferences().length > 0" class="mt-3 pt-3 border-t border-indigo-200">
-            <span class="text-sm font-semibold text-indigo-700">
-              {{ selectedReferences().length }} référence(s) sélectionnée(s)
-            </span>
+        <!-- Catégorie M -->
+        <div class="mb-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Catégorie M *</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button *ngFor="let cat of mCategories()"
+              (click)="selectedMCategory.set(cat.code); onMCategoryChange()"
+              [ngClass]="selectedMCategory() === cat.code
+                ? 'bg-purple-600 border-purple-500 text-white'
+                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50'"
+              class="p-3 rounded-2xl border text-center transition-all text-sm font-semibold">
+              <div class="text-xl mb-1">{{ getMCategoryIcon(cat.code) }}</div>
+              <div class="font-bold">{{ cat.code }}</div>
+              <div class="text-xs opacity-70 truncate">{{ cat.name }}</div>
+            </button>
           </div>
         </div>
 
         <!-- Sous-catégorie -->
-        <div *ngIf="availableSubCategories().length > 0">
-          <label class="block text-sm font-semibold text-gray-700 mb-3">Sous-catégorie (optionnel)</label>
-          <select 
-            [(ngModel)]="selectedSubCategory"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 transition-all"
-          >
-            <option [value]="null">-- Sélectionner --</option>
-            <option *ngFor="let subCat of availableSubCategories()" [value]="subCat">
-              {{ subCat }}
-            </option>
+        <div *ngIf="availableSubCategories().length > 0" class="mb-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Sous-catégorie</label>
+          <select [ngModel]="selectedSubCategory()" (ngModelChange)="selectedSubCategory.set($event)"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400">
+            <option value="">— Aucune —</option>
+            <option *ngFor="let sub of availableSubCategories()" [value]="sub">{{ sub }}</option>
           </select>
+        </div>
+
+        <!-- Références -->
+        <div *ngIf="currentCategoryRequiresReferences()" class="mb-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">{{ referenceTypeLabel() }} *</label>
+          <div *ngIf="loadingReferences()" class="text-gray-500 text-sm">Chargement...</div>
+          <div *ngIf="!loadingReferences() && availableReferences().length > 0" class="flex flex-wrap gap-2">
+            <button *ngFor="let ref of availableReferences()" (click)="toggleReference(ref)"
+              [ngClass]="selectedReferences().includes(ref)
+                ? 'bg-purple-600 text-white border-purple-500'
+                : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-purple-50'"
+              class="px-3 py-1.5 rounded-xl text-sm font-semibold border transition-all">
+              {{ ref }}
+            </button>
+          </div>
         </div>
 
         <!-- Raison -->
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-3">Raison (optionnel)</label>
-          <textarea 
-            [(ngModel)]="pauseReason"
-            rows="3"
-            placeholder="Décrivez la raison de la pause..."
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 resize-y min-h-[100px] transition-all"
-          ></textarea>
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Raison (optionnel)</label>
+          <textarea [ngModel]="pauseReason()" (ngModelChange)="pauseReason.set($event)"
+            placeholder="Décrire la raison de la pause..." rows="3"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none">
+          </textarea>
         </div>
-      </div>
 
-      <!-- Modal Footer -->
-      <div class="flex justify-end gap-3 p-6 border-t-2 border-gray-100">
-        <button 
-          (click)="closePauseForm()"
-          class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
-        >
-          Annuler
-        </button>
-        <button 
-          (click)="pauseSession()"
-          [disabled]="!selectedMCategory() || loading()"
-          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          Confirmer la pause
-        </button>
+        <div class="flex gap-3">
+          <button (click)="pauseSession()" [disabled]="loading() || !selectedMCategory()"
+            class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white rounded-2xl font-bold transition-all">
+            ⏸️ Confirmer
+          </button>
+          <button (click)="closePauseForm()"
+            class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all">
+            Annuler
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Resume Modal -->
-  <div 
-    *ngIf="showResumeForm()" 
-    class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
-    (click)="closeResumeForm()"
-  >
-    <div 
-      class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal-slide-up"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="flex justify-between items-center p-6 border-b-2 border-gray-100">
-        <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <span>▶️</span>
-          <span>Reprendre la production</span>
-        </h3>
-        <button 
-          (click)="closeResumeForm()"
-          class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 text-2xl transition-all hover:rotate-90"
-        >
-          ×
-        </button>
-      </div>
-
+  <!-- ========== MODAL REPRISE ========== -->
+  <div *ngIf="showResumeForm()"
+       class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md">
       <div class="p-6">
-        <label class="block text-sm font-semibold text-gray-700 mb-3">Action effectuée (optionnel)</label>
-        <textarea 
-          [(ngModel)]="resumeActionTaken"
-          rows="3"
-          placeholder="Décrivez l'action effectuée..."
-          class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-gray-50 resize-y min-h-[100px] transition-all"
-        ></textarea>
-      </div>
-
-      <div class="flex justify-end gap-3 p-6 border-t-2 border-gray-100">
-        <button 
-          (click)="closeResumeForm()"
-          class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
-        >
-          Annuler
-        </button>
-        <button 
-          (click)="resumeSession()"
-          [disabled]="loading()"
-          class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          Reprendre la production
-        </button>
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-900">▶️ Reprendre la Production</h3>
+          <button (click)="closeResumeForm()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold">×</button>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Action effectuée</label>
+          <textarea [ngModel]="resumeActionTaken()" (ngModelChange)="resumeActionTaken.set($event)"
+            placeholder="Décrire l'action corrective..." rows="3"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none">
+          </textarea>
+        </div>
+        <div class="flex gap-3">
+          <button (click)="resumeSession()" [disabled]="loading()"
+            class="flex-1 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white rounded-2xl font-bold transition-all">
+            ▶️ Reprendre
+          </button>
+          <button (click)="closeResumeForm()"
+            class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all">
+            Annuler
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- End Session Modal -->
-  <div 
-    *ngIf="showEndForm()" 
-    class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
-    (click)="closeEndForm()"
-  >
-    <div 
-      class="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal-slide-up"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="flex justify-between items-center p-6 border-b-2 border-gray-100">
-        <h3 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <span>⏹️</span>
-          <span>Terminer la session</span>
-        </h3>
-        <button 
-          (click)="closeEndForm()"
-          class="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-900 text-2xl transition-all hover:rotate-90"
-        >
-          ×
-        </button>
-      </div>
-
-      <div class="p-6 space-y-6">
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-3">Quantité produite</label>
-          <input 
-            type="number"
-            [(ngModel)]="quantityProduced"
-            min="0"
-            placeholder="Entrez la quantité..."
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50 transition-all"
-          />
+  <!-- ========== MODAL FIN ========== -->
+  <div *ngIf="showEndForm()"
+       class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md">
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-900">🏁 Terminer la Session</h3>
+          <button (click)="closeEndForm()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold">×</button>
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-3">Statut qualité</label>
-          <select 
-            [(ngModel)]="qualityStatus"
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50 transition-all"
-          >
-            <option value="good">✓ Bon</option>
-            <option value="with_defects">⚠️ Avec défauts</option>
-            <option value="rejected">✕ Rejeté</option>
-          </select>
+        <div class="mb-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Quantité produite</label>
+          <input type="number" [ngModel]="quantityProduced()" (ngModelChange)="quantityProduced.set($event)"
+            placeholder="Ex: 500"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400"/>
         </div>
 
-        <div>
-          <label class="block text-sm font-semibold text-gray-700 mb-3">Notes finales (optionnel)</label>
-          <textarea 
-            [(ngModel)]="endNotes"
-            rows="4"
-            placeholder="Ajoutez des notes finales..."
-            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50 resize-y min-h-[120px] transition-all"
-          ></textarea>
+        <div class="mb-4">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Statut qualité</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button (click)="qualityStatus.set('good')"
+              [ngClass]="qualityStatus() === 'good'
+                ? 'bg-purple-600 border-purple-500 text-white'
+                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50'"
+              class="py-2 px-2 rounded-xl text-xs font-bold border transition-all">
+              ✅ Bonne
+            </button>
+            <button (click)="qualityStatus.set('average')"
+              [ngClass]="qualityStatus() === 'average'
+                ? 'bg-purple-600 border-purple-500 text-white'
+                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50'"
+              class="py-2 px-2 rounded-xl text-xs font-bold border transition-all">
+              ⚠️ Moyenne
+            </button>
+            <button (click)="qualityStatus.set('poor')"
+              [ngClass]="qualityStatus() === 'poor'
+                ? 'bg-purple-600 border-purple-500 text-white'
+                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50'"
+              class="py-2 px-2 rounded-xl text-xs font-bold border transition-all">
+              ❌ Mauvaise
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div class="flex justify-end gap-3 p-6 border-t-2 border-gray-100">
-        <button 
-          (click)="closeEndForm()"
-          class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors"
-        >
-          Annuler
-        </button>
-        <button 
-          (click)="endSession()"
-          [disabled]="loading()"
-          class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-        >
-          Terminer la session
-        </button>
+        <div class="mb-6">
+          <label class="block text-sm font-bold text-gray-700 mb-2">Notes finales</label>
+          <textarea [ngModel]="endNotes()" (ngModelChange)="endNotes.set($event)"
+            placeholder="Commentaires finaux..." rows="3"
+            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none">
+          </textarea>
+        </div>
+
+        <div class="flex gap-3">
+          <button (click)="endSession()" [disabled]="loading()"
+            class="flex-1 py-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white rounded-2xl font-bold transition-all">
+            🏁 Terminer
+          </button>
+          <button (click)="closeEndForm()"
+            class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all">
+            Annuler
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Loading Overlay -->
-  <div *ngIf="loading()" class="fixed inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-[9999]">
-    <div class="w-16 h-16 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
-  </div>
 </div>

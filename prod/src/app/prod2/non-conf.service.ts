@@ -1,4 +1,4 @@
-// src/app/services/non-conf.service.ts - Version complète avec référence qualité
+// src/app/services/non-conf.service.ts - Version avec FIX décalage DP/causes
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -11,15 +11,25 @@ export interface CreateOrUpdateNonConfDto {
   reference: string;
   matierePremiere?: number;
   absence?: number;
+  matriculesAbsence?: string; // Format: "1234,5678,91011"
   rendement?: number;
+  matriculesRendement?: string; // Format: "1234,5678,91011"
   methode?: number;
   maintenance?: number;
-  phasesMaintenance?: string;
+  phasesMaintenance?: string; // Format: "1,2,3"
   qualite?: number;
   environnement?: number;
   referenceMatierePremiere?: string;
-  referenceQualite?: string; // AJOUT: Référence qualité
+  referenceQualite?: string;
   commentaire?: string;
+  commentaireId?: number;
+
+  // ✅ FIX : Champs ajoutés pour résoudre le décalage entre DP saisi et DP en base.
+  // Le modal causes s'ouvre AVANT la sauvegarde du DP → la DB contient encore
+  // l'ancienne valeur. On transmet ici les valeurs fraîches saisies par l'utilisateur
+  // afin que le backend calcule le delta correct sans lire la base.
+  decProduction?: number;  // valeur DP actuellement saisie dans le frontend
+  qteModifiee?: number;    // valeur M (qteModifiee) actuellement affichée
 }
 
 export interface GetNonConfDto {
@@ -46,7 +56,7 @@ export interface NonConformiteResponse {
     phasesMaintenance: string[];
     qualite: number;
     environnement: number;
-    referenceQualite: string | null; // AJOUT: Référence qualité
+    referenceQualite: string | null;
   };
   commentaire: string | null;
   declarePar: string;
@@ -101,7 +111,7 @@ export class NonConfService {
       errors.push('Une référence matière première est recommandée quand la quantité est > 0');
     }
 
-    // AJOUT: Validation qualité
+    // Validation qualité
     if (dto.qualite && dto.qualite > 0 && !dto.referenceQualite) {
       errors.push('Une référence qualité est recommandée quand la quantité est > 0');
     }
@@ -130,7 +140,7 @@ export class NonConfService {
     // Nettoyer le DTO
     const cleanDto = { ...dto };
     
-    // Supprimer les valeurs 0
+    // Supprimer les valeurs 0 pour les causes (le backend ignore undefined)
     if (cleanDto.matierePremiere === 0) delete cleanDto.matierePremiere;
     if (cleanDto.absence === 0) delete cleanDto.absence;
     if (cleanDto.rendement === 0) delete cleanDto.rendement;
@@ -140,7 +150,6 @@ export class NonConfService {
       delete cleanDto.qualite;
       delete cleanDto.referenceQualite;
     }
-
     if (cleanDto.environnement === 0) delete cleanDto.environnement; 
     
     // Nettoyer les références vides
@@ -151,7 +160,9 @@ export class NonConfService {
       delete cleanDto.referenceMatierePremiere;
     }
 
-    console.log('Envoi non-conformité avec références qualité:', cleanDto);
+    // ✅ FIX : Ne PAS supprimer decProduction/qteModifiee même si 0
+    // (une valeur 0 est significative : DP = 0 signifie que la production n'a pas été déclarée)
+    console.log('Envoi non-conformité (avec DP/M pour calcul delta côté backend):', cleanDto);
 
     return this.http.patch<any>(
       `${this.apiUrl}/nonconf`,

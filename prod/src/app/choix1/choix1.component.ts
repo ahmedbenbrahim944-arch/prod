@@ -14,7 +14,7 @@ export class Choix1Component {
   constructor(private authService: AuthService) {}
 
   retourLogin() {
-    console.log('Déconnexion et retour au login...');
+  
     this.authService.logout();
   }
 }

@@ -15,6 +15,7 @@ import { Product } from '../product/entities/product.entity';
 import { Semaine } from '../semaine/entities/semaine.entity';
 import { MatierePremier } from '../matiere-premier/entities/matiere-premier.entity';
 
+
 @Injectable()
 export class PlanningSelectionService {
   constructor(
@@ -29,6 +30,8 @@ export class PlanningSelectionService {
     @InjectRepository(MatierePremier)
     private matierePremierRepository: Repository<MatierePremier>,
   ) {}
+
+  
 
   /**
    * Trouver la semaine correspondant à une date
@@ -801,4 +804,116 @@ async create(createDto: CreatePlanningSelectionDto): Promise<PlanningSelection> 
       plannings
     };
   }
+  async getStatsByPeriodeFull(startDate: string, endDate: string): Promise<any> {
+    // ── 1. Récupérer tous les plannings de la période ──────────────────────────
+    const plannings = await this.planningRepository.find({
+      where: { date: Between(startDate, endDate) },
+      order: { date: 'ASC' },
+    });
+
+    if (plannings.length === 0) {
+      return {
+        startDate,
+        endDate,
+        totalPlannings: 0,
+        global: null,
+        parOuvrier: [],
+        parJour: [],
+        parReference: [],
+      };
+    }
+
+    // ── 2. Helper : calculer les stats d'un tableau de plannings ──────────────
+    const calcStats = (items: PlanningSelection[]) => {
+      const totalQteSelection    = items.reduce((s, p) => s + p.qteSelection, 0);
+      const totalQteASelectionne = items.reduce((s, p) => s + (p.qteASelectionne ?? 0), 0);
+      const totalHeures          = items.reduce((s, p) => s + Number(p.nHeures), 0);
+
+      // ✅ Rendement = qteSelection / (nHeures * objectifHeure) * 100
+      const totalObjectifTheorique = items.reduce(
+        (s, p) => s + (Number(p.nHeures) * (p.objectifHeure ?? 0)),
+        0
+      );
+      const rendementMoyen = totalObjectifTheorique > 0
+        ? Number(((totalQteSelection / totalObjectifTheorique) * 100).toFixed(2))
+        : 0;
+
+      return {
+        totalPlannings: items.length,
+        totalQteSelection,
+        totalQteASelectionne,
+        totalHeures: Number(totalHeures.toFixed(2)),
+        rendementMoyen,
+      };
+    };
+
+    // ── 3. Statistiques GLOBALES ───────────────────────────────────────────────
+    const global = {
+      startDate,
+      endDate,
+      totalOuvriers: new Set(plannings.map(p => p.matricule)).size,
+      totalReferences: new Set(plannings.map(p => p.reference).filter(Boolean)).size,
+      ...calcStats(plannings),
+    };
+
+    // ── 4. Statistiques PAR OUVRIER ───────────────────────────────────────────
+    const ouvrierMap = new Map<number, PlanningSelection[]>();
+    plannings.forEach(p => {
+      if (!ouvrierMap.has(p.matricule)) ouvrierMap.set(p.matricule, []);
+      ouvrierMap.get(p.matricule)!.push(p);
+    });
+
+    const parOuvrier = [...ouvrierMap.entries()]
+      .map(([matricule, items]) => ({
+        matricule,
+        nomPrenom: items[0].nomPrenom,
+        ...calcStats(items),
+      }))
+      .sort((a, b) => b.rendementMoyen - a.rendementMoyen); // tri décroissant par rendement
+
+    // ── 5. Statistiques PAR JOUR ──────────────────────────────────────────────
+    const jourMap = new Map<string, PlanningSelection[]>();
+    plannings.forEach(p => {
+      if (!jourMap.has(p.date)) jourMap.set(p.date, []);
+      jourMap.get(p.date)!.push(p);
+    });
+
+    const parJour = [...jourMap.entries()]
+      .map(([date, items]) => ({
+        date,
+        totalOuvriers: new Set(items.map(p => p.matricule)).size,
+        ...calcStats(items),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date)); // tri chronologique
+
+    // ── 6. Statistiques PAR RÉFÉRENCE ─────────────────────────────────────────
+    const refMap = new Map<string, PlanningSelection[]>();
+    plannings.forEach(p => {
+      const key = p.reference ?? 'À définir';
+      if (!refMap.has(key)) refMap.set(key, []);
+      refMap.get(key)!.push(p);
+    });
+
+    const parReference = [...refMap.entries()]
+      .map(([reference, items]) => ({
+        reference,
+        ligneRef: items[0].ligneRef,
+        typeReference: items[0].typeReference,
+        totalOuvriers: new Set(items.map(p => p.matricule)).size,
+        ...calcStats(items),
+      }))
+      .sort((a, b) => b.totalQteSelection - a.totalQteSelection); // tri décroissant par qteSelection
+
+    // ── 7. Retourner le tout ──────────────────────────────────────────────────
+    return {
+      startDate,
+      endDate,
+      global,
+      parOuvrier,
+      parJour,
+      parReference,
+    };
+  }
+  
+  
 }

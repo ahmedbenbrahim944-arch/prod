@@ -20,18 +20,18 @@ export class ChoixComponent implements OnInit { // Ajoutez "implements OnInit"
     // Utilisez getUserMatricule() qui existe déjà dans AuthService
     const matricule = this.authService.getUserMatricule();
     
-    console.log('Matricule de l\'utilisateur connecté:', matricule); // Pour debug
+    
     
     if (matricule) {
       this.matriculeUtilisateur = matricule;
       this.showSaisButton = (this.matriculeUtilisateur === '2603');
     }
     
-    console.log('showSaisButton:', this.showSaisButton); // Pour debug
+    
   }
 
   retourLogin() {
-    console.log('Déconnexion et retour au login...');
+    
     this.authService.logout();
   }
 }

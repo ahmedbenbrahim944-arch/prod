@@ -367,7 +367,6 @@ private loadStats5MAnnuellesPreview(date: string) {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur chargement aperçu stats 5M:', error);
         this.stats5MAnnuellesPreview.set(null);
         return of(null);
       }),
@@ -389,7 +388,6 @@ private loadMatierePremieres() {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors du chargement des matières premières:', error);
         this.errorMessage.set('Impossible de charger les matières premières');
         return of([]);
       }),
@@ -444,7 +442,6 @@ async onAddMatierePremiere() {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de l\'ajout de la matière première:', error);
           
           if (error.status === 409) {
             this.errorMessage.set(`Une matière première avec cette ligne et cette référence existe déjà`);
@@ -468,7 +465,6 @@ async onAddMatierePremiere() {
       
   } catch (error) {
     this.loading.set(false);
-    console.error('Erreur lors de la vérification:', error);
   }
 }
 
@@ -499,7 +495,6 @@ private loadStatsAnnuellesPreview(date: string) {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur chargement aperçu stats annuelles:', error);
         this.statsAnnuellesPreview.set(null);
         return of(null);
       }),
@@ -548,7 +543,6 @@ onDeleteMatierePremiere(id: number) {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la suppression:', error);
           this.errorMessage.set('Erreur lors de la suppression de la matière première');
           return of(null);
         }),
@@ -617,7 +611,6 @@ async onDownloadStatsAnnuelles() {
     this.showSuccessMessage(`Statistiques annuelles ${data.annee} téléchargées avec succès !`);
     
   } catch (error: any) {
-    console.error('Erreur lors du téléchargement:', error);
     
     if (error.status === 404) {
       this.errorMessage.set(`Aucune donnée trouvée pour l'année sélectionnée`);
@@ -917,7 +910,6 @@ selectedPhaseForEdit: any = null;
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors du chargement des lignes:', error);
           this.errorMessage.set('Impossible de charger les lignes. Vérifiez la connexion au serveur.');
           return of({ lines: [], total: 0 });
         }),
@@ -942,7 +934,6 @@ selectedPhaseForEdit: any = null;
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors du chargement des phases:', error);
         return of([]);
       }),
       finalize(() => this.loading.set(false))
@@ -1003,7 +994,6 @@ checkIfPhaseExists(): boolean {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors du chargement des utilisateurs:', error);
           // Utilisateurs de test en cas d'erreur
           return of([
             { 
@@ -1036,7 +1026,6 @@ checkIfPhaseExists(): boolean {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors du chargement des stats:', error);
           return of({ totalLines: 0 });
         })
       )
@@ -1062,7 +1051,6 @@ checkIfPhaseExists(): boolean {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la recherche:', error);
           this.errorMessage.set('Erreur lors de la recherche.');
           return of({ lines: [], query });
         }),
@@ -1114,7 +1102,6 @@ checkIfPhaseExists(): boolean {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la création:', error);
           this.errorMessage.set(error.error?.message || 'Erreur lors de la création de la ligne');
           return of(null);
         }),
@@ -1162,7 +1149,6 @@ checkIfPhaseExists(): boolean {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors de l\'ajout des références:', error);
         this.errorMessage.set(error.error?.message || 'Erreur lors de l\'ajout des références');
         return of(null);
       }),
@@ -1222,7 +1208,6 @@ checkIfPhaseExists(): boolean {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors du chargement des détails:', error);
           this.errorMessage.set('Impossible de charger les détails de la ligne');
           return of(line);
         }),
@@ -1325,7 +1310,6 @@ checkIfPhaseExists(): boolean {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la création de l\'utilisateur:', error);
           this.errorMessage.set(error.error?.message || 'Erreur lors de la création de l\'utilisateur');
           return of(null);
         }),
@@ -1396,7 +1380,6 @@ onCreateWeek() {
     dateFin: formatDate(this.weekForm.dateFin)
   };
 
-  console.log('Dates envoyées au backend:', createSemaineDto);
 
   this.loading.set(true);
   this.errorMessage.set(null);
@@ -1405,7 +1388,6 @@ onCreateWeek() {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors de la création de la semaine:', error);
         this.errorMessage.set(error.error?.message || 'Erreur lors de la création de la semaine');
         return of(null);
       }),
@@ -1414,7 +1396,6 @@ onCreateWeek() {
     .subscribe({
       next: (response) => {
         if (response) {
-          console.log('Réponse du backend:', response);
           this.showSuccessMessage(`Semaine "${this.weekForm.nom}" créée avec succès !`);
           this.resetWeekForm();
           this.activeTab.set('view');
@@ -1472,7 +1453,6 @@ onCreateWeek() {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors de l\'ajout du temps:', error);
         this.errorMessage.set(error.error?.message || 'Erreur lors de l\'ajout du temps');
         return of(null);
       }),
@@ -1547,7 +1527,6 @@ onCreateWeek() {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de l\'ajout de l\'ouvrier:', error);
           
           // Gestion spécifique des erreurs de conflit (matricule déjà existant)
           if (error.status === 409) {
@@ -1572,7 +1551,6 @@ onCreateWeek() {
       
   } catch (error) {
     this.loading.set(false);
-    console.error('Erreur lors de la vérification:', error);
   }
 }
 
@@ -1625,7 +1603,6 @@ onCreateWeek() {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de l\'ajout de la phase:', error);
           
           if (error.status === 409) {
             this.errorMessage.set(`La phase "${this.phaseForm.phase}" existe déjà pour cette ligne`);
@@ -1663,7 +1640,6 @@ onCreateWeek() {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la modification de la phase:', error);
           this.errorMessage.set(error.error?.message || 'Erreur lors de la modification de la phase');
           return of(null);
         }),
@@ -1740,7 +1716,6 @@ onCreateWeek() {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la suppression:', error);
           this.errorMessage.set('Erreur lors de la suppression de la phase');
           return of(null);
         }),
@@ -1810,7 +1785,6 @@ selectPhaseForEditFromLine(phase: any) {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de l\'upload de l\'image:', error);
           this.imageUploadError = error.error?.message || 'Erreur lors de l\'upload de l\'image';
           
           if (error.status) {
@@ -1969,7 +1943,6 @@ loadExistingTimeForReference() {
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
         // Si pas trouvé, c'est normal (premier ajout)
-        console.log('Temps non trouvé pour cette combinaison');
         return of(null);
       })
     )
@@ -2017,26 +1990,25 @@ async onCheckMatricule() {
         
         this.matriculeCheckResult = {
           available: false,
-          message: `❌ Le matricule ${this.workerForm.matricule} est déjà utilisé`,
+          message: ` Le matricule ${this.workerForm.matricule} est déjà utilisé`,
           existingWorker: existingWorker
         };
       } catch (error) {
         this.matriculeCheckResult = {
           available: false,
-          message: `❌ Le matricule ${this.workerForm.matricule} est déjà utilisé`
+          message: ` Le matricule ${this.workerForm.matricule} est déjà utilisé`
         };
       }
     } else {
       this.matriculeCheckResult = {
         available: true,
-        message: `✅ Le matricule ${this.workerForm.matricule} est disponible`
+        message: ` Le matricule ${this.workerForm.matricule} est disponible`
       };
     }
   } catch (error) {
-    console.error('Erreur lors de la vérification:', error);
     this.matriculeCheckResult = {
       available: false,
-      message: '⚠️ Erreur lors de la vérification du matricule'
+      message: '️ Erreur lors de la vérification du matricule'
     };
   } finally {
     this.checkingMatricule.set(false);
@@ -2122,7 +2094,7 @@ async onDownloadPhaseReports() {
     }
     
     if (rapports.length === 0) {
-      this.errorMessage.set(`⚠️ Aucun rapport trouvé pour la semaine "${this.downloadPhaseForm.semaine}"`);
+      this.errorMessage.set(`️ Aucun rapport trouvé pour la semaine "${this.downloadPhaseForm.semaine}"`);
       this.loading.set(false);
       return;
     }
@@ -2130,20 +2102,19 @@ async onDownloadPhaseReports() {
     // 2. Générer le fichier Excel
     await this.generateExcelFile(rapports, this.downloadPhaseForm.semaine.trim());
     
-    this.showSuccessMessage(`✅ Rapports de la semaine "${this.downloadPhaseForm.semaine}" téléchargés avec succès !`);
+    this.showSuccessMessage(` Rapports de la semaine "${this.downloadPhaseForm.semaine}" téléchargés avec succès !`);
     
   } catch (error: any) {
-    console.error('Erreur lors du téléchargement:', error);
     
     // Messages d'erreur spécifiques
     if (error.status === 404) {
-      this.errorMessage.set(`❌ La semaine "${this.downloadPhaseForm.semaine}" n'existe pas dans la base de données`);
+      this.errorMessage.set(` La semaine "${this.downloadPhaseForm.semaine}" n'existe pas dans la base de données`);
     } else if (error.status === 500) {
-      this.errorMessage.set('❌ Erreur serveur. Veuillez réessayer plus tard');
+      this.errorMessage.set(' Erreur serveur. Veuillez réessayer plus tard');
     } else if (error.message && error.message.includes('semaine')) {
-      this.errorMessage.set(`❌ Semaine "${this.downloadPhaseForm.semaine}" introuvable`);
+      this.errorMessage.set(` Semaine "${this.downloadPhaseForm.semaine}" introuvable`);
     } else {
-      this.errorMessage.set(error.message || '❌ Erreur lors du téléchargement des rapports');
+      this.errorMessage.set(error.message || ' Erreur lors du téléchargement des rapports');
     }
   } finally {
     this.loading.set(false);
@@ -2209,7 +2180,6 @@ loadWeekStats(semaine: string) {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.log('Aucune statistique disponible pour cette semaine:', error);
         
         // Afficher un message dans l'interface
         if (error.status === 404) {
@@ -2412,7 +2382,6 @@ private formatPhasesForDisplay(phasesData: any): string {
         try {
           phasesArray = JSON.parse(cleanString);
         } catch (parseError) {
-          console.log('Erreur parsing, tentative alternative...');
           
           // Essayer de réparer le JSON corrompu
           // Si le JSON a des clés sans guillemets
@@ -2421,7 +2390,6 @@ private formatPhasesForDisplay(phasesData: any): string {
           try {
             phasesArray = JSON.parse(cleanString);
           } catch (e) {
-            console.log('Échec après réparation:', e);
             return `Format invalide: ${phasesData.substring(0, 100)}...`;
           }
         }
@@ -2476,7 +2444,6 @@ private formatPhasesForDisplay(phasesData: any): string {
       : 'Aucune phase valide';
     
   } catch (error) {
-    console.error('Erreur critique lors du formatage:', error);
     return typeof phasesData === 'string' 
       ? `Erreur: ${phasesData.substring(0, 50)}...` 
       : 'Format inconnu';
@@ -2559,7 +2526,6 @@ private loadLineSummaryData() {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur chargement données ligne:', error);
         if (error.status === 404) {
           this.errorMessage.set(`Aucune donnée trouvée pour ${this.downloadLineSummaryForm.ligne} en ${this.downloadLineSummaryForm.semaine}`);
         } else {
@@ -2627,7 +2593,6 @@ async onDownloadLineSummary() {
     this.showSuccessMessage(`Résumé de la ligne ${this.downloadLineSummaryForm.ligne} téléchargé avec succès !`);
     
   } catch (error: any) {
-    console.error('Erreur lors du téléchargement:', error);
     
     if (error.status === 404) {
       this.errorMessage.set(`Aucune donnée trouvée pour ${this.downloadLineSummaryForm.ligne} en ${this.downloadLineSummaryForm.semaine}`);
@@ -2946,7 +2911,6 @@ onViewStats() {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors du chargement des statistiques:', error);
         if (error.status === 404) {
           this.errorMessage.set(`Aucune donnée trouvée pour la ligne ${this.statsForm.ligne} en semaine ${this.statsForm.semaine}`);
         } else {
@@ -3067,7 +3031,6 @@ async exportCharts() {
       
       this.showSuccessMessage('Graphiques exportés avec succès !');
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
       this.errorMessage.set('Erreur lors de l\'export des graphiques');
     }
   }
@@ -3108,7 +3071,6 @@ async exportCharts() {
     this.showSuccessMessage(`Statistiques 5M annuelles ${data.annee} téléchargées avec succès !`);
     
   } catch (error: any) {
-    console.error('Erreur lors du téléchargement:', error);
     
     if (error.status === 404) {
       this.errorMessage.set(`Aucune donnée trouvée pour l'année sélectionnée`);
@@ -3387,7 +3349,6 @@ private loadOuvriers() {
     .pipe(
       takeUntilDestroyed(this.destroyRef),
       catchError(error => {
-        console.error('Erreur lors du chargement des ouvriers:', error);
         this.errorMessage.set('Impossible de charger la liste des ouvriers');
         return of([]);
       }),
@@ -3417,7 +3378,6 @@ async checkIfWorkerExists(matricule: number): Promise<boolean> {
     if (error.status === 404) {
       return false; // Si erreur 404, l'ouvrier n'existe pas
     }
-    console.log('Erreur lors de la vérification:', error);
     return false;
   }
 }
@@ -3451,7 +3411,6 @@ onDeleteOuvrier(matricule: number) {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors de la suppression:', error);
           
           if (error.status === 404) {
             this.errorMessage.set(`Ouvrier avec le matricule ${matricule} introuvable`);

@@ -189,12 +189,32 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
     }
 
     // 6. Calculer le deltaProd actuel
-    const quantiteSource = this.getQuantitySource(planification);
-    const deltaProd = planification.decProduction - quantiteSource;
+    // FIX : Le modal causes s'ouvre AVANT que le DP soit sauvegardé en base.
+    // Si le frontend envoie decProduction / qteModifiee dans le DTO, on les
+    // utilise pour calculer le delta correct ; sinon on lit la valeur en base
+    // (cas d'une mise à jour directe sans passage par le modal d'attente).
+    const decProductionEffective =
+      createOrUpdateNonConfDto.decProduction !== undefined
+        ? createOrUpdateNonConfDto.decProduction
+        : planification.decProduction;
 
-    console.log('Calculs:', {
+    const qteModifieeEffective =
+      createOrUpdateNonConfDto.qteModifiee !== undefined
+        ? createOrUpdateNonConfDto.qteModifiee
+        : planification.qteModifiee;
+
+    const quantiteSource =
+      qteModifieeEffective > 0
+        ? qteModifieeEffective
+        : planification.qtePlanifiee;
+
+    const deltaProd = decProductionEffective - quantiteSource;
+
+    console.log('Calculs (FIX décalage DP/causes):', {
       quantiteSource,
-      decProduction: planification.decProduction,
+      decProductionEnBase: planification.decProduction,
+      decProductionEffective,
+      qteModifieeEffective,
       deltaProd
     });
 
@@ -219,7 +239,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
             ligne, 
             reference,
             quantiteSource,
-            decProduction: planification.decProduction,
+            decProduction: decProductionEffective,
             deltaProd: 0,
             ecartPourcentage: 0
           }
@@ -301,7 +321,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
             ligne, 
             reference,
             quantiteSource,
-            decProduction: planification.decProduction,
+            decProduction: decProductionEffective,
             deltaProd,
             ecartPourcentage: 0
           }
@@ -474,7 +494,7 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
         ligne,
         reference,
         quantiteSource,
-        decProduction: planification.decProduction,
+        decProduction: decProductionEffective,
         deltaProd,
         total7M: nonConfWithRelations.total,
         ecartPourcentage: nonConfWithRelations.ecartPourcentage,

@@ -90,7 +90,6 @@ export class OuvrierComponent implements OnInit {
       .pipe(
         takeUntilDestroyed(this.destroyRef),
         catchError(error => {
-          console.error('Erreur lors du chargement des ouvriers:', error);
           this.errorMessage.set('Impossible de charger la liste des ouvriers');
           return of([]);
         }),
@@ -125,26 +124,25 @@ export class OuvrierComponent implements OnInit {
           
           this.matriculeCheckResult = {
             available: false,
-            message: `❌ Le matricule ${this.workerForm.matricule} est déjà utilisé`,
+            message: ` Le matricule ${this.workerForm.matricule} est déjà utilisé`,
             existingWorker: existingWorker
           };
         } catch (error) {
           this.matriculeCheckResult = {
             available: false,
-            message: `❌ Le matricule ${this.workerForm.matricule} est déjà utilisé`
+            message: ` Le matricule ${this.workerForm.matricule} est déjà utilisé`
           };
         }
       } else {
         this.matriculeCheckResult = {
           available: true,
-          message: `✅ Le matricule ${this.workerForm.matricule} est disponible`
+          message: ` Le matricule ${this.workerForm.matricule} est disponible`
         };
       }
     } catch (error) {
-      console.error('Erreur lors de la vérification:', error);
       this.matriculeCheckResult = {
         available: false,
-        message: '⚠️ Erreur lors de la vérification du matricule'
+        message: '️ Erreur lors de la vérification du matricule'
       };
     } finally {
       this.checkingMatricule.set(false);
@@ -198,7 +196,6 @@ export class OuvrierComponent implements OnInit {
         .pipe(
           takeUntilDestroyed(this.destroyRef),
           catchError(error => {
-            console.error('Erreur lors de l\'ajout de l\'ouvrier:', error);
             
             // Gestion spécifique des erreurs de conflit (matricule déjà existant)
             if (error.status === 409) {
@@ -223,7 +220,6 @@ export class OuvrierComponent implements OnInit {
         
     } catch (error) {
       this.loading.set(false);
-      console.error('Erreur lors de la vérification:', error);
     }
   }
 
@@ -238,7 +234,6 @@ export class OuvrierComponent implements OnInit {
       if (error.status === 404) {
         return false; // Si erreur 404, l'ouvrier n'existe pas
       }
-      console.log('Erreur lors de la vérification:', error);
       return false;
     }
   }
@@ -300,7 +295,6 @@ export class OuvrierComponent implements OnInit {
         .pipe(
           takeUntilDestroyed(this.destroyRef),
           catchError(error => {
-            console.error('Erreur lors de la suppression:', error);
             
             if (error.status === 404) {
               this.errorMessage.set(`Ouvrier avec le matricule ${matricule} introuvable`);
@@ -336,7 +330,7 @@ export class OuvrierComponent implements OnInit {
    * Retour au menu principal
    */
   goBackToProd() {
-    this.router.navigate(['/ch2']);
+    this.router.navigate(['/choix']);
   }
 
   /**

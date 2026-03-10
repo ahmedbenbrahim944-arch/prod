@@ -1,0 +1,272 @@
+<!-- src/app/plaquettes/plaquettes.component.html -->
+<div class="app-shell">
+  <div class="sidebar-overlay" [class.active]="sidebarOpen" (click)="toggleSidebar()"></div>
+
+  <aside class="sidebar" [class.open]="sidebarOpen">
+    <div class="sidebar-header">
+      <span class="sidebar-logo"></span>
+      <h2 class="sidebar-title">Semaines</h2>
+    </div>
+    <nav class="sidebar-nav">
+      <button *ngFor="let s of semaines; trackBy: trackById" class="semaine-btn"
+        [class.active]="selectedSemaine?.id === s.id" (click)="selectSemaine(s)">
+        <span class="semaine-nom">{{ s.nom }}</span>
+        <span class="semaine-dates">{{ s.dateDebut | date:'dd/MM' }} → {{ s.dateFin | date:'dd/MM/yy' }}</span>
+      </button>
+      <div *ngIf="semaines.length === 0" class="sidebar-empty">Aucune semaine disponible</div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <button class="burger-btn" (click)="toggleSidebar()">
+        <span class="burger-line"></span><span class="burger-line"></span><span class="burger-line"></span>
+      </button>
+      <div class="topbar-title">
+        <span class="topbar-label">Plaquettes</span>
+        <span class="topbar-semaine" *ngIf="selectedSemaine"> — {{ selectedSemaine.nom }}</span>
+      </div>
+    </header>
+
+    <div *ngIf="!selectedSemaine" class="empty-state">
+      <div class="empty-icon"></div>
+      <p>Sélectionnez une semaine dans le menu</p>
+    </div>
+
+    <ng-container *ngIf="selectedSemaine">
+
+      <!-- ══ FORMULAIRE ══ -->
+      <section class="card form-card">
+        <div class="card-header">
+          <h3 class="card-title"><span class="card-icon">➕</span> Ajouter une plaquette</h3>
+          <span class="semaine-badge">{{ selectedSemaine.nom }}</span>
+        </div>
+        <form (ngSubmit)="submitForm()" [formGroup]="form" class="plaquette-form">
+          <div class="form-group">
+            <label class="form-label">Ligne <span class="required">*</span></label>
+            <select class="form-control" formControlName="ligne" (change)="onLigneChange()"
+              [class.invalid]="form.get('ligne')?.invalid && form.get('ligne')?.touched">
+              <option value="">-- Choisir --</option>
+              <option *ngFor="let l of lignes" [value]="l.ligne">{{ l.ligne }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Référence <span class="required">*</span></label>
+            <select class="form-control" formControlName="reference"
+              [class.invalid]="form.get('reference')?.invalid && form.get('reference')?.touched"
+              [attr.disabled]="references.length === 0 ? true : null">
+              <option value="">-- Choisir --</option>
+              <option *ngFor="let r of references" [value]="r">{{ r }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Matricule Machine <span class="required">*</span></label>
+            <select class="form-control" formControlName="matriculeMachineId"
+              [class.invalid]="form.get('matriculeMachineId')?.invalid && form.get('matriculeMachineId')?.touched">
+              <option value="">-- Choisir --</option>
+              <option *ngFor="let m of matricules" [value]="m.id">{{ m.matricule }}<ng-container *ngIf="m.description"> — {{ m.description }}</ng-container></option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Type Plaquette <span class="required">*</span></label>
+            <select class="form-control" formControlName="typePlaquetteId"
+              [class.invalid]="form.get('typePlaquetteId')?.invalid && form.get('typePlaquetteId')?.touched">
+              <option value="">-- Choisir --</option>
+              <option *ngFor="let t of typesPlaquettes" [value]="t.id">{{ t.nom }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantité donnée <span class="required">*</span></label>
+            <input type="number" class="form-control" formControlName="quantiteDonnee" placeholder="0" min="1"
+              [class.invalid]="form.get('quantiteDonnee')?.invalid && form.get('quantiteDonnee')?.touched" />
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" [disabled]="form.invalid || formLoading">
+              <span *ngIf="!formLoading">Ajouter</span>
+              <span *ngIf="formLoading" class="spinner"></span>
+            </button>
+          </div>
+          <div *ngIf="formSuccess" class="alert alert-success"> {{ formSuccess }}</div>
+          <div *ngIf="formError"   class="alert alert-error"> {{ formError }}</div>
+        </form>
+      </section>
+
+      <!-- ══ TABLEAU DÉTAIL ══ -->
+      <section class="card table-card">
+        <div class="card-header">
+          <h3 class="card-title"><span class="card-icon"></span> Plaquettes — {{ selectedSemaine.nom }}</h3>
+          <span class="total-badge">{{ plaquettes.length }} entrée(s)</span>
+        </div>
+        <div *ngIf="tableLoading" class="table-loading"><div class="spinner-lg"></div><p>Chargement...</p></div>
+        <div *ngIf="!tableLoading && plaquettes.length === 0" class="table-empty">Aucune plaquette pour cette semaine</div>
+        <div *ngIf="!tableLoading && plaquettes.length > 0" class="table-wrapper">
+          <table class="data-table">
+            <colgroup>
+              <col style="width:120px">
+              <col style="width:200px">
+              <col style="width:200px">
+              <col style="width:180px">
+              <col style="width:150px">
+              <col style="width:120px">
+              <col style="width:130px">
+              <col style="width:80px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Ligne</th>
+                <th>Référence</th>
+                <th>Machine</th>
+                <th>Type</th>
+                <th class="th-right">Qté donnée</th>
+                <th class="th-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of plaquettes; trackBy: trackById" class="table-row">
+                <td class="td-date">{{ p.date | date:'dd/MM/yyyy' }}</td>
+                <td><span class="tag tag-ligne">{{ p.ligne }}</span></td>
+                <td><span class="tag tag-ref">{{ p.reference }}</span></td>
+                <td class="td-machine">{{ p.matriculeMachine.matricule }}</td>
+                <td><span class="tag tag-type">{{ p.typePlaquette.nom }}</span></td>
+                <td class="td-number">{{ p.quantiteDonnee }}</td>
+                <td class="td-action">
+                  <ng-container *ngIf="deletingId !== p.id">
+                    <button class="btn-delete" (click)="confirmDelete(p.id)">🗑️</button>
+                  </ng-container>
+                  <ng-container *ngIf="deletingId === p.id">
+                    <div class="confirm-delete">
+                      <span class="confirm-text">?</span>
+                      <button class="btn-confirm-yes" (click)="deletePlaquette()">Oui</button>
+                      <button class="btn-confirm-no" (click)="cancelDelete()">Non</button>
+                    </div>
+                  </ng-container>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══ RÉSUMÉ PAR TYPE ══ -->
+      <section class="card resume-card" *ngIf="resumeParType.length > 0">
+        <div class="card-header">
+          <h3 class="card-title"><span class="card-icon"></span> Résumé par type — {{ selectedSemaine.nom }}</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table resume-table">
+            <colgroup>
+              <col style="width:160px">
+              <col style="width:180px">
+              <col style="width:200px">
+              <col style="width:200px">
+              <col style="width:180px">
+              <col style="width:200px">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th class="th-right">Qté totale donnée</th>
+                <th class="th-right editable-col">Reste total <span class="hint"> clic</span></th>
+                <th class="th-right editable-col">Produit fini total <span class="hint"> clic</span></th>
+                <th class="th-right editable-col">Rebut total <span class="hint"> clic</span></th>
+                <th class="th-right">Consommation totale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of resumeParType" class="table-row">
+
+                <td><span class="tag tag-type tag-lg">{{ r.typeNom }}</span></td>
+                <td class="td-number">{{ r.quantiteTotale }}</td>
+
+                <!-- Reste total -->
+                <td class="td-editable td-number"
+                    (click)="startEditResume(r, 'reste')"
+                    [class.editing]="isEditingResume(r.typeId, 'reste')">
+                  <ng-container *ngIf="!isEditingResume(r.typeId, 'reste')">
+                    <div class="cell-display cell-right">
+                      <span class="cell-value td-reste">{{ r.resteTotale }}</span>
+                      <span class="edit-pencil"></span>
+                    </div>
+                  </ng-container>
+                  <ng-container *ngIf="isEditingResume(r.typeId, 'reste')">
+                    <div class="inline-edit" (click)="$event.stopPropagation()">
+                      <input type="number" class="inline-input" [(ngModel)]="editingResumeValue"
+                        min="0" [max]="r.quantiteTotale"
+                        (keyup.enter)="saveEditResume(r, 'reste')"
+                        (keyup.escape)="cancelEditResume()" autofocus />
+                      <button class="btn-inline-save" (click)="saveEditResume(r, 'reste')" [disabled]="editResumeLoading">✓</button>
+                      <button class="btn-inline-cancel" (click)="cancelEditResume()">✗</button>
+                    </div>
+                  </ng-container>
+                </td>
+
+                <!-- Produit fini total -->
+                <td class="td-editable td-number"
+                    (click)="startEditResume(r, 'produitFini')"
+                    [class.editing]="isEditingResume(r.typeId, 'produitFini')">
+                  <ng-container *ngIf="!isEditingResume(r.typeId, 'produitFini')">
+                    <div class="cell-display cell-right">
+                      <span class="cell-value td-pf">{{ r.produitFiniTotal }}</span>
+                      <span class="edit-pencil"></span>
+                    </div>
+                  </ng-container>
+                  <ng-container *ngIf="isEditingResume(r.typeId, 'produitFini')">
+                    <div class="inline-edit" (click)="$event.stopPropagation()">
+                      <input type="number" class="inline-input" [(ngModel)]="editingResumeValue"
+                        min="0"
+                        (keyup.enter)="saveEditResume(r, 'produitFini')"
+                        (keyup.escape)="cancelEditResume()" autofocus />
+                      <button class="btn-inline-save" (click)="saveEditResume(r, 'produitFini')" [disabled]="editResumeLoading">✓</button>
+                      <button class="btn-inline-cancel" (click)="cancelEditResume()">✗</button>
+                    </div>
+                  </ng-container>
+                </td>
+
+                <!-- Rebut total -->
+                <td class="td-editable td-number"
+                    (click)="startEditResume(r, 'rebut')"
+                    [class.editing]="isEditingResume(r.typeId, 'rebut')">
+                  <ng-container *ngIf="!isEditingResume(r.typeId, 'rebut')">
+                    <div class="cell-display cell-right">
+                      <span class="cell-value td-rebut">{{ r.rebutTotal }}</span>
+                      <span class="edit-pencil"></span>
+                    </div>
+                  </ng-container>
+                  <ng-container *ngIf="isEditingResume(r.typeId, 'rebut')">
+                    <div class="inline-edit" (click)="$event.stopPropagation()">
+                      <input type="number" class="inline-input" [(ngModel)]="editingResumeValue"
+                        min="0"
+                        (keyup.enter)="saveEditResume(r, 'rebut')"
+                        (keyup.escape)="cancelEditResume()" autofocus />
+                      <button class="btn-inline-save" (click)="saveEditResume(r, 'rebut')" [disabled]="editResumeLoading">✓</button>
+                      <button class="btn-inline-cancel" (click)="cancelEditResume()">✗</button>
+                    </div>
+                  </ng-container>
+                </td>
+
+                <td class="td-number">
+                  <span class="conso-badge">{{ r.consommationTotale }}</span>
+                </td>
+
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="tfoot-row">
+                <td class="tfoot-label">TOTAL</td>
+                <td class="td-number tfoot-val">{{ getTotalQte() }}</td>
+                <td class="td-number tfoot-val td-reste">{{ getTotalReste() }}</td>
+                <td class="td-number tfoot-val td-pf">{{ getTotalPF() }}</td>
+                <td class="td-number tfoot-val td-rebut">{{ getTotalRebut() }}</td>
+                <td class="td-number tfoot-val">
+                  <span class="conso-badge">{{ getTotalConso() }}</span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+    </ng-container>
+  </main>
+</div>

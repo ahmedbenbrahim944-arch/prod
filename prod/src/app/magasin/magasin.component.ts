@@ -92,7 +92,7 @@ export class MagasinComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Erreur chargement données magasin:', error);
+        
         this.errorMessage = error.error?.message || 'Erreur lors du chargement des données';
         this.isLoading = false;
         this.lignesData.clear();
@@ -302,10 +302,10 @@ export class MagasinComponent implements OnInit {
       const fileName = `Planification-Magasin-${this.selectedSemaine}.xlsx`;
       XLSX.writeFile(workbook, fileName);
       
-      console.log(`Fichier Excel généré avec ${allData.length} références`);
+      
       
     } catch (error) {
-      console.error('Erreur génération Excel:', error);
+      
       this.errorMessage = 'Erreur lors de la génération du fichier Excel';
     }
   }

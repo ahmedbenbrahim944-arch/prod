@@ -214,7 +214,6 @@ export class NonconformiteComponent implements OnInit {
       this.nonconfForm.patchValue({
         type: ref.type
       });
-      console.log(`📍 Type auto-rempli: ${ref.type}`);
     } else {
       this.nonconfForm.patchValue({
         type: 'MP'
@@ -229,11 +228,9 @@ export class NonconformiteComponent implements OnInit {
     this.nonconfService.getAllLines().subscribe({
       next: (lines) => {
         this.availableLines = lines;
-        console.log('✅ Lignes chargées:', lines.length);
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Erreur chargement lignes:', error);
         this.errorMessage = 'Erreur lors du chargement des lignes';
         this.isLoading = false;
       }
@@ -245,11 +242,9 @@ export class NonconformiteComponent implements OnInit {
     this.nonconfService.getReferencesByLine(ligne).subscribe({
       next: (references) => {
         this.availableReferences = references;
-        console.log(`✅ Références chargées pour ligne ${ligne}:`, references.length);
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('❌ Erreur chargement références:', error);
         this.errorMessage = `Erreur lors du chargement des références pour la ligne ${ligne}`;
         this.isLoading = false;
         this.availableReferences = [];
@@ -261,10 +256,8 @@ export class NonconformiteComponent implements OnInit {
     this.nonconfService.getDefautsList().subscribe({
       next: (defauts) => {
         this.defautsList = defauts;
-        console.log('✅ Défauts chargés:', defauts.length);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement défauts:', error);
       }
     });
   }
@@ -280,7 +273,6 @@ export class NonconformiteComponent implements OnInit {
         }));
         this.filteredSaisies = [...this.saisies];
         this.totalSaisiesCount = saisies.length;
-        console.log('✅ Saisies chargées:', saisies.length);
         this.isLoading = false;
         
         // Appliquer les filtres initiaux s'il y en a
@@ -289,7 +281,6 @@ export class NonconformiteComponent implements OnInit {
         }
       },
       error: (error) => {
-        console.error('❌ Erreur chargement saisies:', error);
         this.errorMessage = 'Erreur lors du chargement des saisies';
         this.isLoading = false;
       }
@@ -323,11 +314,9 @@ export class NonconformiteComponent implements OnInit {
       statut: 'en attente' // Statut par défaut
     };
 
-    console.log('📤 Envoi données:', data);
 
     this.nonconfService.create(data).subscribe({
       next: (result) => {
-        console.log('✅ Saisie créée avec succès:', result);
         this.successMessage = 'Saisie de non-conformité créée avec succès !';
         this.resetAddForm();
         this.loadSaisies(); // Recharger les données
@@ -338,7 +327,6 @@ export class NonconformiteComponent implements OnInit {
         }, 5000);
       },
       error: (error) => {
-        console.error('❌ Erreur création saisie:', error);
         this.errorMessage = error.error?.message || 'Erreur lors de la création de la saisie';
         this.isSubmitting = false;
       }
@@ -442,7 +430,6 @@ export class NonconformiteComponent implements OnInit {
         }, 3000);
       },
       error: (error) => {
-        console.error('❌ Erreur mise à jour statut:', error);
         this.errorMessage = error.error?.message || 'Erreur lors de la mise à jour du statut';
         this.isLoading = false;
         
@@ -607,7 +594,6 @@ export class NonconformiteComponent implements OnInit {
       setTimeout(() => this.successMessage = '', 5000);
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'export Excel:', error);
       this.errorMessage = 'Erreur lors de l\'export vers Excel';
       setTimeout(() => this.errorMessage = '', 5000);
     }
@@ -662,7 +648,6 @@ export class NonconformiteComponent implements OnInit {
       setTimeout(() => this.successMessage = '', 5000);
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'export CSV:', error);
       this.errorMessage = 'Erreur lors de l\'export vers CSV';
       setTimeout(() => this.errorMessage = '', 5000);
     }
@@ -695,7 +680,6 @@ export class NonconformiteComponent implements OnInit {
     this.isLoading = true;
     this.nonconfService.delete(id).subscribe({
       next: () => {
-        console.log('✅ Saisie supprimée');
         this.successMessage = 'Saisie supprimée avec succès';
         this.loadSaisies(); // Recharger les données
         
@@ -704,7 +688,6 @@ export class NonconformiteComponent implements OnInit {
         }, 3000);
       },
       error: (error) => {
-        console.error('❌ Erreur suppression:', error);
         this.errorMessage = error.error?.message || 'Erreur lors de la suppression';
         this.isLoading = false;
         

@@ -21,6 +21,13 @@ import { Planification1Component } from './planification1/planification1.compone
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { authGuard } from './guards/auth.guard';
 import { SuperAdminGuard } from './guards/super-admin.guard'; // ✅ Importer le nouveau guard
+import { StatistiqueSelectionComponent } from './statistique-selection/statistique-selection.component';
+import { Planification2Component } from './planification2/planification2.component';
+import { LandingPageComponent } from './landing-page/landing-page.component';
+import { PlaquettesComponent } from './plaquettes/plaquettes.component';
+import { PlaquettesStatsComponent } from './plaquettes-stats/plaquettes-stats.component';
+import { Choix3Component } from './choix3/choix3.component';
+import { Magasin1Component } from './magasin1/magasin1.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -60,4 +67,13 @@ export const routes: Routes = [
       .then(m => m.TrackingDashboardComponent),
     canActivate: [authGuard, SuperAdminGuard] // ✅ Protégé par les deux guards
   },
+  { path: 'stats', component: StatistiqueSelectionComponent },
+  { path: 'mod', component: Planification2Component },
+  { path: 'lan', component: LandingPageComponent },
+  { path: 'plaq', component: PlaquettesComponent },
+  { path: 'statp', component: PlaquettesStatsComponent },
+  { path: 'ch3', component: Choix3Component },
+  { path: 'magasin1', component: Magasin1Component },
+  
+
 ];

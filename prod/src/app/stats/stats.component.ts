@@ -1,10 +1,12 @@
 import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
+
+// ── Interfaces ────────────────────────────────────────────────────
 
 interface DetailNonConformite {
   reference: string;
@@ -23,6 +25,10 @@ interface DetailNonConformite {
   pourcentageEcart: number;
   refMP?: string;
   refQualite?: string;
+  matriculesAbsence?: string;
+  matriculesRendement?: string;
+  phasesMaintenance?: string;
+  commentaireTexte?: string;
   date: string;
   jour: string;
   ligne: string;
@@ -32,7 +38,7 @@ interface DetailNonConformite {
 interface LigneDetail {
   ligne: string;
   nombreReferences: number;
- production: {  // <-- CE N'EST PAS production mais production ?
+  production: {
     totalQteSource: number;
     totalDecProduction: number;
     pcs: number;
@@ -57,7 +63,6 @@ interface LigneDetail {
     causes7M?: any;
   }>;
 }
-
 
 interface StatsPeriode {
   message: string;
@@ -95,21 +100,21 @@ interface StatsPeriode {
   personnel: {
     totalOuvriers: number;
     totalPresences: number;
-    totalSelections: number; // ✅ NOUVEAU
+    totalSelections: number;
     totalConges: number;
     totalAbsences: number;
     moyennePresences: number;
-    moyenneSelections: number; // ✅ NOUVEAU
+    moyenneSelections: number;
     moyenneConges: number;
     moyenneAbsences: number;
-    moyenneAutres: number; // ✅ NOUVEAU
+    moyenneAutres: number;
     tauxPresence: number;
     joursDansPeriode: number;
     presents: number;
-    selections: number; // ✅ NOUVEAU
+    selections: number;
     conges: number;
     absents: number;
-    autresStatuts: number; // ✅ NOUVEAU
+    autresStatuts: number;
     details: {
       matriculesPresents: number[];
       matriculesConges: number[];
@@ -139,6 +144,16 @@ interface StatsPeriode {
   detailsNonConformites?: DetailNonConformite[];
 }
 
+// Interface ouvrier — même structure que statistiques1 (OuvrierSaisie)
+interface OuvrierPersonnel {
+  matricule: string | number;
+  nomPrenom: string;
+  ligne?: string;
+  statut?: 'AB' | 'C' | 'S' | 'P' | null;
+  libelleStatut?: string;
+  commentaire?: string | null;
+}
+
 @Component({
   selector: 'app-stats',
   standalone: true,
@@ -157,8 +172,8 @@ export class StatsComponent implements OnInit {
   errorMessage: string = '';
   private chart: Chart | null = null;
   selectedM: string | null = null;
-  
-  // Modale de détails
+
+  // ── Modale 7M ─────────────────────────────────────────────────
   showDetailsModal: boolean = false;
   detailsModalTitle: string = '';
   detailsModalData: DetailNonConformite[] = [];
@@ -172,53 +187,82 @@ export class StatsComponent implements OnInit {
     tauxConformite: 0,
     causesPrincipales: ''
   };
-  
+
+  // ── Modale ligne ───────────────────────────────────────────────
+  showLigneModal: boolean = false;
+  ligneModalTitle: string = '';
+  ligneModalData: LigneDetail | null = null;
+  ligneModalReferences: any[] = [];
+  expandedCause7M: string | null = null;
+
+  // ── Filtre par ligne ───────────────────────────────────────────
+  selectedLignes: string[] = [];
+  ligneSearchFilter: string = '';
+
+  // ── Modale Personnel ──────────────────────────────────────────
+  // Même logique que statistiques1.component.ts :
+  // endpoint GET http://102.207.250.53:3000/statut/par-date?date=YYYY-MM-DD
+  // response.statistiques.ouvriers[] → filtre par o.statut === code
+  showPersonnelModal: boolean = false;
+  personnelModalTitle: string = '';
+  personnelModalStatut: string = '';
+  personnelModalList: OuvrierPersonnel[] = [];
+  isLoadingPersonnel: boolean = false;
+
+  readonly statutOptions = [
+    { code: 'P',  libelle: 'Présent',   couleur: '#10b981', icon: '✅' },
+    { code: 'AB', libelle: 'Absent',    couleur: '#ef4444', icon: '🚫' },
+    { code: 'C',  libelle: 'Congé',     couleur: '#f59e0b', icon: '🏖️' },
+    { code: 'S',  libelle: 'Sélection', couleur: '#3b82f6', icon: '✔️'  }
+  ];
+
+  // ── Config 7M ─────────────────────────────────────────────────
   mDetails: { [key: string]: any } = {
-    matierePremiere: { 
-      label: 'M1:Matière Première', 
-      icon: 'M1', 
+    matierePremiere: {
+      label: 'M1:Matière Première',
+      icon: 'M1',
       color: '#ef4444',
       description: 'Écarts liés aux matières premières',
       key: 'm1_matierePremiere'
     },
-    absence: { 
-      label: 'M2:Absence', 
-      icon: 'M2', 
+    absence: {
+      label: 'M2:Absence',
+      icon: 'M2',
       color: '#3b82f6',
       description: 'Écarts dus aux absences',
       key: 'm2_absence'
     },
-    rendement: { 
-      label: 'M2:Rendement', 
-      icon: 'M3', 
+    rendement: {
+      label: 'M2:Rendement',
+      icon: 'M3',
       color: '#8b5cf6',
       description: 'Écarts de rendement',
       key: 'm3_rendement'
     },
-    methode: { 
-      label: 'M3:Méthode', 
-      icon: 'M4', 
+    methode: {
+      label: 'M3:Méthode',
+      icon: 'M4',
       color: '#06b6d4',
       description: 'Écarts dus aux méthodes de travail',
       key: 'm4_methode'
     },
-    maintenance: { 
-      label: 'M4:Maintenance', 
-      icon: 'M5', 
+    maintenance: {
+      label: 'M4:Maintenance',
+      icon: 'M5',
       color: '#f59e0b',
       description: 'Écarts dus à la maintenance',
       key: 'm5_maintenance'
     },
-    qualite: { 
-      label: 'M5:Qualité', 
-      icon: 'M6', 
+    qualite: {
+      label: 'M5:Qualité',
+      icon: 'M6',
       color: '#10b981',
       description: 'Écarts de qualité',
       key: 'm6_qualite'
     },
-    environnement: { 
-      label: 'M6:Environnement', 
-      icon: 'M6', 
+    environnement: {
+      label: 'M6:Environnement',
+      icon: 'M6',
       color: '#ec4899',
       description: 'Écarts environnementaux',
       key: 'm7_environnement'
@@ -226,6 +270,8 @@ export class StatsComponent implements OnInit {
   };
 
   private apiUrl = 'http://102.207.250.53:3000/stats';
+  // URL statut personnel — même que statistiques1
+  private statutApiUrl = 'http://102.207.250.53:3000/statut/par-date';
 
   constructor(private http: HttpClient) {}
 
@@ -236,6 +282,8 @@ export class StatsComponent implements OnInit {
     this.dateDebut = this.formatDate(firstDay);
     this.dateFin = this.maxDate;
   }
+
+  // ── Utilitaires ───────────────────────────────────────────────
 
   private formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -258,6 +306,15 @@ export class StatsComponent implements OnInit {
     }
     return nom;
   }
+
+  private getAuthHeaders(): HttpHeaders {
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+    });
+  }
+
+  // ── Chargement stats période ──────────────────────────────────
 
   async chargerStatsPeriode(): Promise<void> {
     if (!this.dateDebut || !this.dateFin) {
@@ -289,44 +346,37 @@ export class StatsComponent implements OnInit {
 
       if (response) {
         this.statsData = response;
-        console.log('✅ Données reçues:', response);
-        console.log('✅ Resume 7M:', response.resume7M);
-        console.log('✅ Détails non-conformités:', response.detailsNonConformites);
         setTimeout(() => {
           this.creerGraphique();
         }, 100);
       }
     } catch (error: any) {
-      console.error('❌ Erreur lors du chargement des statistiques:', error);
       this.errorMessage = error?.error?.message || 'Erreur lors du chargement des données';
     } finally {
       this.isLoading = false;
     }
   }
 
-  private creerGraphique(): void {
-    if (!this.chartCanvas || !this.statsData) {
-      console.warn('⚠️ Canvas ou données manquants');
-      return;
-    }
+  // ── Graphique ─────────────────────────────────────────────────
 
-    if (this.chart) {
-      this.chart.destroy();
-    }
+  private creerGraphique(): void {
+    if (!this.chartCanvas || !this.statsData) return;
+    if (this.chart) this.chart.destroy();
 
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) {
-      console.error('❌ Impossible d\'obtenir le contexte du canvas');
-      return;
-    }
+    if (!ctx) return;
 
     const lignesAvecProduction = this.statsData.statsParLigne
-      .filter(stat => stat.production.totalQteSource > 0 || stat.production.totalDecProduction > 0)
+      .filter(stat => {
+        const hasData = stat.production.totalQteSource > 0 || stat.production.totalDecProduction > 0;
+        const isSelected = this.selectedLignes.length === 0 || this.selectedLignes.includes(stat.ligne);
+        return hasData && isSelected;
+      })
       .sort((a, b) => b.production.pcs - a.production.pcs);
-    
+
     const labels = lignesAvecProduction.map(stat => this.formaterNomLigne(stat.ligne));
     const data = lignesAvecProduction.map(stat => stat.production.pcs);
-    
+
     const backgroundColors = data.map(pcs => {
       if (pcs >= 90) return 'rgba(34, 197, 94, 0.8)';
       if (pcs >= 70) return 'rgba(251, 146, 60, 0.8)';
@@ -339,11 +389,8 @@ export class StatsComponent implements OnInit {
       return 'rgba(239, 68, 68, 1)';
     });
 
-    console.log('📊 Création du graphique avec', lignesAvecProduction.length, 'lignes');
-
     const canvas = this.chartCanvas.nativeElement;
     canvas.onclick = (event) => this.onBarClick(event);
-
 
     this.chart = new Chart(ctx, {
       type: 'bar',
@@ -366,16 +413,11 @@ export class StatsComponent implements OnInit {
           if (elements.length > 0) {
             const index = elements[0].index;
             const ligne = lignesAvecProduction[index];
-            if (ligne) {
-              this.openLigneModal(ligne);
-            }
+            if (ligne) this.openLigneModal(ligne);
           }
         },
         plugins: {
-          legend: {
-            display: false
-          },
-          
+          legend: { display: false },
           tooltip: {
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             padding: 12,
@@ -394,8 +436,7 @@ export class StatsComponent implements OnInit {
               afterLabel: (context) => {
                 const ligne = lignesAvecProduction[context.dataIndex];
                 const m = ligne.causes7M;
-                const ecarts = [];
-                
+                const ecarts: string[] = [];
                 if (m.matierePremiere.pourcentage > 0) ecarts.push(`M1: ${m.matierePremiere.pourcentage.toFixed(1)}%`);
                 if (m.absence.pourcentage > 0) ecarts.push(`M2: ${m.absence.pourcentage.toFixed(1)}%`);
                 if (m.rendement.pourcentage > 0) ecarts.push(`M3: ${m.rendement.pourcentage.toFixed(1)}%`);
@@ -403,7 +444,6 @@ export class StatsComponent implements OnInit {
                 if (m.maintenance.pourcentage > 0) ecarts.push(`M5: ${m.maintenance.pourcentage.toFixed(1)}%`);
                 if (m.qualite.pourcentage > 0) ecarts.push(`M6: ${m.qualite.pourcentage.toFixed(1)}%`);
                 if (m.environnement.pourcentage > 0) ecarts.push(`M7: ${m.environnement.pourcentage.toFixed(1)}%`);
-                
                 return ecarts.length > 0 ? ['', '--- Écarts 7M ---', ...ecarts] : [];
               }
             }
@@ -413,147 +453,67 @@ export class StatsComponent implements OnInit {
           y: {
             beginAtZero: true,
             max: 100,
-            ticks: {
-              callback: (value) => value + '%',
-              font: { size: 12 }
-            },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.05)'
-            },
-            title: {
-              display: true,
-              text: 'PCS (%)',
-              font: { size: 14, weight: 'bold' }
-            }
+            ticks: { callback: (value) => value + '%', font: { size: 12 } },
+            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+            title: { display: true, text: 'PCS (%)', font: { size: 14, weight: 'bold' } }
           },
           x: {
-            ticks: {
-              font: { size: 11, weight: 'bold' },
-              maxRotation: 45,
-              minRotation: 45
-            },
-            grid: {
-              display: false
-            },
-            title: {
-              display: true,
-              text: 'Lignes de Production',
-              font: { size: 14, weight: 'bold' }
-            }
+            ticks: { font: { size: 11, weight: 'bold' }, maxRotation: 45, minRotation: 45 },
+            grid: { display: false },
+            title: { display: true, text: 'Lignes de Production', font: { size: 14, weight: 'bold' } }
           }
         }
       }
     });
-
-    console.log('✅ Graphique créé avec succès');
   }
+
+  // ── 7M ────────────────────────────────────────────────────────
 
   getColorForM(mKey: string): string {
     return this.mDetails[mKey]?.color || '#999';
   }
 
   getPourcentageM(mKey: string): number {
-    if (!this.statsData || !this.statsData.resume7M) {
-      console.warn('⚠️ Pas de données 7M disponibles');
-      return 0;
-    }
-    const pourcentage = this.statsData.resume7M.pourcentages[mKey as keyof typeof this.statsData.resume7M.pourcentages];
-    return pourcentage || 0;
+    if (!this.statsData?.resume7M) return 0;
+    return this.statsData.resume7M.pourcentages[mKey as keyof typeof this.statsData.resume7M.pourcentages] || 0;
   }
 
   getValeurM(mKey: string): number {
-    if (!this.statsData || !this.statsData.resume7M) {
-      console.warn('⚠️ Pas de données 7M disponibles');
-      return 0;
-    }
-    const valeur = this.statsData.resume7M.totaux[mKey as keyof typeof this.statsData.resume7M.totaux];
-    return valeur || 0;
+    if (!this.statsData?.resume7M) return 0;
+    return this.statsData.resume7M.totaux[mKey as keyof typeof this.statsData.resume7M.totaux] || 0;
   }
 
   getValeurTotal(mKey: string): string {
-    if (!this.statsData || !this.statsData.resume7M) return '0';
+    if (!this.statsData?.resume7M) return '0';
     const valeur = this.getValeurM(mKey);
     const total = this.getTotalEcarts();
     return `${valeur.toLocaleString()} / ${total.toLocaleString()}`;
   }
 
   getTotalEcarts(): number {
-    if (!this.statsData || !this.statsData.resume7M) return 0;
-    const totaux = this.statsData.resume7M.totaux;
-    return Object.values(totaux).reduce((sum, val) => sum + val, 0);
+    if (!this.statsData?.resume7M) return 0;
+    return Object.values(this.statsData.resume7M.totaux).reduce((sum, val) => sum + val, 0);
   }
 
-  /**
-   * Ouvrir la modale de détails pour un M spécifique
-   */
- toggleMDetails(mKey: string): void {
-  if (!this.statsData || !this.statsData.detailsNonConformites) {
-    console.warn('⚠️ Pas de détails de non-conformités disponibles');
-    return;
+  toggleMDetails(mKey: string): void {
+    if (!this.statsData?.detailsNonConformites) return;
+
+    const mInfo = this.mDetails[mKey];
+    const columnKey = mInfo.key;
+
+    const detailsFiltres = this.statsData.detailsNonConformites
+      .filter((detail: any) => detail[columnKey] > 0)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (detailsFiltres.length === 0) return;
+
+    this.detailsModalStats = this.calculerStatistiquesModal(detailsFiltres, columnKey);
+    this.detailsModalTitle = `Détails des Non-Conformités - ${mInfo.label}`;
+    this.detailsModalData = detailsFiltres;
+    this.detailsModalCause = mInfo.label;
+    this.showDetailsModal = true;
   }
 
-  const mInfo = this.mDetails[mKey];
-  const columnKey = mInfo.key;
-
-  // Filtrer et trier par date
-  const detailsFiltres = this.statsData.detailsNonConformites
-    .filter((detail: any) => detail[columnKey] > 0)
-    .sort((a, b) => {
-      // Trier par date (plus récent en premier)
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-
-  if (detailsFiltres.length === 0) {
-    console.log(`Aucune non-conformité pour ${mInfo.label}`);
-    return;
-  }
-
-  // Calculer les statistiques
-  this.detailsModalStats = this.calculerStatistiquesModal(detailsFiltres, columnKey);
-  
-  // Préparer les données de la modale
-  this.detailsModalTitle = `Détails des Non-Conformités - ${mInfo.label}`;
-  this.detailsModalData = detailsFiltres;
-  this.detailsModalCause = mInfo.label;
-  this.showDetailsModal = true;
-
-  console.log('📋 Modale ouverte pour', mInfo.label);
-  console.log('📅 Première date:', detailsFiltres[0]?.date);
-  console.log('📅 Dernière date:', detailsFiltres[detailsFiltres.length - 1]?.date);
-}
-
-getPeriodeDisplay(): string {
-  if (!this.statsData || !this.statsData.periode) {
-    return '';
-  }
-  
-  const debut = this.statsData.periode.dateDebut;
-  const fin = this.statsData.periode.dateFin;
-  
-  if (!debut || !fin) {
-    return '';
-  }
-  
-  try {
-    const dateDebut = new Date(debut);
-    const dateFin = new Date(fin);
-    
-    const formatDate = (date: Date): string => {
-      const day = date.getDate().toString().padStart(2, '0');
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const year = date.getFullYear();
-      return `${day}/${month}/${year}`;
-    };
-    
-    return `${formatDate(dateDebut)} - ${formatDate(dateFin)}`;
-  } catch {
-    return '';
-  }
-}
-
-  /**
-   * Calculer les statistiques pour la modale
-   */
   private calculerStatistiquesModal(details: DetailNonConformite[], columnKey: string): any {
     let totalQtyPlanifiee = 0;
     let totalQtyProduite = 0;
@@ -567,14 +527,11 @@ getPeriodeDisplay(): string {
       totalQtyProduite += detail.qtyProduite || 0;
       totalDelta += Math.abs(detail.delta || 0);
       total7M += detail[columnKey] || 0;
-      
-      if (detail[columnKey] > 0) {
-        nbReferencesAvecNonConf++;
-      }
+      if (detail[columnKey] > 0) nbReferencesAvecNonConf++;
       nbReferencesTotal++;
     });
 
-    const tauxConformite = totalQtyPlanifiee > 0 
+    const tauxConformite = totalQtyPlanifiee > 0
       ? ((totalQtyProduite / totalQtyPlanifiee) * 100).toFixed(1)
       : '0.0';
 
@@ -590,14 +547,13 @@ getPeriodeDisplay(): string {
     };
   }
 
-  /**
-   * Fermer la modale
-   */
   closeModal(): void {
     this.showDetailsModal = false;
     this.detailsModalData = [];
     this.detailsModalTitle = '';
   }
+
+  // ── Réinitialisation ──────────────────────────────────────────
 
   reinitialiser(): void {
     const today = new Date();
@@ -607,29 +563,27 @@ getPeriodeDisplay(): string {
     this.statsData = null;
     this.errorMessage = '';
     this.selectedM = null;
-    
+    this.selectedLignes = [];
+    this.ligneSearchFilter = '';
     if (this.chart) {
       this.chart.destroy();
       this.chart = null;
     }
   }
 
+  // ── Utilitaires affichage ─────────────────────────────────────
+
   getCircleStyle(percentage: number): any {
     const circumference = 2 * Math.PI * 60;
     const offset = circumference - (circumference * percentage) / 100;
-    return {
-      'stroke-dasharray': circumference,
-      'stroke-dashoffset': offset
-    };
+    return { 'stroke-dasharray': circumference, 'stroke-dashoffset': offset };
   }
 
   getNombreJours(): number {
     if (!this.statsData) return 0;
     const debut = new Date(this.statsData.periode.dateDebut);
     const fin = new Date(this.statsData.periode.dateFin);
-    const diffTime = Math.abs(fin.getTime() - debut.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1;
+    return Math.ceil(Math.abs(fin.getTime() - debut.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   }
 
   getStatutProduction(pcs: number): string {
@@ -646,260 +600,333 @@ getPeriodeDisplay(): string {
     return '#dc2626';
   }
 
-  /**
-   * Obtenir la couleur du delta
-   */
   getDeltaColor(delta: number): string {
-    if (delta === 0) return '#10b981'; // Vert
-    if (delta < 0) return '#ef4444'; // Rouge (perte)
-    return '#f59e0b'; // Orange (écart positif rare)
+    if (delta === 0) return '#10b981';
+    if (delta < 0) return '#ef4444';
+    return '#f59e0b';
   }
 
-  showLigneModal: boolean = false;
-ligneModalTitle: string = '';
-ligneModalData: LigneDetail | null = null;
-ligneModalReferences: any[] = [];
-expandedCause7M: string | null = null; // Pour suivre quelle cause 7M est dépliée
+  getPeriodeDisplay(): string {
+    if (!this.statsData?.periode) return '';
+    try {
+      const formatDate = (d: Date) =>
+        `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`;
+      return `${formatDate(new Date(this.statsData.periode.dateDebut))} - ${formatDate(new Date(this.statsData.periode.dateFin))}`;
+    } catch { return ''; }
+  }
 
+  // ── Filtre par ligne ──────────────────────────────────────────
 
-onBarClick(event: any): void {
-  if (!this.chart || !this.statsData) return;
-  
-  // Récupérer l'élément cliqué
-  const points = this.chart.getElementsAtEventForMode(
-    event, 
-    'nearest', 
-    { intersect: true }, 
-    true
-  );
+  get lignesDisponibles(): string[] {
+    if (!this.statsData) return [];
+    return this.statsData.statsParLigne
+      .filter(s => s.production.totalQteSource > 0 || s.production.totalDecProduction > 0)
+      .sort((a, b) => b.production.pcs - a.production.pcs)
+      .map(s => s.ligne);
+  }
 
-  if (!points || points.length === 0) return;
+  get lignesFiltrees(): string[] {
+    const search = this.ligneSearchFilter.toLowerCase().trim();
+    if (!search) return this.lignesDisponibles;
+    return this.lignesDisponibles.filter(l =>
+      this.formaterNomLigne(l).toLowerCase().includes(search)
+    );
+  }
 
-  const index = points[0].index;
-  
-  // Filtrer les lignes qui ont des données
-  const lignesAvecProduction = this.statsData.statsParLigne
-    .filter(stat => stat.production.totalQteSource > 0 || stat.production.totalDecProduction > 0)
-    .sort((a, b) => b.production.pcs - a.production.pcs);
+  isLigneSelected(ligne: string): boolean {
+    return this.selectedLignes.includes(ligne);
+  }
 
-  if (index < 0 || index >= lignesAvecProduction.length) return;
+  toggleLigneSelection(ligne: string): void {
+    const idx = this.selectedLignes.indexOf(ligne);
+    if (idx > -1) this.selectedLignes.splice(idx, 1);
+    else this.selectedLignes.push(ligne);
+    setTimeout(() => this.creerGraphique(), 0);
+  }
 
-  const ligne = lignesAvecProduction[index];
-  this.openLigneModal(ligne);
-}
+  clearLigneFilter(): void {
+    this.selectedLignes = [];
+    this.ligneSearchFilter = '';
+    setTimeout(() => this.creerGraphique(), 0);
+  }
 
+  selectAllLignes(): void {
+    this.selectedLignes = [...this.lignesDisponibles];
+    setTimeout(() => this.creerGraphique(), 0);
+  }
 
+  getLignePcs(ligne: string): number {
+    return this.statsData?.statsParLigne.find(s => s.ligne === ligne)?.production.pcs ?? 0;
+  }
 
-/**
- * Ouvrir la modale avec les détails d'une ligne
- */
-openLigneModal(ligne: any): void {
-  this.ligneModalTitle = `Détails de la ligne ${this.formaterNomLigne(ligne.ligne)}`;
-  this.ligneModalData = ligne;
-  
-  console.log('🔍 Données complètes de la ligne:', ligne);
-  console.log('🔍 Ligne recherchée:', ligne.ligne);
-  console.log('🔍 statsData.detailsNonConformites:', this.statsData?.detailsNonConformites);
-  
-  // Utiliser les detailsNonConformites filtrés par ligne
-  if (this.statsData?.detailsNonConformites && Array.isArray(this.statsData.detailsNonConformites)) {
-    // Filtrer les détails pour cette ligne spécifique
-    this.ligneModalReferences = this.statsData.detailsNonConformites
-      .filter(detail => detail.ligne === ligne.ligne)
-      .map(detail => ({
-        date: detail.date,
-        reference: detail.reference,
-        of: detail.of,
-        qtePlanifiee: detail.qtyPlanifiee,
-        qteModifiee: detail.qtyProduite, // Utiliser qtyProduite comme qteModifiee pour le moment
-        decProduction: detail.qtyProduite,
-        pcsProd: detail.qtyPlanifiee > 0 ? (detail.qtyProduite / detail.qtyPlanifiee) * 100 : 0,
-        causes7M: {
-          matierePremiere: detail.m1_matierePremiere || 0,
-          absence: detail.m2_absence || 0,
-          rendement: detail.m3_rendement || 0,
-          methode: detail.m4_methode || 0,
-          maintenance: detail.m5_maintenance || 0,
-          qualite: detail.m6_qualite || 0,
-          environnement: detail.m7_environnement || 0,
-          total: detail.total7M || 0
-        }
-      }));
-    
-    console.log('✅ Références filtrées pour la ligne:', this.ligneModalReferences.length);
-    console.log('✅ Première référence:', this.ligneModalReferences[0]);
-  } else if (ligne.detailsReferences && Array.isArray(ligne.detailsReferences)) {
-    // Fallback sur detailsReferences si disponible
-    this.ligneModalReferences = ligne.detailsReferences;
-    console.log('✅ Utilisation de detailsReferences:', this.ligneModalReferences.length);
-  } else {
+  get isFilterActive(): boolean { return this.selectedLignes.length > 0; }
+
+  private get statsParLigneActives() {
+    if (!this.statsData) return [];
+    const all = this.statsData.statsParLigne;
+    return this.isFilterActive ? all.filter(s => this.selectedLignes.includes(s.ligne)) : all;
+  }
+
+  get productionFiltree() {
+    if (!this.statsData) return null;
+    if (!this.isFilterActive) return this.statsData.productionGlobale;
+    const lignes = this.statsParLigneActives;
+    if (!lignes.length) return this.statsData.productionGlobale;
+    const totalQteSource = lignes.reduce((s, l) => s + l.production.totalQteSource, 0);
+    const totalDecProduction = lignes.reduce((s, l) => s + l.production.totalDecProduction, 0);
+    const pcsTotal = totalQteSource > 0 ? (totalDecProduction / totalQteSource) * 100 : 0;
+    return { totalQteSource, totalDecProduction, pcsTotal, oee: null };
+  }
+
+  private get resume7MFiltre() {
+    if (!this.statsData) return null;
+    if (!this.isFilterActive) return this.statsData.resume7M;
+    const lignes = this.statsParLigneActives;
+    if (!lignes.length) return this.statsData.resume7M;
+    const keys = ['matierePremiere','absence','rendement','methode','maintenance','qualite','environnement'] as const;
+    const totaux: any = {};
+    keys.forEach(k => { totaux[k] = lignes.reduce((s, l) => s + (l.causes7M[k]?.quantite ?? 0), 0); });
+    const totalQteSource = lignes.reduce((s, l) => s + l.production.totalQteSource, 0);
+    const pourcentages: any = {};
+    keys.forEach(k => { pourcentages[k] = totalQteSource > 0 ? (totaux[k] / totalQteSource) * 100 : 0; });
+    return { totaux, pourcentages, _qteSource: totalQteSource };
+  }
+
+  getPourcentageMFiltre(mKey: string): number {
+    return (this.resume7MFiltre?.pourcentages as any)?.[mKey] ?? 0;
+  }
+
+  getValeurMFiltre(mKey: string): number {
+    return (this.resume7MFiltre?.totaux as any)?.[mKey] ?? 0;
+  }
+
+  getValeurTotalFiltre(mKey: string): string {
+    if (!this.statsData) return '0 / 0';
+    const valeur = this.getValeurMFiltre(mKey);
+    const qteSource = this.isFilterActive
+      ? this.statsParLigneActives.reduce((s, l) => s + l.production.totalQteSource, 0)
+      : this.statsData.productionGlobale.totalQteSource;
+    return `${valeur.toLocaleString()} / ${qteSource.toLocaleString()}`;
+  }
+
+  // ── Modale ligne ──────────────────────────────────────────────
+
+  onBarClick(event: any): void {
+    if (!this.chart || !this.statsData) return;
+    const points = this.chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+    if (!points || points.length === 0) return;
+    const lignesAvecProduction = this.statsData.statsParLigne
+      .filter(stat => stat.production.totalQteSource > 0 || stat.production.totalDecProduction > 0)
+      .sort((a, b) => b.production.pcs - a.production.pcs);
+    const ligne = lignesAvecProduction[points[0].index];
+    if (ligne) this.openLigneModal(ligne);
+  }
+
+  openLigneModal(ligne: any): void {
+    this.ligneModalTitle = `Détails de la ligne ${this.formaterNomLigne(ligne.ligne)}`;
+    this.ligneModalData = ligne;
+
+    if (this.statsData?.detailsNonConformites && Array.isArray(this.statsData.detailsNonConformites)) {
+      this.ligneModalReferences = this.statsData.detailsNonConformites
+        .filter(detail => detail.ligne === ligne.ligne)
+        .map(detail => ({
+          date: detail.date,
+          reference: detail.reference,
+          of: detail.of,
+          qtePlanifiee: detail.qtyPlanifiee,
+          qteModifiee: detail.qtyProduite,
+          decProduction: detail.qtyProduite,
+          pcsProd: detail.qtyPlanifiee > 0 ? (detail.qtyProduite / detail.qtyPlanifiee) * 100 : 0,
+          refMP: detail.refMP,
+          refQualite: detail.refQualite,
+          matriculesAbsence: detail.matriculesAbsence,
+          matriculesRendement: detail.matriculesRendement,
+          phasesMaintenance: detail.phasesMaintenance,
+          commentaireTexte: detail.commentaireTexte,
+          causes7M: {
+            matierePremiere: detail.m1_matierePremiere || 0,
+            absence: detail.m2_absence || 0,
+            rendement: detail.m3_rendement || 0,
+            methode: detail.m4_methode || 0,
+            maintenance: detail.m5_maintenance || 0,
+            qualite: detail.m6_qualite || 0,
+            environnement: detail.m7_environnement || 0,
+            total: detail.total7M || 0
+          }
+        }));
+    } else if (ligne.detailsReferences && Array.isArray(ligne.detailsReferences)) {
+      this.ligneModalReferences = ligne.detailsReferences;
+    } else {
+      this.ligneModalReferences = [];
+    }
+    this.showLigneModal = true;
+  }
+
+  closeLigneModal(): void {
+    this.showLigneModal = false;
+    this.ligneModalData = null;
     this.ligneModalReferences = [];
-    console.log('⚠️ Pas de détails trouvés');
   }
-  
-  this.showLigneModal = true;
-}
-/**
- * Fermer la modale de ligne
- */
-closeLigneModal(): void {
-  this.showLigneModal = false;
-  this.ligneModalData = null;
-  this.ligneModalReferences = [];
-}
 
-// Ajoutez ces méthodes
-getPourcentageMForLigne(mKey: string): number {
-  if (!this.ligneModalData) return 0;
-  
-  // Utiliser un switch case pour gérer chaque clé
-  switch(mKey) {
-    case 'matierePremiere':
-      return this.ligneModalData.causes7M.matierePremiere?.pourcentage || 0;
-    case 'absence':
-      return this.ligneModalData.causes7M.absence?.pourcentage || 0;
-    case 'rendement':
-      return this.ligneModalData.causes7M.rendement?.pourcentage || 0;
-    case 'methode':
-      return this.ligneModalData.causes7M.methode?.pourcentage || 0;
-    case 'maintenance':
-      return this.ligneModalData.causes7M.maintenance?.pourcentage || 0;
-    case 'qualite':
-      return this.ligneModalData.causes7M.qualite?.pourcentage || 0;
-    case 'environnement':
-      return this.ligneModalData.causes7M.environnement?.pourcentage || 0;
-    default:
-      return 0;
+  getPourcentageMForLigne(mKey: string): number {
+    if (!this.ligneModalData) return 0;
+    return (this.ligneModalData.causes7M as any)[mKey]?.pourcentage || 0;
   }
-}
 
-getQuantiteMForLigne(mKey: string): number {
-  if (!this.ligneModalData) return 0;
-  
-  // Utiliser un switch case pour gérer chaque clé
-  switch(mKey) {
-    case 'matierePremiere':
-      return this.ligneModalData.causes7M.matierePremiere?.quantite || 0;
-    case 'absence':
-      return this.ligneModalData.causes7M.absence?.quantite || 0;
-    case 'rendement':
-      return this.ligneModalData.causes7M.rendement?.quantite || 0;
-    case 'methode':
-      return this.ligneModalData.causes7M.methode?.quantite || 0;
-    case 'maintenance':
-      return this.ligneModalData.causes7M.maintenance?.quantite || 0;
-    case 'qualite':
-      return this.ligneModalData.causes7M.qualite?.quantite || 0;
-    case 'environnement':
-      return this.ligneModalData.causes7M.environnement?.quantite || 0;
-    default:
-      return 0;
+  getQuantiteMForLigne(mKey: string): number {
+    if (!this.ligneModalData) return 0;
+    return (this.ligneModalData.causes7M as any)[mKey]?.quantite || 0;
   }
-}
 
-getReferencesMForLigne(mKey: string): string[] {
-  if (!this.ligneModalData) return [];
-  
-  if (mKey === 'matierePremiere') {
-    return this.ligneModalData.causes7M.matierePremiere?.references || [];
-  }
-  
-  if (mKey === 'qualite') {
-    return this.ligneModalData.causes7M.qualite?.references || [];
-  }
-  
-  return [];
-}
-
-/**
- * Basculer l'expansion d'une cause 7M
- */
-toggleCause7M(mKey: string): void {
-  if (this.expandedCause7M === mKey) {
-    this.expandedCause7M = null; // Fermer si déjà ouvert
-  } else {
-    this.expandedCause7M = mKey; // Ouvrir la nouvelle cause
-  }
-}
-
-/**
- * Vérifier si une cause 7M est dépliée
- */
-isCause7MExpanded(mKey: string): boolean {
-  return this.expandedCause7M === mKey;
-}
-
-/**
- * Obtenir les références filtrées par une cause 7M spécifique
- */
-getReferencesForCause7M(mKey: string): any[] {
-  if (!this.ligneModalReferences || this.ligneModalReferences.length === 0) {
+  getReferencesMForLigne(mKey: string): string[] {
+    if (!this.ligneModalData) return [];
+    if (mKey === 'matierePremiere') return this.ligneModalData.causes7M.matierePremiere?.references || [];
+    if (mKey === 'qualite') return this.ligneModalData.causes7M.qualite?.references || [];
     return [];
   }
 
-  // Mapper la clé mKey vers le nom de propriété dans causes7M
-  const causeMapping: { [key: string]: string } = {
-    'matierePremiere': 'matierePremiere',
-    'absence': 'absence',
-    'rendement': 'rendement',
-    'methode': 'methode',
-    'maintenance': 'maintenance',
-    'qualite': 'qualite',
-    'environnement': 'environnement'
-  };
-
-  const causeName = causeMapping[mKey];
-  if (!causeName) return [];
-
-  // Filtrer les références qui ont cette cause > 0
-  return this.ligneModalReferences.filter(ref => {
-    const causes7M = ref.causes7M;
-    if (!causes7M) return false;
-    
-    // Vérifier si la cause spécifique a une valeur > 0
-    const causeValue = causes7M[causeName];
-    return causeValue && causeValue > 0;
-  });
-}
-
-/**
- * Vérifier si une cause 7M a des références
- */
-hasCause7MReferences(mKey: string): boolean {
-  const refs = this.getReferencesForCause7M(mKey);
-  return refs && refs.length > 0;
-}
-
-// Méthode pour obtenir la référence MP d'une référence
-getRefMPForReference(ref: any): string {
-  // Chercher dans les données originales detailsNonConformites
-  if (this.statsData?.detailsNonConformites) {
-    const originalData = this.statsData.detailsNonConformites.find(
-      d => d.reference === ref.reference && 
-           d.of === ref.of && 
-           d.date === ref.date
-    );
-    return originalData?.refMP || '-';
+  toggleCause7M(mKey: string): void {
+    this.expandedCause7M = this.expandedCause7M === mKey ? null : mKey;
   }
-  
-  // Si non trouvé, vérifier dans ref lui-même
-  return ref.refMP || '-';
-}
 
-// Méthode pour obtenir la référence Qualité d'une référence
-getRefQualiteForReference(ref: any): string {
-  // Chercher dans les données originales detailsNonConformites
-  if (this.statsData?.detailsNonConformites) {
-    const originalData = this.statsData.detailsNonConformites.find(
-      d => d.reference === ref.reference && 
-           d.of === ref.of && 
-           d.date === ref.date
-    );
-    return originalData?.refQualite || '-';
+  isCause7MExpanded(mKey: string): boolean {
+    return this.expandedCause7M === mKey;
   }
-  
-  // Si non trouvé, vérifier dans ref lui-même
-  return ref.refQualite || '-';
-}
 
+  getReferencesForCause7M(mKey: string): any[] {
+    if (!this.ligneModalReferences?.length) return [];
+    return this.ligneModalReferences.filter(ref => {
+      const causeValue = ref.causes7M?.[mKey];
+      return causeValue && causeValue > 0;
+    });
+  }
+
+  hasCause7MReferences(mKey: string): boolean {
+    return this.getReferencesForCause7M(mKey).length > 0;
+  }
+
+  getRefMPForReference(ref: any): string {
+    if (this.statsData?.detailsNonConformites) {
+      const orig = this.statsData.detailsNonConformites.find(
+        d => d.reference === ref.reference && d.of === ref.of && d.date === ref.date
+      );
+      return orig?.refMP || '-';
+    }
+    return ref.refMP || '-';
+  }
+
+  getRefQualiteForReference(ref: any): string {
+    if (this.statsData?.detailsNonConformites) {
+      const orig = this.statsData.detailsNonConformites.find(
+        d => d.reference === ref.reference && d.of === ref.of && d.date === ref.date
+      );
+      return orig?.refQualite || '-';
+    }
+    return ref.refQualite || '-';
+  }
+
+  getPhaseMaintenanceForReference(ref: any): string {
+    if (this.statsData?.detailsNonConformites) {
+      const orig = this.statsData.detailsNonConformites.find(
+        d => d.reference === ref.reference && d.of === ref.of && d.date === ref.date
+      );
+      return orig?.phasesMaintenance || '-';
+    }
+    return ref.phasesMaintenance || '-';
+  }
+
+  getMatriculesAbsenceForReference(ref: any): string {
+    if (this.statsData?.detailsNonConformites) {
+      const orig = this.statsData.detailsNonConformites.find(
+        d => d.reference === ref.reference && d.of === ref.of && d.date === ref.date
+      );
+      return orig?.matriculesAbsence || '-';
+    }
+    return ref.matriculesAbsence || '-';
+  }
+
+  getMatriculesRendementForReference(ref: any): string {
+    if (this.statsData?.detailsNonConformites) {
+      const orig = this.statsData.detailsNonConformites.find(
+        d => d.reference === ref.reference && d.of === ref.of && d.date === ref.date
+      );
+      return orig?.matriculesRendement || '-';
+    }
+    return ref.matriculesRendement || '-';
+  }
+
+  getCommentaireQualiteForReference(ref: any): string {
+    if (this.statsData?.detailsNonConformites) {
+      const orig = this.statsData.detailsNonConformites.find(
+        d => d.reference === ref.reference && d.of === ref.of && d.date === ref.date
+      );
+      return orig?.commentaireTexte || '-';
+    }
+    return ref.commentaireTexte || '-';
+  }
+
+  // ── Modale Personnel ──────────────────────────────────────────
+  // Copié exactement de statistiques1.component.ts :
+  // getStatutsByDate → response.statistiques.repartitionStatuts + response.statistiques.ouvriers
+
+  openPersonnelModal(statutCode: string): void {
+    const labelMap: Record<string, string> = {
+      'P':  '✅ Présents',
+      'AB': '🚫 Absents',
+      'C':  '🏖️ En Congé',
+      'S':  '✔️ Sélections'
+    };
+
+    this.personnelModalStatut = statutCode;
+    this.personnelModalTitle  = `Personnel — ${labelMap[statutCode] || statutCode}`;
+    this.personnelModalList   = [];
+    this.showPersonnelModal   = true;
+    this.isLoadingPersonnel   = true;
+
+    // Même endpoint que statistiques1 : GET /statut/par-date?date=YYYY-MM-DD
+    // On utilise la dateFin de la période sélectionnée comme référence
+    this.http.get<any>(this.statutApiUrl, {
+      params: { date: this.dateFin },
+      headers: this.getAuthHeaders()
+    }).subscribe({
+      next: (data: any) => {
+        // Structure identique à statistiques1 :
+        // data.statistiques.repartitionStatuts → compteurs { P, AB, C, S }
+        // data.statistiques.ouvriers           → liste complète des ouvriers
+        const tousOuvriers: OuvrierPersonnel[] =
+          data?.statistiques?.ouvriers ||
+          data?.ouvriers               ||
+          [];
+
+        // Filtrer par le statut cliqué — même logique que statistiques1
+        this.personnelModalList = tousOuvriers.filter(
+          (o: OuvrierPersonnel) => o.statut === statutCode
+        );
+        this.isLoadingPersonnel = false;
+      },
+      error: (err: any) => {
+        console.error('Erreur chargement personnel:', err);
+        this.isLoadingPersonnel = false;
+      }
+    });
+  }
+
+  closePersonnelModal(): void {
+    this.showPersonnelModal   = false;
+    this.personnelModalList   = [];
+    this.personnelModalStatut = '';
+  }
+
+  getPersonnelModalColor(statutCode: string): string {
+    return this.statutOptions.find(s => s.code === statutCode)?.couleur || '#6b7280';
+  }
+
+  getPersonnelModalIcon(statutCode: string): string {
+    return this.statutOptions.find(s => s.code === statutCode)?.icon || '';
+  }
+
+  getLibelleStatutPersonnel(code: string | null | undefined): string {
+    if (!code) return 'Non défini';
+    return this.statutOptions.find(s => s.code === code)?.libelle || 'Non défini';
+  }
 }

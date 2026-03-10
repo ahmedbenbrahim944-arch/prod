@@ -187,20 +187,20 @@ export class TrackingDashboardComponent implements OnInit {
   }
 
   getStatusIcon(statusCode: number): string {
-    if (statusCode >= 200 && statusCode < 300) return '✅';
-    if (statusCode >= 400 && statusCode < 500) return '⚠️';
-    if (statusCode >= 500) return '❌';
-    return 'ℹ️';
+    if (statusCode >= 200 && statusCode < 300) return '';
+    if (statusCode >= 400 && statusCode < 500) return '';
+    if (statusCode >= 500) return '';
+    return 'ℹ';
   }
 
   getActionIcon(actionType: string): string {
     const icons: { [key: string]: string } = {
-      'PAGE_VIEW': '👁️',
-      'API_CALL': '🌐',
-      'ERROR': '🚨',
-      'LOGIN': '🔑',
-      'LOGOUT': '🚪'
+      'PAGE_VIEW': '',
+      'API_CALL': '',
+      'ERROR': '',
+      'LOGIN': '',
+      'LOGOUT': ''
     };
-    return icons[actionType] || '📌';
+    return icons[actionType] || '';
   }
 }

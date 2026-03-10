@@ -394,8 +394,10 @@ export class SemaineService {
       };
     }
 
-    // FILTRER les planifications à afficher (qtePlanifiee > 0)
-    const planificationsAffichees = toutesLesPlanifications.filter(plan => plan.qtePlanifiee > 0);
+    // FILTRER les planifications à afficher (qtePlanifiee > 0 OU qteModifiee > 0)
+    const planificationsAffichees = toutesLesPlanifications.filter(
+      plan => plan.qtePlanifiee > 0 || plan.qteModifiee > 0
+    );
 
     // CALCULER LES TOTAUX (sur TOUTES les planifications)
     let totalQtePlanifiee = 0;
@@ -441,8 +443,8 @@ export class SemaineService {
         detailsParJour[plan.jour].decProduction += plan.decProduction;
         detailsParJour[plan.jour].deltaProd += plan.deltaProd;
         
-        // Ajouter la référence au jour SEULEMENT SI qtePlanifiee > 0
-        if (plan.qtePlanifiee > 0) {
+        // Ajouter la référence au jour SEULEMENT SI qtePlanifiee > 0 OU qteModifiee > 0
+        if (plan.qtePlanifiee > 0 || plan.qteModifiee > 0) {
           detailsParJour[plan.jour].references.push({
             reference: plan.reference,
             of: plan.of,
@@ -528,8 +530,10 @@ export class SemaineService {
       order: { ligne: 'ASC', jour: 'ASC' }
     });
 
-    // Filtrer celles avec qtePlanifiee > 0
-    const planificationsAffichees = toutesLesPlanifications.filter(plan => plan.qtePlanifiee > 0);
+    // Filtrer celles avec qtePlanifiee > 0 OU qteModifiee > 0
+    const planificationsAffichees = toutesLesPlanifications.filter(
+      plan => plan.qtePlanifiee > 0 || plan.qteModifiee > 0
+    );
 
     return {
       message: `Planifications de la semaine "${semaine}"`,

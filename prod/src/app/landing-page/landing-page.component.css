@@ -1,0 +1,331 @@
+/* ============================================================
+   LANDING PAGE — Seraf Tunisie — TV Display (1920×1080)
+   Fond sombre + texte clair — RTL arabe — Tout sur une page
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');
+
+/* ---------- CSS Variables ---------- */
+:host {
+  --bg-dark:      #080e1a;
+  --bg-card:      #0d1629;
+  --border-glow:  #1e3a6e;
+  --accent-blue:  #1e50a0;
+  --accent-gold:  #c8a84b;
+  --text-primary: #e8edf8;
+  --text-muted:   #8a9bbf;
+  --text-light:   #ffffff;
+  --gold-light:   #e8c96a;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- TV Wrapper ---------- */
+.tv-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-dark);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(30, 80, 160, 0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(200, 168, 75, 0.08) 0%, transparent 60%);
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 2.4vh 3.5vw;
+}
+
+/* ---------- Background decorative orbs ---------- */
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-orb--1 {
+  width: 40vw;
+  height: 40vw;
+  top: -15vw;
+  right: -10vw;
+  background: radial-gradient(circle, rgba(30, 80, 160, 0.22) 0%, transparent 70%);
+  animation: floatOrb1 12s ease-in-out infinite alternate;
+}
+
+.bg-orb--2 {
+  width: 30vw;
+  height: 30vw;
+  bottom: -10vw;
+  left: -8vw;
+  background: radial-gradient(circle, rgba(200, 168, 75, 0.10) 0%, transparent 70%);
+  animation: floatOrb2 16s ease-in-out infinite alternate;
+}
+
+@keyframes floatOrb1 {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(2vw, 2vh); }
+}
+
+@keyframes floatOrb2 {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-1.5vw, -1.5vh); }
+}
+
+/* Subtle grid overlay */
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(30, 80, 160, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 80, 160, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+
+/* ---------- Header ---------- */
+.header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 2vw;
+  margin-bottom: 2.2vh;
+  animation: fadeSlideDown 0.8s ease both;
+}
+
+.logo-container {
+  /* ✅ Espace réservé pour le logo — taille adaptée pour la TV */
+  width: 220px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+.logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: brightness(1.1);
+}
+
+.header-line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(
+    to left,
+    transparent 0%,
+    var(--accent-gold) 30%,
+    var(--accent-blue) 70%,
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+/* ---------- Main content ---------- */
+.content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ---------- Subject badge ---------- */
+.subject-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.2vw;
+  background: linear-gradient(135deg, rgba(30, 80, 160, 0.35), rgba(30, 80, 160, 0.12));
+  border: 1px solid rgba(30, 80, 160, 0.5);
+  border-radius: 8px;
+  padding: 0.7vh 2vw;
+  align-self: flex-end;
+  animation: fadeSlideDown 0.9s 0.1s ease both;
+}
+
+.subject-label {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.75rem, 1.1vw, 1rem);
+  font-weight: 700;
+  color: var(--accent-gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.subject-text {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ---------- Greeting ---------- */
+.greeting {
+  font-family: 'Amiri', serif;
+  font-size: clamp(1.1rem, 1.8vw, 1.55rem);
+  font-weight: 700;
+  color: var(--gold-light);
+  text-align: right;
+  animation: fadeSlideDown 0.9s 0.2s ease both;
+}
+
+/* ---------- Paragraphs ---------- */
+.paragraph {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.82rem, 1.22vw, 1.08rem);
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.75;
+  text-align: justify;
+  animation: fadeSlideDown 0.9s 0.3s ease both;
+}
+
+.paragraph.closing {
+  color: var(--text-muted);
+  font-size: clamp(0.78rem, 1.12vw, 1rem);
+}
+
+/* ---------- Section title ---------- */
+.section-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.95rem, 1.45vw, 1.25rem);
+  font-weight: 700;
+  color: var(--accent-gold);
+  text-align: right;
+  padding-right: 1vw;
+  border-right: 4px solid var(--accent-gold);
+  animation: fadeSlideDown 0.9s 0.35s ease both;
+}
+
+/* ---------- Points list ---------- */
+.points-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9vh;
+  animation: fadeSlideDown 0.9s 0.4s ease both;
+}
+
+.point-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.2vw;
+  background: rgba(13, 22, 41, 0.6);
+  border: 1px solid rgba(30, 80, 160, 0.25);
+  border-radius: 8px;
+  padding: 0.9vh 1.5vw;
+  transition: border-color 0.3s;
+}
+
+.point-item:hover {
+  border-color: rgba(200, 168, 75, 0.4);
+}
+
+.point-icon {
+  color: var(--accent-gold);
+  font-size: clamp(0.8rem, 1.1vw, 1rem);
+  flex-shrink: 0;
+  margin-top: 0.2em;
+}
+
+.point-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.point-text {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.8rem, 1.15vw, 1rem);
+  font-weight: 400;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* ---------- Unity banner ---------- */
+.unity-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2vw;
+  background: linear-gradient(135deg, rgba(200, 168, 75, 0.15), rgba(30, 80, 160, 0.15));
+  border: 1px solid rgba(200, 168, 75, 0.35);
+  border-radius: 10px;
+  padding: 1.2vh 2vw;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+.unity-heart {
+  font-size: clamp(1rem, 1.6vw, 1.4rem);
+  color: #e05555;
+  filter: drop-shadow(0 0 6px rgba(224, 85, 85, 0.6));
+}
+
+.unity-text {
+  font-family: 'Amiri', serif;
+  font-size: clamp(1rem, 1.7vw, 1.45rem);
+  font-weight: 700;
+  color: var(--gold-light);
+  letter-spacing: 0.04em;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(200, 168, 75, 0); }
+  50%       { box-shadow: 0 0 18px rgba(200, 168, 75, 0.18); }
+}
+
+/* ---------- Signature ---------- */
+.signature {
+  margin-top: auto;
+  padding-top: 1.2vh;
+  border-top: 1px solid rgba(30, 80, 160, 0.3);
+  text-align: left;
+  animation: fadeSlideDown 0.9s 0.6s ease both;
+}
+
+.sign-regards {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.78rem, 1.1vw, 0.95rem);
+  color: var(--text-muted);
+  margin-bottom: 0.3vh;
+}
+
+.sign-name {
+  font-family: 'Amiri', serif;
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.sign-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(0.78rem, 1.05vw, 0.92rem);
+  color: var(--accent-gold);
+  font-weight: 600;
+}
+
+/* ---------- Fade-in animation ---------- */
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

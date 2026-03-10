@@ -69,21 +69,36 @@
 
 /* Colonnes compactes */
 .week-planning-table td:nth-child(1) {
-  min-width: 10px !important;
-  max-width: 20px !important;
+  min-width: 90px !important;
+  max-width: 105px !important;
+  width: 100px !important;
+  padding: 3px 4px !important;
+  font-size: 0.82rem !important;
+}
+
+.week-planning-table td:nth-child(2) {
+  min-width: 45px !important;
+  max-width: 55px !important;
+  width: 50px !important;
   padding: 0px 0px !important;
   font-size: 1rem !important;
 }
 
-.week-planning-table td:nth-child(2),
-.week-planning-table td:nth-child(3),
+.week-planning-table td:nth-child(3) {
+  min-width: 60px !important;
+  max-width: 80px !important;
+  width: 70px !important;
+  padding: 0px 2px !important;
+  font-size: 1rem !important;
+}
+
 .week-planning-table td:nth-child(4),
 .week-planning-table td:nth-child(5),
 .week-planning-table td:nth-child(6),
 .week-planning-table td:nth-child(7) {
-  min-width: 10px !important;
-  max-width: 20px !important;
-  padding: 0px 0px !important;
+  min-width: 90px !important;
+  max-width: 130px !important;
+  padding: 0px 2px !important;
   font-size: 1rem !important;
 }
 
@@ -112,25 +127,20 @@
 .week-planning-table .sticky-cell {
   background: #fcf8f8 !important;
   font-weight: 600;
-  font-size: 0.85rem !important;
-  /* Réduit la taille de la police */
+  font-size: 0.82rem !important;
   color: #091fe8 !important;
   position: sticky;
   left: 0;
   z-index: 10;
   border-right: 1px solid #e2e8f0 !important;
   padding: 3px 4px !important;
-  /* Réduit le padding */
-  max-width: 200px !important;
-  /* Augmente la largeur max */
-  min-width: 100px !important;
-  /* Définit une largeur minimale */
+  max-width: 105px !important;
+  min-width: 90px !important;
+  width: 100px !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
-  /* Ajuste l'interligne */
-
 }
 
 /* Style pour les inputs */
@@ -909,24 +919,19 @@
 
 /* Pour TOUTES les cellules de référence dans le tableau principal */
 .week-planning-table tbody td.sticky-cell {
-  font-size: 1rem !important;
+  font-size: 0.82rem !important;
   font-weight: 700 !important;
   color: #091fe8 !important;
   background: #fcf8f8 !important;
-  padding: 4px 8px !important;
+  padding: 4px 6px !important;
   line-height: 1.2 !important;
-  max-width: 140px !important;
-  min-width: 120px !important;
+  max-width: 105px !important;
+  min-width: 90px !important;
+  width: 100px !important;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   border-right: 2px solid #e2e8f0 !important;
-}
-
-/* Pour les références dans le tableau des détails aussi */
-.week-planning-table tbody td.sticky-cell {
-  font-size: 1rem !important;
-  padding: 8px 10px !important;
 }
 
 /* Pour s'assurer que le texte est bien visible */
@@ -937,20 +942,19 @@
 }
 
 .week-planning-table th.sticky-cell {
-  font-size: 0.85rem !important;
-  /* Augmenter la taille de police */
+  font-size: 0.82rem !important;
   font-weight: 700 !important;
-  /* Rendre plus gras */
-  padding: 10px 8px !important;
-  /* Augmenter le padding */
+  padding: 8px 6px !important;
   min-height: 50px !important;
-  /* Augmenter la hauteur */
   text-align: center !important;
   vertical-align: middle !important;
   background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
   color: white !important;
   border-right: 2px solid #ffffff !important;
   border-bottom: 2px solid #ffffff !important;
+  max-width: 105px !important;
+  min-width: 90px !important;
+  width: 100px !important;
 }
 
 /* ==================== GRILLE 4 COLONNES POUR LES CARTES ==================== */

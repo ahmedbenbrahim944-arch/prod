@@ -283,15 +283,13 @@ export class Stats1Component implements OnInit {
 
       if (response) {
         this.statsData = response;
-        console.log('✅ Données reçues:', response);
-        console.log('✅ Resume 7M:', response.resume7M);
-        console.log('✅ Détails non-conformités:', response.detailsNonConformites);
+       
         setTimeout(() => {
           this.creerGraphique();
         }, 100);
       }
     } catch (error: any) {
-      console.error('❌ Erreur lors du chargement des statistiques:', error);
+      console.error(' Erreur lors du chargement des statistiques:', error);
       this.errorMessage = error?.error?.message || 'Erreur lors du chargement des données';
     } finally {
       this.isLoading = false;
@@ -300,7 +298,7 @@ export class Stats1Component implements OnInit {
 
  private creerGraphique(): void {
   if (!this.chartCanvas || !this.statsData) {
-    console.warn('⚠️ Canvas ou données manquants');
+    console.warn(' Canvas ou données manquants');
     return;
   }
 
@@ -310,7 +308,7 @@ export class Stats1Component implements OnInit {
 
   const ctx = this.chartCanvas.nativeElement.getContext('2d');
   if (!ctx) {
-    console.error('❌ Impossible d\'obtenir le contexte du canvas');
+    console.error(' Impossible d\'obtenir le contexte du canvas');
     return;
   }
 
@@ -438,7 +436,7 @@ export class Stats1Component implements OnInit {
     }
   });
 
-  console.log('✅ Graphique horizontal créé avec succès');
+  console.log(' Graphique horizontal créé avec succès');
 }
 
   getColorForM(mKey: string): string {
@@ -447,7 +445,7 @@ export class Stats1Component implements OnInit {
 
   getPourcentageM(mKey: string): number {
     if (!this.statsData || !this.statsData.resume7M) {
-      console.warn('⚠️ Pas de données 7M disponibles');
+      console.warn(' Pas de données 7M disponibles');
       return 0;
     }
     const pourcentage = this.statsData.resume7M.pourcentages[mKey as keyof typeof this.statsData.resume7M.pourcentages];
@@ -456,7 +454,7 @@ export class Stats1Component implements OnInit {
 
   getValeurM(mKey: string): number {
     if (!this.statsData || !this.statsData.resume7M) {
-      console.warn('⚠️ Pas de données 7M disponibles');
+      console.warn(' Pas de données 7M disponibles');
       return 0;
     }
     const valeur = this.statsData.resume7M.totaux[mKey as keyof typeof this.statsData.resume7M.totaux];
@@ -481,7 +479,7 @@ export class Stats1Component implements OnInit {
    */
  toggleMDetails(mKey: string): void {
   if (!this.statsData || !this.statsData.detailsNonConformites) {
-    console.warn('⚠️ Pas de détails de non-conformités disponibles');
+    console.warn(' Pas de détails de non-conformités disponibles');
     return;
   }
 
@@ -510,9 +508,9 @@ export class Stats1Component implements OnInit {
   this.detailsModalCause = mInfo.label;
   this.showDetailsModal = true;
 
-  console.log('📋 Modale ouverte pour', mInfo.label);
-  console.log('📅 Première date:', detailsFiltres[0]?.date);
-  console.log('📅 Dernière date:', detailsFiltres[detailsFiltres.length - 1]?.date);
+  console.log(' Modale ouverte pour', mInfo.label);
+  console.log(' Première date:', detailsFiltres[0]?.date);
+  console.log(' Dernière date:', detailsFiltres[detailsFiltres.length - 1]?.date);
 }
 
 getPeriodeDisplay(): string {
@@ -677,9 +675,9 @@ openLigneModal(ligne: any): void {
   this.ligneModalTitle = `Détails de la ligne ${this.formaterNomLigne(ligne.ligne)}`;
   this.ligneModalData = ligne;
   
-  console.log('🔍 Données complètes de la ligne:', ligne);
-  console.log('🔍 Ligne recherchée:', ligne.ligne);
-  console.log('🔍 statsData.detailsNonConformites:', this.statsData?.detailsNonConformites);
+  console.log(' Données complètes de la ligne:', ligne);
+  console.log(' Ligne recherchée:', ligne.ligne);
+  console.log(' statsData.detailsNonConformites:', this.statsData?.detailsNonConformites);
   
   // Utiliser les detailsNonConformites filtrés par ligne
   if (this.statsData?.detailsNonConformites && Array.isArray(this.statsData.detailsNonConformites)) {
@@ -706,15 +704,15 @@ openLigneModal(ligne: any): void {
         }
       }));
     
-    console.log('✅ Références filtrées pour la ligne:', this.ligneModalReferences.length);
-    console.log('✅ Première référence:', this.ligneModalReferences[0]);
+    console.log(' Références filtrées pour la ligne:', this.ligneModalReferences.length);
+    console.log(' Première référence:', this.ligneModalReferences[0]);
   } else if (ligne.detailsReferences && Array.isArray(ligne.detailsReferences)) {
     // Fallback sur detailsReferences si disponible
     this.ligneModalReferences = ligne.detailsReferences;
-    console.log('✅ Utilisation de detailsReferences:', this.ligneModalReferences.length);
+    console.log(' Utilisation de detailsReferences:', this.ligneModalReferences.length);
   } else {
     this.ligneModalReferences = [];
-    console.log('⚠️ Pas de détails trouvés');
+    console.log(' Pas de détails trouvés');
   }
   
   this.showLigneModal = true;
@@ -890,11 +888,60 @@ ngOnInit(): void {
   // 1. Initialiser avec la date d'hier
   this.initialiserDatesHier();
   
-  // 2. Charger immédiatement les stats (même si incomplètes)
+  // 2. Charger immédiatement les stats
   this.chargerStatsPeriode();
   
-  // 3. Programmer le rechargement automatique à 10h00
-  this.programmerRechargement10h();
+  // 3. Programmer le rechargement automatique TOUTES LES HEURES
+  this.programmerRechargementHoraire();
+}
+private programmerRechargementHoraire(): void {
+  const maintenant = new Date();
+  
+  // Calculer le prochain rechargement (prochaine heure pile)
+  const prochainRechargement = new Date();
+  prochainRechargement.setHours(maintenant.getHours() + 1, 0, 0, 0); // Prochaine heure pile
+  
+  const tempsAttente = prochainRechargement.getTime() - maintenant.getTime();
+  
+  console.log(`⏰ Prochain rechargement automatique à ${prochainRechargement.getHours()}:00 (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
+  
+  // Programmer le premier rechargement
+  setTimeout(() => {
+    this.executerRechargementHoraire();
+    
+    // Puis re-programmer toutes les heures
+    setInterval(() => {
+      this.executerRechargementHoraire();
+    }, 60 * 60 * 1000); // Toutes les 60 minutes
+    
+  }, tempsAttente);
+}
+
+private executerRechargementHoraire(): void {
+  const maintenant = new Date();
+  const heure = maintenant.getHours();
+  
+  console.log(`🕙 ${heure}:00 - DÉCLENCHEMENT DU RECHARGEMENT HORAIRE`);
+  
+  // Vérifier si aujourd'hui est dimanche
+  if (maintenant.getDay() === 0) {
+    console.log('⚠️ Aujourd\'hui est dimanche, pas de rechargement automatique');
+    return;
+  }
+  
+  // 1. Retour à l'écran filtre
+  this.statsData = null;
+  
+  // 2. Mise à jour des dates avec la logique anti-dimanche
+  this.initialiserDatesHier();
+  
+  // 3. Petit délai pour que l'UI se mette à jour
+  setTimeout(() => {
+    // 4. Rechargement automatique des statistiques
+    this.chargerStatsPeriode();
+    
+    console.log(`📊 Statistiques rechargées automatiquement à ${heure}:00`);
+  }, 100);
 }
 
 /**
@@ -907,7 +954,7 @@ private initialiserDatesHier(): void {
   
   // Vérifier si hier est dimanche (0 = dimanche en JavaScript)
   while (hier.getDay() === 0) { // 0 = Dimanche
-    console.log(`📅 ${this.formatDate(hier)} est un dimanche (pas de données), on prend la veille`);
+    console.log(`${this.formatDate(hier)} est un dimanche (pas de données), on prend la veille`);
     hier.setDate(hier.getDate() - 1);
   }
   
@@ -919,7 +966,7 @@ private initialiserDatesHier(): void {
   
   // Message informatif pour le debug
   const jourSemaine = this.getNomJourSemaine(hier);
-  console.log(`📅 Dates initialisées: ${this.dateDebut} (${jourSemaine})`);
+  console.log(` Dates initialisées: ${this.dateDebut} (${jourSemaine})`);
 }
 
 /**
@@ -940,13 +987,13 @@ private programmerRechargement10h(): void {
   // Vérifier que le jour de rechargement n'est pas un dimanche
   // Si le prochain rechargement tombe un dimanche, on passe au lundi
   if (prochain10h.getDay() === 0) { // 0 = Dimanche
-    console.log(`📅 ${this.formatDate(prochain10h)} est un dimanche, rechargement reporté au lundi`);
+    console.log(` ${this.formatDate(prochain10h)} est un dimanche, rechargement reporté au lundi`);
     prochain10h.setDate(prochain10h.getDate() + 1);
   }
   
   const tempsAttente = prochain10h.getTime() - maintenant.getTime();
   
-  console.log(`⏰ Prochain rechargement automatique à 10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
+  console.log(` Prochain rechargement automatique à 10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
   
   // Programmer le rechargement
   setTimeout(() => {
@@ -967,12 +1014,12 @@ private programmerRechargement10h(): void {
  * 3. Recharge automatiquement les statistiques
  */
 private executerRechargement10h(): void {
-  console.log('🕙 10h00 - DÉCLENCHEMENT DU RECHARGEMENT AUTOMATIQUE');
+  console.log(' 10h00 - DÉCLENCHEMENT DU RECHARGEMENT AUTOMATIQUE');
   
   // Vérifier si aujourd'hui est dimanche (ne devrait pas arriver avec notre logique)
   const aujourdhui = new Date();
   if (aujourdhui.getDay() === 0) {
-    console.log('⚠️ Aujourd\'hui est dimanche, pas de rechargement automatique');
+    console.log(' Aujourd\'hui est dimanche, pas de rechargement automatique');
     return;
   }
   
@@ -987,7 +1034,7 @@ private executerRechargement10h(): void {
     // 4. Rechargement automatique des statistiques
     this.chargerStatsPeriode();
     
-    console.log('✅ Statistiques rechargées automatiquement à 10h00');
+    console.log(' Statistiques rechargées automatiquement à 10h00');
   }, 100);
 }
 
@@ -1015,7 +1062,7 @@ reinitialiser(): void {
   this.chargerStatsPeriode();
   
   const date = new Date(this.dateDebut);
-  console.log(`🔄 Réinitialisation manuelle avec ${this.dateDebut} (${this.getNomJourSemaine(date)})`);
+  console.log(` Réinitialisation manuelle avec ${this.dateDebut} (${this.getNomJourSemaine(date)})`);
 }
 
 /**

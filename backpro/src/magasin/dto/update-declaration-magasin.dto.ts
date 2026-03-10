@@ -20,4 +20,8 @@ export class UpdateDeclarationMagasinDto {
   @IsNumber()
   @IsNotEmpty({ message: 'La déclaration magasin est obligatoire' })
   decMagasin: number;
+
+  @IsNumber()
+  @IsOptional()
+  exp?: number;
 }

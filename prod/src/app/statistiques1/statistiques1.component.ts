@@ -10,7 +10,7 @@ import {
   Stats5MParDateResponse,
   Ligne5MDate,
   Stats5M,
-  ProductiviteOuvriersResponse // ✅ NOUVELLE INTERFACE
+  ProductiviteOuvriersResponse //  NOUVELLE INTERFACE
 } from '../statistiques1/stats.service';
 import { Chart, registerables } from 'chart.js';
 import { Router } from '@angular/router';
@@ -64,7 +64,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   isLoadingAffectation: boolean = false;
   showAffectation: boolean = false;
 
-  // ✅ NOUVELLES PROPRIÉTÉS - Productivité des Ouvriers
+  //  NOUVELLES PROPRIÉTÉS - Productivité des Ouvriers
   showProductiviteOuvriers: boolean = false;
   showProductiviteForm: boolean = false;
   isLoadingProductivite: boolean = false;
@@ -129,10 +129,10 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   totalEnvironnement: number = 0;
 
   readonly statutOptions = [
-    { code: 'AB', libelle: 'Absent', couleur: '#ef4444', icon: '🚫' },
-    { code: 'C', libelle: 'Congé', couleur: '#f59e0b', icon: '🏖️' },
-    { code: 'S', libelle: 'Sélection', couleur: '#3b82f6', icon: '✓' },
-    { code: 'P', libelle: 'Présent', couleur: '#10b981', icon: '✅' }
+    { code: 'AB', libelle: 'Absent', couleur: '#ef4444', icon: '' },
+    { code: 'C', libelle: 'Congé', couleur: '#f59e0b', icon: '️' },
+    { code: 'S', libelle: 'Sélection', couleur: '#3b82f6', icon: '' },
+    { code: 'P', libelle: 'Présent', couleur: '#10b981', icon: '' }
   ];
 
   constructor(private statsService: StatsService1, private router: Router) {}
@@ -143,7 +143,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
     // Initialiser avec la date d'aujourd'hui
     this.dateSelectionnee = this.maxDate;
     
-    // ✅ Initialiser les dates de productivité
+    //  Initialiser les dates de productivité
     // Date de début = il y a 7 jours
     const dateDebut = new Date(today);
     dateDebut.setDate(dateDebut.getDate() - 7);
@@ -162,14 +162,14 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ NOUVELLE MÉTHODE - Toggle l'affichage du formulaire de productivité
+   *  NOUVELLE MÉTHODE - Toggle l'affichage du formulaire de productivité
    */
   toggleProductiviteSection(): void {
     this.showProductiviteForm = !this.showProductiviteForm;
   }
 
   /**
-   * ✅ NOUVELLE MÉTHODE - Charger la productivité des ouvriers
+   *  NOUVELLE MÉTHODE - Charger la productivité des ouvriers
    */
   chargerProductiviteOuvriers(): void {
     if (!this.dateDebutProductivite || !this.dateFinProductivite) {
@@ -195,15 +195,10 @@ export class Statistiques1Component implements OnInit, OnDestroy {
         this.showResultatsDate = false;
         this.showAffectation = false;
         
-        console.log('✅ Productivité ouvriers chargée:', response);
         if (response.resume) {
-          console.log('  - Nombre d\'ouvriers:', response.resume.nombreOuvriers);
-          console.log('  - Total heures:', response.resume.totalHeures);
-          console.log('  - Productivité moyenne:', response.resume.productiviteMoyenne);
         }
       },
       error: (error) => {
-        console.error('❌ Erreur chargement productivité:', error);
         this.isLoadingProductivite = false;
         alert('Erreur lors du chargement de la productivité des ouvriers');
       }
@@ -230,10 +225,8 @@ export class Statistiques1Component implements OnInit, OnDestroy {
         this.showResultatsSemaine = false;
         this.showResultatsDate = false;
         this.showProductiviteOuvriers = false;
-        console.log('✅ Affectation personnel chargée:', response);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement affectation:', error);
         this.isLoadingAffectation = false;
         alert('Erreur lors du chargement de l\'affectation du personnel');
       }
@@ -314,17 +307,12 @@ export class Statistiques1Component implements OnInit, OnDestroy {
         this.showAffectation = false;
         this.showProductiviteOuvriers = false;
         
-        console.log('📊 STATISTIQUES CHARGÉES:');
-        console.log('  - Nombre de lignes:', this.statsLignes.length);
-        console.log('  - PCS Total semaine:', this.pcsTotalSemaine + '%');
-        console.log('  - Stats 5M:', this.stats5M);
         
         setTimeout(() => {
           this.creerGraphiques();
         }, 100);
       },
       error: (error) => {
-        console.error('❌ Erreur:', error);
         this.isLoading = false;
         alert('Erreur lors du chargement des statistiques');
       }
@@ -344,13 +332,11 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   calculerPcsTotalJour(): void {
     if (!this.statsLignesDate || this.statsLignesDate.length === 0) {
       this.pcsTotalJour = 0;
-      console.warn('⚠️ Aucune ligne trouvée pour calculer le PCS du jour');
       return;
     }
     
     if (this.statsDate?.resumeProduction?.pcsTotalToutesLignes !== undefined) {
       this.pcsTotalJour = this.statsDate.resumeProduction.pcsTotalToutesLignes;
-      console.log('✅ PCS du jour (depuis résumé):', this.pcsTotalJour);
       return;
     }
     
@@ -361,7 +347,6 @@ export class Statistiques1Component implements OnInit, OnDestroy {
       ? Math.round((totalDecProduction / totalQteSource) * 100 * 100) / 100
       : 0;
     
-    console.log('✅ PCS du jour (calculé):', this.pcsTotalJour);
   }
 
   /**
@@ -510,7 +495,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
     if (!ctx) return;
 
     const labels = this.statsLignesDate.map(l => {
-      const indicateur = l.actif ? '🟢' : '🔴';
+      const indicateur = l.actif ? '' : '';
       return `${l.ligne} ${indicateur}`;
     });
     
@@ -626,7 +611,6 @@ export class Statistiques1Component implements OnInit, OnDestroy {
       const ctx = document.getElementById(canvasId) as HTMLCanvasElement;
       
       if (!ctx) {
-        console.warn(`Canvas non trouvé: ${canvasId}`);
         return;
       }
 
@@ -702,7 +686,6 @@ getColorForProductivite(productivite: number): string {
       const ctx = document.getElementById(canvasId) as HTMLCanvasElement;
       
       if (!ctx) {
-        console.warn(`Canvas non trouvé: ${canvasId}`);
         return;
       }
 
@@ -824,10 +807,8 @@ getColorForProductivite(productivite: number): string {
         this.isLoadingDetails = false;
         
         this.calculerTotaux();
-        console.log('✅ Détails chargés:', response);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement détails:', error);
         this.isLoadingDetails = false;
         alert('Erreur lors du chargement des détails');
       }
@@ -933,9 +914,9 @@ getColorForProductivite(productivite: number): string {
   }
 
   getIconeStatut(code: string | null | undefined): string {
-    if (!code) return '❓';
+    if (!code) return '';
     const statut = this.statutOptions.find(s => s.code === code);
-    return statut ? statut.icon : '❓';
+    return statut ? statut.icon : '';
   }
 
   getStatutCount(statutCode: string): number {
@@ -955,21 +936,21 @@ getColorForProductivite(productivite: number): string {
   }
 
   /**
-   * ✅ MÉTHODE MANQUANTE - Compter les lignes actives (semaine)
+   *  MÉTHODE MANQUANTE - Compter les lignes actives (semaine)
    */
   getLignesActivesCount(): number {
     return this.statsLignes.filter(l => l.actif).length;
   }
 
   /**
-   * ✅ MÉTHODE MANQUANTE - Compter les lignes non actives (semaine)
+   *  MÉTHODE MANQUANTE - Compter les lignes non actives (semaine)
    */
   getLignesNonActivesCount(): number {
     return this.statsLignes.filter(l => !l.actif).length;
   }
 
   /**
-   * ✅ MÉTHODE MANQUANTE - Réinitialiser la sélection de ligne pour les stats par date
+   *  MÉTHODE MANQUANTE - Réinitialiser la sélection de ligne pour les stats par date
    */
   resetSelectionLigneDate(): void {
     this.ligneSelectionneeDate = null;
@@ -1107,7 +1088,6 @@ getColorForProductivite(productivite: number): string {
         }, 100);
       },
       error: (error) => {
-        console.error('❌ Erreur:', error);
         this.isLoadingDate = false;
         alert('Erreur lors du chargement des statistiques pour cette date');
       }
@@ -1122,20 +1102,17 @@ getColorForProductivite(productivite: number): string {
 
 
 /**
- * ✅ NOUVELLE MÉTHODE - Exporter en Excel (.xlsx)
+ *  NOUVELLE MÉTHODE - Exporter en Excel (.xlsx)
  */
 exporterExcel(): void {
-  console.log('🔄 Début export Excel...');
   
   // 1. Vérifier les données disponibles
   const donneesDisponibles = this.productiviteFiltree?.length > 0 
     ? this.productiviteFiltree 
     : this.productiviteOuvriers?.tableau;
   
-  console.log('📊 Données disponibles:', donneesDisponibles);
   
   if (!donneesDisponibles || donneesDisponibles.length === 0) {
-    console.error('❌ Aucune donnée à exporter');
     alert('Aucune donnée à exporter');
     return;
   }
@@ -1143,11 +1120,9 @@ exporterExcel(): void {
   try {
     // 2. Préparer les données
     const donneesFormatees = this.preparerDonneesPourExport(donneesDisponibles);
-    console.log('✅ Données formatées:', donneesFormatees.length, 'lignes');
     
     // 3. Vérifier que les données ne sont pas vides
     if (donneesFormatees.length === 0) {
-      console.error('❌ Données formatées vides');
       alert('Les données formatées sont vides');
       return;
     }
@@ -1156,9 +1131,7 @@ exporterExcel(): void {
     let ws: XLSX.WorkSheet;
     try {
       ws = XLSX.utils.json_to_sheet(donneesFormatees);
-      console.log('✅ Feuille de calcul créée');
     } catch (sheetError) {
-      console.error('❌ Erreur création feuille:', sheetError);
       
       // Essayer une autre méthode
       const headers = Object.keys(donneesFormatees[0]);
@@ -1176,14 +1149,11 @@ exporterExcel(): void {
     
     // 7. Générer le nom du fichier
     const nomFichier = this.genererNomFichier('xlsx');
-    console.log('📁 Nom du fichier:', nomFichier);
     
     // 8. Exporter avec une méthode alternative si nécessaire
     try {
       XLSX.writeFile(wb, nomFichier);
-      console.log('✅ Export Excel réussi!');
     } catch (writeError) {
-      console.error('❌ Erreur writeFile:', writeError);
       
       // Méthode alternative : créer un blob
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
@@ -1204,20 +1174,16 @@ exporterExcel(): void {
     }
     
   } catch (error) {
-    console.error('❌ Erreur lors de l\'export Excel:', error);
     if (error instanceof Error) {
-      console.error('Stack:', error.stack);
-      console.error('❌ Erreur lors de l\'export Excel:', error);
       alert(`Erreur lors de l\'export Excel. Détails: ${error.message}`);
     } else {
-      console.error('❌ Erreur lors de l\'export Excel:', String(error));
       alert('Erreur lors de l\'export Excel.');
     }
   }
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Exporter en CSV
+ *  NOUVELLE MÉTHODE - Exporter en CSV
  */
 exporterCSV(): void {
   if (!this.productiviteOuvriers?.tableau || this.productiviteOuvriers.tableau.length === 0) {
@@ -1248,24 +1214,20 @@ exporterCSV(): void {
     // Créer et télécharger le fichier
     this.telechargerFichier(csv, nomFichier, 'text/csv;charset=utf-8;');
     
-    console.log('✅ Fichier CSV exporté:', nomFichier);
   } catch (error) {
-    console.error('❌ Erreur lors de l\'export CSV:', error);
     alert('Erreur lors de l\'export CSV');
   }
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Préparer les données pour l'export
+ *  NOUVELLE MÉTHODE - Préparer les données pour l'export
  */
 /**
- * ✅ CORRIGÉ - Préparer les données pour l'export
+ *  CORRIGÉ - Préparer les données pour l'export
  */
 private preparerDonneesPourExport(donnees: any[]): any[] {
-  console.log('🔄 Formatage des données pour export...');
   
   if (!donnees || donnees.length === 0) {
-    console.warn('⚠️ Aucune donnée à formater');
     return [];
   }
   
@@ -1273,7 +1235,6 @@ private preparerDonneesPourExport(donnees: any[]): any[] {
     return donnees.map((ligne, index) => {
       // Vérifier que la ligne existe
       if (!ligne) {
-        console.warn(`⚠️ Ligne ${index} est undefined/null`);
         return {};
       }
       
@@ -1327,13 +1288,11 @@ private preparerDonneesPourExport(donnees: any[]): any[] {
       };
     });
   } catch (error) {
-    console.error('❌ Erreur formatage données:', error);
-    console.error('Données problématiques:', donnees);
     return [];
   }
 }
 /**
- * ✅ NOUVELLE MÉTHODE - Convertir les données en CSV
+ *  NOUVELLE MÉTHODE - Convertir les données en CSV
  */
 private convertirEnCSV(donnees: any[]): string {
   if (donnees.length === 0) return '';
@@ -1362,7 +1321,7 @@ private convertirEnCSV(donnees: any[]): string {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Télécharger un fichier
+ *  NOUVELLE MÉTHODE - Télécharger un fichier
  */
 private telechargerFichier(contenu: string, nomFichier: string, typeMime: string): void {
   const blob = new Blob([contenu], { type: typeMime });
@@ -1378,7 +1337,7 @@ private telechargerFichier(contenu: string, nomFichier: string, typeMime: string
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Générer le nom du fichier
+ *  NOUVELLE MÉTHODE - Générer le nom du fichier
  */
 private genererNomFichier(extension: string): string {
   const dateDebut = this.dateDebutProductivite.replace(/-/g, '');
@@ -1473,7 +1432,7 @@ maxPourcentage: number = 100;
 productiviteFiltree: any[] = [];
 
 /**
- * ✅ NOUVELLE MÉTHODE - Filtrer les données de productivité
+ *  NOUVELLE MÉTHODE - Filtrer les données de productivité
  */
 appliquerFiltre(): void {
   if (!this.productiviteOuvriers?.tableau) {
@@ -1611,7 +1570,7 @@ private filtrerPourcentage(valeur: number): boolean {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Appliquer filtre pourcentage (pour les champs M1-M6 et Productivité)
+ *  NOUVELLE MÉTHODE - Appliquer filtre pourcentage (pour les champs M1-M6 et Productivité)
  */
 appliquerFiltrePourcentage(): void {
   if (this.isChampPourcentage()) {
@@ -1620,14 +1579,14 @@ appliquerFiltrePourcentage(): void {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Vérifier si le champ est de type date
+ *  NOUVELLE MÉTHODE - Vérifier si le champ est de type date
  */
 isChampDate(): boolean {
   return this.champFiltre === 'JOURS';
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Vérifier si le champ est de type pourcentage
+ *  NOUVELLE MÉTHODE - Vérifier si le champ est de type pourcentage
  */
 isChampPourcentage(): boolean {
   const champsPourcentage = [
@@ -1637,7 +1596,7 @@ isChampPourcentage(): boolean {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Obtenir le label pour le champ valeur
+ *  NOUVELLE MÉTHODE - Obtenir le label pour le champ valeur
  */
 getLabelValeurFiltre(): string {
   if (this.isChampDate()) return 'Date :';
@@ -1646,7 +1605,7 @@ getLabelValeurFiltre(): string {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Obtenir le placeholder
+ *  NOUVELLE MÉTHODE - Obtenir le placeholder
  */
 getPlaceholderFiltre(): string {
   if (!this.champFiltre) return 'Rechercher dans tous les champs...';
@@ -1661,7 +1620,7 @@ getPlaceholderFiltre(): string {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Réinitialiser le filtre
+ *  NOUVELLE MÉTHODE - Réinitialiser le filtre
  */
 reinitialiserFiltre(): void {
   this.champFiltre = '';
@@ -1672,7 +1631,7 @@ reinitialiserFiltre(): void {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Quand le champ de filtre change
+ *  NOUVELLE MÉTHODE - Quand le champ de filtre change
  */
 onChampFiltreChange(): void {
   // Réinitialiser les valeurs
@@ -1696,7 +1655,7 @@ productiviteSortDirection: 'asc' | 'desc' | null = null;
 productiviteDataSorted: any[] = [];
 
 /**
- * ✅ NOUVELLE MÉTHODE - Trier par productivité
+ *  NOUVELLE MÉTHODE - Trier par productivité
  */
 toggleSortProductivite(): void {
   if (this.productiviteSortDirection === null || this.productiviteSortDirection === 'desc') {
@@ -1709,7 +1668,7 @@ toggleSortProductivite(): void {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Trier par productivité croissante
+ *  NOUVELLE MÉTHODE - Trier par productivité croissante
  */
 trierProductiviteCroissant(): void {
   let donnees = [];
@@ -1730,7 +1689,7 @@ trierProductiviteCroissant(): void {
 }
 
 /**
- * ✅ NOUVELLE MÉTHODE - Trier par productivité décroissante
+ *  NOUVELLE MÉTHODE - Trier par productivité décroissante
  */
 trierProductiviteDecroissant(): void {
   let donnees = [];
@@ -1752,7 +1711,7 @@ trierProductiviteDecroissant(): void {
 
 
 /**
- * ✅ NOUVELLE MÉTHODE - Formater une date pour le titre
+ *  NOUVELLE MÉTHODE - Formater une date pour le titre
  */
 private formatDateForTitle(dateString: string): string {
   if (!dateString) return '';
@@ -1845,7 +1804,6 @@ async exporterResumeExcel(): Promise<void> {
   // Trier par nom
   resumeOuvriers.sort((a, b) => a['Nom et Prénom'].localeCompare(b['Nom et Prénom']));
 
-  console.log('📊 Export ExcelJS - Nouvelle correspondance appliquée');
 
   try {
     // Créer un nouveau workbook
@@ -2058,10 +2016,8 @@ async exporterResumeExcel(): Promise<void> {
     
     saveAs(blob, fileName);
     
-    console.log('✅ Rapport Excel généré avec la nouvelle correspondance des M');
     
   } catch (error) {
-    console.error('❌ Erreur lors de la génération Excel:', error);
     alert('Erreur lors de la génération du fichier Excel');
   }
 }

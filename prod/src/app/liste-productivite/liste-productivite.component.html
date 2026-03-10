@@ -82,17 +82,54 @@
     <div class="legend-strip">
       <span class="legend-item"><span class="legend-dot m1"></span>M1 · Matière Première</span>
       <span class="legend-sep">|</span>
-      <span class="legend-item"><span class="legend-dot m2"></span>M2 · Méthode</span>
+      <span class="legend-item"><span class="legend-dot m2"></span>M2 · Absence</span>
       <span class="legend-sep">|</span>
-      <span class="legend-item"><span class="legend-dot m3"></span>M3 · Maintenance</span>
+      <span class="legend-item"><span class="legend-dot m3"></span>M2 · Rendement</span>
       <span class="legend-sep">|</span>
-      <span class="legend-item"><span class="legend-dot m4"></span>M4 · Qualité</span>
+      <span class="legend-item"><span class="legend-dot m4"></span>M3 · Méthode</span>
       <span class="legend-sep">|</span>
-      <span class="legend-item"><span class="legend-dot m5"></span>M5 · Absence</span>
+      <span class="legend-item"><span class="legend-dot m5"></span>M4 · Maintenance</span>
       <span class="legend-sep">|</span>
-      <span class="legend-item"><span class="legend-dot m6"></span>M6 · Rendement</span>
+      <span class="legend-item"><span class="legend-dot m6"></span>M5 · Qualité</span>
       <span class="legend-sep">|</span>
-      <span class="legend-item"><span class="legend-dot m7"></span>M7 · Environnement</span>
+      <span class="legend-item"><span class="legend-dot m7"></span>M6 · Environnement</span>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- TICKER MÉTÉO SOUSSE (7 jours, Open-Meteo)                  -->
+    <!-- ============================================================ -->
+    <div class="ticker-wrapper" *ngIf="meteoTickerItems.length > 0">
+      <div class="ticker-label">
+        <span class="ticker-meteo-icon">🌤</span>
+        <span>SOUSSE</span>
+      </div>
+      <div class="ticker-track">
+        <div class="ticker-inner" [style.animationDuration]="(meteoTickerItems.length / 2 * 5) + 's'">
+          <span class="ticker-item meteo-item" *ngFor="let item of meteoTickerItems; let i = index">
+            <span class="meteo-day-chip" [class.meteo-today]="i % (meteoTickerItems.length / 2) === 0">
+              {{ item }}
+            </span>
+            <span class="ticker-sep">◆</span>
+          </span>
+        </div>
+      </div>
+      <button class="ticker-refresh" (click)="chargerMeteo()" title="Actualiser la météo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-4.95"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Ticker météo en chargement -->
+    <div class="ticker-wrapper ticker-loading" *ngIf="meteoTickerItems.length === 0 && isLoadingMeteo">
+      <div class="ticker-label">
+        <span class="ticker-meteo-icon">🌤</span>
+        <span>SOUSSE</span>
+      </div>
+      <div class="ticker-track">
+        <div class="ticker-inner-loading">Chargement météo...</div>
+      </div>
     </div>
 
     <!-- Tableau des résultats -->
@@ -116,13 +153,13 @@
               <span class="sort-arrow" *ngIf="productiviteSortDirection === 'asc'">▲</span>
               <span class="sort-arrow" *ngIf="productiviteSortDirection === 'desc'">▼</span>
             </th>
-            <th class="col-m">M1</th>
+           <th class="col-m">M1</th>
             <th class="col-m">M2</th>
+            <th class="col-m col-m2prime">M2</th>
             <th class="col-m">M3</th>
             <th class="col-m">M4</th>
             <th class="col-m">M5</th>
             <th class="col-m">M6</th>
-            <th class="col-m">M7</th>
           </tr>
         </thead>
         <tbody>
@@ -156,13 +193,13 @@
                   </div>
                 </div>
               </td>
-              <td class="col-m" [class.m-active]="ligne.M1 > 0">{{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '·' }}</td>
-              <td class="col-m" [class.m-active]="ligne.M2 > 0">{{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '·' }}</td>
-              <td class="col-m" [class.m-active]="ligne.M3 > 0">{{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '·' }}</td>
-              <td class="col-m" [class.m-active]="ligne.M4 > 0">{{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '·' }}</td>
-              <td class="col-m" [class.m-active]="ligne.M5 > 0">{{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '·' }}</td>
-              <td class="col-m" [class.m-active]="ligne.M6 > 0">{{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '·' }}</td>
-              <td class="col-m" [class.m-active]="ligne.M7 > 0">{{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '·' }}</td>
+               <td class="col-m" title="M1 · Matière Première"  [class.m-active]="ligne.M1 > 0">{{ ligne.M1 > 0 ? (ligne.M1 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" title="M2 · Absence"           [class.m-active]="ligne.M2 > 0">{{ ligne.M2 > 0 ? (ligne.M2 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m col-m2prime" title="M2 · Rendement"  [class.m-active]="ligne.M3 > 0">{{ ligne.M3 > 0 ? (ligne.M3 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" title="M3 · Méthode"           [class.m-active]="ligne.M4 > 0">{{ ligne.M4 > 0 ? (ligne.M4 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" title="M4 · Maintenance"       [class.m-active]="ligne.M5 > 0">{{ ligne.M5 > 0 ? (ligne.M5 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" title="M5 · Qualité"           [class.m-active]="ligne.M6 > 0">{{ ligne.M6 > 0 ? (ligne.M6 | number:'1.1-1') + '%' : '·' }}</td>
+              <td class="col-m" title="M6 · Environnement"     [class.m-active]="ligne.M7 > 0">{{ ligne.M7 > 0 ? (ligne.M7 | number:'1.1-1') + '%' : '·' }}</td>
             </tr>
           </ng-container>
 

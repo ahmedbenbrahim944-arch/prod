@@ -1611,3 +1611,409 @@
   
   margin-right: 5px;
 }
+/* ============================================ */
+/* FILTRE PAR LIGNE - SIDEBAR CARD */
+/* ============================================ */
+.ligne-filter-card {
+  overflow: hidden;
+}
+
+.ligne-filter-card .card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-badge {
+  margin-left: auto;
+  background: #667eea;
+  color: white;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Barre de recherche */
+.ligne-search-wrapper {
+  position: relative;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.ligne-search-wrapper .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.ligne-search-input {
+  width: 100%;
+  padding: 0.45rem 0.75rem 0.45rem 2rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  background: #f9fafb;
+}
+
+.ligne-search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+}
+
+/* Boutons tout/effacer */
+.ligne-filter-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.btn-select-all,
+.btn-clear-filter {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1.5px solid;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-select-all {
+  border-color: #667eea;
+  color: #667eea;
+  background: transparent;
+}
+
+.btn-select-all:hover {
+  background: #667eea;
+  color: white;
+}
+
+.btn-clear-filter {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: transparent;
+}
+
+.btn-clear-filter:hover:not(:disabled) {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-clear-filter:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* Liste des lignes */
+.ligne-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.ligne-list::-webkit-scrollbar {
+  width: 5px;
+}
+.ligne-list::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.ligne-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ligne-item:last-child {
+  border-bottom: none;
+}
+
+.ligne-item:hover {
+  background: #f0f4ff;
+}
+
+.ligne-item.selected {
+  background: #eef2ff;
+}
+
+.ligne-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ligne-checkbox.checked {
+  background: #667eea;
+  border-color: #667eea;
+}
+
+.ligne-checkbox.checked svg {
+  width: 10px;
+  height: 10px;
+  stroke: white;
+}
+
+.ligne-name {
+  flex: 1;
+  font-size: 0.78rem;
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ligne-item.selected .ligne-name {
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.ligne-pcs-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.no-lignes-msg {
+  padding: 1rem;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+
+/* Info filtre actif */
+.filter-active-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: #eef2ff;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.filter-active-info svg {
+  flex-shrink: 0;
+  color: #667eea;
+}
+
+/* ============================================ */
+/* BADGE "FILTRÉE" SUR LA CARTE PRODUCTIVITÉ */
+/* ============================================ */
+.filter-active-badge {
+  margin-left: auto;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.productivity-card.filtered {
+  border: 2px solid #667eea;
+}
+
+.filter-scope-info {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #667eea;
+  font-weight: 600;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.filter-scope-info svg {
+  color: #667eea;
+}
+
+/* ============================================ */
+/* BADGE FILTRE SUR LE TITRE DES 6M */
+/* ============================================ */
+.m7-header-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.m7-header-row .m7-title {
+  margin-bottom: 0;
+}
+
+.m7-filter-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: linear-gradient(135deg, #667eea22, #764ba222);
+  border: 1.5px solid #667eea55;
+  color: #4338ca;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+/* ================================================================ */
+/* AJOUTER à la fin de stats.component.css                          */
+/* ================================================================ */
+
+/* --- Items personnel cliquables --- */
+.personnel-clickable {
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease, transform 0.1s ease;
+  padding: 4px 8px;
+  margin: 0 -8px;
+}
+
+.personnel-clickable:hover {
+  background: rgba(99, 102, 241, 0.07);
+  transform: translateX(3px);
+}
+
+.personnel-clickable:active {
+  transform: translateX(0) scale(0.98);
+}
+
+.personnel-detail-icon {
+  margin-left: 4px;
+  opacity: 0.4;
+  vertical-align: middle;
+  transition: opacity 0.15s;
+}
+
+.personnel-clickable:hover .personnel-detail-icon {
+  opacity: 1;
+}
+
+/* --- Overlay --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* --- Container modale --- */
+.modal-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  max-height: 85vh;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.personnel-modal { max-width: 620px; }
+
+/* --- Header --- */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 12px;
+}
+
+.modal-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.modal-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.personnel-modal-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.modal-close-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+/* --- Loading --- */
+.personnel-modal-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  gap: 12px;
+  color: #6b7280;
+}
+
+/* --- Tableau --- */
+.personnel-table td,
+.personnel-table th { padding: 10px 14px; }
+
+.personnel-table tbody tr:hover { background: #f8fafc; }
+
+.text-muted { color: #9ca3af; font-size: 0.85rem; }
+
+.no-data-message {
+  padding: 32px;
+  text-align: center;
+  color: #6b7280;
+}

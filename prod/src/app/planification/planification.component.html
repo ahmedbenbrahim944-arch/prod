@@ -354,20 +354,25 @@
                       </tr>
 
                       <!-- Ligne M - NON MODIFIABLE -->
-                      <tr class="border-b border-gray-700/50">
-                        <td
-                          class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">
-                          M</td>
-                        <ng-container *ngFor="let day of weekDays">
-                          <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
-                            <!-- M - TOUJOURS EN LECTURE SEULE -->
-                            <span class="text-white font-bold text-base sm:text-lg value-display">
-                              {{ getDayEntry(ref, day)!.m }}
-                            </span>
-                            <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
-                          </td>
-                        </ng-container>
-                      </tr>
+                      <!-- Ligne M - MAINTENANT MODIFIABLE -->
+<tr class="border-b border-gray-700/50">
+  <td class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">
+    M</td>
+  <ng-container *ngFor="let day of weekDays">
+    <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
+      <!-- M - MODIFIABLE EN MODE ÉDITION -->
+      <input *ngIf="isEditing() && getDayEntry(ref, day)" type="number"
+        [value]="getDayEntry(ref, day)!.m"
+        (input)="updateDayEntry(ref, day, 'm', $any($event.target).value)"
+        class="w-full bg-gray-700/50 border border-cyan-500/40 rounded px-2 sm:px-3 py-1 sm:py-2 text-white text-base sm:text-lg text-center font-bold">
+      <span *ngIf="!isEditing() && getDayEntry(ref, day)"
+        class="text-white font-bold text-base sm:text-lg value-display">
+        {{ getDayEntry(ref, day)!.m }}
+      </span>
+      <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
+    </td>
+  </ng-container>
+</tr>
 
                       <!-- Ligne DP - NON MODIFIABLE -->
                       <tr class="border-b border-gray-700/50">
@@ -375,19 +380,14 @@
                           class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">
                           DP</td>
                         <ng-container *ngFor="let day of weekDays">
-    <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
-      <!-- DP - MODIFIABLE EN MODE ÉDITION -->
-      <input *ngIf="isEditing() && getDayEntry(ref, day)" type="number"
-        [value]="getDayEntry(ref, day)!.dp"
-        (input)="updateDayEntry(ref, day, 'dp', $any($event.target).value)"
-        class="w-full bg-gray-700/50 border border-cyan-500/40 rounded px-2 sm:px-3 py-1 sm:py-2 text-white text-base sm:text-lg text-center font-bold">
-      <span *ngIf="!isEditing() && getDayEntry(ref, day)"
-        class="text-white font-bold text-base sm:text-lg value-display">
-        {{ getDayEntry(ref, day)!.dp }}
-      </span>
-      <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
-    </td>
-  </ng-container>
+                          <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
+                            <!-- DP - TOUJOURS EN LECTURE SEULE -->
+                            <span class="text-white font-bold text-base sm:text-lg value-display">
+                              {{ getDayEntry(ref, day)!.dp }}
+                            </span>
+                            <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
+                          </td>
+                        </ng-container>
                         <!-- À la fin de la ligne DP (après </ng-container>) -->
                         <td class="text-center border-2 border-gray-700 py-3 sm:py-4 bg-green-900/30">
                           <div class="text-green-300 font-bold text-base sm:text-lg">
@@ -604,25 +604,24 @@
                   </ng-container>
                 </tr>
 
-                <!-- Lignes M, DP, DM restent identiques -->
-                <tr class="border-b border-gray-700/50">
-                  <td
-                    class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">
-                    M</td>
-                  <ng-container *ngFor="let day of weekDays">
-                    <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
-                      <input *ngIf="isEditing() && getDayEntry(ref, day)" type="number"
-                        [value]="getDayEntry(ref, day)!.m"
-                        (input)="updateDayEntry(ref, day, 'm', $any($event.target).value)"
-                        class="w-full bg-gray-700/50 border border-cyan-500/40 rounded px-2 sm:px-3 py-1 sm:py-2 text-white text-base sm:text-lg text-center font-bold">
-                      <span *ngIf="!isEditing() && getDayEntry(ref, day)"
-                        class="text-white font-bold text-base sm:text-lg value-display">
-                        {{ getDayEntry(ref, day)!.m }}
-                      </span>
-                      <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
-                    </td>
-                  </ng-container>
-                </tr>
+               <!-- Lignes M - MAINTENANT MODIFIABLE -->
+<tr class="border-b border-gray-700/50">
+  <td class="text-center font-bold text-white border-2 border-gray-700 py-3 sm:py-4 text-sm sm:text-base">
+    M</td>
+  <ng-container *ngFor="let day of weekDays">
+    <td class="text-center border-2 border-gray-700 py-3 sm:py-4">
+      <input *ngIf="isEditing() && getDayEntry(ref, day)" type="number"
+        [value]="getDayEntry(ref, day)!.m"
+        (input)="updateDayEntry(ref, day, 'm', $any($event.target).value)"
+        class="w-full bg-gray-700/50 border border-cyan-500/40 rounded px-2 sm:px-3 py-1 sm:py-2 text-white text-base sm:text-lg text-center font-bold">
+      <span *ngIf="!isEditing() && getDayEntry(ref, day)"
+        class="text-white font-bold text-base sm:text-lg value-display">
+        {{ getDayEntry(ref, day)!.m }}
+      </span>
+      <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
+    </td>
+  </ng-container>
+</tr>
 
                 <tr class="border-b border-gray-700/50">
                   <td
@@ -719,7 +718,7 @@
         <div class="p-6 bg-slate-800/50 border-b border-slate-700">
           <div class="grid grid-cols-3 gap-4 text-center">
             <div class="bg-slate-900/80 p-4 rounded-lg border border-cyan-500/30">
-              <div class="text-cyan-400 text-sm font-semibold mb-1">Quantité Planifiée (C)</div>
+              <div class="text-cyan-400 text-sm font-semibold mb-1">Quantité Source (M si définie, sinon C)</div>
               <div class="text-white text-2xl font-bold">{{ getSelectedC() }}</div>
             </div>
 

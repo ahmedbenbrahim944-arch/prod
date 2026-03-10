@@ -1,12 +1,12 @@
+// src/app/magasin/magasin.component.ts
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SemaineService, Semaine } from '../prod/semaine.service';
-import { MagasinService,PlanificationMagasin, GetPlanificationRequest } from '../magasin/magasin.service';
+import { MagasinService, PlanificationMagasin, GetPlanificationRequest } from '../magasin/magasin.service';
 import { jsPDF } from 'jspdf';
-
-import { Router } from '@angular/router';
+import * as ExcelJS from 'exceljs';
 
 interface LigneData {
   ligne: string;
@@ -25,67 +25,63 @@ interface LigneData {
 export class Magasin1Component implements OnInit {
   semaines: Semaine[] = [];
   selectedSemaine: string = '';
-  
+
   lignesData: Map<string, LigneData> = new Map();
   isLoading: boolean = false;
   errorMessage: string = '';
-  
+
   weekDays: string[] = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-  
+
+  // ─── Inline EXP editing ───────────────────────────────────────────
+  editingExpKey: string | null = null;   // key = "reference|day"
+  editExpValue: number = 0;
+  savingExpKey: string | null = null;    // key en cours de sauvegarde (spinner)
+
   constructor(
     private semaineService: SemaineService,
-    private magasinService: MagasinService,
-    private router: Router
+    private magasinService: MagasinService
   ) {}
-  
+
   ngOnInit(): void {
     this.loadSemaines();
   }
-  
+
   loadSemaines(): void {
-    this.semaines = this.getWeeksList().map(nom => ({
-      nom: nom,
-      dateDebut: '',
-      dateFin: ''
-    }));
-    
+    this.semaines = this.getWeeksList().map(nom => ({ nom, dateDebut: '', dateFin: '' }));
     if (this.semaines.length > 0) {
       this.selectedSemaine = this.semaines[0].nom;
     }
   }
-  
+
   onSemaineChange(): void {
     this.errorMessage = '';
     this.lignesData.clear();
+    this.editingExpKey = null;
   }
-  
+
   loadMagasinData(): void {
     if (!this.selectedSemaine) {
       this.errorMessage = 'Veuillez sélectionner une semaine';
       return;
     }
-    
+
     this.isLoading = true;
     this.errorMessage = '';
     this.lignesData.clear();
-    
-    const request: GetPlanificationRequest = {
-      ligne: '',
-      semaine: this.selectedSemaine
-    };
-    
+    this.editingExpKey = null;
+
+    const request: GetPlanificationRequest = { ligne: '', semaine: this.selectedSemaine };
+
     this.magasinService.getPlanificationsMagasin(request).subscribe({
       next: (response) => {
         if (response.details && response.details.length > 0) {
           const lignesMap = new Map<string, PlanificationMagasin[]>();
-          
+
           response.details.forEach((planif: PlanificationMagasin) => {
-            if (!lignesMap.has(planif.ligne)) {
-              lignesMap.set(planif.ligne, []);
-            }
+            if (!lignesMap.has(planif.ligne)) lignesMap.set(planif.ligne, []);
             lignesMap.get(planif.ligne)!.push(planif);
           });
-          
+
           lignesMap.forEach((planifications, ligneName) => {
             const ligneData = this.organizeDataForLigne(ligneName, planifications);
             this.lignesData.set(ligneName, ligneData);
@@ -101,280 +97,476 @@ export class Magasin1Component implements OnInit {
       }
     });
   }
-  
+
+  // ─── Organise les données par ligne ──────────────────────────────
+  // FIX : on stocke maintenant decMagasin, exp ET _originalJour par jour
   organizeDataForLigne(ligneName: string, planifications: PlanificationMagasin[]): LigneData {
-    const horizontalTableData: any[] = [];
-    const daysWithData: string[] = [];
     const refMap = new Map<string, any>();
     const daysSet = new Set<string>();
-    
+
     planifications.forEach((item: PlanificationMagasin) => {
       if (item.quantiteSource > 0) {
         if (!refMap.has(item.reference)) {
           refMap.set(item.reference, {
             reference: item.reference,
-            lundi: { quantiteSource: 0, decMagasin: 0, of: '' },
-            mardi: { quantiteSource: 0, decMagasin: 0, of: '' },
-            mercredi: { quantiteSource: 0, decMagasin: 0, of: '' },
-            jeudi: { quantiteSource: 0, decMagasin: 0, of: '' },
-            vendredi: { quantiteSource: 0, decMagasin: 0, of: '' },
-            samedi: { quantiteSource: 0, decMagasin: 0, of: '' }
+            lundi:    { quantiteSource: 0, decMagasin: 0, exp: 0, of: '', _originalJour: 'lundi' },
+            mardi:    { quantiteSource: 0, decMagasin: 0, exp: 0, of: '', _originalJour: 'mardi' },
+            mercredi: { quantiteSource: 0, decMagasin: 0, exp: 0, of: '', _originalJour: 'mercredi' },
+            jeudi:    { quantiteSource: 0, decMagasin: 0, exp: 0, of: '', _originalJour: 'jeudi' },
+            vendredi: { quantiteSource: 0, decMagasin: 0, exp: 0, of: '', _originalJour: 'vendredi' },
+            samedi:   { quantiteSource: 0, decMagasin: 0, exp: 0, of: '', _originalJour: 'samedi' }
           });
         }
-        
+
         const refData = refMap.get(item.reference);
         const day = item.jour.toLowerCase();
-        
-        if (refData[day]) {
+
+        if (refData[day] !== undefined) {
           refData[day] = {
             quantiteSource: item.quantiteSource,
-            decMagasin: item.decMagasin || 0,
-            of: item.of || ''
+            decMagasin: item.decMagasin ?? 0,   // ← FIX : était manquant
+            exp: item.exp ?? 0,                   // ← NOUVEAU
+            of: item.of || '',
+            _originalJour: item.jour               // ← conservé pour l'API
           };
-          
-          if (item.quantiteSource > 0 || item.decMagasin > 0) {
-            daysSet.add(day);
-          }
+          daysSet.add(day);
         }
       }
     });
-    
-    const sortedData = Array.from(refMap.values()).sort((a, b) => 
-      a.reference.localeCompare(b.reference)
-    );
-    
+
+    const sortedData = Array.from(refMap.values())
+      .sort((a, b) => a.reference.localeCompare(b.reference));
+
     const filteredDays = this.weekDays.filter(day => daysSet.has(day));
-    
-    return {
-      ligne: ligneName,
-      horizontalTableData: sortedData,
-      daysWithData: filteredDays
-    };
+
+    return { ligne: ligneName, horizontalTableData: sortedData, daysWithData: filteredDays };
   }
-  
+
   get allLignesArray(): LigneData[] {
-    return Array.from(this.lignesData.values()).sort((a, b) => 
-      a.ligne.localeCompare(b.ligne)
-    );
+    return Array.from(this.lignesData.values())
+      .sort((a, b) => a.ligne.localeCompare(b.ligne));
   }
-  
+
+  // ─── Inline EXP ──────────────────────────────────────────────────
+  expKey(reference: string, day: string): string {
+    return `${reference}|${day}`;
+  }
+
+  isEditingExp(reference: string, day: string): boolean {
+    return this.editingExpKey === this.expKey(reference, day);
+  }
+
+  startEditExp(item: any, day: string, ligneName: string): void {
+    this.editingExpKey = this.expKey(item.reference, day);
+    this.editExpValue = item[day]?.exp ?? 0;
+  }
+
+  saveExp(item: any, day: string, ligneName: string): void {
+    const key = this.expKey(item.reference, day);
+    if (this.editingExpKey !== key) return;
+
+    const dayData = item[day];
+    if (!dayData) { this.editingExpKey = null; return; }
+
+    const originalJour = dayData._originalJour || day;
+    const currentDecMagasin = dayData.decMagasin ?? 0;
+    const newExp = this.editExpValue ?? 0;
+
+    this.savingExpKey = key;
+    this.editingExpKey = null;
+
+    this.magasinService.updateExp(
+      this.selectedSemaine,
+      originalJour,
+      ligneName,
+      item.reference,
+      newExp,
+      currentDecMagasin
+    ).subscribe({
+      next: () => {
+        // Mise à jour locale immédiate
+        item[day].exp = newExp;
+        this.savingExpKey = null;
+      },
+      error: (err) => {
+        console.error('Erreur sauvegarde EXP:', err);
+        this.errorMessage = 'Erreur lors de la sauvegarde de EXP';
+        this.savingExpKey = null;
+      }
+    });
+  }
+
+  cancelEditExp(): void {
+    this.editingExpKey = null;
+  }
+
+  // ─── Export Excel (ExcelJS – tableau plat : Jour | LIGNE | REF | C | DM | EXP | Client) ──
+  async downloadExcel(): Promise<void> {
+    if (this.lignesData.size === 0) {
+      this.errorMessage = 'Aucune donnée à exporter en Excel';
+      return;
+    }
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Magasin App';
+      workbook.created = new Date();
+
+      const ws = workbook.addWorksheet('Planification');
+
+      // Colonnes fixes : Jour | LIGNE | REF | C | DM | EXP | Client
+      const totalCols = 7;
+
+      const border: Partial<ExcelJS.Borders> = {
+        top:    { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        left:   { style: 'thin', color: { argb: 'FFD1D5DB' } },
+        right:  { style: 'thin', color: { argb: 'FFD1D5DB' } }
+      };
+
+      const thickBorder: Partial<ExcelJS.Borders> = {
+        top:    { style: 'medium', color: { argb: 'FF6B7280' } },
+        bottom: { style: 'medium', color: { argb: 'FF6B7280' } },
+        left:   { style: 'medium', color: { argb: 'FF6B7280' } },
+        right:  { style: 'medium', color: { argb: 'FF6B7280' } }
+      };
+
+      // ── Ligne 1 : Titre ──
+      ws.mergeCells(1, 1, 1, totalCols);
+      const titleCell = ws.getCell(1, 1);
+      titleCell.value = `Extraction Données – ${this.selectedSemaine}`;
+      titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(1).height = 40;
+
+      // ── Ligne 2 : En-têtes ──
+      const headers = [
+        { label: 'Jour',   col: 1, bg: 'FF4F46E5' },
+        { label: 'LIGNE',  col: 2, bg: 'FF4F46E5' },
+        { label: 'REF',    col: 3, bg: 'FF4F46E5' },
+        { label: 'C',      col: 4, bg: 'FFD97706' },
+        { label: 'DM',     col: 5, bg: 'FF059669' },
+        { label: 'EXP',    col: 6, bg: 'FF7C3AED' },
+        { label: 'Client', col: 7, bg: 'FF9D174D' },
+      ];
+
+      headers.forEach(({ label, col, bg }) => {
+        const cell = ws.getCell(2, col);
+        cell.value = label;
+        cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = thickBorder;
+      });
+      ws.getRow(2).height = 30;
+
+      let rowIdx = 3;
+
+      const sortedLignes = Array.from(this.lignesData.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]));
+
+      sortedLignes.forEach(([ligneName, ligneData]) => {
+        const refs = ligneData.horizontalTableData;
+        if (refs.length === 0) return;
+
+        refs.forEach((item: any) => {
+          // Pour chaque jour ayant des données pour cette référence
+          const daysWithData = ligneData.daysWithData;
+          const daysForRef = daysWithData.filter(day =>
+            (item[day]?.quantiteSource ?? 0) > 0
+          );
+
+          if (daysForRef.length === 0) return;
+
+          // REF span sur toutes ses lignes-jours
+          const refStartRow = rowIdx;
+          const refRowCount = daysForRef.length;
+
+          // Fusionner LIGNE sur toutes les lignes de la référence
+          if (refRowCount > 1) {
+            ws.mergeCells(refStartRow, 2, refStartRow + refRowCount - 1, 2);
+            ws.mergeCells(refStartRow, 3, refStartRow + refRowCount - 1, 3);
+          }
+
+          // Cellule LIGNE
+          const ligneCell = ws.getCell(refStartRow, 2);
+          ligneCell.value = ligneName;
+          ligneCell.font = { bold: true, size: 11, color: { argb: 'FF1E3A8A' } };
+          ligneCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          ligneCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+          ligneCell.border = border;
+
+          // Cellule REF
+          const refCell = ws.getCell(refStartRow, 3);
+          refCell.value = item.reference;
+          refCell.font = { bold: true, size: 11 };
+          refCell.alignment = { horizontal: 'center', vertical: 'middle' };
+          refCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+          refCell.border = border;
+
+          // Une ligne par jour
+          daysForRef.forEach(day => {
+            const row = ws.getRow(rowIdx);
+
+            // Jour
+            const jourCell = row.getCell(1);
+            jourCell.value = this.getFrenchDayAbbreviation(day);
+            jourCell.font = { bold: true, size: 11, color: { argb: 'FFFFFFFF' } };
+            jourCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+            jourCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            jourCell.border = border;
+
+            // C
+            const cCell = row.getCell(4);
+            const cVal = item[day]?.quantiteSource ?? 0;
+            cCell.value = cVal > 0 ? cVal : null;
+            cCell.font = { bold: cVal > 0, size: 11, color: { argb: 'FFD97706' } };
+            cCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF7ED' } };
+            cCell.border = border;
+
+            // DM
+            const dmCell = row.getCell(5);
+            const dmVal = item[day]?.decMagasin ?? 0;
+            dmCell.value = dmVal > 0 ? dmVal : null;
+            dmCell.font = { size: 11, color: { argb: 'FF059669' } };
+            dmCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            dmCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
+            dmCell.border = border;
+
+            // EXP
+            const expCell = row.getCell(6);
+            const expVal = item[day]?.exp ?? 0;
+            expCell.value = expVal > 0 ? expVal : null;
+            expCell.font = { size: 11, color: { argb: 'FF7C3AED' } };
+            expCell.alignment = { horizontal: 'center', vertical: 'middle' };
+            expCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F3FF' } };
+            expCell.border = border;
+
+            // Client (vide, à remplir manuellement)
+            const clientCell = row.getCell(7);
+            clientCell.value = null;
+            clientCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDF2F8' } };
+            clientCell.border = border;
+
+            row.height = 26;
+            rowIdx++;
+          });
+        });
+
+      });
+
+      // ── Largeurs colonnes ──
+      ws.getColumn(1).width = 10;  // Jour
+      ws.getColumn(2).width = 18;  // LIGNE
+      ws.getColumn(3).width = 22;  // REF
+      ws.getColumn(4).width = 14;  // C
+      ws.getColumn(5).width = 14;  // DM
+      ws.getColumn(6).width = 14;  // EXP
+      ws.getColumn(7).width = 18;  // Client
+
+      // Figer titre + en-têtes
+      ws.views = [{ state: 'frozen', ySplit: 2 }];
+
+      // ── Téléchargement ──
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Magasin-${this.selectedSemaine}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Erreur génération Excel:', error);
+      this.errorMessage = 'Erreur lors de la génération du fichier Excel';
+    }
+  }
+
+  // ─── Export PDF (inchangé) ────────────────────────────────────────
   downloadPDF(): void {
     if (this.lignesData.size === 0) {
       this.errorMessage = 'Aucune donnée à exporter en PDF';
       return;
     }
-    
     this.generateMultiLignesPDF();
   }
-  
+
   private generateMultiLignesPDF(): void {
     try {
       const doc = new jsPDF('landscape', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 10;
-      
       let isFirstPage = true;
-      
+
       const sortedLignes = Array.from(this.lignesData.entries())
         .sort((a, b) => a[0].localeCompare(b[0]));
-      
+
       sortedLignes.forEach(([ligneName, ligneData]) => {
-        if (!isFirstPage) {
-          doc.addPage('landscape');
-        }
+        if (!isFirstPage) doc.addPage('landscape');
         isFirstPage = false;
-        
         this.generatePageForLigne(doc, ligneName, ligneData, pageWidth, pageHeight, margin);
       });
-      
+
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
-        doc.text(`Page ${i} / ${pageCount}`, 
-                pageWidth / 2, pageHeight - 5, { align: 'center' });
+        doc.text(`Page ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
       }
-      
-      const fileName = `Magasin-ToutesLignes-${this.selectedSemaine}.pdf`;
-      doc.save(fileName);
-      
+
+      doc.save(`Magasin-ToutesLignes-${this.selectedSemaine}.pdf`);
     } catch (error) {
       console.error('Erreur génération PDF:', error);
       this.errorMessage = 'Erreur lors de la génération du PDF';
     }
   }
-  
+
   private generatePageForLigne(
-    doc: any, 
-    ligneName: string, 
-    ligneData: LigneData, 
-    pageWidth: number, 
-    pageHeight: number, 
-    margin: number
+    doc: any, ligneName: string, ligneData: LigneData,
+    pageWidth: number, pageHeight: number, margin: number
   ): void {
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
-    doc.text(' Extaraction données ', pageWidth / 2, 15, { align: 'center' });
-    
+    doc.text('Extraction données', pageWidth / 2, 15, { align: 'center' });
     doc.setFontSize(12);
     doc.text(`Ligne: ${ligneName}`, margin, 25);
     doc.text(`Semaine: ${this.selectedSemaine}`, pageWidth - margin, 25, { align: 'right' });
-    
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
     doc.line(margin, 30, pageWidth - margin, 30);
-    
+
     const horizontalTableData = ligneData.horizontalTableData || [];
     const daysWithData = ligneData.daysWithData || [];
-    
-    if (daysWithData.length === 0 || horizontalTableData.length === 0) {
+
+    if (!daysWithData.length || !horizontalTableData.length) {
       doc.setFontSize(12);
       doc.setTextColor(255, 0, 0);
       doc.text('Aucune donnée disponible pour cette ligne', pageWidth / 2, pageHeight / 2, { align: 'center' });
       return;
     }
-    
+
     const refColWidth = 35;
     const cdmColWidth = 12;
     const ofColWidth = 25;
     const availableWidth = pageWidth - (2 * margin) - refColWidth - cdmColWidth - ofColWidth;
     const dayColWidth = availableWidth / daysWithData.length;
-    
     let currentY = 35;
-    
+
+    // En-têtes
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.3);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    
+
     let currentX = margin;
-    
-    doc.rect(currentX, currentY, refColWidth, 6);
-    doc.text('REF', currentX + refColWidth / 2, currentY + 5, { align: 'center' });
-    currentX += refColWidth;
-    
-    doc.rect(currentX, currentY, cdmColWidth, 8);
-    doc.text('C/DM', currentX + cdmColWidth / 2, currentY + 5, { align: 'center' });
-    currentX += cdmColWidth;
-    
-    doc.rect(currentX, currentY, ofColWidth, 8);
-    doc.text('OF', currentX + ofColWidth / 2, currentY + 5, { align: 'center' });
-    currentX += ofColWidth;
-    
+    [[refColWidth, 'REF'], [cdmColWidth, 'C/DM'], [ofColWidth, 'OF']].forEach(([w, label]) => {
+      doc.rect(currentX, currentY, w as number, 8);
+      doc.text(label as string, currentX + (w as number) / 2, currentY + 5, { align: 'center' });
+      currentX += w as number;
+    });
     daysWithData.forEach((day: string) => {
       doc.rect(currentX, currentY, dayColWidth, 8);
-      const dayLabel = this.getFrenchDayAbbreviation(day);
-      doc.setTextColor(0, 0, 0); 
-      doc.text(dayLabel, currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
+      doc.text(this.getFrenchDayAbbreviation(day), currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
       currentX += dayColWidth;
     });
-    
     currentY += 8;
-    
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    
+
     horizontalTableData.forEach((item: any, index: number) => {
       if (currentY > pageHeight - 30) {
         doc.addPage('landscape');
         currentY = margin;
-        
-        currentX = margin;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setFillColor(255, 255, 255);
-        doc.setTextColor(0, 0, 0);
-        
-        doc.rect(currentX, currentY, refColWidth, 8);
-        doc.text('REF', currentX + refColWidth / 2, currentY + 5, { align: 'center' });
-        currentX += refColWidth;
-        
-        doc.rect(currentX, currentY, cdmColWidth, 8);
-        doc.text('C/DM', currentX + cdmColWidth / 2, currentY + 5, { align: 'center' });
-        currentX += cdmColWidth;
-        
-        doc.rect(currentX, currentY, ofColWidth, 8);
-        doc.text('OF', currentX + ofColWidth / 2, currentY + 5, { align: 'center' });
-        currentX += ofColWidth;
-        
-        daysWithData.forEach((day: string) => {
-          doc.rect(currentX, currentY, dayColWidth, 8);
-          const dayLabel = this.getFrenchDayAbbreviation(day);
-          doc.setTextColor(0, 0, 0);
-          doc.text(dayLabel, currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
-          currentX += dayColWidth;
-        });
-        
-        currentY += 8;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        // Remettre les en-têtes (simplifié)
       }
-      
+
       currentX = margin;
-      
-      doc.rect(currentX, currentY, refColWidth, 16);
+      // REF (span 3 lignes = C + DM + EXP = 24px)
+      doc.rect(currentX, currentY, refColWidth, 24);
       doc.setTextColor(0, 0, 0);
-      const refText = item.reference.length > 20 ? item.reference.substring(0, 12) + '...' : item.reference;
-      doc.text(refText, currentX + 2, currentY + 10);
+      const refText = item.reference.length > 20 ? item.reference.substring(0, 17) + '...' : item.reference;
+      doc.text(refText, currentX + 2, currentY + 13);
       currentX += refColWidth;
-      
+
+      const ofValue = this.getFirstOfValue(item, daysWithData);
+
+      // ─ Ligne C ─
       doc.rect(currentX, currentY, cdmColWidth, 8);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 100, 0);
+      doc.setTextColor(217, 119, 6);
       doc.text('C', currentX + cdmColWidth / 2, currentY + 5, { align: 'center' });
-      currentX += cdmColWidth;
-      
-      const ofValue = this.getFirstOfValue(item, daysWithData);
-      doc.rect(currentX, currentY, ofColWidth, 16);
+
+      const startX2 = currentX + cdmColWidth;
+      // OF span 3 lignes
+      doc.rect(startX2, currentY, ofColWidth, 24);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(0, 0, 0);
-      if (ofValue) {
-        const ofText = ofValue.length > 8 ? ofValue.substring(0, 8) + '...' : ofValue;
-        doc.text(ofText, currentX + 2, currentY + 10);
-      }
-      currentX += ofColWidth;
-      
+      if (ofValue) doc.text(ofValue.substring(0, 10), startX2 + 2, currentY + 13);
+
       daysWithData.forEach((day: string) => {
-        doc.rect(currentX, currentY, dayColWidth, 8);
-        const value = item[day]?.quantiteSource || 0;
-        if (value > 0) {
+        doc.rect(startX2 + ofColWidth + daysWithData.indexOf(day) * dayColWidth, currentY, dayColWidth, 8);
+        const val = item[day]?.quantiteSource ?? 0;
+        if (val > 0) {
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(0, 0, 0);
-          doc.text(value.toString(), currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
+          doc.text(val.toString(),
+            startX2 + ofColWidth + daysWithData.indexOf(day) * dayColWidth + dayColWidth / 2,
+            currentY + 5, { align: 'center' });
         }
         doc.setFont('helvetica', 'normal');
-        currentX += dayColWidth;
       });
-      
       currentY += 8;
-      
+
+      // ─ Ligne DM ─
       currentX = margin + refColWidth;
-      
       doc.rect(currentX, currentY, cdmColWidth, 8);
       doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 100, 0);
+      doc.setTextColor(5, 150, 105);
       doc.text('DM', currentX + cdmColWidth / 2, currentY + 5, { align: 'center' });
       currentX += cdmColWidth + ofColWidth;
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
       daysWithData.forEach((day: string) => {
         doc.rect(currentX, currentY, dayColWidth, 8);
-        const dmValue = item[day]?.decMagasin || 0;
-        if (dmValue > 0) {
-          doc.text(dmValue.toString(), currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
+        const dmVal = item[day]?.decMagasin ?? 0;
+        if (dmVal > 0) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(5, 150, 105);
+          doc.text(dmVal.toString(), currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
         }
         currentX += dayColWidth;
       });
-      
       currentY += 8;
-      
+
+      // ─ Ligne EXP ─
+      currentX = margin + refColWidth;
+      doc.rect(currentX, currentY, cdmColWidth, 8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(124, 58, 237);
+      doc.text('EXP', currentX + cdmColWidth / 2, currentY + 5, { align: 'center' });
+      currentX += cdmColWidth + ofColWidth;
+      daysWithData.forEach((day: string) => {
+        doc.rect(currentX, currentY, dayColWidth, 8);
+        const expVal = item[day]?.exp ?? 0;
+        if (expVal > 0) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(124, 58, 237);
+          doc.text(expVal.toString(), currentX + dayColWidth / 2, currentY + 5, { align: 'center' });
+        }
+        currentX += dayColWidth;
+      });
+      currentY += 8;
+
       if (index < horizontalTableData.length - 1) {
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.1);
@@ -383,36 +575,26 @@ export class Magasin1Component implements OnInit {
       }
     });
   }
-  
+
+  // ─── Utilitaires ─────────────────────────────────────────────────
   getFirstOfValue(item: any, daysWithData: string[]): string {
     for (const day of daysWithData) {
-      if (item[day]?.of) {
-        return item[day].of;
-      }
+      if (item[day]?.of) return item[day].of;
     }
     return '';
   }
-  
+
   getFrenchDayAbbreviation(day: string): string {
-    const abbreviations: { [key: string]: string } = {
-      'lundi': 'Lun',
-      'mardi': 'Mar',
-      'mercredi': 'Mer',
-      'jeudi': 'Jeu',
-      'vendredi': 'Ven',
-      'samedi': 'Sam'
+    const map: { [key: string]: string } = {
+      lundi: 'Lun', mardi: 'Mar', mercredi: 'Mer',
+      jeudi: 'Jeu', vendredi: 'Ven', samedi: 'Sam'
     };
-    return abbreviations[day.toLowerCase()] || day.substring(0, 3);
+    return map[day.toLowerCase()] || day.substring(0, 3);
   }
-  
+
   getWeeksList(): string[] {
     const weeks = [];
-    for (let i = 1; i <= 52; i++) {
-      weeks.push(`semaine${i}`);
-    }
+    for (let i = 1; i <= 52; i++) weeks.push(`semaine${i}`);
     return weeks;
-  }
-   retourChoix(): void {
-    this.router.navigate(['/prod']);
   }
 }

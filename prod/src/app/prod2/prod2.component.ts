@@ -181,10 +181,12 @@ export class Prod2Component implements AfterViewInit, OnInit {
 
   // Modal des causes
   showCausesModal = signal(false);
-  // 🔒 true = le modal a été ouvert automatiquement après sauvegarde → on ne peut pas le fermer tant que l'écart n'est pas justifié
+  //  true = le modal a été ouvert automatiquement après sauvegarde → on ne peut pas le fermer tant que l'écart n'est pas justifié
   causesModalForcee = signal(false);
   // Liste des écarts restants à justifier après sauvegarde (on les traite un par un)
   ecartsEnAttente = signal<{ reference: ReferenceProduction; jour: string }[]>([]);
+  //  Entrées DP modifiées pendant cette session d'édition (clé: "reference|jour")
+  private dpModifiesDansCetteSession = new Set<string>();
 
   selectedEntryForCauses = signal<{
     reference: ReferenceProduction;
@@ -201,7 +203,7 @@ matriculesAbsence: [],
 matriculesRendement: [],
   m3Methode: 0,
   m4Maintenance: 0,
-  phasesMaintenance: [], // 🆕 Ajouter les phases de maintenance
+  phasesMaintenance: [], //  Ajouter les phases de maintenance
   m5Qualite: 0,
   qualiteReferences: [],
   m6Environnement: 0 // Ajoutez cette ligne
@@ -272,15 +274,12 @@ showMPSuggestions = signal(false);
     this.sidebarVisible.set(true);
   }
 
-  // ✅ NOUVEAU: Afficher les permissions de l'utilisateur
+  //  NOUVEAU: Afficher les permissions de l'utilisateur
   if (this.authService.isUser()) {
     const matricule = this.getUserMatricule();
-    console.log('👤 Chef secteur connecté - Matricule:', matricule);
     
     if (this.canEditDP() && !this.canEditDM()) {
-      console.log('✏️ Permissions: Modification de DP uniquement');
     } else if (this.canEditDM() && !this.canEditDP()) {
-      console.log('✏️ Permissions: Modification de DM uniquement (matricule spécial)');
     }
   }
 
@@ -339,7 +338,7 @@ private loadProductionLines(): void {
           };
         });
         
-        // ✅ TRI CORRECT : Tri alphanumérique basé sur le numéro après "L"
+        //  TRI CORRECT : Tri alphanumérique basé sur le numéro après "L"
         const sortedLines = this.sortLinesByNumber(lines);
         
         this.availableLines.set(sortedLines);
@@ -349,7 +348,6 @@ private loadProductionLines(): void {
       this.loading.set(false);
     },
     error: (error) => {
-      console.error('Erreur chargement lignes:', error);
       this.loadMockProductionLines();
       this.loading.set(false);
     }
@@ -380,7 +378,6 @@ private loadMatieresPremieres(ligne: string): void {
   
   this.matierePremierService.findByLigne(ligne).subscribe({
     next: (response: any) => {
-      console.log('Matieres premières chargées pour', ligne, ':', response);
       
       let mpList: string[] = [];
       
@@ -399,7 +396,6 @@ private loadMatieresPremieres(ligne: string): void {
         mpList = response.data.map((mp: any) => mp.refMatierePremier || mp.reference).filter(Boolean);
       }
       
-      console.log('Références MP extraites:', mpList);
       
       if (mpList.length === 0) {
         // Références par défaut
@@ -517,7 +513,6 @@ closeMPSuggestions(): void {
   
   this.ouvrierService.findAll().subscribe({
     next: (ouvriers: any) => {
-      console.log('Ouvriers chargés depuis API:', ouvriers);
       
       // Transformer les données d'ouvrier en format Operator
       const operators: Operator[] = ouvriers.map((ouvrier: any) => {
@@ -667,7 +662,6 @@ closeMPSuggestions(): void {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Erreur chargement semaines:', error);
         this.availableWeeksSignal.set([]);
         this.loading.set(false);
       }
@@ -681,13 +675,10 @@ closeMPSuggestions(): void {
   // ==================== SÉLECTION LIGNE/SEMAINE ====================
 
  toggleSidebar(): void {
-  console.log('Bouton toggle cliqué. État actuel:', this.sidebarVisible());
   const newState = !this.sidebarVisible();
   this.sidebarVisible.set(newState);
-  console.log('Nouvel état sidebar:', newState);
 }
 onLigneSelected(line: ProductionLine): void {
-  console.log('Line selected:', line.ligne);
   
   // Réinitialiser les phases et données avant de charger la nouvelle ligne
   this.selectedLigne.set(line);
@@ -816,7 +807,6 @@ onLigneSelected(line: ProductionLine): void {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Erreur chargement planifications:', error);
         this.createEmptyPlanifications(line);
         this.loading.set(false);
       }
@@ -861,7 +851,8 @@ toggleEditMode(): void {
   const currentEditingState = this.isEditing();
   
   if (!currentEditingState) {
-    console.log('📝 Mode édition activé');
+    //  Vider le Set des entrées modifiées pour cette nouvelle session
+    this.dpModifiesDansCetteSession.clear();
     this.isEditing.set(true);
   } else {
     this.checkDPIncoherences();
@@ -869,23 +860,62 @@ toggleEditMode(): void {
     if (this.hasIncoherences()) {
       // Afficher l'erreur et NE PAS sauvegarder
       alert(this.errorMessage());
-      return; // ⛔ Bloquer la sauvegarde
+      return; //  Bloquer la sauvegarde
     }
     
-    // 2. Si pas d'incohérences, sauvegarder
-    console.log('💾 Enregistrement des modifications...');
-    this.sauvegarderPlanifications();
+    // Vérifier s'il y a des écarts DP < C modifiés dans cette session
+    const ecarts = this.detecterEcartsSessionDP();
     
-    // 3. Chercher les écarts DP < C sans causes
-    setTimeout(() => {
-      this.ouvrirModalEcartsSequentiels();
-    }, 1200); 
+    if (ecarts.length > 0) {
+      // ⚠️ BLOQUER la sauvegarde et ouvrir le modal d'abord
+      // On stocke le fait qu'on attend la validation des causes pour sauvegarder
+      this.sauvegardeEnAttenteDeCauses.set(true);
+      this.ecartsEnAttente.set(ecarts);
+      
+      // Ouvrir le modal forcé sur le PREMIER écart
+      const premier = ecarts[0];
+      this.causesModalForcee.set(true);
+      this.openCausesModal(premier.reference, premier.jour);
+      // La sauvegarde se fera dans saveCauses() après le dernier écart justifié
+    } else {
+      // Aucun écart → sauvegarder directement
+      this.sauvegarderPlanifications();
+    }
   }
 }
 
+  //  true = la sauvegarde DP est en attente de validation des causes
+  sauvegardeEnAttenteDeCauses = signal(false);
+
+  /**
+   *  Détecte tous les écarts DP < C modifiés dans CETTE session,
+   *    retourne la liste pour traitement séquentiel.
+   */
+  private detecterEcartsSessionDP(): { reference: ReferenceProduction; jour: string }[] {
+    const planif = this.weekPlanification();
+    if (!planif) return [];
+
+    const ecarts: { reference: ReferenceProduction; jour: string }[] = [];
+
+    planif.references.forEach(ref => {
+      this.weekDays.forEach(day => {
+        const entry = ref[day] as DayEntry;
+        const cle = `${ref.reference}|${day}`;
+        const quantiteSource = this.getQuantiteSource(entry);
+        const estModifieDansCetteSession = this.dpModifiesDansCetteSession.has(cle);
+        if (estModifieDansCetteSession && entry && quantiteSource > 0 && entry.dp > 0 && entry.dp < quantiteSource) {
+          ecarts.push({ reference: ref, jour: day });
+        }
+      });
+    });
+
+    return ecarts;
+  }
+
 /**
- * 🔒 Détecte tous les écarts DP < C sans causes enregistrées,
+ *  Détecte tous les écarts DP < C sans causes enregistrées,
  *    met la liste dans ecartsEnAttente, puis ouvre le modal forcé sur le premier.
+ *    ️ Seules les entrées DP modifiées dans CETTE session d'édition sont concernées.
  */
 private ouvrirModalEcartsSequentiels(): void {
   const planif = this.weekPlanification();
@@ -896,7 +926,11 @@ private ouvrirModalEcartsSequentiels(): void {
   planif.references.forEach(ref => {
     this.weekDays.forEach(day => {
       const entry = ref[day] as DayEntry;
-      if (entry && entry.c > 0 && entry.dp > 0 && entry.dp < entry.c && !entry.causes) {
+      const cle = `${ref.reference}|${day}`;
+      const quantiteSource = this.getQuantiteSource(entry);
+      //  On ne traite QUE les entrées DP modifiées dans cette session
+      const estModifieDansCetteSession = this.dpModifiesDansCetteSession.has(cle);
+      if (estModifieDansCetteSession && entry && quantiteSource > 0 && entry.dp > 0 && entry.dp < quantiteSource && !entry.causes) {
         ecarts.push({ reference: ref, jour: day });
       }
     });
@@ -971,9 +1005,6 @@ private sauvegarderPlanifications(): void {
     return;
   }
   
-  console.log(`💾 Sauvegarde de ${planificationsToSave.length} entrées...`);
-  console.log(`   Modifications DP: ${modificationsDP}`);
-  console.log(`   Modifications DM: ${modificationsDM}`);
   
   this.showSuccessMessage(`Sauvegarde en cours... (${planificationsToSave.length} entrées)`);
   
@@ -982,11 +1013,9 @@ private sauvegarderPlanifications(): void {
     return new Promise<void>((resolve, reject) => {
       this.semaineService.updateProductionPlanification(planData).subscribe({
         next: (response) => {
-          console.log(`✅ Sauvegardé: ${planData.reference} - ${planData.jour}`, response);
           resolve();
         },
         error: (error) => {
-          console.error(`❌ Erreur: ${planData.reference} - ${planData.jour}`, error);
           
           // Gérer les erreurs spécifiques
           let errorMsg = `Erreur pour ${planData.reference}`;
@@ -1017,7 +1046,6 @@ private sauvegarderPlanifications(): void {
       }
     })
     .catch((error) => {
-      console.error('Erreur générale de sauvegarde:', error);
       this.showSuccessMessage('Erreur lors de la sauvegarde');
     });
 }
@@ -1032,16 +1060,19 @@ detecterEcartsDP(): {reference: string, jour: string, c: number, dp: number, del
   planif.references.forEach(ref => {
     this.weekDays.forEach(day => {
       const entry = ref[day] as DayEntry;
-      if (entry && entry.c > 0 && entry.dp > 0 && entry.c > entry.dp) {
-        const delta = entry.c - entry.dp;
-        if (delta > 0) {
-          ecarts.push({
-            reference: ref.reference,
-            jour: day,
-            c: entry.c,
-            dp: entry.dp,
-            delta: delta
-          });
+      if (entry) {
+        const quantiteSource = this.getQuantiteSource(entry);
+        if (quantiteSource > 0 && entry.dp > 0 && quantiteSource > entry.dp) {
+          const delta = quantiteSource - entry.dp;
+          if (delta > 0) {
+            ecarts.push({
+              reference: ref.reference,
+              jour: day,
+              c: quantiteSource, // M si > 0, sinon C
+              dp: entry.dp,
+              delta: delta
+            });
+          }
         }
       }
     });
@@ -1057,7 +1088,7 @@ notifierEcartsApresSauvegarde(ecarts: any[]): void {
   
   // Afficher un message avec option d'analyse
   const message = `
-    ⚠️ ${totalEcarts} écart(s) DP < C détecté(s)
+    ️ ${totalEcarts} écart(s) DP < C détecté(s)
     
     Exemple: ${premiereReference.reference} - ${premiereReference.jour}
     C: ${premiereReference.c} | DP: ${premiereReference.dp}
@@ -1079,22 +1110,20 @@ notifierEcartsApresSauvegarde(ecarts: any[]): void {
     }
   } else {
     // Afficher un rappel
-    this.showSuccessMessage(`⚠️ ${totalEcarts} écart(s) non analysé(s). Pensez à les justifier plus tard.`);
+    this.showSuccessMessage(`️ ${totalEcarts} écart(s) non analysé(s). Pensez à les justifier plus tard.`);
   }
 }
 
 // Dans prod2.component.ts - modifier updateDayEntry
 updateDayEntry(reference: ReferenceProduction, day: string, field: string, value: any): void {
-  // 🎯 VÉRIFICATION DES PERMISSIONS
+  //  VÉRIFICATION DES PERMISSIONS
   if (field === 'dp' && !this.canEditDP()) {
-    console.warn('⚠️ Vous n\'avez pas la permission de modifier DP');
-    this.showSuccessMessage('⚠️ Seuls les chefs secteurs normaux peuvent modifier DP');
+    this.showSuccessMessage('️ Seuls les chefs secteurs normaux peuvent modifier DP');
     return;
   }
   
   if (field === 'dm' && !this.canEditDM()) {
-    console.warn('⚠️ Vous n\'avez pas la permission de modifier DM');
-    this.showSuccessMessage('⚠️ Seul le matricule 2603 peut modifier DM');
+    this.showSuccessMessage('️ Seul le matricule 2603 peut modifier DM');
     return;
   }
   if (field === 'dp' || field === 'c') {
@@ -1102,6 +1131,11 @@ updateDayEntry(reference: ReferenceProduction, day: string, field: string, value
     setTimeout(() => {
       this.checkDPIncoherences();
     }, 100);
+  }
+
+  //  Tracer les entrées DP modifiées pour n'ouvrir que leurs modals
+  if (field === 'dp') {
+    this.dpModifiesDansCetteSession.add(`${reference.reference}|${day}`);
   }
   
   if (this.weekPlanification()) {
@@ -1132,14 +1166,8 @@ updateDayEntry(reference: ReferenceProduction, day: string, field: string, value
               Math.round((dayEntry.dp / quantiteSource) * 100) : 0;
           }
           
-          // ✅ SAUVEGARDE AUTOMATIQUE POUR DM (si permission)
+          //  SAUVEGARDE AUTOMATIQUE POUR DM (si permission)
           if (field === 'dm' && this.canEditDM()) {
-            console.log('✅ Sauvegarde automatique du champ DM:', {
-              reference: reference.reference,
-              jour: day,
-              valeur: numValue,
-              matricule: this.getUserMatricule()
-            });
             
             // Mettre à jour l'état local d'abord
             this.weekPlanification.set(updatedPlanif);
@@ -1173,15 +1201,12 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
     decMagasin: entry.dm
   };
 
-  console.log('Envoi DM unique:', dmData);
   
   this.semaineService.updateMagasinPlanification(dmData).subscribe({
     next: (response) => {
-      console.log('DM sauvegardé avec succès:', response);
       this.showSuccessMessage('Déclaration Magasin enregistrée');
     },
     error: (error) => {
-      console.error('Erreur sauvegarde DM:', error);
       
       let errorMessage = 'Erreur lors de la sauvegarde DM: ';
       if (error.error?.message) {
@@ -1266,7 +1291,6 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
   // ==================== RAPPORTS DE PRODUCTION ====================
 
   onPersonIconClick(day: string): void {
-  console.log('Opening production form for day:', day);
   
   const currentLine = this.selectedLigne();
   if (!currentLine) {
@@ -1276,7 +1300,6 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
   
   // Vérifier que les phases sont chargées
   if (this.availablePhases().length === 0) {
-    console.log('Phases non chargées, chargement en cours...');
     this.loadAvailablePhases(currentLine.ligne);
     
     // Attendre un peu pour le chargement
@@ -1289,7 +1312,6 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
 }
 // Remplacez la méthode openProductionForm par cette version
 private openProductionForm(day: string): void {
-  console.log(`Ouverture formulaire production pour: ${day}`);
   
   const currentLine = this.selectedLigne();
   if (!currentLine) {
@@ -1299,7 +1321,6 @@ private openProductionForm(day: string): void {
 
   // Calculer et afficher la date CORRECTE
   const correctDate = this.getCorrectDateForDay(day);
-  console.log(`Date calculée: ${correctDate}`);
   this.currentDate.set(correctDate);
   
   this.selectedDayForProduction.set(day);
@@ -1312,7 +1333,6 @@ private openProductionForm(day: string): void {
   this.loadExistingRapportsForDay(day);
   
   // Charger les phases pour la ligne
-  console.log('Chargement des phases pour la ligne:', currentLine.ligne);
   this.loadAvailablePhases(currentLine.ligne);
 }
 
@@ -1348,7 +1368,6 @@ private setCorrectDate(day: string): void {
   exactDate.setDate(weekStartDate.getDate() + dayIndex);
 
   const formattedDate = this.formatDate(exactDate);
-  console.log(`Date calculée pour ${day}: ${formattedDate} (index: ${dayIndex})`);
   this.currentDate.set(formattedDate);
 }
 
@@ -1398,7 +1417,6 @@ private formatDateToFrench(date: Date): string {
     
     this.saisieRapportService.getRapportsBySemaineJour(semaineNom, day).subscribe({
       next: (response) => {
-        console.log('Rapports existants:', response);
         // Transformer les rapports en ProductionRecord
         const records: ProductionRecord[] = response.rapports?.map((rapport: any) => {
           const phasesLigne1: WorkPhase[] = rapport.phases?.map((phase: any) => ({
@@ -1423,20 +1441,17 @@ private formatDateToFrench(date: Date): string {
         this.productionRecords.set(records);
       },
       error: (error) => {
-        console.error('Erreur chargement rapports:', error);
       }
     });
   }
 
   private loadAvailablePhases(ligne: string): void {
-  console.log('Chargement des phases pour la ligne:', ligne);
   
   // Vider les phases actuelles pendant le chargement
   this.availablePhases.set([]);
   
   this.phaseService.findByLigne(ligne).subscribe({
     next: (response: any) => {
-      console.log('Réponse API phases pour', ligne, ':', response);
       
       let phaseList: string[] = [];
       
@@ -1475,7 +1490,6 @@ private formatDateToFrench(date: Date): string {
         }).filter((phase: string) => phase !== '');
       }
       
-      console.log('Phases extraites pour', ligne, ':', phaseList);
       
       // IMPORTANT: Mettre à jour les phases disponibles
       this.availablePhases.set(phaseList);
@@ -1491,10 +1505,8 @@ private formatDateToFrench(date: Date): string {
         this.operatorsFormData.set(updatedFormData);
       }
       
-      console.log('Phases disponibles mises à jour:', phaseList);
     },
     error: (error) => {
-      console.error('Erreur chargement phases pour', ligne, ':', error);
       
       // Phases par défaut pour les lignes communes
       const defaultPhases: { [key: string]: string[] } = {
@@ -1508,7 +1520,6 @@ private formatDateToFrench(date: Date): string {
       };
       
       const fallbackPhases = defaultPhases[ligne] || ['Phase1', 'Phase2', 'Phase3'];
-      console.log('Utilisation des phases par défaut:', fallbackPhases);
       this.availablePhases.set(fallbackPhases);
     }
   });
@@ -1565,7 +1576,6 @@ initializeOperatorFormData(matricule: string): void {
   // Trouver l'ouvrier dans la liste chargée
   const operator = this.operators().find(op => op.matricule === matricule);
   if (!operator) {
-    console.error(`Ouvrier ${matricule} non trouvé`);
     return;
   }
 
@@ -1694,7 +1704,6 @@ saveAllProductionRecords(): void {
     return new Promise<void>((resolve, reject) => {
       const formData = this.getOperatorFormData(matricule);
       if (!formData || formData.totalHeures === 0) {
-        console.log(`Aucune donnée pour ${matricule}`);
         resolve();
         return;
       }
@@ -1714,7 +1723,6 @@ saveAllProductionRecords(): void {
         }));
 
       if (phases.length === 0) {
-        console.log(`Aucune phase valide pour ${matricule}`);
         resolve();
         return;
       }
@@ -1729,7 +1737,6 @@ saveAllProductionRecords(): void {
       }
 
       if (isNaN(matriculeNumber)) {
-        console.error(`Matricule invalide: ${matricule}`);
         reject(new Error(`Matricule invalide: ${matricule}`));
         return;
       }
@@ -1744,11 +1751,9 @@ saveAllProductionRecords(): void {
         // NE PAS inclure nomPrenom
       };
 
-      console.log('Envoi du rapport:', dto);
 
       this.saisieRapportService.createRapport(dto).subscribe({
         next: (response) => {
-          console.log(`Rapport sauvegardé pour ${matricule}:`, response);
           
           // Récupérer le nomPrenom de l'ouvrier pour l'affichage local
           const ouvrier = this.operators().find(op => op.matricule === matricule);
@@ -1776,7 +1781,6 @@ saveAllProductionRecords(): void {
           resolve();
         },
         error: (error) => {
-          console.error(`Erreur sauvegarde ${matricule}:`, error);
           
           const ouvrier = this.operators().find(op => op.matricule === matricule);
           const nomPrenom = ouvrier ? `${ouvrier.nom} ${ouvrier.prenom}` : formData?.nomPrenom || matricule;
@@ -1842,7 +1846,6 @@ private loadFilteredRecords(): void {
   const jour = this.selectedDayForProduction();
   
   if (!planif || !ligne || !jour) {
-    console.error('Données manquantes pour charger les rapports');
     return;
   }
 
@@ -1859,7 +1862,6 @@ private loadFilteredRecords(): void {
   
   this.saisieRapportService.voirRapportsFiltres(dto).subscribe({
     next: (response) => {
-      console.log('Rapports filtrés chargés:', response);
       
       // Transformer les rapports en ProductionRecord
       const records: ProductionRecord[] = response.rapports?.map((rapport: any) => {
@@ -1886,7 +1888,6 @@ private loadFilteredRecords(): void {
       this.loading.set(false);
     },
     error: (error) => {
-      console.error('Erreur chargement rapports filtrés:', error);
       
       // Fallback: charger tous les rapports de la semaine
       this.loadExistingRapportsForDay(jour);
@@ -1897,7 +1898,6 @@ private loadFilteredRecords(): void {
 
 
 showRecordDetails(record: ProductionRecord): void {
-  console.log('Détails du rapport:', record);
   
   // Convertir le matricule en nombre si nécessaire
   let matriculeNumber: number;
@@ -1909,14 +1909,12 @@ showRecordDetails(record: ProductionRecord): void {
   }
   
   if (isNaN(matriculeNumber)) {
-    console.error('Matricule invalide:', record.matricule);
     return;
   }
   
   // Récupérer la semaine
   const planif = this.weekPlanification();
   if (!planif) {
-    console.error('Aucune planification trouvée');
     return;
   }
   
@@ -1924,14 +1922,12 @@ showRecordDetails(record: ProductionRecord): void {
   const jour = record.date.split('/')[0]; // Extraire le jour depuis la date
   const ligne = record.ligne1;
   
-  console.log('Critères de recherche:', { semaineNom, jour, ligne, matriculeNumber });
   
   // Récupérer les données complètes du rapport
   this.loading.set(true);
   
   this.saisieRapportService.getRapportParCriteres(semaineNom, jour, ligne, matriculeNumber).subscribe({
     next: (response) => {
-      console.log('Rapport chargé pour modification:', response);
       
       const rapport = response.rapport || response;
       
@@ -1957,7 +1953,6 @@ showRecordDetails(record: ProductionRecord): void {
       this.loading.set(false);
     },
     error: (error) => {
-      console.error('Erreur chargement rapport:', error);
       
       // Fallback: utiliser les données locales
       const recordForEdit: RecordForEdit = {
@@ -2010,17 +2005,17 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
   this.showQualiteSuggestions.set(false);
   this.selectedCommentaireId.set(null);
   
-  // 🆕 MATRICULES ABSENCE
+  //  MATRICULES ABSENCE
   this.selectedMatriculesAbsence.set([]);
   this.currentAbsenceSearchQuery.set('');
   this.showAbsenceSuggestions.set(false);
   
-  // 🆕 MATRICULES RENDEMENT
+  //  MATRICULES RENDEMENT
   this.selectedMatriculesRendement.set([]);
   this.currentRendementSearchQuery.set('');
   this.showRendementSuggestions.set(false);
   
-  // 🆕 PHASES MAINTENANCE
+  //  PHASES MAINTENANCE
   this.selectedPhasesMaintenance.set([]);
   this.currentPhasesSearchQuery.set('');
   this.showPhasesSuggestions.set(false);
@@ -2068,24 +2063,20 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
           this.currentQualiteQuantite.set(details.qualite);
         }
         
-        // 🟠 MATRICULES ABSENCE
+        //  MATRICULES ABSENCE
         if (details.matriculesAbsence) {
-          console.log('Matricules absence trouvés:', details.matriculesAbsence);
           this.parseMatriculesAbsenceString(details.matriculesAbsence);
         }
         
-        // 🟡 MATRICULES RENDEMENT
+        //  MATRICULES RENDEMENT
         if (details.matriculesRendement) {
-          console.log('Matricules rendement trouvés:', details.matriculesRendement);
           this.parseMatriculesRendementString(details.matriculesRendement);
         }
         
-        // 🔵 PHASES MAINTENANCE
+        //  PHASES MAINTENANCE
         if (details.phasesMaintenance) {
-          console.log('Phases maintenance trouvées:', details.phasesMaintenance);
           this.parsePhasesMaintenanceString(details.phasesMaintenance);
         } else if (response.data.phasesMaintenance) {
-          console.log('Phases maintenance trouvées (autre niveau):', response.data.phasesMaintenance);
           this.parsePhasesMaintenanceString(response.data.phasesMaintenance);
         }
         
@@ -2109,20 +2100,6 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
           commentaireId = response.data.commentaireId;
         }
         this.selectedCommentaireId.set(commentaireId);
-        
-        console.log('✅ Données chargées:', {
-          mp: this.currentMPQuantite(),
-          mpRefs: this.selectedMPReferences(),
-          absence: details.absence,
-          matriculesAbsence: this.selectedMatriculesAbsence(),
-          rendement: details.rendement,
-          matriculesRendement: this.selectedMatriculesRendement(),
-          maintenance: details.maintenance,
-          phasesMaintenance: this.selectedPhasesMaintenance(),
-          qualite: details.qualite,
-          qualiteRefs: this.selectedQualiteReferences(),
-          environnement: details.environnement
-        });
         
       } else {
         // ========== RÉINITIALISATION COMPLÈTE ==========
@@ -2152,7 +2129,6 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
       this.showCausesModal.set(true);
     },
     error: (error) => {
-      console.error('❌ Erreur vérification non-conformité:', error);
       
       // Réinitialisation en cas d'erreur
       this.currentCauses.set({
@@ -2182,9 +2158,9 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
   });
 }
   closeCausesModal(): void {
-    // 🔒 Si le modal est forcé ET l'écart n'est pas encore justifié → on bloque
+    //  Si le modal est forcé ET l'écart n'est pas encore justifié → on bloque
     if (this.causesModalForcee() && this.getTotalCauses() !== this.getEcartCDP()) {
-      this.showSuccessMessage('⚠️ Vous devez d\'abord justifier l\'écart avant de fermer');
+      this.showSuccessMessage('️ Vous devez d\'abord justifier l\'écart avant de fermer');
       return;
     }
 
@@ -2195,6 +2171,11 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
     if (this.causesModalForcee()) {
       this.causesModalForcee.set(false);
       this.passerAuProchainEcart();
+    } else if (this.sauvegardeEnAttenteDeCauses()) {
+      // L'user a annulé (modal non forcé) → annuler toute la sauvegarde
+      this.sauvegardeEnAttenteDeCauses.set(false);
+      this.ecartsEnAttente.set([]);
+      this.showSuccessMessage('Enregistrement annulé : les écarts doivent être justifiés');
     }
   }
 
@@ -2276,7 +2257,7 @@ updateMPQuantite(value: string): void {
   const numValue = value === '' ? 0 : Math.max(0, parseInt(value) || 0);
   this.currentMPQuantite.set(numValue);
   
-  // 🎯 CORRECTION : Synchroniser avec currentCauses
+  //  CORRECTION : Synchroniser avec currentCauses
   this.currentCauses.update(causes => ({
     ...causes,
     m1MatierePremiere: numValue
@@ -2370,7 +2351,6 @@ updateCause(field: keyof Causes5M, value: string): void {
   }
   
   this.currentCauses.set(current);
-  console.log(`🔄 Cause mise à jour - ${field}:`, numValue);
 }
 
   incrementCause(causeKey: keyof Causes5M, amount: number = 100): void {
@@ -2399,7 +2379,7 @@ getTotalCauses(): number {
          causes.m3Methode +
          causes.m4Maintenance +
          causes.m5Qualite +
-         causes.m6Environnement;  // ✅ AJOUT ICI
+         causes.m6Environnement;  //  AJOUT ICI
 }
 
 currentQualiteQuantite = signal<number>(0);
@@ -2426,7 +2406,7 @@ updateQualiteQuantite(value: string): void {
   const numValue = value === '' ? 0 : Math.max(0, parseInt(value) || 0);
   this.currentQualiteQuantite.set(numValue);
   
-  // 🎯 CORRECTION : Synchroniser avec currentCauses (DÉJÀ FAIT dans votre code ✅)
+  //  CORRECTION : Synchroniser avec currentCauses (DÉJÀ FAIT dans votre code )
   this.currentCauses.update(causes => ({
     ...causes,
     m5Qualite: numValue
@@ -2471,15 +2451,21 @@ addQualiteReference(ref: string): void {
   // Ajouter la référence
   this.selectedQualiteReferences.set([...current, trimmedRef]);
   this.currentQualiteSearchQuery.set('');
-  this.showQualiteSuggestions.set(false); // 🆕 Fermer les suggestions
+  this.showQualiteSuggestions.set(false); //  Fermer les suggestions
   
-  console.log('Référence Qualité ajoutée:', trimmedRef, 'Total:', current.length + 1);
 }
+
+  // Retourne la quantité source : qteModifiee (M) si > 0, sinon qtePlanifiee (C)
+  getQuantiteSource(entry: DayEntry): number {
+    return entry.m > 0 ? entry.m : entry.c;
+  }
 
   getEcartCDP(): number {
     const selected = this.selectedEntryForCauses();
     if (!selected) return 0;
-    return Math.abs(selected.entry.c - selected.entry.dp);
+    // Utiliser quantiteSource : M si > 0, sinon C
+    const quantiteSource = this.getQuantiteSource(selected.entry);
+    return Math.abs(quantiteSource - selected.entry.dp);
   }
 
   getDifferenceRestante(): number {
@@ -2561,7 +2547,7 @@ saveCauses(): void {
       dto.referenceQualite = qualiteRefsString;
     }
     
-    // ✅ COMMENTAIRE OBLIGATOIRE
+    //  COMMENTAIRE OBLIGATOIRE
     if (!this.selectedCommentaireId()) {
       alert('Un commentaire est obligatoire lorsque la quantité Qualité > 0');
       return;
@@ -2574,10 +2560,14 @@ saveCauses(): void {
     dto.environnement = causes.m6Environnement;
   }
 
+  // ========== FIX : Transmettre le DP et M actuels ==========
+  // Le DP n'est PAS encore sauvegardé en DB au moment où le modal s'ouvre.
+  // Le backend doit donc calculer le delta à partir de ces valeurs fraîches
+  // plutôt que des valeurs périmées lues depuis la base de données.
+  dto.decProduction = selected.entry.dp;
+  dto.qteModifiee   = selected.entry.m || 0;
+
   const totalCauses = this.getTotalCauses();
-  console.log('📦 DTO complet à envoyer:', dto);
-  console.log('📊 Total causes:', totalCauses);
-  console.log('📉 Écart CDP:', this.getEcartCDP());
 
   // ========== GESTION TOTAL = 0 ==========
   if (totalCauses === 0) {
@@ -2597,7 +2587,6 @@ saveCauses(): void {
   // ========== ENVOI AU BACKEND ==========
   this.nonConfService.createOrUpdateNonConformite(dto).subscribe({
     next: (response) => {
-      console.log('✅ Causes sauvegardées avec succès:', response);
       
       // Mettre à jour localement
       const updatedPlanif = { ...planif };
@@ -2643,13 +2632,23 @@ saveCauses(): void {
         this.showSuccessMessage('Causes sauvegardées avec succès');
       }
       
+      // Vérifier si c'est le dernier écart AVANT que closeCausesModal le retire de la liste
+      const estDernierEcart = this.sauvegardeEnAttenteDeCauses() && this.ecartsEnAttente().length <= 1;
+      
       this.closeCausesModal();
+      
+      // Si c'était le dernier écart → tous justifiés → sauvegarder le DP maintenant
+      if (estDernierEcart) {
+        this.sauvegardeEnAttenteDeCauses.set(false);
+        this.sauvegarderPlanifications();
+      }
     },
     error: (error) => {
-      console.error('❌ Erreur sauvegarde causes:', error);
       
       if (error.status === 400) {
-        const errorMessage = error.error?.message || '';
+        // Le message peut être une string ou un tableau (NestJS ValidationPipe)
+        const raw = error.error?.message;
+        const errorMessage = Array.isArray(raw) ? raw.join(', ') : (raw || '');
         if (errorMessage.includes('toutes les valeurs à 0')) {
           this.showSuccessMessage('Aucune donnée à sauvegarder');
           this.closeCausesModal();
@@ -2677,7 +2676,9 @@ canSaveCauses(): boolean {
 
   getSelectedC(): number {
     const selected = this.selectedEntryForCauses();
-    return selected?.entry.c || 0;
+    if (!selected) return 0;
+    // Retourner la quantiteSource (M si défini, sinon C)
+    return this.getQuantiteSource(selected.entry);
   }
 
   getSelectedDP(): number {
@@ -2850,19 +2851,16 @@ getDayDateCorrected(day: string, dayIndex: number): Date {
 private getCorrectDateForDay(day: string): string {
   const planif = this.weekPlanification();
   if (!planif) {
-    console.error('Aucune planification disponible');
     return this.formatDate(new Date()); // Fallback à la date actuelle
   }
 
   const dayIndex = this.weekDays.indexOf(day);
   if (dayIndex === -1) {
-    console.error(`Jour invalide: ${day}`);
     return this.formatDate(new Date());
   }
 
   // Utiliser la méthode de calcul de date existante
   const targetDate = this.getDayDateCorrected(day, dayIndex);
-  console.log(`Date calculée pour ${day}: ${targetDate}`);
   
   return this.formatDate(targetDate);
 }
@@ -2943,7 +2941,6 @@ updateAllReferencesOperators(day: string, value: string): void {
   const nbOp = parseInt(value, 10) || 0;
   
   if (nbOp < 0 || nbOp > 50) {
-    console.warn('Nombre d\'opérateurs invalide:', nbOp);
     return;
   }
 
@@ -2965,7 +2962,6 @@ updateAllReferencesOperators(day: string, value: string): void {
   });
 
   this.weekPlanification.set(updatedPlanif);
-  console.log(`NB Opérateurs mis à jour pour ${day}: ${nbOp}`);
 }
 
 /**
@@ -3030,18 +3026,16 @@ addMPReference(ref: string): void {
   this.currentMPSearchQuery.set('');
   this.showMPSuggestions.set(false);
   
-  console.log('Référence MP ajoutée:', ref, 'Total:', current.length + 1);
 }
 removeMPReference(index: number): void {
   const current = this.selectedMPReferences();
   const updated = current.filter((_, i) => i !== index);
   this.selectedMPReferences.set(updated);
   
-  console.log('Référence MP supprimée, restantes:', updated.length);
 }
 getMPReferencesString(): string {
   const refs = this.selectedMPReferences();
-  return refs.length > 0 ? refs.join(', ') : '';
+  return refs.length > 0 ? refs.join(',') : '';
 }
 
 parseMPReferencesString(refsString: string | null): void {
@@ -3054,7 +3048,6 @@ parseMPReferencesString(refsString: string | null): void {
   const refs = refsString.split(',').map(ref => ref.trim()).filter(ref => ref !== '');
   this.selectedMPReferences.set(refs);
   
-  console.log('Références MP parsées:', refs);
 }
 ddQualiteReference(ref: string): void {
   const trimmedRef = ref.trim();
@@ -3081,7 +3074,6 @@ ddQualiteReference(ref: string): void {
   this.selectedQualiteReferences.set([...current, trimmedRef]);
   this.currentQualiteSearchQuery.set('');
   
-  console.log('Référence Qualité ajoutée:', trimmedRef, 'Total:', current.length + 1);
 }
 
 /**
@@ -3092,7 +3084,6 @@ removeQualiteReference(index: number): void {
   const updated = current.filter((_, i) => i !== index);
   this.selectedQualiteReferences.set(updated);
   
-  console.log('Référence Qualité supprimée, restantes:', updated.length);
 }
 onSearchQualiteChange(event: Event): void {
   const target = event.target as HTMLInputElement;
@@ -3122,7 +3113,7 @@ onQualiteKeyPress(event: KeyboardEvent): void {
  */
 getQualiteReferencesString(): string {
   const refs = this.selectedQualiteReferences();
-  return refs.length > 0 ? refs.join(', ') : '';
+  return refs.length > 0 ? refs.join(',') : '';
 }
 
 /**
@@ -3138,12 +3129,11 @@ parseQualiteReferencesString(refsString: string | null): void {
   const refs = refsString.split(',').map(ref => ref.trim()).filter(ref => ref !== '');
   this.selectedQualiteReferences.set(refs);
   
-  console.log('Références Qualité parsées:', refs);
 }
 showQualiteSuggestions = signal(false);
 filteredQualiteRefs = computed(() => {
   const query = this.currentQualiteSearchQuery().toLowerCase();
-  const allRefs = this.matieresPremieres(); // 🎯 MÊME SOURCE QUE MP
+  const allRefs = this.matieresPremieres(); //  MÊME SOURCE QUE MP
   
   if (!query.trim()) {
     return allRefs;
@@ -3280,14 +3270,12 @@ saveRecordEdit(): void {
     }))
   };
 
-  console.log('DTO pour mise à jour:', dto);
 
   // Appeler le service de mise à jour
   this.loading.set(true);
   
   this.saisieRapportService.updateRapport(dto).subscribe({
     next: (response) => {
-      console.log('Rapport mis à jour:', response);
       this.loading.set(false);
       
       // Mettre à jour localement
@@ -3300,7 +3288,6 @@ saveRecordEdit(): void {
       this.showSuccessMessage('Rapport mis à jour avec succès');
     },
     error: (error) => {
-      console.error('Erreur mise à jour rapport:', error);
       this.loading.set(false);
       
       let errorMessage = 'Erreur lors de la mise à jour: ';
@@ -3373,7 +3360,6 @@ closeRecordDetails(): void {
 private saveMagasinDeclarations(): void {
   const planif = this.weekPlanification();
   if (!planif || !this.selectedLigne()) {
-    console.error('Données manquantes pour sauvegarder DM');
     return;
   }
 
@@ -3399,22 +3385,18 @@ private saveMagasinDeclarations(): void {
   });
   
   if (dmUpdates.length === 0) {
-    console.log('Aucune déclaration magasin à sauvegarder');
     return;
   }
   
-  console.log(`Envoi de ${dmUpdates.length} déclarations magasin`);
   
   // Sauvegarder chaque déclaration individuellement
   const savePromises = dmUpdates.map((dmData) => {
     return new Promise<void>((resolve, reject) => {
       this.semaineService.updateMagasinPlanification(dmData).subscribe({
         next: (response) => {
-          console.log(`DM sauvegardé pour ${dmData.reference} - ${dmData.jour}:`, response);
           resolve();
         },
         error: (error) => {
-          console.error(`Erreur sauvegarde DM ${dmData.reference}:`, error);
           reject(error);
         }
       });
@@ -3438,7 +3420,7 @@ canEditDP(): boolean {
 }
 
 /**
- * 🎯 Vérifier si l'utilisateur peut modifier DM (Magasin)
+ *  Vérifier si l'utilisateur peut modifier DM (Magasin)
  * Seul le matricule 2603 peut modifier DM
  */
 canEditDM(): boolean {
@@ -3446,14 +3428,14 @@ canEditDM(): boolean {
 }
 
 /**
- * 🎯 Vérifier si c'est le matricule spécial pour DM
+ *  Vérifier si c'est le matricule spécial pour DM
  */
 isSpecialMatriculeDM(): boolean {
   return this.authService.isSpecialMatriculeDM();
 }
 
 /**
- * 🎯 Obtenir le matricule de l'utilisateur connecté
+ *  Obtenir le matricule de l'utilisateur connecté
  */
 getUserMatricule(): string | null {
   return this.authService.getUserMatricule();
@@ -3468,12 +3450,10 @@ private loadAvailableCommentaires(): void {
   
   this.commentaireService.getAllCommentaires().subscribe({
     next: (commentaires) => {
-      console.log('Commentaires chargés depuis API:', commentaires);
       this.availableCommentaires.set(commentaires);
       this.isLoadingCommentaires.set(false);
     },
     error: (error) => {
-      console.error('Erreur chargement commentaires depuis API:', error);
       this.isLoadingCommentaires.set(false);
       
       // En cas d'erreur, essayer d'utiliser les données mockées
@@ -3537,14 +3517,17 @@ private checkDPIncoherences(): void {
   planif.references.forEach(ref => {
     this.weekDays.forEach(day => {
       const entry = ref[day] as DayEntry;
-      if (entry && entry.dp > 0 && entry.c > 0 && entry.dp > entry.c) {
-        incoherences.push({
-          reference: ref.reference,
-          day: day,
-          c: entry.c,
-          dp: entry.dp,
-          difference: entry.dp - entry.c
-        });
+      if (entry) {
+        const quantiteSource = this.getQuantiteSource(entry);
+        if (entry.dp > 0 && quantiteSource > 0 && entry.dp > quantiteSource) {
+          incoherences.push({
+            reference: ref.reference,
+            day: day,
+            c: quantiteSource, // M si > 0, sinon C
+            dp: entry.dp,
+            difference: entry.dp - quantiteSource
+          });
+        }
       }
     });
   });
@@ -3562,7 +3545,7 @@ private updateErrorMessage(incoherences: any[]): void {
     `${inc.reference} - ${inc.day.charAt(0).toUpperCase() + inc.day.slice(1)} : DP(${inc.dp}) > C(${inc.c})`
   ).join('\n');
   
-  this.errorMessage.set(`⚠️ Incohérence(s) détectée(s) :\n${messages}\nCorrigez avant de sauvegarder.`);
+  this.errorMessage.set(`️ Incohérence(s) détectée(s) :\n${messages}\nCorrigez avant de sauvegarder.`);
 }
 selectedPhasesMaintenance = signal<string[]>([]);
 currentPhasesSearchQuery = signal<string>('');
@@ -3572,7 +3555,7 @@ filteredPhasesRefs = computed(() => {
   const query = this.currentPhasesSearchQuery().toLowerCase();
   const allPhases = this.availablePhases();
   
-  // 🔴 NE GARDER QUE LES PHASES QUI SONT DES NOMBRES
+  //  NE GARDER QUE LES PHASES QUI SONT DES NOMBRES
   const numericPhases = allPhases.filter(phase => {
     // Vérifier si la phase ne contient que des chiffres
     return /^\d+$/.test(phase.trim());
@@ -3597,7 +3580,7 @@ addPhasesMaintenance(phase: string): void {
     return;
   }
   
-  // 🔴 CONVERTIR EN NOMBRE - Ne garder que les caractères numériques
+  //  CONVERTIR EN NOMBRE - Ne garder que les caractères numériques
   const phaseNumber = trimmedPhase.replace(/\D/g, ''); // Enlève tout ce qui n'est pas un chiffre
   
   if (!phaseNumber) {
@@ -3624,7 +3607,6 @@ addPhasesMaintenance(phase: string): void {
   this.currentPhasesSearchQuery.set('');
   this.showPhasesSuggestions.set(false);
   
-  console.log('Phase maintenance ajoutée:', phaseNumber);
 }
 
 /**
@@ -3634,7 +3616,6 @@ removePhasesMaintenance(index: number): void {
   const current = this.selectedPhasesMaintenance();
   const updated = current.filter((_, i) => i !== index);
   this.selectedPhasesMaintenance.set(updated);
-  console.log('Phase maintenance supprimée, restantes:', updated.length);
 }
 
 /**
@@ -3642,27 +3623,24 @@ removePhasesMaintenance(index: number): void {
  */
 getPhasesMaintenanceString(): string {
   const phases = this.selectedPhasesMaintenance();
-  return phases.length > 0 ? phases.join(', ') : '';
+  return phases.length > 0 ? phases.join(',') : '';
 }
 
 /**
  * Parser une string de phases maintenance en tableau
  */
 parsePhasesMaintenanceString(phasesInput: string | string[] | number[] | null): void {
-  console.log('Parsing phases maintenance - Input:', phasesInput);
   
-  // ✅ CAS 1: null ou undefined
+  //  CAS 1: null ou undefined
   if (!phasesInput) {
-    console.log('Phases maintenance: null ou undefined');
     this.selectedPhasesMaintenance.set([]);
     return;
   }
   
   let phases: string[] = [];
   
-  // ✅ CAS 2: Déjà un tableau
+  //  CAS 2: Déjà un tableau
   if (Array.isArray(phasesInput)) {
-    console.log('Phases maintenance est un tableau:', phasesInput);
     
     phases = phasesInput
       .map(p => {
@@ -3672,9 +3650,8 @@ parsePhasesMaintenanceString(phasesInput: string | string[] | number[] | null): 
       })
       .filter(p => p !== ''); // Enlever les vides
     
-  // ✅ CAS 3: C'est une string (format "1,2,3")
+  //  CAS 3: C'est une string (format "1,2,3")
   } else if (typeof phasesInput === 'string') {
-    console.log('Phases maintenance est une string:', phasesInput);
     
     phases = phasesInput
       .split(',')
@@ -3684,13 +3661,11 @@ parsePhasesMaintenanceString(phasesInput: string | string[] | number[] | null): 
       .filter(p => p !== '');
   }
   
-  // 🔴 IMPORTANT: Si c'est un nombre, le convertir en string
+  //  IMPORTANT: Si c'est un nombre, le convertir en string
   else if (typeof phasesInput === 'number') {
-    console.log('Phases maintenance est un nombre:', phasesInput);
     phases = [String(phasesInput).replace(/\D/g, '')].filter(p => p !== '');
   }
   
-  console.log('Phases maintenance parsées et nettoyées:', phases);
   
   // Mettre à jour le signal
   this.selectedPhasesMaintenance.set(phases);
@@ -3737,7 +3712,7 @@ validatePhasesMaintenance(): { valid: boolean; message?: string } {
   
   // Si maintenance > 0 et phases fournies
   if (maintenanceQuantite > 0 && phases.length > 0) {
-    // 🔴 Vérifier que toutes les phases sont des nombres valides
+    //  Vérifier que toutes les phases sont des nombres valides
     for (const phase of phases) {
       if (!/^\d+$/.test(phase)) {
         return {
@@ -3836,7 +3811,6 @@ addMatriculeAbsence(matricule: string): void {
     matriculesAbsence: this.selectedMatriculesAbsence()
   }));
   
-  console.log('Matricule absence ajouté:', matNumber);
 }
 
 /**
@@ -3853,7 +3827,6 @@ removeMatriculeAbsence(index: number): void {
     matriculesAbsence: updated
   }));
   
-  console.log('Matricule absence supprimé, restants:', updated.length);
 }
 
 /**
@@ -3861,14 +3834,13 @@ removeMatriculeAbsence(index: number): void {
  */
 getMatriculesAbsenceString(): string {
   const mats = this.selectedMatriculesAbsence();
-  return mats.length > 0 ? mats.join(', ') : '';
+  return mats.length > 0 ? mats.join(',') : '';
 }
 
 /**
  * Parser une string de matricules absence
  */
 parseMatriculesAbsenceString(matriculesInput: string | string[] | number[] | null): void {
-  console.log('Parsing matricules absence - Input:', matriculesInput);
   
   if (!matriculesInput) {
     this.selectedMatriculesAbsence.set([]);
@@ -3895,7 +3867,6 @@ parseMatriculesAbsenceString(matriculesInput: string | string[] | number[] | nul
     matricules = [String(matriculesInput).replace(/\D/g, '')].filter(m => m !== '');
   }
   
-  console.log('Matricules absence parsés:', matricules);
   this.selectedMatriculesAbsence.set(matricules);
   
   // Synchroniser avec currentCauses
@@ -3964,7 +3935,6 @@ addMatriculeRendement(matricule: string): void {
     matriculesRendement: this.selectedMatriculesRendement()
   }));
   
-  console.log('Matricule rendement ajouté:', matNumber);
 }
 
 /**
@@ -3981,7 +3951,6 @@ removeMatriculeRendement(index: number): void {
     matriculesRendement: updated
   }));
   
-  console.log('Matricule rendement supprimé, restants:', updated.length);
 }
 
 /**
@@ -3989,14 +3958,13 @@ removeMatriculeRendement(index: number): void {
  */
 getMatriculesRendementString(): string {
   const mats = this.selectedMatriculesRendement();
-  return mats.length > 0 ? mats.join(', ') : '';
+  return mats.length > 0 ? mats.join(',') : '';
 }
 
 /**
  * Parser une string de matricules rendement
  */
 parseMatriculesRendementString(matriculesInput: string | string[] | number[] | null): void {
-  console.log('Parsing matricules rendement - Input:', matriculesInput);
   
   if (!matriculesInput) {
     this.selectedMatriculesRendement.set([]);
@@ -4023,7 +3991,6 @@ parseMatriculesRendementString(matriculesInput: string | string[] | number[] | n
     matricules = [String(matriculesInput).replace(/\D/g, '')].filter(m => m !== '');
   }
   
-  console.log('Matricules rendement parsés:', matricules);
   this.selectedMatriculesRendement.set(matricules);
   
   // Synchroniser avec currentCauses

@@ -892,4 +892,43 @@ select.form-input optgroup {
   vertical-align: middle;
 }
 
+/* ── Titres des sections du sidebar ── */
+.nav-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  padding: 14px 16px 6px 16px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ligne décorative avant le titre */
+.nav-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.5), transparent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Ligne décorative après le titre (s'étend jusqu'au bord) */
+.nav-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 1px;
+}
+
+/* Espacement entre les sections */
+.nav-section {
+  margin-bottom: 4px;
+}
+
 /* Si vous voulez que l'icône change de couleur au survol ou quand active */

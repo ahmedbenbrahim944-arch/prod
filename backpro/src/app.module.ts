@@ -23,6 +23,7 @@ import { CommentaireModule } from './commentaire/commentaire.module';
 import { SaisieNonConfModule } from './saisie-non-conf/saisie-non-conf.module';
 import { ProductionTimeModule } from './production-time/production-time.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { PlaquettesModule } from './plaquettes/plaquettes.module';
 
 @Module({
   imports: [
@@ -59,7 +60,8 @@ import { TrackingModule } from './tracking/tracking.module';
     CommentaireModule,
     SaisieNonConfModule,
     ProductionTimeModule,
-    TrackingModule
+    TrackingModule,
+    PlaquettesModule
 
   ],
   controllers: [],

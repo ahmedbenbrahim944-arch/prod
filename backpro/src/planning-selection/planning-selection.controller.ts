@@ -15,6 +15,7 @@ import {
 import { PlanningSelectionService } from './planning-selection.service';
 import { CreatePlanningSelectionDto } from './dto/create-planning-selection.dto';
 import { UpdatePlanningSelectionDto } from './dto/update-planning-selection.dto';
+import { BadRequestException } from '@nestjs/common';
 
 @Controller('planning-selection')
 export class PlanningSelectionController {
@@ -200,4 +201,18 @@ export class PlanningSelectionController {
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.planningService.remove(id);
   }
+   @Get('stats/periode')
+  async getStatsByPeriodeFull(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    if (!startDate || !endDate) {
+      throw new BadRequestException(
+        'Les paramètres startDate et endDate sont obligatoires (format : YYYY-MM-DD)'
+      );
+    }
+    return await this.planningService.getStatsByPeriodeFull(startDate, endDate);
+  }
+
+  
 }

@@ -37,25 +37,17 @@ export class PauseHistoryComponent implements OnInit {
   loading = signal(false);
 
   constructor() {
-    // ✅ Effet pour déboguer les changements
+    //  Effet pour déboguer les changements
     effect(() => {
-      console.log('📊 Pauses signal updated:', this.pauses());
-      console.log('📊 Total pauses:', this.pauses().length);
     });
   }
 
   ngOnInit(): void {
-    // ✅ SOLUTION 1: Récupérer depuis l'état de l'historique
+    //  SOLUTION 1: Récupérer depuis l'état de l'historique
     const state = history.state;
     
-    console.log('🔍 DEBUG - État complet:', state);
-    console.log('🔍 DEBUG - allPauses:', state.allPauses);
-    console.log('🔍 DEBUG - sessionInfo:', state.sessionInfo);
     
     if (state && state.allPauses) {
-      console.log('✅ Données trouvées dans history.state');
-      console.log('📦 Nombre de pauses:', state.allPauses.length);
-      console.log('📦 Première pause:', state.allPauses[0]);
       
       this.pauses.set(state.allPauses);
       this.sessionInfo.set(state.sessionInfo || null);
@@ -63,11 +55,8 @@ export class PauseHistoryComponent implements OnInit {
       
       // Forcer la détection des changements
       setTimeout(() => {
-        console.log('🔄 Après timeout - pauses():', this.pauses());
       }, 100);
     } else {
-      console.warn('⚠️ Aucune donnée trouvée dans history.state');
-      console.log('📍 État actuel:', state);
     }
   }
 

@@ -196,35 +196,35 @@ private semaineRepository: Repository<Semaine>,
     const pourcentageTotalEcart = totalQteSource > 0 ? (totalEcart / totalQteSource) * 100 : 0;
 
      const pcsProdTotalArrondi = Math.round(pcsProdTotal * 100) / 100;
-    // ✅ MODIFICATION : Calculer la répartition des écarts par cause basée sur qtePlanifiee
+    // Calculer la répartition des écarts par cause basée sur quantiteSource (M si M > 0, sinon C)
     const repartitionEcartParCause = {
       matierePremiere: {
         quantite: totalEcartMatierePremiere,
-        pourcentage: this.calculerPourcentage5M(totalEcartMatierePremiere, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartMatierePremiere, totalQteSource)
       },
       absence: {
         quantite: totalEcartAbsence,
-        pourcentage: this.calculerPourcentage5M(totalEcartAbsence, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartAbsence, totalQteSource)
       },
       rendement: {
         quantite: totalEcartRendement,
-        pourcentage: this.calculerPourcentage5M(totalEcartRendement, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartRendement, totalQteSource)
       },
        methode: {
         quantite: totalEcartMethode,
-        pourcentage: this.calculerPourcentage5M(totalEcartMethode, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartMethode, totalQteSource)
       },
       maintenance: {
         quantite: totalEcartMaintenance,
-        pourcentage: this.calculerPourcentage5M(totalEcartMaintenance, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartMaintenance, totalQteSource)
       },
       qualite: {
         quantite: totalEcartQualite,
-        pourcentage: this.calculerPourcentage5M(totalEcartQualite, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartQualite, totalQteSource)
       },
-      environnement: { // ✅ AJOUTÉ
+      environnement: {
         quantite: totalEcartEnvironnement,
-        pourcentage: this.calculerPourcentage5M(totalEcartEnvironnement, totalQtePlanifiee)
+        pourcentage: this.calculerPourcentage5M(totalEcartEnvironnement, totalQteSource)
       }
     };
 
@@ -428,8 +428,8 @@ async getStatsPourcentage5MParSemaine(semaine: string) {
       );
     }
 
-    // 2. Calculer la quantité totale planifiée
-    let totalQuantitePlanifiee = 0;
+    // 2. Calculer la quantité totale source (M si M > 0, sinon C)
+    let totalQuantiteSource = 0;
     
     // 3. Initialiser les totaux pour chaque cause 5M
     let totalMatierePremiere = 0;
@@ -443,8 +443,8 @@ async getStatsPourcentage5MParSemaine(semaine: string) {
 
     // 4. Parcourir toutes les planifications
     for (const plan of planifications) {
-      // ✅ MODIFICATION : Utiliser qtePlanifiee au lieu de quantiteSource
-      totalQuantitePlanifiee += plan.qtePlanifiee;
+      // Utiliser quantiteSource : M si M > 0, sinon C
+      totalQuantiteSource += this.getQuantitySource(plan);
 
       // Vérifier s'il y a des non-conformités
       if (plan.nonConformites && plan.nonConformites.length > 0) {
@@ -465,7 +465,7 @@ async getStatsPourcentage5MParSemaine(semaine: string) {
     }
 
     console.log('Totaux calculés:', {
-      totalQuantitePlanifiee,
+      totalQuantiteSource,
       totalMatierePremiere,
       totalAbsence,
       totalRendement,
@@ -476,10 +476,10 @@ async getStatsPourcentage5MParSemaine(semaine: string) {
       total5M
     });
 
-    // 5. Calculer les pourcentages
+    // 5. Calculer les pourcentages (base = quantiteSource : M si M > 0, sinon C)
     const calculerPourcentage = (totalCause: number): number => {
-      if (totalQuantitePlanifiee <= 0) return 0;
-      const pourcentage = (totalCause / totalQuantitePlanifiee) * 100;
+      if (totalQuantiteSource <= 0) return 0;
+      const pourcentage = (totalCause / totalQuantiteSource) * 100;
       return Math.round(pourcentage * 10) / 10; // Une décimale
     };
 
@@ -516,7 +516,7 @@ async getStatsPourcentage5MParSemaine(semaine: string) {
         nombrePlanifications: planifications.length
       },
       resume: {
-        totalQuantitePlanifiee: totalQuantitePlanifiee,
+        totalQuantiteSource: totalQuantiteSource,
         total5M: total5M,
         pourcentageTotal5M: `${pourcentageTotal5M}%`,
         pourcentageTotal5MNumber: pourcentageTotal5M
@@ -664,7 +664,7 @@ async getPourcentage5MParLigne(semaine: string) {
       if (!statsParLigne[ligne]) {
         statsParLigne[ligne] = {
           ligne: ligne,
-          totalQtePlanifiee: 0,  // ✅ MODIFICATION : Utiliser qtePlanifiee
+          totalQteSource: 0,  // M si M > 0, sinon C
           matierePremiere: 0,
           absence: 0,
           rendement: 0,
@@ -680,7 +680,7 @@ async getPourcentage5MParLigne(semaine: string) {
 
       // Mettre à jour les totaux
       const ligneStats = statsParLigne[ligne];
-      ligneStats.totalQtePlanifiee += plan.qtePlanifiee;  // ✅ MODIFICATION : Utiliser qtePlanifiee
+      ligneStats.totalQteSource += this.getQuantitySource(plan);  // M si M > 0, sinon C
       ligneStats.nombrePlanifications += 1;
       ligneStats.references.add(plan.reference);
 
@@ -707,8 +707,8 @@ async getPourcentage5MParLigne(semaine: string) {
 
     // 5. Calculer les pourcentages pour chaque ligne
     const resultats = Object.values(statsParLigne).map((ligne: any) => {
-      // ✅ MODIFICATION : Utiliser totalQtePlanifiee au lieu de totalQuantiteSource
-      const pourcentage5M = calculerPourcentage(ligne.total5M, ligne.totalQtePlanifiee);
+      // Utiliser totalQteSource (M si M > 0, sinon C) comme base des %
+      const pourcentage5M = calculerPourcentage(ligne.total5M, ligne.totalQteSource);
       
       // Calculer la répartition des causes dans le total 5M
       const calculerPourcentageDans5M = (cause: number): number => {
@@ -720,45 +720,45 @@ async getPourcentage5MParLigne(semaine: string) {
         ligne: ligne.ligne,
         nombrePlanifications: ligne.nombrePlanifications,
         nombreReferences: ligne.references.size,
-        totalQtePlanifiee: ligne.totalQtePlanifiee,  // ✅ MODIFICATION
+        totalQteSource: ligne.totalQteSource,  // M si M > 0, sinon C
         total5M: ligne.total5M,
         pourcentage5M: pourcentage5M,
         detailParCause: {
           matierePremiere: {
             quantite: ligne.matierePremiere,
             pourcentage: calculerPourcentageDans5M(ligne.matierePremiere),
-            pourcentageDuTotal: calculerPourcentage(ligne.matierePremiere, ligne.totalQtePlanifiee)  // ✅ MODIFICATION
+            pourcentageDuTotal: calculerPourcentage(ligne.matierePremiere, ligne.totalQteSource)
           },
           absence: {
             quantite: ligne.absence,
             pourcentage: calculerPourcentageDans5M(ligne.absence),
-            pourcentageDuTotal: calculerPourcentage(ligne.absence, ligne.totalQtePlanifiee)  // ✅ MODIFICATION
+            pourcentageDuTotal: calculerPourcentage(ligne.absence, ligne.totalQteSource)
           },
           rendement: {
             quantite: ligne.rendement,
             pourcentage: calculerPourcentageDans5M(ligne.rendement),
-            pourcentageDuTotal: calculerPourcentage(ligne.rendement, ligne.totalQtePlanifiee)  // ✅ MODIFICATION
+            pourcentageDuTotal: calculerPourcentage(ligne.rendement, ligne.totalQteSource)
           },
 
           methode: {
             quantite: ligne.methode,
             pourcentage: calculerPourcentageDans5M(ligne.methode),
-            pourcentageDuTotal: calculerPourcentage(ligne.methode, ligne.totalQtePlanifiee)  // ✅ MODIFICATION
+            pourcentageDuTotal: calculerPourcentage(ligne.methode, ligne.totalQteSource)
           },
           maintenance: {
             quantite: ligne.maintenance,
             pourcentage: calculerPourcentageDans5M(ligne.maintenance),
-            pourcentageDuTotal: calculerPourcentage(ligne.maintenance, ligne.totalQtePlanifiee)  // ✅ MODIFICATION
+            pourcentageDuTotal: calculerPourcentage(ligne.maintenance, ligne.totalQteSource)
           },
           qualite: {
             quantite: ligne.qualite,
             pourcentage: calculerPourcentageDans5M(ligne.qualite),
-            pourcentageDuTotal: calculerPourcentage(ligne.qualite, ligne.totalQtePlanifiee)  // ✅ MODIFICATION
+            pourcentageDuTotal: calculerPourcentage(ligne.qualite, ligne.totalQteSource)
           },
           environnement: {
             quantite: ligne.environnement,
             pourcentage: calculerPourcentageDans5M(ligne.environnement),
-            pourcentageDuTotal: calculerPourcentage(ligne.environnement, ligne.totalQtePlanifiee)  // ✅ AJOUTÉ
+            pourcentageDuTotal: calculerPourcentage(ligne.environnement, ligne.totalQteSource)
           }
         },
         // Version simplifiée pour tableau
@@ -779,14 +779,14 @@ async getPourcentage5MParLigne(semaine: string) {
 
     // 7. Calculer les totaux globaux
     const totalGlobal = {
-      totalQtePlanifiee: resultats.reduce((sum, ligne) => sum + ligne.totalQtePlanifiee, 0),
+      totalQteSource: resultats.reduce((sum, ligne) => sum + ligne.totalQteSource, 0),
       total5M: resultats.reduce((sum, ligne) => sum + ligne.total5M, 0),
       pourcentage5MGlobal: 0
     };
     
     totalGlobal.pourcentage5MGlobal = calculerPourcentage(
       totalGlobal.total5M, 
-      totalGlobal.totalQtePlanifiee
+      totalGlobal.totalQteSource
     );
 
     // 8. Préparer la réponse
@@ -799,7 +799,7 @@ async getPourcentage5MParLigne(semaine: string) {
         nombreLignes: resultats.length
       },
       resumeGlobal: {
-        totalQtePlanifiee: totalGlobal.totalQtePlanifiee,
+        totalQteSource: totalGlobal.totalQteSource,
         total5M: totalGlobal.total5M,
         pourcentage5MGlobal: totalGlobal.pourcentage5MGlobal
       },
@@ -1564,7 +1564,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
 
     // 6. Grouper par mois
     const statsParMois: Record<number, {
-      totalQtePlanifiee: number;  // ✅ MODIFICATION
+      totalQteSource: number;  // M si M > 0, sinon C
       matierePremiere: number;
       absence: number;
       rendement: number;
@@ -1578,7 +1578,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
     // Initialiser tous les mois
     for (let m = 1; m <= 12; m++) {
       statsParMois[m] = {
-        totalQtePlanifiee: 0,  // ✅ MODIFICATION
+        totalQteSource: 0,  // M si M > 0, sinon C
         matierePremiere: 0,
         absence: 0,
         rendement: 0,
@@ -1599,8 +1599,8 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
         return;
       }
 
-      // ✅ MODIFICATION : Utiliser qtePlanifiee au lieu de quantiteSource
-      statsParMois[moisNum].totalQtePlanifiee += plan.qtePlanifiee;
+      // Utiliser quantiteSource : M si M > 0, sinon C
+      statsParMois[moisNum].totalQteSource += this.getQuantitySource(plan);
 
       // Ajouter les non-conformités
       if (plan.nonConformites && plan.nonConformites.length > 0) {
@@ -1619,7 +1619,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
 
     // 8. Calculer les pourcentages pour chaque mois
     const moisFormates: Record<string, any> = {};
-    let totalAnnuelQtePlanifiee = 0;  // ✅ MODIFICATION
+    let totalAnnuelQteSource = 0;  // M si M > 0, sinon C
     let totalAnnuel5M = 0;
     let totalAnnuelMatierePremiere = 0;
     let totalAnnuelAbsence = 0;
@@ -1633,14 +1633,14 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
       const moisNom = moisNoms[m - 1];
       const data = statsParMois[m];
 
-      // ✅ MODIFICATION : Calculer les pourcentages par rapport à qtePlanifiee
+      // Calculer les pourcentages par rapport à quantiteSource (M si M > 0, sinon C)
       const calculerPourcentage = (valeur: number): number => {
-        if (data.totalQtePlanifiee <= 0) return 0;
-        return Math.round((valeur / data.totalQtePlanifiee) * 100 * 100) / 100;
+        if (data.totalQteSource <= 0) return 0;
+        return Math.round((valeur / data.totalQteSource) * 100 * 100) / 100;
       };
 
       moisFormates[moisNom] = {
-        totalQtePlanifiee: data.totalQtePlanifiee,  // ✅ MODIFICATION
+        totalQteSource: data.totalQteSource,  // M si M > 0, sinon C
         total5M: data.total5M,
         pourcentageTotal5M: calculerPourcentage(data.total5M),
         matierePremiere: {
@@ -1674,7 +1674,7 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
       };
 
       // Accumuler les totaux annuels
-      totalAnnuelQtePlanifiee += data.totalQtePlanifiee;  // ✅ MODIFICATION
+      totalAnnuelQteSource += data.totalQteSource;  // M si M > 0, sinon C
       totalAnnuel5M += data.total5M;
       totalAnnuelMatierePremiere += data.matierePremiere;
       totalAnnuelAbsence += data.absence;
@@ -1685,15 +1685,14 @@ async getStats5MParMois(getStatsAnnuelDto: { date: string }) {
       totalAnnuelEnvironnement += data.environnement;
     }
 
-    // 9. Calculer les moyennes annuelles
-    // ✅ MODIFICATION : Utiliser totalAnnuelQtePlanifiee
+    // Calculer les moyennes annuelles (base = quantiteSource : M si M > 0, sinon C)
     const calculerPourcentageAnnuel = (valeur: number): number => {
-      if (totalAnnuelQtePlanifiee <= 0) return 0;
-      return Math.round((valeur / totalAnnuelQtePlanifiee) * 100 * 100) / 100;
+      if (totalAnnuelQteSource <= 0) return 0;
+      return Math.round((valeur / totalAnnuelQteSource) * 100 * 100) / 100;
     };
 
     const moyennesAnnuelles = {
-      totalQtePlanifiee: totalAnnuelQtePlanifiee,  // ✅ MODIFICATION
+      totalQteSource: totalAnnuelQteSource,  // M si M > 0, sinon C
       total5M: totalAnnuel5M,
       pourcentageTotal5M: calculerPourcentageAnnuel(totalAnnuel5M),
       matierePremiere: {
@@ -1991,7 +1990,7 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
     // 3. Grouper par ligne
     const statsParLigne: Record<string, {
       ligne: string;
-      totalQtePlanifiee: number;  // ✅ MODIFICATION
+      totalQteSource: number;  // M si M > 0, sinon C
       total5M: number;
       totalMatierePremiere: number;
       totalAbsence: number;
@@ -1999,7 +1998,7 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
       totalMethode: number;
       totalMaintenance: number;
       totalQualite: number;
-      totalEnvironnement: number; // ✅ AJOUTÉ
+      totalEnvironnement: number;
       references: any[];
     }> = {};
 
@@ -2011,7 +2010,7 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
       if (!statsParLigne[ligne]) {
         statsParLigne[ligne] = {
           ligne: ligne,
-          totalQtePlanifiee: 0,  // ✅ MODIFICATION
+          totalQteSource: 0,  // M si M > 0, sinon C
           total5M: 0,
           totalMatierePremiere: 0,
           totalAbsence: 0,
@@ -2019,13 +2018,13 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
           totalMethode: 0,
           totalMaintenance: 0,
           totalQualite: 0,
-          totalEnvironnement: 0, // ✅ AJOUTÉ
+          totalEnvironnement: 0,
           references: []
         };
       }
 
       const ligneStats = statsParLigne[ligne];
-      ligneStats.totalQtePlanifiee += plan.qtePlanifiee;  // ✅ MODIFICATION
+      ligneStats.totalQteSource += this.getQuantitySource(plan);  // M si M > 0, sinon C
 
       // Préparer les données de la référence
       const quantiteSource = this.getQuantitySource(plan);
@@ -2054,10 +2053,10 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
         ligneStats.totalQualite += nonConf.qualite;
         ligneStats.totalEnvironnement += nonConf.environnement; // ✅ AJOUTÉ
 
-        // ✅ MODIFICATION : Calculer les pourcentages basés sur qtePlanifiee
+        // Calculer les pourcentages basés sur quantiteSource (M si M > 0, sinon C)
         const calculerPourcentageRef = (valeur: number): number => {
-          if (plan.qtePlanifiee <= 0) return 0;
-          return Math.round((valeur / plan.qtePlanifiee) * 100 * 10) / 10;
+          if (quantiteSource <= 0) return 0;
+          return Math.round((valeur / quantiteSource) * 100 * 10) / 10;
         };
 
         referenceData.nonConformite = {
@@ -2117,10 +2116,10 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
 
     // 5. Calculer les pourcentages globaux pour chaque ligne
     const lignesFormatees = Object.values(statsParLigne).map(ligne => {
-      // ✅ MODIFICATION : Utiliser totalQtePlanifiee
+      // Utiliser totalQteSource (M si M > 0, sinon C) comme base des %
       const calculerPourcentageLigne = (valeur: number): number => {
-        if (ligne.totalQtePlanifiee <= 0) return 0;
-        return Math.round((valeur / ligne.totalQtePlanifiee) * 100 * 10) / 10;
+        if (ligne.totalQteSource <= 0) return 0;
+        return Math.round((valeur / ligne.totalQteSource) * 100 * 10) / 10;
       };
 
       // Calculer aussi le pourcentage de chaque cause dans le total 5M
@@ -2132,7 +2131,7 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
       return {
         ligne: ligne.ligne,
         nombreReferences: ligne.references.length,
-        totalQtePlanifiee: ligne.totalQtePlanifiee,  // ✅ MODIFICATION
+        totalQteSource: ligne.totalQteSource,  // M si M > 0, sinon C
         total5M: ligne.total5M,
         pourcentage5M: calculerPourcentageLigne(ligne.total5M),
         detailTotalParCause: {
@@ -2182,7 +2181,7 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
     // 7. Calculer les totaux globaux du jour (toutes lignes confondues)
     // ✅ MODIFICATION : Utiliser totalQtePlanifiee
     const totalGlobal = {
-      totalQtePlanifiee: lignesFormatees.reduce((sum, l) => sum + l.totalQtePlanifiee, 0),
+      totalQteSource: lignesFormatees.reduce((sum, l) => sum + l.totalQteSource, 0),  // M si M > 0, sinon C
       total5M: lignesFormatees.reduce((sum, l) => sum + l.total5M, 0),
       totalMatierePremiere: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalMatierePremiere, 0),
       totalAbsence: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalAbsence, 0),
@@ -2190,13 +2189,13 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
       totalMethode: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalMethode, 0),
       totalMaintenance: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalMaintenance, 0),
       totalQualite: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalQualite, 0),
-      totalEnvironnement: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalEnvironnement, 0) // ✅ AJOUTÉ
+      totalEnvironnement: Object.values(statsParLigne).reduce((sum, l) => sum + l.totalEnvironnement, 0)
     };
 
-    // Calculer les pourcentages globaux
+    // Calculer les pourcentages globaux (base = quantiteSource : M si M > 0, sinon C)
     const calculerPourcentageGlobal = (valeur: number): number => {
-      if (totalGlobal.totalQtePlanifiee <= 0) return 0;  // ✅ MODIFICATION
-      return Math.round((valeur / totalGlobal.totalQtePlanifiee) * 100 * 10) / 10;
+      if (totalGlobal.totalQteSource <= 0) return 0;
+      return Math.round((valeur / totalGlobal.totalQteSource) * 100 * 10) / 10;
     };
 
     const calculerPourcentageDans5MGlobal = (valeur: number): number => {
@@ -2208,7 +2207,7 @@ async getStats5MParDate(getStats5MDateDto: GetStats5MDateDto) {
 
     // 8. Créer le résumé total du jour avec détail par cause
     const resumeTotalJour = {
-      totalQtePlanifiee: totalGlobal.totalQtePlanifiee,  // ✅ MODIFICATION
+      totalQteSource: totalGlobal.totalQteSource,  // M si M > 0, sinon C
       total5M: totalGlobal.total5M,
       pourcentage5M: pourcentage5MGlobal,
       detailParCause: {
@@ -2865,7 +2864,7 @@ private async getCauses5MPourLigneDate(semaine: string, jour: string, ligne: str
     });
 
     // Initialiser les totaux
-    let totalQtePlanifiee = 0;
+    let totalQteSource = 0;  // M si M > 0, sinon C
     let totalMatierePremiere = 0;
     let totalAbsence = 0;
     let totalRendement = 0;
@@ -2876,7 +2875,7 @@ private async getCauses5MPourLigneDate(semaine: string, jour: string, ligne: str
 
     // 2. Parcourir toutes les planifications
     for (const plan of planifications) {
-      totalQtePlanifiee += plan.qtePlanifiee;
+      totalQteSource += this.getQuantitySource(plan);  // M si M > 0, sinon C
 
       // Vérifier s'il y a des non-conformités
       if (plan.nonConformites && plan.nonConformites.length > 0) {
@@ -2888,14 +2887,14 @@ private async getCauses5MPourLigneDate(semaine: string, jour: string, ligne: str
         totalMethode += nonConf.methode;
         totalMaintenance += nonConf.maintenance;
         totalQualite += nonConf.qualite;
-        totalEnvironnement += nonConf.environnement; // ✅ AJOUTÉ
+        totalEnvironnement += nonConf.environnement;
       }
     }
 
-    // 3. Calculer les pourcentages (par rapport à qtePlanifiee)
+    // 3. Calculer les pourcentages (par rapport à quantiteSource : M si M > 0, sinon C)
     const calculerPourcentage = (valeur: number): number => {
-      if (totalQtePlanifiee <= 0) return 0;
-      return Math.round((valeur / totalQtePlanifiee) * 100 * 10) / 10; // Une décimale
+      if (totalQteSource <= 0) return 0;
+      return Math.round((valeur / totalQteSource) * 100 * 10) / 10; // Une décimale
     };
 
     return {
@@ -2905,7 +2904,7 @@ private async getCauses5MPourLigneDate(semaine: string, jour: string, ligne: str
       methode: calculerPourcentage(totalMethode),
       maintenance: calculerPourcentage(totalMaintenance),
       qualite: calculerPourcentage(totalQualite),
-      totalQtePlanifiee,
+      totalQteSource,  // M si M > 0, sinon C
       // Totaux bruts pour information
       totauxBruts: {
         matierePremiere: totalMatierePremiere,
@@ -2914,7 +2913,7 @@ private async getCauses5MPourLigneDate(semaine: string, jour: string, ligne: str
         methode: totalMethode,
         maintenance: totalMaintenance,
         qualite: totalQualite,
-        environnement: totalEnvironnement // ✅ AJOUTÉ
+        environnement: totalEnvironnement
       }
     };
 
@@ -2928,8 +2927,8 @@ private async getCauses5MPourLigneDate(semaine: string, jour: string, ligne: str
       methode: 0,
       maintenance: 0,
       qualite: 0,
-      environnement: 0, // ✅ AJOUTÉ
-      totalQtePlanifiee: 0,
+      environnement: 0,
+      totalQteSource: 0,
       totauxBruts: {
         matierePremiere: 0,
         absence: 0,
@@ -3225,7 +3224,7 @@ private async getDetailsNonConformitesPourPeriode(
     // Récupérer toutes les planifications avec leurs non-conformités
     const planifications = await this.planificationRepository.find({
       where: semaines.map(semaine => ({ semaine })),
-      relations: ['nonConformites'],
+      relations: ['nonConformites', 'nonConformites.commentaireObjet'],
       order: { ligne: 'ASC', semaine: 'ASC', jour: 'ASC', reference: 'ASC' }
     });
 
@@ -3283,7 +3282,11 @@ private async getDetailsNonConformitesPourPeriode(
         pourcentageEcart: 0,
         refMP: null,
         refQualite: null,
-        commentaire: null
+        commentaire: null,
+        matriculesAbsence: null,
+        matriculesRendement: null,
+        phasesMaintenance: null,
+        commentaireTexte: null
       };
 
       // Ajouter les non-conformités si elles existent
@@ -3301,6 +3304,10 @@ private async getDetailsNonConformitesPourPeriode(
         detail.refMP = nonConf.referenceMatierePremiere;
         detail.refQualite = nonConf.referenceQualite;
         detail.commentaire = nonConf.commentaire;
+        detail.matriculesAbsence = nonConf.matriculesAbsence || null;
+        detail.matriculesRendement = nonConf.matriculesRendement || null;
+        detail.phasesMaintenance = nonConf.phasesMaintenance || null;
+        detail.commentaireTexte = nonConf.commentaireObjet?.commentaire || null;
         
         // Calculer le pourcentage d'écart
         if (quantiteSource > 0) {
@@ -3595,8 +3602,8 @@ private async calculerProductionEt7MPourPeriode(
       : 0;
 
     const calculerPourcentage = (valeur: number): number => {
-      if (ligne.totalQtePlanifiee <= 0) return 0;
-      return Math.round((valeur / ligne.totalQtePlanifiee) * 100 * 10) / 10;
+      if (ligne.totalQteSource <= 0) return 0;
+      return Math.round((valeur / ligne.totalQteSource) * 100 * 10) / 10;
     };
 
     const detailsReferencesArray = Object.values(ligne.detailsReferences);
@@ -3679,14 +3686,14 @@ private calculerProductionGlobale(statsParLigne: any[]) {
  * Méthode utilitaire : Calculer le résumé des 7M
  */
 private calculerResume7M(totaux7MGlobaux: any, lignesFormatees: any[], referencesGlobales7M?: any) {
-  // Calculer la qtePlanifiee totale
-  const totalQtePlanifiee = lignesFormatees.reduce((sum, ligne) => {
+  // Calculer la qteSource totale (M si M > 0, sinon C)
+  const totalQteSource = lignesFormatees.reduce((sum, ligne) => {
     return sum + ligne.production.totalQteSource;
   }, 0);
 
   const calculerPourcentage = (valeur: number): number => {
-    if (totalQtePlanifiee <= 0) return 0;
-    return Math.round((valeur / totalQtePlanifiee) * 100 * 10) / 10;
+    if (totalQteSource <= 0) return 0;
+    return Math.round((valeur / totalQteSource) * 100 * 10) / 10;
   };
 
   const resume = {
