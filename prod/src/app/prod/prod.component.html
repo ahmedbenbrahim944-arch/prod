@@ -192,6 +192,14 @@
           <img src="assets/icons/stat.png" alt="Temps" class="nav-button-icon">
           Statistiques Temps
         </button>
+        <button
+          *ngIf="isAdmin()"
+          [routerLink]="['/adscan']"
+          class="nav-button"
+          [class.active]="activeTab() === 'view-stats'">
+          <img src="assets/icons/stat.png" alt="Temps" class="nav-button-icon">
+           Scan
+        </button>
       </div>
 
       <!-- ─── ADMINISTRATION (Admin uniquement) ─── -->

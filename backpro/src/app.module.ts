@@ -24,6 +24,7 @@ import { SaisieNonConfModule } from './saisie-non-conf/saisie-non-conf.module';
 import { ProductionTimeModule } from './production-time/production-time.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { PlaquettesModule } from './plaquettes/plaquettes.module';
+import { ScannerModule } from './scanner/scanner.module';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { PlaquettesModule } from './plaquettes/plaquettes.module';
     SaisieNonConfModule,
     ProductionTimeModule,
     TrackingModule,
-    PlaquettesModule
+    PlaquettesModule,
+    ScannerModule
 
   ],
   controllers: [],

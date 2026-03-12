@@ -82,6 +82,9 @@ export class Planification1Component implements OnInit {
   editOfValue: string = '';
   savingOfKey: string | null = null;
 
+  // ── Ligne active (mise en surbrillance) ──
+  activeRowRef: string | null = null;
+
   constructor(
     private router: Router,
     private semaineService: SemaineService,
@@ -377,6 +380,7 @@ export class Planification1Component implements OnInit {
     const entry = this.getDayEntry(ref, day);
     this.editingKey = this.cellKey(ref, day);
     this.editCValue = (entry?.c && entry.c > 0) ? entry.c : null;
+    this.activeRowRef = ref.reference;
   }
 
   saveCell(ref: ReferenceRow, day: string): void {
@@ -413,6 +417,7 @@ export class Planification1Component implements OnInit {
   cancelEdit(): void {
     this.editingKey = null;
     this.editingOfKey = null;
+    this.activeRowRef = null;
   }
 
   // ─── Inline editing OF ───────────────────────────────────────────────────
@@ -429,6 +434,7 @@ export class Planification1Component implements OnInit {
     if (this.editingKey) this.editingKey = null;
     this.editingOfKey = this.ofRefKey(ref);
     this.editOfValue = this.getOfForRef(ref);
+    this.activeRowRef = ref.reference;
   }
 
   saveOf(ref: ReferenceRow): void {

@@ -28,6 +28,9 @@ import { PlaquettesComponent } from './plaquettes/plaquettes.component';
 import { PlaquettesStatsComponent } from './plaquettes-stats/plaquettes-stats.component';
 import { Choix3Component } from './choix3/choix3.component';
 import { Magasin1Component } from './magasin1/magasin1.component';
+import { ScannerComponent } from './scanner/scanner.component';
+import { Choix4Component } from './choix4/choix4.component';
+import { AdminScanComponent } from './admin-scan/admin-scan.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -74,6 +77,8 @@ export const routes: Routes = [
   { path: 'statp', component: PlaquettesStatsComponent },
   { path: 'ch3', component: Choix3Component },
   { path: 'magasin1', component: Magasin1Component },
-  
+  { path: 'scan', component: ScannerComponent },
+  { path: 'ch4', component: Choix4Component },
+  { path: 'adscan', component: AdminScanComponent },
 
 ];

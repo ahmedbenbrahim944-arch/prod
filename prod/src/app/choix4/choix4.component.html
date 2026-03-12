@@ -1,0 +1,69 @@
+<div class="choix-container">
+
+  <!-- Bouton de retour / déconnexion -->
+  <button class="btn-retour-login" (click)="retourLogin()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+    </svg>
+    Déconnexion
+  </button>
+
+  <!-- Bouton SERFA 4.0 -->
+  <a href="https://www.appsheet.com/start/33402e69-1413-4098-abd5-0d89e3000638"
+     target="_blank"
+     class="btn-serfa-40">
+    <span class="btn-serfa-text">Retour SERFA 4.0</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </a>
+
+  <div class="boutons-container">
+
+    <!-- Bouton Scanner -->
+    <a class="bouton-grand scanner"
+       routerLink="/scan"
+       routerLinkActive="active">
+      <div class="bouton-content">
+        <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <path d="M14 14h3v3m0 4h4m-4-4v4"/>
+        </svg>
+        <span class="bouton-titre">Scanner</span>
+        <span class="bouton-description"></span>
+      </div>
+    </a>
+
+    <!-- Bouton Planning -->
+    <a class="bouton-grand planning"
+       routerLink=""
+       routerLinkActive="active">
+      <div class="bouton-content">
+        <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <path d="M16 2v4M8 2v4M3 10h18"/>
+          <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/>
+        </svg>
+        <span class="bouton-titre">Planning</span>
+        <span class="bouton-description"></span>
+      </div>
+    </a>
+
+    <!-- Bouton Temps -->
+    <a class="bouton-grand temps"
+       routerLink=""
+       routerLinkActive="active">
+      <div class="bouton-content">
+        <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+        <span class="bouton-titre">Temps</span>
+        <span class="bouton-description"></span>
+      </div>
+    </a>
+
+  </div>
+</div>

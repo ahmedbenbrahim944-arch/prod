@@ -254,7 +254,8 @@
 
             <!-- Références -->
             <ng-container *ngFor="let ref of ligneEntry.references; let i = index">
-              <tr [style.background]="i % 2 === 0 ? '#ffffff' : '#fafafa'"
+              <tr [style.background]="activeRowRef === ref.reference ? '#fff7ed' : (i % 2 === 0 ? '#ffffff' : '#fafafa')"
+                  [style.box-shadow]="activeRowRef === ref.reference ? 'inset 0 0 0 2px #f97316' : 'none'"
                   class="hover:bg-orange-50 transition-colors">
 
                 <!-- REF (sticky gauche) -->

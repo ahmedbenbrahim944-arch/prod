@@ -101,6 +101,21 @@ export interface PauseDetail {
   recordedBy: string;
 }
 
+export interface ActivePauseDetails {
+  ligne: string;
+  sessionId: number;
+  pauseId: number;
+  mCategory: string;
+  subCategory?: string;
+  reason?: string;
+  startTime: string;
+  duration: string;
+  matierePremierRefs?: string[];
+  phasesEnPanne?: string[];
+  productRefs?: string[];
+  lostPieces?: number;
+}
+
 export interface MCategoryStats {
   categories: {
     category: string;
@@ -202,6 +217,16 @@ export class AdminDashboardService {
     return this.http.get<MCategoryStats>(
       `${this.API_URL}/production/admin/m-category-stats`,
       { headers: this.getHeaders(), params }
+    );
+  }
+
+  /**
+   * 🔍 Obtenir les détails de la pause en cours pour une ligne
+   */
+  getActivePauseDetails(ligne: string): Observable<ActivePauseDetails> {
+    return this.http.get<ActivePauseDetails>(
+      `${this.API_URL}/production/line/${ligne}/active-pause`,
+      { headers: this.getHeaders() }
     );
   }
 

@@ -91,7 +91,16 @@ export class AuthService {
       .pipe(
         tap(response => {
           this.saveAuthData(response);
-          this.router.navigate(['/choix']);
+
+          const matricule = response.user.nom;
+
+          // ── Matricule 1234 → choix4 (/ch4) ──────────────────────────────
+          if (matricule === '1234') {
+            this.router.navigate(['/ch4']);
+          }
+          else {
+            this.router.navigate(['/choix']);
+          }
         }),
         catchError(error => {
           return throwError(() => error);

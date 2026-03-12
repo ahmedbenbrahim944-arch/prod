@@ -991,3 +991,13 @@
   max-height: 36px !important;
   overflow: hidden;
 }
+/* ==================== STYLES POUR LES VALEURS C ==================== */
+.c-value-blue {
+  color: #3b82f6 !important; /* Bleu */
+  font-weight: 700 !important;
+}
+
+.c-value-zero {
+  color: #6b7280 !important; /* Gris pour les tirets */
+  font-weight: 400 !important;
+}
