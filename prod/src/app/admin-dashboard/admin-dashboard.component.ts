@@ -190,7 +190,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 matierePremierRefs: pause.matierePremierRefs ?? [],
                 phasesEnPanne:      pause.phasesEnPanne ?? [],
                 productRefs:        pause.productRefs ?? [],
-                lostPieces:         pause.lostPieces ?? pause.piecesPerdues ?? 0
+                lostPieces:         pause.lostPieces ?? pause.piecesPerdues ?? 0,
+                planifications:     pause.planifications ?? []   // ✅ AJOUT
               });
             } else {
               this._fallbackFromDashboard(ligne);

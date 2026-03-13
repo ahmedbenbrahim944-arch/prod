@@ -10,7 +10,7 @@ export interface ProductLine {
   lastCreated: string;
   imageUrl?: string;
   references: string[];
-  seconde?: number; // ✅ NOUVEAU - Temps en secondes pour produire 1 pièce
+  seconde?: number;
 }
 
 export interface MCategory {
@@ -18,8 +18,8 @@ export interface MCategory {
   name: string;
   description: string;
   subCategories: string[];
-  requiresReferences?: boolean;  // ✅ NOUVEAU
-  referenceType?: string;         // ✅ NOUVEAU
+  requiresReferences?: boolean;
+  referenceType?: string;
 }
 
 export interface ProductionSession {
@@ -37,9 +37,9 @@ export interface PauseInfo {
   subCategory?: string;
   startTime: string;
   duration: string;
-  matierePremierRefs?: string[];  // ✅ NOUVEAU
-  phasesEnPanne?: string[];       // ✅ NOUVEAU
-  productRefs?: string[];         // ✅ NOUVEAU
+  matierePremierRefs?: string[];
+  phasesEnPanne?: string[];
+  productRefs?: string[];
 }
 
 export interface PauseSession {
@@ -55,7 +55,7 @@ export interface PauseSession {
   matierePremierRefs?: string[];
   phasesEnPanne?: string[];
   productRefs?: string[];
-  lostPieces?: number;        // ✅ NOUVEAU
+  lostPieces?: number;
 }
 
 export interface SessionStats {
@@ -73,29 +73,30 @@ export interface SessionStats {
     quantityProduced?: number | null;
     qualityStatus?: string | null;
   };
-  timing: {  // ✅ AJOUTER timing
+  timing: {
     totalDuration: string;
     productionTime: string;
     pauseTime: string;
     efficiency: string;
   };
-  production: {  // ✅ AJOUTER production
+  production: {
     quantityProduced: number | null;
     lostPieces: number;
     theoreticalQuantity: number;
   };
-  pauses: {  // ✅ CORRIGER - C'est un objet, pas un tableau
+  pauses: {
     total: number;
     byCategory: {
       [key: string]: {
         count: number;
         totalDuration: number;
-        pauses: PauseSession[];  // ✅ ICI se trouve le vrai tableau des pauses
+        pauses: PauseSession[];
       }
     }
   };
   startedBy: string;
 }
+
 export interface RealTimeProduction {
   sessionId: number;
   ligne: string;
@@ -116,12 +117,27 @@ export interface RealTimeProduction {
   } | null;
 }
 
-// ✅ NOUVELLE INTERFACE pour les références disponibles
 export interface AvailableReferences {
   mCategory: string;
   references: string[];
   type: string;
   message?: string;
+}
+
+// ✅ NOUVELLE INTERFACE - Référence planifiée (avec OF non null)
+export interface PlannedReference {
+  id: number;
+  reference: string;
+  of: string;
+  jour: string;
+  semaine: string;
+  qtePlanifiee: number;
+  qteModifiee: number;
+}
+
+export interface PlannedReferencesResponse {
+  planifications: PlannedReference[];
+  total: number;
 }
 
 @Injectable({
@@ -131,11 +147,9 @@ export class ProductionService {
   private http = inject(HttpClient);
   private readonly API_URL = 'http://102.207.250.53:3000';
 
-  // État global de la session active
   private activeSessionSubject = new BehaviorSubject<ProductionSession | null>(null);
   public activeSession$ = this.activeSessionSubject.asObservable();
 
-  // Headers avec token JWT (à adapter selon votre auth)
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('access_token');
     return new HttpHeaders({
@@ -145,28 +159,19 @@ export class ProductionService {
   }
 
   // ==================== PRODUCT API ====================
-  
-  /**
-   * Récupérer toutes les lignes de production
-   */
+
   getAllLines(): Observable<{ lines: ProductLine[], total: number }> {
     return this.http.get<{ lines: ProductLine[], total: number }>(
       `${this.API_URL}/products/lines`
     );
   }
 
-  /**
-   * ✅ MODIFIÉ - Récupérer une ligne spécifique (avec temps de production)
-   */
   getLine(ligne: string): Observable<ProductLine> {
     return this.http.get<ProductLine>(`${this.API_URL}/products/lines/${ligne}`);
   }
 
   // ==================== PRODUCTION API ====================
 
-  /**
-   * Démarrer une nouvelle session de production
-   */
   startProduction(ligne: string, productType?: string, notes?: string): Observable<any> {
     return this.http.post(
       `${this.API_URL}/production/start`,
@@ -182,33 +187,27 @@ export class ProductionService {
   }
 
   /**
-   * ✅ MODIFIÉ - Mettre en pause la production avec références
+   * ✅ MODIFIÉ - Pause avec planificationIds en plus
    */
   pauseProduction(
-    sessionId: number, 
-    mCategory: string, 
-    subCategory?: string, 
+    sessionId: number,
+    mCategory: string,
+    subCategory?: string,
     reason?: string,
-    matierePremierRefs?: string[],   // ✅ NOUVEAU
-    phasesEnPanne?: string[],        // ✅ NOUVEAU
-    productRefs?: string[]           // ✅ NOUVEAU
+    matierePremierRefs?: string[],
+    phasesEnPanne?: string[],
+    productRefs?: string[],
+    planificationIds?: number[]   // ✅ NOUVEAU
   ): Observable<any> {
-    const payload: any = {
-      sessionId,
-      mCategory,
-      subCategory,
-      reason
-    };
+    const payload: any = { sessionId, mCategory, subCategory, reason };
 
-    // ✅ Ajouter les références selon la catégorie
-    if (mCategory === 'M1' && matierePremierRefs) {
-      payload.matierePremierRefs = matierePremierRefs;
-    }
-    if (mCategory === 'M4' && phasesEnPanne) {
-      payload.phasesEnPanne = phasesEnPanne;
-    }
-    if (mCategory === 'M5' && productRefs) {
-      payload.productRefs = productRefs;
+    if (mCategory === 'M1' && matierePremierRefs) payload.matierePremierRefs = matierePremierRefs;
+    if (mCategory === 'M4' && phasesEnPanne) payload.phasesEnPanne = phasesEnPanne;
+    if (mCategory === 'M5' && productRefs) payload.productRefs = productRefs;
+
+    // ✅ Toujours envoyer les planificationIds si fournis (indépendant de M)
+    if (planificationIds && planificationIds.length > 0) {
+      payload.planificationIds = planificationIds;
     }
 
     return this.http.post(
@@ -224,9 +223,6 @@ export class ProductionService {
     );
   }
 
-  /**
-   * Reprendre la production après une pause
-   */
   resumeProduction(sessionId: number, actionTaken?: string, notes?: string): Observable<any> {
     return this.http.post(
       `${this.API_URL}/production/resume`,
@@ -241,44 +237,22 @@ export class ProductionService {
     );
   }
 
-  /**
-   * Terminer la session de production
-   */
-  endProduction(
-    sessionId: number, 
-    finalNotes?: string, 
-    quantityProduced?: number, 
-    qualityStatus?: string
-  ): Observable<any> {
+  endProduction(sessionId: number, finalNotes?: string, quantityProduced?: number, qualityStatus?: string): Observable<any> {
     return this.http.post(
       `${this.API_URL}/production/end`,
       { sessionId, finalNotes, quantityProduced, qualityStatus },
       { headers: this.getHeaders() }
-    ).pipe(
-      tap(() => {
-        this.activeSessionSubject.next(null);
-      })
-    );
+    ).pipe(tap(() => this.activeSessionSubject.next(null)));
   }
 
-  /**
-   * Annuler une session
-   */
   cancelSession(sessionId: number): Observable<any> {
     return this.http.post(
       `${this.API_URL}/production/cancel/${sessionId}`,
       {},
       { headers: this.getHeaders() }
-    ).pipe(
-      tap(() => {
-        this.activeSessionSubject.next(null);
-      })
-    );
+    ).pipe(tap(() => this.activeSessionSubject.next(null)));
   }
 
-  /**
-   * Obtenir les statistiques d'une session
-   */
   getSessionStats(sessionId: number): Observable<SessionStats> {
     return this.http.get<SessionStats>(
       `${this.API_URL}/production/session/${sessionId}/stats`,
@@ -286,9 +260,6 @@ export class ProductionService {
     );
   }
 
-  /**
-   * Obtenir les sessions actives
-   */
   getActiveSessions(): Observable<ProductionSession[]> {
     return this.http.get<ProductionSession[]>(
       `${this.API_URL}/production/active`,
@@ -296,9 +267,6 @@ export class ProductionService {
     );
   }
 
-  /**
-   * Obtenir les catégories M disponibles
-   */
   getMCategories(): Observable<{ categories: MCategory[] }> {
     return this.http.get<{ categories: MCategory[] }>(
       `${this.API_URL}/production/m-categories`,
@@ -306,9 +274,6 @@ export class ProductionService {
     );
   }
 
-  /**
-   * ✅ NOUVEAU - Obtenir les références disponibles pour une catégorie M
-   */
   getAvailableReferences(ligne: string, mCategory: string): Observable<AvailableReferences> {
     return this.http.get<AvailableReferences>(
       `${this.API_URL}/production/line/${ligne}/references/${mCategory}`,
@@ -317,8 +282,16 @@ export class ProductionService {
   }
 
   /**
-   * Vérifier l'état d'une ligne
+   * ✅ NOUVEAU - Récupérer les références planifiées d'une ligne (OF non null)
+   * À appeler à l'ouverture du modal de pause
    */
+  getPlannedReferences(ligne: string): Observable<PlannedReferencesResponse> {
+    return this.http.get<PlannedReferencesResponse>(
+      `${this.API_URL}/production/line/${ligne}/planned-references`,
+      { headers: this.getHeaders() }
+    );
+  }
+
   getLineStatus(ligne: string): Observable<any> {
     return this.http.get(
       `${this.API_URL}/production/line/${ligne}/status`,
@@ -326,33 +299,25 @@ export class ProductionService {
     );
   }
 
-  /**
-   * Mettre à jour l'état de la session active localement
-   */
   setActiveSession(session: ProductionSession | null): void {
     this.activeSessionSubject.next(session);
   }
 
-  /**
-   * Obtenir l'état actuel de la session active
-   */
   getActiveSession(): ProductionSession | null {
     return this.activeSessionSubject.value;
   }
-  getRealTimeProduction(sessionId: number): Observable<RealTimeProduction> {
-  return this.http.get<RealTimeProduction>(
-    `${this.API_URL}/production/session/${sessionId}/realtime`,
-    { headers: this.getHeaders() }
-  );
-}
 
-/**
- * ✅ NOUVEAU - Obtenir les données temps réel pour toutes les lignes actives
- */
-getAllRealTimeProduction(): Observable<RealTimeProduction[]> {
-  return this.http.get<RealTimeProduction[]>(
-    `${this.API_URL}/production/realtime/all`,
-    { headers: this.getHeaders() }
-  );
-}
+  getRealTimeProduction(sessionId: number): Observable<RealTimeProduction> {
+    return this.http.get<RealTimeProduction>(
+      `${this.API_URL}/production/session/${sessionId}/realtime`,
+      { headers: this.getHeaders() }
+    );
+  }
+
+  getAllRealTimeProduction(): Observable<RealTimeProduction[]> {
+    return this.http.get<RealTimeProduction[]>(
+      `${this.API_URL}/production/realtime/all`,
+      { headers: this.getHeaders() }
+    );
+  }
 }

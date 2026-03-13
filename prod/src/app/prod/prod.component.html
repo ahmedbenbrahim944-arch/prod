@@ -117,15 +117,7 @@
           [class.active]="activeTab() === 'add-time'">
           <img src="assets/icons/temps.png" alt="Temps" class="nav-button-icon">
           Ajouter Temps
-        </button>
-
-        <button
-          (click)="setActiveTab('add-worker')"
-          class="nav-button"
-          [class.active]="activeTab() === 'add-worker'">
-          <img src="assets/icons/ouvriers.png" alt="Ouvrier" class="nav-button-icon">
-          Ajouter Ouvrier
-        </button>
+      </button>
 
         <button
           (click)="setActiveTab('add-phase')"
@@ -135,13 +127,7 @@
           Ajouter Phase
         </button>
 
-        <button
-          (click)="setActiveTab('download-phase')"
-          class="nav-button"
-          [class.active]="activeTab() === 'download-phase'">
-          <img src="assets/icons/phase.png" alt="Rapport" class="nav-button-icon">
-          Rapport Phase
-        </button>
+        
       </div>
 
       
@@ -192,14 +178,7 @@
           <img src="assets/icons/stat.png" alt="Temps" class="nav-button-icon">
           Statistiques Temps
         </button>
-        <button
-          *ngIf="isAdmin()"
-          [routerLink]="['/adscan']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/stat.png" alt="Temps" class="nav-button-icon">
-           Scan
-        </button>
+       
       </div>
 
       <!-- ─── ADMINISTRATION (Admin uniquement) ─── -->
@@ -220,22 +199,6 @@
           [class.active]="activeTab() === 'view-stats'">
           <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
           Extraction des Données
-        </button>
-
-        <button
-          [routerLink]="['/sele']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/planifier.png" alt="Sélection" class="nav-button-icon">
-          Sélection
-        </button>
-
-        <button
-          [routerLink]="['/listP']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/ouvriers.png" alt="List Ouvrier" class="nav-button-icon">
-          Liste Ouvriers
         </button>
 
         <button

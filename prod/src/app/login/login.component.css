@@ -97,6 +97,55 @@
 }
 
 /* ========================================
+   LOGO SOCIÉTÉ
+   ======================================== */
+.logo-seraf {
+  height: 110px;
+  width: auto;
+  object-fit: contain;
+  background-color: white;
+ border-radius: 10px;
+  padding: 10px 20px;
+  display: block;
+}
+
+.logo-seraf-wrapper {
+  width: 380px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .logo-seraf {
+    height: 72px;
+    padding: 8px 16px;
+  }
+  .logo-seraf-wrapper {
+    width: 340px;
+  }
+}
+
+@media (max-width: 768px) {
+  .logo-seraf {
+    height: 56px;
+    padding: 6px 12px;
+    border-radius: 10px;
+  }
+  .logo-seraf-wrapper {
+    width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-seraf {
+    height: 44px;
+    padding: 5px 10px;
+    border-radius: 8px;
+  }
+}
+
+/* ========================================
    INPUTS
    ======================================== */
 .input-industrial { 

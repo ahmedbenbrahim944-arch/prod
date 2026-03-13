@@ -21,6 +21,9 @@ import { ResumeProductionDto } from './dto/resume-production.dto';
 import { EndProductionDto } from './dto/end-production.dto';
 import { UpdatePauseDto } from './dto/update-pause.dto';
 import { Between,MoreThanOrEqual } from 'typeorm';
+import { Planification ,  } from '../semaine/entities/planification.entity'; 
+import { Not } from 'typeorm';
+import { Semaine } from '../semaine/entities/semaine.entity';
 
 
 
@@ -47,6 +50,10 @@ export class ProductionTimeService {
 
     @InjectRepository(Phase)
     private phaseRepo: Repository<Phase>,
+    @InjectRepository(Planification)
+    private planificationRepo: Repository<Planification>,
+    @InjectRepository(Semaine)
+    private semaineRepo: Repository<Semaine>
   ) {}
 
   /**
@@ -190,87 +197,129 @@ export class ProductionTimeService {
   /**
    * ✅ MODIFIÉ - Mettre en pause la production avec références M1/M4/M5
    */
-  async pauseProduction(pauseDto: PauseProductionDto, user: User) {
-    try {
-      const session = await this.productionSessionRepo.findOne({
-        where: { 
-          id: pauseDto.sessionId,
-          status: 'active'
-        }
-      });
-
-      if (!session) {
-        throw new NotFoundException('Session active non trouvée');
+ async pauseProduction(pauseDto: PauseProductionDto, user: User) {
+  try {
+    const session = await this.productionSessionRepo.findOne({
+      where: { 
+        id: pauseDto.sessionId,
+        status: 'active'
       }
-
-      // Vérifier s'il y a déjà une pause non terminée
-      const existingPause = await this.pauseSessionRepo.findOne({
-        where: { 
-          productionSession: { id: pauseDto.sessionId },
-          endTime: IsNull()
-        }
-      });
-
-      if (existingPause) {
-        throw new ConflictException('Une pause est déjà en cours pour cette session');
-      }
-
-      // ✅ Validation des références selon la catégorie M
-      if (pauseDto.mCategory === 'M1' && (!pauseDto.matierePremierRefs || pauseDto.matierePremierRefs.length === 0)) {
-        throw new BadRequestException('Les références matières premières sont obligatoires pour M1');
-      }
-
-      if (pauseDto.mCategory === 'M4' && (!pauseDto.phasesEnPanne || pauseDto.phasesEnPanne.length === 0)) {
-        throw new BadRequestException('Les phases en panne sont obligatoires pour M4');
-      }
-
-      if (pauseDto.mCategory === 'M5' && (!pauseDto.productRefs || pauseDto.productRefs.length === 0)) {
-        throw new BadRequestException('Les références produits sont obligatoires pour M5');
-      }
-
-      // Créer une nouvelle pause avec les références
-      const pause = new PauseSession();
-      pause.productionSession = session;
-      pause.mCategory = pauseDto.mCategory;
-      pause.subCategory = pauseDto.subCategory || '';
-      pause.reason = pauseDto.reason || '';
-      pause.recordedBy = user;
-      pause.userName = `${user.prenom} ${user.nom}`.trim();
-      // ✅ Stocker les références selon la catégorie
-      pause.matierePremierRefs = pauseDto.mCategory === 'M1' ? pauseDto.matierePremierRefs || [] : [];
-      pause.phasesEnPanne = pauseDto.mCategory === 'M4' ? pauseDto.phasesEnPanne || [] : [];
-      pause.productRefs = pauseDto.mCategory === 'M5' ? pauseDto.productRefs || [] : [];
-
-      await this.pauseSessionRepo.save(pause);
-
-      // Mettre à jour le statut de la session
-      session.status = 'paused';
-      await this.productionSessionRepo.save(session);
-
-      return {
-        message: `Production mise en pause (${pauseDto.mCategory})`,
-        pause: {
-          id: pause.id,
-          startTime: pause.startTime,
-          mCategory: pause.mCategory,
-          subCategory: pause.subCategory,
-          matierePremierRefs: pause.matierePremierRefs,
-          phasesEnPanne: pause.phasesEnPanne,
-          productRefs: pause.productRefs
-        },
-        session: {
-          id: session.id,
-          ligne: session.ligne,
-          status: session.status
-        }
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException || error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Erreur lors de la mise en pause');
+    });
+ 
+    if (!session) {
+      throw new NotFoundException('Session active non trouvée');
     }
+ 
+    // Vérifier s'il y a déjà une pause non terminée
+    const existingPause = await this.pauseSessionRepo.findOne({
+      where: { 
+        productionSession: { id: pauseDto.sessionId },
+        endTime: IsNull()
+      }
+    });
+ 
+    if (existingPause) {
+      throw new ConflictException('Une pause est déjà en cours pour cette session');
+    }
+ 
+    // ✅ Validation des références métier selon la catégorie M
+    if (pauseDto.mCategory === 'M1' && (!pauseDto.matierePremierRefs || pauseDto.matierePremierRefs.length === 0)) {
+      throw new BadRequestException('Les références matières premières sont obligatoires pour M1');
+    }
+    if (pauseDto.mCategory === 'M4' && (!pauseDto.phasesEnPanne || pauseDto.phasesEnPanne.length === 0)) {
+      throw new BadRequestException('Les phases en panne sont obligatoires pour M4');
+    }
+    if (pauseDto.mCategory === 'M5' && (!pauseDto.productRefs || pauseDto.productRefs.length === 0)) {
+      throw new BadRequestException('Les références produits sont obligatoires pour M5');
+    }
+ 
+    // ✅ NOUVEAU : Validation et récupération des planifications sélectionnées
+    let planifications: Planification[] = [];
+    if (pauseDto.planificationIds && pauseDto.planificationIds.length > 0) {
+      // Récupérer les planifications depuis la BDD
+      planifications = await this.planificationRepo.findByIds(pauseDto.planificationIds);
+ 
+      // Vérifier que toutes les planifications trouvées appartiennent bien à cette ligne
+      const wrongLine = planifications.find(p => p.ligne !== session.ligne);
+      if (wrongLine) {
+        throw new BadRequestException(
+          `La planification (ref: ${wrongLine.reference}) n'appartient pas à la ligne ${session.ligne}`
+        );
+      }
+ 
+      // Vérifier que toutes ont bien un OF non vide (= planifiées)
+      const notPlanned = planifications.find(p => !p.of || p.of.trim() === '');
+      if (notPlanned) {
+        throw new BadRequestException(
+          `La référence "${notPlanned.reference}" n'a pas de planning (OF vide)`
+        );
+      }
+ 
+      // Vérifier que le nombre trouvé correspond aux IDs demandés
+      if (planifications.length !== pauseDto.planificationIds.length) {
+        throw new BadRequestException('Une ou plusieurs planifications demandées sont introuvables');
+      }
+    }
+ 
+    // Créer la pause
+    const pause = new PauseSession();
+    pause.productionSession = session;
+    pause.mCategory = pauseDto.mCategory;
+    pause.subCategory = pauseDto.subCategory || '';
+    pause.reason = pauseDto.reason || '';
+    pause.recordedBy = user;
+    pause.userName = `${user.prenom} ${user.nom}`.trim();
+ 
+    // ✅ Références métier selon catégorie
+    pause.matierePremierRefs = pauseDto.mCategory === 'M1' ? pauseDto.matierePremierRefs || [] : [];
+    pause.phasesEnPanne = pauseDto.mCategory === 'M4' ? pauseDto.phasesEnPanne || [] : [];
+    pause.productRefs = pauseDto.mCategory === 'M5' ? pauseDto.productRefs || [] : [];
+ 
+    // ✅ NOUVEAU : Attacher les planifications sélectionnées
+    pause.planifications = planifications;
+ 
+    await this.pauseSessionRepo.save(pause);
+ 
+    // Mettre à jour le statut de la session
+    session.status = 'paused';
+    await this.productionSessionRepo.save(session);
+ 
+    return {
+      message: `Production mise en pause (${pauseDto.mCategory})`,
+      pause: {
+        id: pause.id,
+        startTime: pause.startTime,
+        mCategory: pause.mCategory,
+        subCategory: pause.subCategory,
+        matierePremierRefs: pause.matierePremierRefs,
+        phasesEnPanne: pause.phasesEnPanne,
+        productRefs: pause.productRefs,
+        // ✅ NOUVEAU : Retourner les infos des planifications liées
+        planifications: planifications.map(p => ({
+          id: p.id,
+          reference: p.reference,
+          of: p.of,
+          jour: p.jour,
+          semaine: p.semaine
+        }))
+      },
+      session: {
+        id: session.id,
+        ligne: session.ligne,
+        status: session.status
+      }
+    };
+  } catch (error) {
+    if (
+      error instanceof NotFoundException ||
+      error instanceof ConflictException ||
+      error instanceof BadRequestException
+    ) {
+      throw error;
+    }
+    throw new InternalServerErrorException('Erreur lors de la mise en pause');
   }
+}
 
   /**
    * Reprendre la production après une pause
@@ -532,16 +581,24 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
   startTime: pause.startTime,
   endTime: pause.endTime,
   duration: this.formatDuration(pause.durationSeconds),
-  durationSeconds: pause.durationSeconds, // Pour calculs
+  durationSeconds: pause.durationSeconds,
   subCategory: pause.subCategory,
   reason: pause.reason,
   actionTaken: pause.actionTaken,
-  lostPieces: pause.lostPieces, // ✅ AJOUTER
-  // Références
+  lostPieces: pause.lostPieces,
+  // Références métier
   matierePremierRefs: pause.matierePremierRefs,
   phasesEnPanne: pause.phasesEnPanne,
-  productRefs: pause.productRefs
-        });
+  productRefs: pause.productRefs,
+  // ✅ NOUVEAU - Références planifiées liées à cette pause
+  planifications: (pause.planifications || []).map(p => ({
+    id: p.id,
+    reference: p.reference,
+    of: p.of,
+    jour: p.jour,
+    semaine: p.semaine,
+  }))
+});
         return acc;
       }, {});
       const totalLostPieces = session.pauses?.reduce((sum, p) => sum + (p.lostPieces || 0), 0) || 0;
@@ -734,18 +791,25 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
           startTime: session.startTime,
           status: session.status,
           currentPause: currentPause ? {
-            id: currentPause.id,
-            mCategory: currentPause.mCategory,
-            startTime: currentPause.startTime,
-            duration: this.formatDuration(
-              Math.floor((new Date().getTime() - currentPause.startTime.getTime()) / 1000)
-            ),
-            subCategory: currentPause.subCategory,
-            // ✅ Inclure les références
-            matierePremierRefs: currentPause.matierePremierRefs,
-            phasesEnPanne: currentPause.phasesEnPanne,
-            productRefs: currentPause.productRefs
-          } : null,
+  id: currentPause.id,
+  mCategory: currentPause.mCategory,
+  startTime: currentPause.startTime,
+  duration: this.formatDuration(
+    Math.floor((new Date().getTime() - currentPause.startTime.getTime()) / 1000)
+  ),
+  subCategory: currentPause.subCategory,
+  matierePremierRefs: currentPause.matierePremierRefs,
+  phasesEnPanne: currentPause.phasesEnPanne,
+  productRefs: currentPause.productRefs,
+  // ✅ AJOUTER - Références planifiées liées à cette pause
+  planifications: (currentPause.planifications || []).map(p => ({
+    id: p.id,
+    reference: p.reference,
+    of: p.of,
+    jour: p.jour,
+    semaine: p.semaine,
+  }))
+} : null,
           startedBy: session.userName || (session.startedBy ? `${session.startedBy.prenom} ${session.startedBy.nom}`.trim() : 'Inconnu'),
           productType: session.productType
         };
@@ -1380,4 +1444,69 @@ async getAdminDashboardOverview(filters?: {
       throw new InternalServerErrorException('Erreur lors de la récupération des stats M');
     }
   }
+
+  async getPlannedReferencesForLine(ligne: string): Promise<{
+  planifications: Array<{
+    id: number;
+    reference: string;
+    of: string;
+    jour: string;
+    semaine: string;
+    qtePlanifiee: number;
+    qteModifiee: number;
+  }>;
+  total: number;
+  currentWeek: string | null;
+}> {
+  try {
+    const today = new Date();
+ 
+    // 1. Trouver la semaine courante (today entre dateDebut et dateFin)
+    const currentSemaine = await this.semaineRepo
+      .createQueryBuilder('semaine')
+      .where(':today >= semaine.dateDebut', { today })
+      .andWhere(':today <= semaine.dateFin', { today })
+      .getOne();
+ 
+    if (!currentSemaine) {
+      // Aucune semaine active aujourd'hui → retourner vide
+      return {
+        planifications: [],
+        total: 0,
+        currentWeek: null
+      };
+    }
+ 
+    // 2. Récupérer les planifications de cette ligne
+    //    pour la semaine courante avec un OF non vide
+    const planifications = await this.planificationRepo.find({
+      where: {
+        ligne,
+        semaine: currentSemaine.nom,
+        of: Not(''),
+      },
+      order: { jour: 'ASC', reference: 'ASC' }
+    });
+ 
+    return {
+      planifications: planifications.map(p => ({
+        id: p.id,
+        reference: p.reference,
+        of: p.of,
+        jour: p.jour,
+        semaine: p.semaine,
+        qtePlanifiee: p.qtePlanifiee,
+        qteModifiee: p.qteModifiee,
+      })),
+      total: planifications.length,
+      currentWeek: currentSemaine.nom
+    };
+ 
+  } catch (error) {
+    console.error(`Erreur récupération planifications ligne ${ligne}:`, error);
+    throw new InternalServerErrorException('Erreur lors de la récupération des références planifiées');
+  }
+}
+
+
 }

@@ -1,7 +1,8 @@
 // pause-session.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, ManyToMany, JoinTable } from 'typeorm';
 import { ProductionSession } from './production-session.entity';
 import { User } from '../../user/entities/user.entity';
+import { Planification } from '../../semaine/entities/planification.entity';
 
 @Entity('pause_sessions')
 export class PauseSession {
@@ -39,13 +40,13 @@ export class PauseSession {
   isCompleted: boolean;
 
   @Column({ nullable: true })
-  userName: string; // Nom de l'utilisateur pour affichage
+  userName: string;
 
-  // ✅ NOUVEAU: Pièces perdues pendant cette pause
+  // ✅ Pièces perdues pendant cette pause
   @Column({ default: 0 })
   lostPieces: number;
 
-  // ✅ Références selon catégorie
+  // ✅ Références selon catégorie M1/M4/M5 (issues de tables métier)
   @Column({ type: 'simple-array', nullable: true })
   matierePremierRefs: string[]; // Pour M1
 
@@ -54,4 +55,14 @@ export class PauseSession {
 
   @Column({ type: 'simple-array', nullable: true })
   phasesEnPanne: string[]; // Pour M4
+
+  // ✅ NOUVEAU : Références planifiées liées à cette pause
+  // Une pause peut concerner plusieurs références du planning (OF non null)
+  @ManyToMany(() => Planification, { eager: true, nullable: true })
+  @JoinTable({
+    name: 'pause_session_planifications',
+    joinColumn: { name: 'pause_session_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'planification_id', referencedColumnName: 'id' }
+  })
+  planifications: Planification[];
 }

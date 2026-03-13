@@ -1,3 +1,4 @@
+// production-time.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductionTimeService } from './production-time.service';
@@ -9,6 +10,8 @@ import { User } from '../user/entities/user.entity';
 import { TempsSec } from '../temps-sec/entities/temps-sec.entity';
 import { MatierePremier } from '../matiere-premier/entities/matiere-premier.entity';
 import { Phase } from '../phase/entities/phase.entity';
+import { Planification } from '../semaine/entities/planification.entity'; // ✅ NOUVEAU
+import { Semaine } from '../semaine/entities/semaine.entity'; // ✅ NOUVEAU
 
 @Module({
   imports: [
@@ -17,9 +20,11 @@ import { Phase } from '../phase/entities/phase.entity';
       PauseSession, 
       Product, 
       User,
-      TempsSec,        // ✅ Ajout pour calcul quantité
-      MatierePremier,  // ✅ Ajout pour références M1
-      Phase            // ✅ Ajout pour références M4
+      TempsSec,
+      MatierePremier,
+      Phase,
+      Planification, // ✅ NOUVEAU : pour récupérer les refs avec OF non null
+      Semaine,       // ✅ NOUVEAU : pour trouver la semaine courante par date
     ])
   ],
   controllers: [ProductionTimeController],

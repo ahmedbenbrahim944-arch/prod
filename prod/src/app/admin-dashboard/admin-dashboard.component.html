@@ -384,6 +384,22 @@
         <span>Aucune référence associée pour cette catégorie</span>
       </div>
 
+      <!-- ── RÉFÉRENCES PLANIFIÉES ── -->
+      <div *ngIf="selectedLinePause()!.planifications && selectedLinePause()!.planifications!.length > 0">
+        <div class="text-xs font-bold text-purple-400 uppercase tracking-widest mb-2">
+          📋 Références planifiées concernées
+        </div>
+        <div class="p-3 bg-purple-900/20 border border-purple-400/30 rounded-xl">
+          <div class="flex flex-wrap gap-2">
+            <span *ngFor="let plan of selectedLinePause()!.planifications"
+                  class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-200 text-xs font-mono font-semibold rounded-lg border border-purple-400/40">
+              {{ plan.reference }}
+              <span class="text-purple-400 font-normal">OF: {{ plan.of }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Raison ── -->
       <div *ngIf="selectedLinePause()!.reason"
            class="p-3 bg-white/5 border border-white/10 rounded-xl">

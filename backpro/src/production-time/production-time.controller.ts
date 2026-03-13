@@ -324,4 +324,8 @@ async getAllRealTimeProduction() {
     // Pour l'instant, retournons le JSON
     return data;
   }
+   @Get('line/:ligne/planned-references')
+  async getPlannedReferences(@Param('ligne') ligne: string) {
+    return this.productionTimeService.getPlannedReferencesForLine(ligne);
+  }
 }

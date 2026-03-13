@@ -114,6 +114,14 @@ export interface ActivePauseDetails {
   phasesEnPanne?: string[];
   productRefs?: string[];
   lostPieces?: number;
+  // ✅ Références planifiées liées à cette pause
+  planifications?: Array<{
+    id: number;
+    reference: string;
+    of: string;
+    jour: string;
+    semaine: string;
+  }>;
 }
 
 export interface MCategoryStats {

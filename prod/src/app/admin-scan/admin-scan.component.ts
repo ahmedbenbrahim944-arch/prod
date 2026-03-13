@@ -9,17 +9,17 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, interval } from 'rxjs';
 import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
-import { ScannerService, Semaine, ScanRecord } from '../scanner/scanner.service';
-
+import { ScannerService , Semaine, ScanRecord  } from '../scanner/scanner.service';
 
 interface Filters {
-  reference: string;
-  ligne: string;
+  fullnumber: string;
+  reference:  string;
+  ligne:      string;
   ligneChoix: '' | 'L1' | 'L2' | 'vide';
-  dateDebut: string;
-  dateFin: string;
+  dateDebut:  string;
+  dateFin:    string;
 }
 
 @Component({
@@ -65,12 +65,17 @@ export class AdminScanComponent implements OnInit, OnDestroy {
 
   // ─── Filtres ─────────────────────────────────────────────────────────────
   filters: Filters = {
+    fullnumber: '',
     reference:  '',
     ligne:      '',
     ligneChoix: '',
     dateDebut:  '',
     dateFin:    '',
   };
+
+  readonly REFRESH_INTERVAL = 30; // secondes
+  refreshCountdown = 30;
+  private refreshTimer: any = null;
 
   private destroy$ = new Subject<void>();
 
@@ -81,7 +86,7 @@ export class AdminScanComponent implements OnInit, OnDestroy {
 
   // ─── Lifecycle ───────────────────────────────────────────────────────────
   ngOnInit(): void { this.loadSemaines(); }
-  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+  ngOnDestroy(): void { this.stopAutoRefresh(); this.destroy$.next(); this.destroy$.complete(); }
 
   // ─── Semaines ─────────────────────────────────────────────────────────────
   loadSemaines(): void {
@@ -100,22 +105,57 @@ export class AdminScanComponent implements OnInit, OnDestroy {
     this.scans = [];
     this.resetFilters();
     this.loadScans(s.id);
+    this.startAutoRefresh();
     if (window.innerWidth < 768) this.sidebarOpen = false;
   }
 
-  loadScans(semaineId: number): void {
-    this.loadingScans = true;
+  loadScans(semaineId: number, silent = false): void {
+    if (!silent) this.loadingScans = true;
     this.scannerService.getScansBySemaine(semaineId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (data) => { this.scans = data; this.loadingScans = false; this.cdr.markForCheck(); },
-        error: ()    => { this.loadingScans = false; this.cdr.markForCheck(); },
+        next: (data) => {
+          this.scans = data;
+          this.loadingScans = false;
+          this.cdr.markForCheck();
+        },
+        error: () => { this.loadingScans = false; this.cdr.markForCheck(); },
       });
+  }
+
+  // ─── Auto-refresh toutes les 30s ─────────────────────────────────────────
+  startAutoRefresh(): void {
+    this.stopAutoRefresh();
+    this.refreshCountdown = this.REFRESH_INTERVAL;
+
+    this.refreshTimer = setInterval(() => {
+      this.refreshCountdown--;
+      if (this.refreshCountdown <= 0) {
+        this.refreshCountdown = this.REFRESH_INTERVAL;
+        if (this.selectedSemaine) {
+          this.loadScans(this.selectedSemaine.id, true); // silent = pas de spinner
+        }
+      }
+      this.cdr.markForCheck();
+    }, 1000);
+  }
+
+  stopAutoRefresh(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
   }
 
   // ─── Filtres ──────────────────────────────────────────────────────────────
   get filteredScans(): ScanRecord[] {
     return this.scans.filter(s => {
+
+      // ── Fullnumber ──
+      if (this.filters.fullnumber.trim()) {
+        const fn = s.fullnumber.toLowerCase();
+        if (!fn.includes(this.filters.fullnumber.trim().toLowerCase())) return false;
+      }
 
       // ── Référence ──
       if (this.filters.reference.trim()) {
@@ -160,6 +200,7 @@ export class AdminScanComponent implements OnInit, OnDestroy {
 
   get hasActiveFilters(): boolean {
     return !!(
+      this.filters.fullnumber ||
       this.filters.reference  ||
       this.filters.ligne      ||
       this.filters.ligneChoix ||
@@ -169,7 +210,7 @@ export class AdminScanComponent implements OnInit, OnDestroy {
   }
 
   resetFilters(): void {
-    this.filters = { reference: '', ligne: '', ligneChoix: '', dateDebut: '', dateFin: '' };
+    this.filters = { fullnumber: '', reference: '', ligne: '', ligneChoix: '', dateDebut: '', dateFin: '' };
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────

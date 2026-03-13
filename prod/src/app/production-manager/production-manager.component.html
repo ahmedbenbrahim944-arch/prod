@@ -250,77 +250,204 @@
     </div>
   </div>
 
-  <!-- ========== MODAL PAUSE ========== -->
+  <!-- ========== MODAL PAUSE (2 ÉTAPES) ========== -->
   <div *ngIf="showPauseForm()"
        class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-screen overflow-y-auto">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-6">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col"
+         style="max-height: min(90vh, 90dvh);">
+
+      <!-- Header modal -->
+      <div class="p-6 pb-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
           <h3 class="text-xl font-bold text-gray-900">⏸️ Mettre en Pause</h3>
-          <button (click)="closePauseForm()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold">×</button>
+          <!-- Indicateur d'étapes -->
+          <div class="flex items-center gap-1.5">
+            <span class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center"
+                  [ngClass]="pauseStep() === 1 ? 'bg-purple-600 text-white' : 'bg-green-500 text-white'">
+              {{ pauseStep() === 1 ? '1' : '✓' }}
+            </span>
+            <span class="w-5 h-0.5 bg-gray-200"></span>
+            <span class="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center"
+                  [ngClass]="pauseStep() === 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-500'">
+              2
+            </span>
+          </div>
         </div>
+        <button (click)="closePauseForm()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold">×</button>
+      </div>
 
-        <!-- Catégorie M -->
-        <div class="mb-4">
-          <label class="block text-sm font-bold text-gray-700 mb-2">Catégorie M *</label>
-          <div class="grid grid-cols-3 gap-2">
-            <button *ngFor="let cat of mCategories()"
-              (click)="selectedMCategory.set(cat.code); onMCategoryChange()"
-              [ngClass]="selectedMCategory() === cat.code
-                ? 'bg-purple-600 border-purple-500 text-white'
-                : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50'"
-              class="p-3 rounded-2xl border text-center transition-all text-sm font-semibold">
-              <div class="text-xl mb-1">{{ getMCategoryIcon(cat.code) }}</div>
-              <div class="font-bold">{{ cat.code }}</div>
-              <div class="text-xs opacity-70 truncate">{{ cat.name }}</div>
-            </button>
+      <!-- Contenu scrollable -->
+      <div class="flex-1 overflow-y-auto p-6">
+
+        <!-- ══════════════ ÉTAPE 1 : Références planifiées ══════════════ -->
+        <div *ngIf="pauseStep() === 1">
+          <p class="text-sm text-gray-500 mb-4">
+            Sélectionnez les références du planning concernées par cette pause
+            <span class="text-purple-600 font-semibold">(OF actif)</span>.
+          </p>
+
+          <!-- Chargement -->
+          <div *ngIf="loadingPlannedRefs()" class="flex items-center justify-center py-10 gap-3 text-gray-500">
+            <span class="animate-spin text-xl">⟳</span>
+            <span class="text-sm">Chargement du planning...</span>
+          </div>
+
+          <!-- Aucune planification disponible -->
+          <div *ngIf="!loadingPlannedRefs() && plannedReferences().length === 0"
+               class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+            <div class="text-3xl mb-2">📋</div>
+            <p class="text-gray-500 font-medium text-sm">Aucune référence planifiée</p>
+            <p class="text-gray-400 text-xs mt-1">Pas de planning actif (OF) pour cette ligne.</p>
+            <p class="text-gray-400 text-xs mt-1">Vous pouvez continuer sans sélection.</p>
+          </div>
+
+          <!-- Liste des planifications -->
+          <div *ngIf="!loadingPlannedRefs() && plannedReferences().length > 0" class="space-y-3">
+            <div *ngFor="let plan of plannedReferences()"
+                 (click)="togglePlanification(plan.id)"
+                 class="flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all"
+                 [ngClass]="selectedPlanificationIds().includes(plan.id)
+                   ? 'border-purple-500 bg-purple-50'
+                   : 'border-gray-200 bg-white hover:border-purple-300 hover:bg-purple-50/40'">
+
+              <!-- Checkbox visuel -->
+              <div class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all"
+                   [ngClass]="selectedPlanificationIds().includes(plan.id)
+                     ? 'bg-purple-600 border-purple-600'
+                     : 'border-gray-300 bg-white'">
+                <span *ngIf="selectedPlanificationIds().includes(plan.id)"
+                      class="text-white text-xs font-bold">✓</span>
+              </div>
+
+              <!-- Infos de la planification -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-bold text-gray-900 text-sm">{{ plan.reference }}</span>
+                  <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+                    OF: {{ plan.of }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                  <span>📅 {{ plan.jour }}</span>
+                  <span>S{{ plan.semaine }}</span>
+                  <span>🎯 {{ plan.qtePlanifiee }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compteur sélection -->
+          <div *ngIf="selectedPlanificationIds().length > 0"
+               class="mt-4 px-4 py-2 bg-purple-50 rounded-xl border border-purple-200 text-sm text-purple-700 font-semibold">
+            ✅ {{ selectedPlanificationIds().length }} référence(s) sélectionnée(s)
           </div>
         </div>
 
-        <!-- Sous-catégorie -->
-        <div *ngIf="availableSubCategories().length > 0" class="mb-4">
-          <label class="block text-sm font-bold text-gray-700 mb-2">Sous-catégorie</label>
-          <select [ngModel]="selectedSubCategory()" (ngModelChange)="selectedSubCategory.set($event)"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400">
-            <option value="">— Aucune —</option>
-            <option *ngFor="let sub of availableSubCategories()" [value]="sub">{{ sub }}</option>
-          </select>
-        </div>
+        <!-- ══════════════ ÉTAPE 2 : Catégorie M + Refs métier ══════════════ -->
+        <div *ngIf="pauseStep() === 2">
 
-        <!-- Références -->
-        <div *ngIf="currentCategoryRequiresReferences()" class="mb-4">
-          <label class="block text-sm font-bold text-gray-700 mb-2">{{ referenceTypeLabel() }} *</label>
-          <div *ngIf="loadingReferences()" class="text-gray-500 text-sm">Chargement...</div>
-          <div *ngIf="!loadingReferences() && availableReferences().length > 0" class="flex flex-wrap gap-2">
-            <button *ngFor="let ref of availableReferences()" (click)="toggleReference(ref)"
-              [ngClass]="selectedReferences().includes(ref)
-                ? 'bg-purple-600 text-white border-purple-500'
-                : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-purple-50'"
-              class="px-3 py-1.5 rounded-xl text-sm font-semibold border transition-all">
-              {{ ref }}
-            </button>
+          <!-- Résumé des planifications sélectionnées -->
+          <div *ngIf="selectedPlanificationIds().length > 0"
+               class="mb-4 p-3 bg-purple-50 rounded-2xl border border-purple-200">
+            <div class="text-xs font-bold text-purple-600 mb-2">📋 Références planifiées liées :</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span *ngFor="let plan of plannedReferences()"
+                    [ngClass]="selectedPlanificationIds().includes(plan.id) ? 'flex' : 'hidden'"
+                    class="items-center gap-1 px-2 py-1 bg-purple-600 text-white text-xs rounded-full">
+                {{ plan.reference }}
+                <span class="opacity-70">({{ plan.of }})</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Catégorie M -->
+          <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Catégorie M *</label>
+            <div class="grid grid-cols-3 gap-2">
+              <button *ngFor="let cat of mCategories()"
+                (click)="selectedMCategory.set(cat.code); onMCategoryChange()"
+                [ngClass]="selectedMCategory() === cat.code
+                  ? 'bg-purple-600 border-purple-500 text-white'
+                  : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-purple-50'"
+                class="p-3 rounded-2xl border text-center transition-all text-sm font-semibold">
+                <div class="text-xl mb-1">{{ getMCategoryIcon(cat.code) }}</div>
+                <div class="font-bold">{{ cat.code }}</div>
+                <div class="text-xs opacity-70 truncate">{{ cat.name }}</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sous-catégorie -->
+          <div *ngIf="availableSubCategories().length > 0" class="mb-4">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Sous-catégorie</label>
+            <select [ngModel]="selectedSubCategory()" (ngModelChange)="selectedSubCategory.set($event)"
+              class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400">
+              <option value="">— Aucune —</option>
+              <option *ngFor="let sub of availableSubCategories()" [value]="sub">{{ sub }}</option>
+            </select>
+          </div>
+
+          <!-- Références métier M1/M4/M5 -->
+          <div *ngIf="currentCategoryRequiresReferences()" class="mb-4">
+            <label class="block text-sm font-bold text-gray-700 mb-2">{{ referenceTypeLabel() }} *</label>
+            <div *ngIf="loadingReferences()" class="text-gray-500 text-sm">Chargement...</div>
+            <div *ngIf="!loadingReferences() && availableReferences().length > 0" class="flex flex-wrap gap-2">
+              <button *ngFor="let ref of availableReferences()" (click)="toggleReference(ref)"
+                [ngClass]="selectedReferences().includes(ref)
+                  ? 'bg-purple-600 text-white border-purple-500'
+                  : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-purple-50'"
+                class="px-3 py-1.5 rounded-xl text-sm font-semibold border transition-all">
+                {{ ref }}
+              </button>
+            </div>
+            <div *ngIf="!loadingReferences() && availableReferences().length === 0"
+                 class="text-sm text-gray-400 italic">
+              Aucune référence disponible pour cette catégorie.
+            </div>
+          </div>
+
+          <!-- Raison -->
+          <div class="mb-2">
+            <label class="block text-sm font-bold text-gray-700 mb-2">Raison (optionnel)</label>
+            <textarea [ngModel]="pauseReason()" (ngModelChange)="pauseReason.set($event)"
+              placeholder="Décrire la raison de la pause..." rows="3"
+              class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none">
+            </textarea>
           </div>
         </div>
 
-        <!-- Raison -->
-        <div class="mb-6">
-          <label class="block text-sm font-bold text-gray-700 mb-2">Raison (optionnel)</label>
-          <textarea [ngModel]="pauseReason()" (ngModelChange)="pauseReason.set($event)"
-            placeholder="Décrire la raison de la pause..." rows="3"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none">
-          </textarea>
-        </div>
+      </div><!-- fin scroll -->
 
-        <div class="flex gap-3">
-          <button (click)="pauseSession()" [disabled]="loading() || !selectedMCategory()"
-            class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 text-white rounded-2xl font-bold transition-all">
-            ⏸️ Confirmer
+      <!-- Footer boutons -->
+      <div class="p-6 pt-4 border-t border-gray-100 shrink-0">
+
+        <!-- Boutons ÉTAPE 1 -->
+        <div *ngIf="pauseStep() === 1" class="flex gap-3">
+          <button
+            (click)="goToStep2()"
+            [disabled]="!canProceedToStep2()"
+            class="flex-1 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold transition-all">
+            Suivant →
           </button>
           <button (click)="closePauseForm()"
             class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all">
             Annuler
           </button>
         </div>
+
+        <!-- Boutons ÉTAPE 2 -->
+        <div *ngIf="pauseStep() === 2" class="flex gap-3">
+          <button (click)="goToStep1()"
+            class="px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-semibold transition-all">
+            ← Retour
+          </button>
+          <button (click)="pauseSession()" [disabled]="loading() || !selectedMCategory()"
+            class="flex-1 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold transition-all">
+            <span *ngIf="loading()" class="animate-spin mr-1">⟳</span>
+            ⏸️ Confirmer la pause
+          </button>
+        </div>
+
       </div>
     </div>
   </div>

@@ -1,4 +1,4 @@
-<!-- pause-history.component.html - VERSION DEBUG SIMPLIFIÉE -->
+<!-- pause-history.component.html -->
 
 <div class="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-800 p-4 md:p-8">
   
@@ -17,8 +17,6 @@
       </h1>
     </div>
   </div>
-
-
 
   <!-- Session Info -->
   <div *ngIf="sessionInfo()" class="bg-white rounded-3xl p-6 mb-6 shadow-xl">
@@ -60,7 +58,6 @@
       <div *ngFor="let pause of pauses(); let i = index" 
            class="p-6 bg-gradient-to-br from-gray-50 to-white rounded-2xl border-2 border-gray-200">
         
-        <!-- Numéro de pause -->
         <div class="text-sm text-gray-500 mb-2">Pause #{{ i + 1 }}</div>
         
         <!-- Pause Header -->
@@ -75,14 +72,11 @@
           </div>
           
           <div class="flex items-center gap-4">
-            <!-- Pièces perdues -->
             <div *ngIf="pause.lostPieces && pause.lostPieces > 0" 
                  class="flex items-center gap-2 px-3 py-1 bg-red-100 rounded-lg border border-red-300">
               <span>📉</span>
               <span class="font-bold text-red-700">{{ pause.lostPieces }} pièces</span>
             </div>
-            
-            <!-- Durée -->
             <div class="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg">
               <span>⏱️</span>
               <span class="font-bold font-mono">{{ pause.duration }}</span>
@@ -99,6 +93,18 @@
           <div class="text-sm" *ngIf="pause.endTime">
             <span class="text-gray-600">Fin:</span>
             <span class="ml-2 font-mono">{{ formatDateTime(pause.endTime) }}</span>
+          </div>
+        </div>
+
+        <!-- Références planifiées liées -->
+        <div *ngIf="pause.planifications && pause.planifications.length > 0" class="mb-3">
+          <span class="text-xs font-bold text-gray-600">📋 Références planifiées :</span>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <span *ngFor="let plan of pause.planifications"
+                  class="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-lg border border-purple-200">
+              {{ plan.reference }}
+              <span class="text-purple-500 font-mono text-xs ml-1">({{ plan.of }})</span>
+            </span>
           </div>
         </div>
 

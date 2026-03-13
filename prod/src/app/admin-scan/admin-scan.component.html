@@ -89,6 +89,18 @@
           <span class="count-badge" @fadeSlide>
             {{ filteredScans.length }} / {{ scans.length }} scan{{ scans.length !== 1 ? 's' : '' }}
           </span>
+          <div class="refresh-indicator" @fadeSlide>
+            <div class="refresh-ring" [class.urgent]="refreshCountdown <= 5">
+              <svg viewBox="0 0 36 36">
+                <circle class="ring-bg" cx="18" cy="18" r="15"/>
+                <circle class="ring-progress"
+                  cx="18" cy="18" r="15"
+                  [style.stroke-dashoffset]="94.2 - (94.2 * refreshCountdown / REFRESH_INTERVAL)"/>
+              </svg>
+              <span class="ring-count">{{ refreshCountdown }}</span>
+            </div>
+            <span class="refresh-label">refresh</span>
+          </div>
         }
       </div>
     </header>
@@ -133,6 +145,18 @@
             </div>
 
             <div class="filters-grid">
+
+              <!-- Fullnumber -->
+              <div class="filter-field">
+                <label class="filter-label">Fullnumber</label>
+                <input
+                  class="filter-input filter-mono"
+                  type="text"
+                  [(ngModel)]="filters.fullnumber"
+                  placeholder="ex: G1121654097..."
+                  autocomplete="off"
+                  maxlength="16">
+              </div>
 
               <!-- Référence -->
               <div class="filter-field">
