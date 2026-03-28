@@ -1,8 +1,14 @@
 // src/plaquettes/dto/update-plaquette.dto.ts
-import { IsNumber, IsOptional, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsPositive, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdatePlaquetteDto {
+  @IsOptional()
+  @IsNumber()
+  @IsPositive()
+  @Type(() => Number)
+  quantiteDonnee?: number;          // ← nouveau
+
   @IsOptional()
   @IsNumber()
   @Min(0)

@@ -49,6 +49,10 @@ export class Planification {
   @Column({ type: 'int', default: 0 })
   exp: number;
 
+  // NOUVEAU CHAMP : Note (par référence, identique pour tous les jours)
+  @Column({ type: 'text', nullable: true, default: null })
+  note: string | null;
+
   // CHAMPS CALCULÉS
   @Column({ type: 'int', default: 0 })
   deltaProd: number; // qteModifiee - decProduction

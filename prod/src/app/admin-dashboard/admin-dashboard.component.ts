@@ -49,6 +49,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   pauseModalLoading = signal(false);
   pauseModalError = signal<string | null>(null);
 
+  // ── Modal Détails Ligne (nouvelle architecture multi-refs) ────────────────
+  showLineModal = signal(false);
+  selectedLineData = signal<any>(null);
+
   // ── Computed globaux ──────────────────────────────────────────────────────
   totalActiveLines = computed(() => 
     this.dashboardData()?.overview.activeLines || 0
@@ -165,17 +169,50 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.pauseModalError.set(null);
     this.pauseModalLoading.set(true);
 
-    // ── Étape 1 : endpoint dédié ──────────────────────────────────────────
+    // ── Étape 0 : fast path — données déjà dans dashboardData ────────────
+    // Si la ligne a une pause dans realTime ou dans multiSessions, on affiche
+    // immédiatement sans attendre l'API (on lancera quand même l'API en arrière-plan)
+    const line = this.dashboardData()?.lines.find(l => l.ligne === ligne);
+    const fastPause = line?.realTime?.pauseEnCours
+      ?? line?.multiSessions?.find(s => s.pauseEnCours)?.pauseEnCours;
+
+    if (fastPause) {
+      const sess = line?.multiSessions?.find(s => s.pauseEnCours);
+      this.selectedLinePause.set({
+        ligne,
+        sessionId:  sess?.sessionId ?? line?.activeSession?.id ?? 0,
+        pauseId:    fastPause.id ?? 0,
+        mCategory:  fastPause.mCategory,
+        subCategory: fastPause.subCategory,
+        reason:     fastPause.reason,
+        startTime:  fastPause.startTime ?? '',
+        duration:   fastPause.duration ?? fastPause.duree ?? '',
+        matierePremierRefs: fastPause.matierePremierRefs ?? [],
+        phasesEnPanne:      fastPause.phasesEnPanne ?? [],
+        productRefs:        fastPause.productRefs ?? [],
+        lostPieces:         fastPause.lostPieces ?? fastPause.piecesPerdues ?? 0,
+        planifications:     fastPause.planifications ?? []
+      });
+      this.pauseModalLoading.set(false);
+      // Continue quand même l'API pour enrichir les refs si absentes
+    }
+
+    // ── Étape 1 : endpoint dédié (enrichit les données si fast path partiel) ──
     this.adminService.getActivePauseDetails(ligne).subscribe({
       next: (data) => {
         this.selectedLinePause.set(data);
         this.pauseModalLoading.set(false);
       },
       error: () => {
-        // ── Étape 2 : getLineStatus pour récupérer currentPause complet ───
+        // Si fast path déjà affiché → ne pas écraser avec une erreur
+        if (this.selectedLinePause()) {
+          this.pauseModalLoading.set(false);
+          return;
+        }
+
+        // ── Étape 2 : getLineStatus ───────────────────────────────────────
         this.productionService.getLineStatus(ligne).subscribe({
           next: (status: any) => {
-            // Le status retourne { session, currentPause, realTime, ... }
             const pause = status?.currentPause ?? status?.session?.currentPause ?? status?.realTime?.pauseEnCours;
             if (pause) {
               this.selectedLinePause.set({
@@ -191,7 +228,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
                 phasesEnPanne:      pause.phasesEnPanne ?? [],
                 productRefs:        pause.productRefs ?? [],
                 lostPieces:         pause.lostPieces ?? pause.piecesPerdues ?? 0,
-                planifications:     pause.planifications ?? []   // ✅ AJOUT
+                planifications:     pause.planifications ?? []
               });
             } else {
               this._fallbackFromDashboard(ligne);
@@ -199,7 +236,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
             this.pauseModalLoading.set(false);
           },
           error: () => {
-            // ── Étape 3 : fallback dashboardData ────────────────────────
+            // ── Étape 3 : fallback dashboardData ─────────────────────────
             this._fallbackFromDashboard(ligne);
             this.pauseModalLoading.set(false);
           }
@@ -235,6 +272,30 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     this.showPauseModal.set(false);
     this.selectedLinePause.set(null);
   }
+
+  // ── Nouveau modal ligne multi-refs ────────────────────────────────────────
+  openLineModal(ligne: string): void {
+    const line = this.dashboardData()?.lines.find(l => l.ligne === ligne);
+    if (line) {
+      this.selectedLineData.set(line);
+      this.showLineModal.set(true);
+    }
+  }
+
+  closeLineModal(): void {
+    this.showLineModal.set(false);
+    this.selectedLineData.set(null);
+  }
+
+  countPausedSessions(sessions: any[]): number {
+    if (!sessions) return 0;
+    return sessions.filter((s: any) => s.pauseEnCours).length;
+  }
+
+  hasPausedSessions(sessions: any[]): boolean {
+    return this.countPausedSessions(sessions) > 0;
+  }
+
 
   /**
    * Retourne le label complet d'une catégorie M

@@ -9,7 +9,7 @@ import {
   AffectationPersonnelResponse,
   Stats5MParDateResponse,
   Ligne5MDate,
-  Stats5M,  // ✅ AJOUTER CETTE IMPORTATION
+  Stats5M,  //  AJOUTER CETTE IMPORTATION
   UpdateStatutRequest
 } from './stats.service';
 import { Chart, registerables } from 'chart.js';
@@ -29,8 +29,8 @@ interface LigneStats {
   nombreReferences: number;
   totalQteSource: number;
   totalDecProduction: number;
-  actif: boolean;  // ✅ AJOUTER
-  totalQtePlanifiee: number;  // ✅ AJOUTER
+  actif: boolean;  //  AJOUTER
+  totalQtePlanifiee: number;  //  AJOUTER
 }
 
 @Component({
@@ -56,7 +56,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
   titre5MDate: string = '';
   showSaisieRapports: boolean = false;
 
-  // ✅ NOUVELLES PROPRIÉTÉS - Affectation Personnel
+  //  NOUVELLES PROPRIÉTÉS - Affectation Personnel
   affectationPersonnel: AffectationPersonnelResponse | null = null;
   isLoadingAffectation: boolean = false;
   showAffectation: boolean = false;
@@ -91,7 +91,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
     rendement: '#10b981',
     maintenance: '#3b82f6',
     qualite: '#8b5cf6',
-    methode: '#ec4899', // ✅ NOUVELLE COULEUR POUR MÉTHODE
+    methode: '#ec4899', //  NOUVELLE COULEUR POUR MÉTHODE
     environnement: '#0ee9cf',
   };
 
@@ -118,7 +118,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ NOUVELLE MÉTHODE - Charger l'affectation du personnel
+   *  NOUVELLE MÉTHODE - Charger l'affectation du personnel
    */
   chargerAffectationPersonnel(): void {
     if (!this.semaineSelectionnee) {
@@ -134,10 +134,8 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
         this.affectationPersonnel = response;
         this.isLoadingAffectation = false;
         this.showAffectation = true;
-        console.log('✅ Affectation personnel chargée:', response);
       },
       error: (error) => {
-        console.error('❌ Erreur chargement affectation:', error);
         this.isLoadingAffectation = false;
         alert('Erreur lors du chargement de l\'affectation du personnel');
       }
@@ -145,7 +143,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * ✅ MÉTHODE UTILITAIRE - Obtenir la couleur du texte delta
+   *  MÉTHODE UTILITAIRE - Obtenir la couleur du texte delta
    */
   getDeltaColor(difference: number): string {
     if (difference === 0) return '#10b981'; // Vert
@@ -209,17 +207,12 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
         this.showResultatsDate = false;
         this.showAffectation = false;
         
-        console.log('📊 STATISTIQUES CHARGÉES:');
-        console.log('  - Nombre de lignes:', this.statsLignes.length);
-        console.log('  - PCS Total Semaine:', this.pcsTotalSemaine + '%');
-        console.log('  - Stats 5M:', this.stats5M);
         
         setTimeout(() => {
           this.creerGraphiques();
         }, 100);
       },
       error: (error) => {
-        console.error('❌ Erreur:', error);
         this.isLoading = false;
         alert('Erreur lors du chargement des statistiques');
       }
@@ -250,7 +243,7 @@ getLignesNonActivesCount(): number {
   /**
    * Charger les statistiques par date
    */
- chargerStatsParDate(): void {
+chargerStatsParDate(): void {
   if (!this.dateSelectionnee) {
     alert('Veuillez sélectionner une date');
     return;
@@ -267,7 +260,7 @@ getLignesNonActivesCount(): number {
       // Stats de production
       this.statsDate = response.statsProduction;
       
-      // ✅ MODIFICATION : Combiner lignesActives et lignesNonActives
+      // MODIFICATION : Combiner lignesActives et lignesNonActives
       this.statsLignesDate = [
         ...(response.statsProduction.lignesActives || []).map(ligne => ({
           ligne: ligne.ligne,
@@ -276,8 +269,8 @@ getLignesNonActivesCount(): number {
           nombreReferences: ligne.nombreReferences,
           totalQteSource: ligne.totalQteSource,
           totalDecProduction: ligne.totalDecProduction,
-          actif: true,  // ✅
-          totalQtePlanifiee: ligne.totalQtePlanifiee || 0  // ✅
+          actif: true,
+          totalQtePlanifiee: ligne.totalQtePlanifiee || 0
         })),
         ...(response.statsProduction.lignesNonActives || []).map(ligne => ({
           ligne: ligne.ligne,
@@ -286,20 +279,18 @@ getLignesNonActivesCount(): number {
           nombreReferences: ligne.nombreReferences,
           totalQteSource: ligne.totalQteSource,
           totalDecProduction: ligne.totalDecProduction,
-          actif: false,  // ✅
-          totalQtePlanifiee: ligne.totalQtePlanifiee  || 0 // ✅
+          actif: false,
+          totalQtePlanifiee: ligne.totalQtePlanifiee || 0
         }))
       ];
       
-      // ✅ CORRECTION : Accès correct au PCS total pour la date
+      // CORRECTION : Accès correct au PCS total pour la date
       if (response.statsProduction.resumeProduction) {
         this.pcsTotalDate = response.statsProduction.resumeProduction.pcsTotalToutesLignes || 0;
       } else {
-        // Fallback au calcul manuel
         this.calculerPcsTotalDate();
       }
       
-      // ✅ Calculer le PCS total du jour
       this.calculerPcsTotalJour();
       
       // Stats 5M par date
@@ -309,7 +300,6 @@ getLignesNonActivesCount(): number {
       // Initialiser avec les 5M globaux du jour
       const resumeJour = response.stats5M?.resumeTotalJour;
       
-      // ✅ UTILISER 'pourcentageSource' (basé sur qtePlanifiee)
       this.stats5MDateActuel = resumeJour ? {
         matierePremiere: resumeJour.detailParCause.matierePremiere?.pourcentageSource || 0,
         absence: resumeJour.detailParCause.absence?.pourcentageSource || 0,
@@ -317,7 +307,7 @@ getLignesNonActivesCount(): number {
         maintenance: resumeJour.detailParCause.maintenance?.pourcentageSource || 0,
         qualite: resumeJour.detailParCause.qualite?.pourcentageSource || 0,
         methode: resumeJour.detailParCause.methode?.pourcentageSource || 0,
-         environnement: resumeJour.detailParCause.environnement?.pourcentageSource || 0
+        environnement: resumeJour.detailParCause.environnement?.pourcentageSource || 0
       } : {
         matierePremiere: 0,
         absence: 0,
@@ -331,18 +321,33 @@ getLignesNonActivesCount(): number {
       this.titre5MDate = `Analyse des 5M - ${this.dateSelectionnee}`;
       this.ligneSelectionneeDate = null;
       
-      // ✅ Mettre à jour les ouvriers non-saisis avec statuts
-      this.ouvriersNonSaisisAvecStatuts = response.ouvriersNonSaisis?.ouvriers || [];
+      // MODIFICATION : Filtrer et trier les ouvriers non-saisis
+      const ouvriersFiltresEtTries = this.filtrerEtTrierOuvriers(response.ouvriersNonSaisis?.ouvriers || []);
       
-      // ✅ Vérification finale
-      console.log('📊 STATISTIQUES PAR DATE CHARGÉES:');
-      console.log('  - Date:', this.dateSelectionnee);
-      console.log('  - PCS Total toutes lignes:', this.pcsTotalDate + '%');
-      console.log('  - PCS Total du jour:', this.pcsTotalJour + '%');
-      console.log('  - Nombre de lignes:', this.statsLignesDate.length);
-      console.log('  - Lignes actives:', this.statsLignesDate.filter(l => l.actif).length);
-      console.log('  - Lignes non actives:', this.statsLignesDate.filter(l => !l.actif).length);
-      console.log('  - Stats 5M Date:', this.stats5MDateActuel);
+      this.ouvriersNonSaisisAvecStatuts = ouvriersFiltresEtTries;
+      
+      // MODIFICATION : Mettre à jour les compteurs dans statsDate
+      if (this.statsDate?.rapportsSaisie) {
+        // Recalculer le nombre d'ouvriers non saisis après filtrage
+        const nouveauNombreNonSaisis = ouvriersFiltresEtTries.length;
+        const ancienNombreTotal = this.statsDate.rapportsSaisie.nombreOuvriersTotal;
+        const ancienNombreSaisis = this.statsDate.rapportsSaisie.nombreRapportsSaisis;
+        
+        // Mettre à jour les compteurs
+        this.statsDate.rapportsSaisie.nombreOuvriersNonSaisis = nouveauNombreNonSaisis;
+        this.statsDate.rapportsSaisie.nombreOuvriersTotal = ancienNombreSaisis + nouveauNombreNonSaisis;
+        
+        // Recalculer le taux de saisie
+        if (this.statsDate.rapportsSaisie.nombreOuvriersTotal > 0) {
+          this.statsDate.rapportsSaisie.tauxSaisie = Math.round(
+            (this.statsDate.rapportsSaisie.nombreRapportsSaisis / 
+             this.statsDate.rapportsSaisie.nombreOuvriersTotal) * 100
+          );
+        }
+        
+        // Mettre à jour la liste des ouvriers non saisis dans statsDate
+        this.statsDate.rapportsSaisie.ouvriersNonSaisis = ouvriersFiltresEtTries;
+      }
       
       this.isLoadingDate = false;
       this.showResultatsDate = true;
@@ -351,7 +356,7 @@ getLignesNonActivesCount(): number {
       this.showNonSaisieList = false;
       this.showSaisieDetails = false;
       this.showSaisieRapports = false;
-      this.showStatutsPanel = false; // Masquer le panneau des statuts au départ
+      this.showStatutsPanel = false;
       
       setTimeout(() => {
         this.creerGraphiquesDate();
@@ -359,7 +364,6 @@ getLignesNonActivesCount(): number {
       }, 100);
     },
     error: (error) => {
-      console.error('❌ Erreur:', error);
       this.isLoadingDate = false;
       alert('Erreur lors du chargement des statistiques pour cette date');
     }
@@ -369,18 +373,16 @@ getLignesNonActivesCount(): number {
   calculerPcsTotalJour(): void {
     if (!this.statsLignesDate || this.statsLignesDate.length === 0) {
       this.pcsTotalJour = 0;
-      console.warn('⚠️ Aucune ligne trouvée pour calculer le PCS du jour');
       return;
     }
     
-    // ✅ OPTION 1 : Utiliser directement le PCS total du résumé (préféré)
+    //  OPTION 1 : Utiliser directement le PCS total du résumé (préféré)
     if (this.statsDate?.resumeProduction?.pcsTotalToutesLignes !== undefined) {
       this.pcsTotalJour = this.statsDate.resumeProduction.pcsTotalToutesLignes;
-      console.log('✅ PCS du jour (depuis résumé):', this.pcsTotalJour);
       return;
     }
     
-    // ✅ OPTION 2 : Calculer la moyenne pondérée (fallback)
+    //  OPTION 2 : Calculer la moyenne pondérée (fallback)
     const totalQteSource = this.statsLignesDate.reduce((sum, ligne) => sum + ligne.totalQteSource, 0);
     const totalDecProduction = this.statsLignesDate.reduce((sum, ligne) => sum + ligne.totalDecProduction, 0);
     
@@ -388,11 +390,10 @@ getLignesNonActivesCount(): number {
       ? Math.round((totalDecProduction / totalQteSource) * 100 * 100) / 100
       : 0;
     
-    console.log('✅ PCS du jour (calculé):', this.pcsTotalJour);
   }
 
   /**
-   * ✅ NOUVELLE MÉTHODE : Obtenir le libellé de performance
+   *  NOUVELLE MÉTHODE : Obtenir le libellé de performance
    */
   getPerformanceLabel(percentage: number): string {
     if (percentage >= 75) return 'Performance Excellente';
@@ -402,7 +403,7 @@ getLignesNonActivesCount(): number {
   }
 
   /**
-   * ✅ MÉTHODE - Sélectionner une ligne pour les stats par date
+   *  MÉTHODE - Sélectionner une ligne pour les stats par date
    */
   selectionnerLigneDate(ligne: string): void {
     this.ligneSelectionneeDate = ligne;
@@ -412,7 +413,7 @@ getLignesNonActivesCount(): number {
     if (ligne5M) {
       this.titre5MDate = `Analyse des 5M - ${ligne} (${this.dateSelectionnee})`;
       
-      // ✅ UTILISER 'pourcentageSource' (basé sur qtePlanifiee)
+      //  UTILISER 'pourcentageSource' (basé sur qtePlanifiee)
       this.stats5MDateActuel = {
         matierePremiere: ligne5M.detailTotalParCause.matierePremiere.pourcentageSource || 0,
         absence: ligne5M.detailTotalParCause.absence.pourcentageSource || 0,
@@ -430,7 +431,7 @@ getLignesNonActivesCount(): number {
   }
 
   /**
-   * ✅ MÉTHODE - Revenir aux 5M globaux du jour
+   *  MÉTHODE - Revenir aux 5M globaux du jour
    */
   resetSelectionLigneDate(): void {
     this.ligneSelectionneeDate = null;
@@ -438,7 +439,7 @@ getLignesNonActivesCount(): number {
     if (this.stats5MDate) {
       const resumeJour = this.stats5MDate.resumeTotalJour;
       
-      // ✅ UTILISER 'pourcentageSource' (basé sur qtePlanifiee)
+      //  UTILISER 'pourcentageSource' (basé sur qtePlanifiee)
       this.stats5MDateActuel = {
         matierePremiere: resumeJour.detailParCause.matierePremiere.pourcentageSource || 0,
         absence: resumeJour.detailParCause.absence.pourcentageSource || 0,
@@ -612,7 +613,7 @@ getLignesNonActivesCount(): number {
   }
 
   /**
-   * ✅ MÉTHODE - Toggle pour afficher/masquer la saisie des rapports
+   *  MÉTHODE - Toggle pour afficher/masquer la saisie des rapports
    */
   toggleSaisieRapports(): void {
     this.showSaisieRapports = !this.showSaisieRapports;
@@ -624,13 +625,13 @@ getLignesNonActivesCount(): number {
       '#22c55e': '#1aa152',
       '#f59e0b': '#d6880a',
       '#ef4444': '#d33838',
-      '#ec4899': '#d43d89' // ✅ NOUVELLE COULEUR ASSOMBRIE
+      '#ec4899': '#d43d89' //  NOUVELLE COULEUR ASSOMBRIE
     };
     return colors[color] || '#374151';
   }
 
   /**
-   * ✅ MÉTHODE CORRIGÉE - Créer les graphiques circulaires 5M (avec gestion des undefined)
+   *  MÉTHODE CORRIGÉE - Créer les graphiques circulaires 5M (avec gestion des undefined)
    */
   creerGraphiquesCirculaires5M(): void {
     if (!this.stats5M) return;
@@ -641,8 +642,8 @@ getLignesNonActivesCount(): number {
       { nom: 'rendement', valeur: this.stats5M.rendement || 0 },
       { nom: 'maintenance', valeur: this.stats5M.maintenance || 0 },
       { nom: 'qualite', valeur: this.stats5M.qualite || 0 },
-      { nom: 'methode', valeur: this.stats5M.methode || 0 }, // ✅ NOUVELLE CAUSE
-      { nom: 'environnement', valeur: this.stats5M.environnement || 0 }, // ✅ NOUVELLE CAUSE
+      { nom: 'methode', valeur: this.stats5M.methode || 0 }, //  NOUVELLE CAUSE
+      { nom: 'environnement', valeur: this.stats5M.environnement || 0 }, //  NOUVELLE CAUSE
     ];
 
     causes5M.forEach((cause) => {
@@ -659,7 +660,6 @@ getLignesNonActivesCount(): number {
       const ctx = document.getElementById(canvasId) as HTMLCanvasElement;
       
       if (!ctx) {
-        console.warn(`Canvas non trouvé: ${canvasId}`);
         return;
       }
 
@@ -701,7 +701,7 @@ getLignesNonActivesCount(): number {
   }
 
   /**
-   * ✅ MÉTHODE CORRIGÉE - Créer les graphiques circulaires 5M pour la date (avec gestion des undefined)
+   *  MÉTHODE CORRIGÉE - Créer les graphiques circulaires 5M pour la date (avec gestion des undefined)
    */
   creerGraphiquesCirculaires5MDate(): void {
     if (!this.stats5MDateActuel) return;
@@ -712,8 +712,8 @@ getLignesNonActivesCount(): number {
       { nom: 'rendement', valeur: this.stats5MDateActuel.rendement || 0 },
       { nom: 'maintenance', valeur: this.stats5MDateActuel.maintenance || 0 },
       { nom: 'qualite', valeur: this.stats5MDateActuel.qualite || 0 },
-      { nom: 'methode', valeur: this.stats5MDateActuel.methode || 0 }, // ✅ NOUVELLE CAUSE
-      { nom: 'environnement', valeur: this.stats5MDateActuel.environnement || 0 }, // ✅ NOUVELLE CAUSE
+      { nom: 'methode', valeur: this.stats5MDateActuel.methode || 0 }, //  NOUVELLE CAUSE
+      { nom: 'environnement', valeur: this.stats5MDateActuel.environnement || 0 }, //  NOUVELLE CAUSE
     ];
 
     // Détruire les anciens graphiques 5M de la date
@@ -732,7 +732,6 @@ getLignesNonActivesCount(): number {
       const ctx = document.getElementById(canvasId) as HTMLCanvasElement;
       
       if (!ctx) {
-        console.warn(`Canvas non trouvé: ${canvasId}`);
         return;
       }
 
@@ -772,7 +771,7 @@ getLignesNonActivesCount(): number {
   }
 
   /**
-   * ✅ MÉTHODE - Sélectionner une ligne pour les stats par semaine
+   *  MÉTHODE - Sélectionner une ligne pour les stats par semaine
    */
   selectionnerLigne(ligne: string): void {
     this.ligneSelectionnee = ligne;
@@ -782,7 +781,7 @@ getLignesNonActivesCount(): number {
     if (ligne5M) {
       this.titre5M = `Analyse des 5M - ${ligne}`;
       
-      // ✅ UTILISER 'pourcentageDuTotal' (basé sur qtePlanifiee)
+      //  UTILISER 'pourcentageDuTotal' (basé sur qtePlanifiee)
       this.stats5M = {
         matierePremiere: ligne5M.detailParCause.matierePremiere.pourcentageDuTotal || 0,
         absence: ligne5M.detailParCause.absence.pourcentageDuTotal || 0,
@@ -862,7 +861,6 @@ chargerOuvriersNonSaisisAvecStatuts(): void {
     return;
   }
 
-  // Si c'est déjà la date actuelle, on réutilise les données existantes
   if (this.showStatutsPanel && this.showStatutsForDate === this.dateSelectionnee) {
     return;
   }
@@ -871,7 +869,10 @@ chargerOuvriersNonSaisisAvecStatuts(): void {
   
   this.statsService.getOuvriersNonSaisisParDate(this.dateSelectionnee).subscribe({
     next: (response) => {
-      this.ouvriersNonSaisisAvecStatuts = response.ouvriers;
+      // MODIFICATION : Filtrer et trier les ouvriers
+      const ouvriersFiltresEtTries = this.filtrerEtTrierOuvriers(response.ouvriers);
+      
+      this.ouvriersNonSaisisAvecStatuts = ouvriersFiltresEtTries;
       this.showStatutsPanel = true;
       
       // Initialiser les maps avec les statuts existants
@@ -887,10 +888,8 @@ chargerOuvriersNonSaisisAvecStatuts(): void {
         }
       });
       
-      console.log('✅ Ouvriers non-saisis avec statuts chargés:', response);
     },
     error: (error) => {
-      console.error('❌ Erreur chargement ouvriers non-saisis:', error);
       alert('Erreur lors du chargement des ouvriers non-saisis');
     }
   });
@@ -899,7 +898,6 @@ chargerOuvriersNonSaisisAvecStatuts(): void {
 // NOUVELLE MÉTHODE : Changer le statut d'un ouvrier
 changerStatut(matricule: string, statut: string): void {
   this.statutsModifies.set(matricule, statut);
-  console.log(`📝 Statut modifié pour ${matricule}: ${statut}`);
 }
 
 // NOUVELLE MÉTHODE : Changer le commentaire
@@ -942,75 +940,98 @@ isValidStatut(statut: string): boolean {
 
 // NOUVELLE MÉTHODE : Sauvegarder un statut individuel
 sauvegarderStatut(ouvrier: any): void {
-const statut = this.statutsModifies.get(ouvrier.matricule);
+  const statut = this.statutsModifies.get(ouvrier.matricule);
 
-if (!statut || !this.isValidStatut(statut)) {
-  alert('Veuillez sélectionner un statut valide (AB, C ou S) pour cet ouvrier');
-  return;
-}
+  // Validation
+  if (!statut) {
+    alert('Veuillez sélectionner un statut pour cet ouvrier');
+    return;
+  }
 
-  const matriculeString = ouvrier.matricule.toString();
-  const nomPrenomString = ouvrier.nomPrenom || '';
+  if (!this.isValidStatut(statut)) {
+    alert('Statut invalide. Utilisez AB, C ou S');
+    return;
+  }
 
-const statutData: UpdateStatutRequest = {
-  matricule: matriculeString,
-  nomPrenom: nomPrenomString,
-  date: this.dateSelectionnee,
-  statut: statut as 'AB' | 'C' | 'S',
-  commentaire: this.commentaires.get(ouvrier.matricule) || ''
-};
+  // IMPORTANT: Garder le matricule comme string (pas de conversion)
+  const statutData: UpdateStatutRequest = {
+     matricule: String(ouvrier.matricule),  // Garder comme string
+    nomPrenom: ouvrier.nomPrenom || '',
+    date: this.dateSelectionnee,
+    statut: statut as 'AB' | 'C' | 'S',
+    commentaire: this.commentaires.get(ouvrier.matricule) || ''
+  };
 
-  console.log('📤 Envoi des données de statut:', statutData); // ✅ Ajouté
+  // Afficher ce qui est envoyé (pour déboguer)
+  console.log('Payload envoyé:', JSON.stringify(statutData, null, 2));
 
   this.isSaving = true;
 
   this.statsService.updateStatutOuvrier(statutData).subscribe({
     next: (response) => {
-  // Mettre à jour la liste
-  const index = this.ouvriersNonSaisisAvecStatuts.findIndex(o => o.matricule === ouvrier.matricule);
-  if (index !== -1) {
-    this.ouvriersNonSaisisAvecStatuts[index].statut = statut;
-    this.ouvriersNonSaisisAvecStatuts[index].libelleStatut = this.getLibelleStatut(statut);
-  }
-  
-  alert(`✅ Statut enregistré pour ${ouvrier.nomPrenom}`);
-},
-    error: (error) => {
-      this.isSaving = false;
-      console.error('❌ Erreur détaillée:', error); // ✅ Amélioré
-      console.error('❌ URL appelée:', error.url);
-      console.error('❌ Status:', error.status);
-      console.error('❌ Message:', error.message);
-      console.error('❌ Body de la requête:', statutData);
+      console.log('Réponse succès:', response);
       
-      // Afficher plus d'informations à l'utilisateur
-      let messageErreur = 'Erreur lors de la sauvegarde du statut';
-      if (error.status === 404) {
-        messageErreur = 'Route API non trouvée. Vérifiez que le backend est correctement configuré.';
-      } else if (error.status === 401) {
-        messageErreur = 'Non autorisé. Votre session a peut-être expiré.';
-      } else if (error.status === 400) {
-        messageErreur = 'Données invalides envoyées au serveur.';
-        if (error.error?.message) {
-          messageErreur += ` Détails: ${error.error.message}`;
-        }
+      // Mettre à jour la liste
+      const index = this.ouvriersNonSaisisAvecStatuts.findIndex(o => o.matricule === ouvrier.matricule);
+      if (index !== -1) {
+        this.ouvriersNonSaisisAvecStatuts[index].statut = statut;
+        this.ouvriersNonSaisisAvecStatuts[index].libelleStatut = this.getLibelleStatut(statut);
+        this.ouvriersNonSaisisAvecStatuts[index].commentaire = this.commentaires.get(ouvrier.matricule) || '';
       }
       
-      alert(`${messageErreur}\n\nVérifiez la console pour plus de détails.`);
+      // Mettre à jour aussi dans statsDate
+      if (this.statsDate?.rapportsSaisie?.ouvriersNonSaisis) {
+        const statsIndex = this.statsDate.rapportsSaisie.ouvriersNonSaisis.findIndex(
+          (o: any) => o.matricule === ouvrier.matricule
+        );
+        if (statsIndex !== -1) {
+          this.statsDate.rapportsSaisie.ouvriersNonSaisis[statsIndex].statut = statut;
+          this.statsDate.rapportsSaisie.ouvriersNonSaisis[statsIndex].commentaire = 
+            this.commentaires.get(ouvrier.matricule) || '';
+        }
+      }
+
+      // Supprimer des modifications
+      this.statutsModifies.delete(ouvrier.matricule);
+      
+      this.isSaving = false;
+      alert(`✅ Statut enregistré pour ${ouvrier.nomPrenom}`);
+    },
+    error: (error) => {
+      this.isSaving = false;
+      console.error('Erreur détaillée:', error);
+      
+      // Analyser l'erreur
+      let messageErreur = 'Erreur lors de la sauvegarde du statut';
+      
+      if (error.status === 400) {
+        messageErreur = 'Données invalides. Vérifiez le format.';
+        if (error.error) {
+          console.log('Détails 400:', error.error);
+          messageErreur += ` Détail: ${JSON.stringify(error.error)}`;
+        }
+      } else if (error.status === 404) {
+        messageErreur = 'Route API non trouvée. Vérifiez l\'URL.';
+      } else if (error.status === 401) {
+        messageErreur = 'Session expirée. Veuillez vous reconnecter.';
+      } else if (error.status === 500) {
+        messageErreur = 'Erreur serveur. Contactez l\'administrateur.';
+      }
+      
+      alert(`❌ ${messageErreur}`);
     }
   });
-
-  
 }
 
 getOuvriersAvecStatuts(): any[] {
-  // Si on a les données avec statuts, utiliser celles-ci
+  // Si on a les données avec statuts, utiliser celles-ci (déjà filtrées et triées)
   if (this.ouvriersNonSaisisAvecStatuts.length > 0) {
     return this.ouvriersNonSaisisAvecStatuts;
   }
   
-  // Sinon utiliser les données originales
-  return this.statsDate?.rapportsSaisie?.ouvriersNonSaisis || [];
+  // Sinon utiliser les données originales et les filtrer/trier
+  const ouvriers = this.statsDate?.rapportsSaisie?.ouvriersNonSaisis || [];
+  return this.filtrerEtTrierOuvriers(ouvriers);
 }
 
 // NOUVELLE MÉTHODE : Sauvegarder tous les statuts en une fois
@@ -1028,7 +1049,7 @@ sauvegarderTousStatuts(): void {
     if (statut && this.isValidStatut(statut)) {
       const statutTyped = statut as 'AB' | 'C' | 'S';
       statutsToSave.push({
-        matricule: ouvrier.matricule.toString(),
+       matricule: String(ouvrier.matricule),
         nomPrenom: ouvrier.nomPrenom || '',
         date: this.dateSelectionnee,
         statut: statutTyped,
@@ -1050,7 +1071,6 @@ sauvegarderTousStatuts(): void {
   let compteurReussis = 0;
   let compteurEchecs = 0;
   
-  console.log(`📤 Tentative d'enregistrement de ${statutsToSave.length} statuts`, statutsToSave);
 
   // Créer un tableau de promesses pour toutes les requêtes
   const requetes = statutsToSave.map(statutData => {
@@ -1058,7 +1078,6 @@ sauvegarderTousStatuts(): void {
       this.statsService.updateStatutOuvrier(statutData).subscribe({
         next: (response) => {
           compteurReussis++;
-          console.log(`✅ Statut sauvegardé pour ${statutData.matricule}`, response);
           
           // Mettre à jour l'ouvrier dans la liste
           const index = ouvriers.findIndex(o => o.matricule === statutData.matricule);
@@ -1072,8 +1091,6 @@ sauvegarderTousStatuts(): void {
         },
         error: (error) => {
           compteurEchecs++;
-          console.error(`❌ Erreur pour ${statutData.matricule}:`, error);
-          console.error('Données envoyées:', statutData);
           resolve();
         }
       });
@@ -1089,15 +1106,13 @@ sauvegarderTousStatuts(): void {
     this.commentaires.clear();
     
     if (compteurEchecs === 0) {
-      alert(`✅ ${compteurReussis} statut(s) enregistré(s) avec succès !`);
+      alert(` ${compteurReussis} statut(s) enregistré(s) avec succès !`);
     } else {
       alert(`${compteurReussis} statut(s) enregistré(s) avec succès, ${compteurEchecs} échec(s)`);
     }
     
-    console.log('✅ Résultat sauvegarde:', { reussis: compteurReussis, echecs: compteurEchecs });
   }).catch(error => {
     this.isSaving = false;
-    console.error('❌ Erreur générale:', error);
     alert('Une erreur est survenue lors de la sauvegarde');
   });
 }
@@ -1137,13 +1152,25 @@ private rafraichirOuvriersNonSaisis(): void {
       }
     },
     error: (error) => {
-      console.error('❌ Erreur rafraîchissement:', error);
     }
   });
 }
 
-
-
-
-
+filtrerEtTrierOuvriers(ouvriers: any[]): any[] {
+  if (!ouvriers) return [];
+  
+  // 1. Filtrer pour exclure ceux dont le nom commence par "S " (S majuscule + espace)
+  const ouvriersFiltres = ouvriers.filter(ouvrier => {
+    // Vérifier si le nomPrenom commence par "S " (S majuscule + espace)
+    const nomPrenom = ouvrier.nomPrenom || '';
+    return !nomPrenom.startsWith('S ');
+  });
+  
+  // 2. Trier par matricule croissant (conversion en nombre pour un tri numérique)
+  return ouvriersFiltres.sort((a, b) => {
+    const matriculeA = parseInt(a.matricule) || 0;
+    const matriculeB = parseInt(b.matricule) || 0;
+    return matriculeA - matriculeB;
+  });
+}
 }

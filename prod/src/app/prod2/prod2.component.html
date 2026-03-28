@@ -257,6 +257,38 @@
   </div>
 </div>
 
+          <!-- ══ BANDEAU ROUGE NOTES ══ -->
+          <div *ngIf="weekPlanification() && getReferencesWithNotes().length > 0"
+               class="mb-4 rounded-xl border-2 border-red-600 bg-red-950/70 shadow-lg overflow-hidden">
+            <!-- Header du bandeau -->
+            <div class="bg-red-700 px-4 py-2 flex items-center gap-2">
+              <svg class="w-4 h-4 text-red-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+              </svg>
+              <span class="font-bold text-white text-sm">
+                📝 Notes — Semaine {{ selectedWeek() }}
+                <span class="ml-2 bg-red-900 text-red-200 text-xs font-semibold px-2 py-0.5 rounded-full">
+                  {{ getReferencesWithNotes().length }} référence(s)
+                </span>
+              </span>
+            </div>
+            <!-- Liste des notes -->
+            <div class="px-4 py-3 space-y-2">
+              <div *ngFor="let item of getReferencesWithNotes()"
+                   class="flex items-start gap-3 border-b border-red-800/40 pb-2 last:border-0 last:pb-0">
+                <!-- Badge référence -->
+                <span class="flex-shrink-0 bg-red-800/60 text-red-200 text-xs font-bold px-2 py-1 rounded border border-red-700/50 mt-0.5 min-w-[90px] text-center">
+                  {{ item.reference }}
+                </span>
+                <!-- Texte de la note -->
+                <span class="text-red-100 text-sm leading-relaxed break-words flex-1">
+                  {{ item.note }}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <!-- Tableau de planification -->
           <div *ngIf="filteredWeekPlanification()" 
                class="table-responsive-container rounded-xl border-2 border-gray-700 bg-slate-900/60 shadow-2xl"
@@ -302,6 +334,7 @@
   </div>
 </th>
     </ng-container>
+
   </tr>
   <tr>
     <ng-container *ngFor="let day of weekDays">
@@ -352,6 +385,7 @@
       <span *ngIf="!getDayEntry(ref, day)" class="text-gray-500 text-sm sm:text-base">-</span>
     </td>
   </ng-container>
+
 </tr>
     
     <!-- Ligne M - MODIFIABLE -->
@@ -548,8 +582,18 @@
         </div>
 
         <!-- Boutons de sélection globale - MODIFIÉ -->
-        
-        
+        <div class="flex space-x-2 mb-3">
+          <button 
+            (click)="selectAllOperators()"
+            class="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-semibold transition-colors">
+            Tout
+          </button>
+          <button 
+            (click)="deselectAllOperators()"
+            class="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold transition-colors">
+            Aucun
+          </button>
+        </div>
 
         <!-- Liste des opérateurs - MODIFIÉ -->
         <div class="space-y-1 max-h-64 overflow-y-auto operator-list">

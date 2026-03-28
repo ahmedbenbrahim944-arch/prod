@@ -178,6 +178,8 @@ export class SemaineService {
     planification.deltaProd = deltaProd;
     planification.pcsProd = pcsProd;
     planification.semaineEntity = semaineEntity;
+    // NOUVEAU : Note optionnelle
+    planification.note = createPlanificationDto.note ?? null;
 
     const savedPlanification = await this.planificationRepository.save(planification);
 
@@ -198,7 +200,8 @@ export class SemaineService {
         decProduction: savedPlanification.decProduction,
         decMagasin: savedPlanification.decMagasin,
         deltaProd: savedPlanification.deltaProd,
-        pcsProd: `${savedPlanification.pcsProd}%`
+        pcsProd: `${savedPlanification.pcsProd}%`,
+        note: savedPlanification.note
       }
     };
   }
@@ -224,6 +227,8 @@ export class SemaineService {
     if (decProduction !== undefined) planification.decProduction = decProduction;
     if (updatePlanificationDto.decMagasin !== undefined) planification.decMagasin = updatePlanificationDto.decMagasin;
     if (updatePlanificationDto.emballage !== undefined) planification.emballage = updatePlanificationDto.emballage;
+    // NOUVEAU : Sauvegarder la note si elle est fournie
+    if (updatePlanificationDto.note !== undefined) planification.note = updatePlanificationDto.note;
 
     const nouvelleQuantiteSource = this.getQuantitySource(planification);
 
@@ -277,6 +282,7 @@ export class SemaineService {
         decMagasin: updatedPlanification.decMagasin,
         deltaProd: updatedPlanification.deltaProd,
         pcsProd: `${updatedPlanification.pcsProd}%`,
+        note: updatedPlanification.note,
         updatedAt: updatedPlanification.updatedAt
       }
     };
@@ -507,7 +513,8 @@ export class SemaineService {
         pcsProd: `${plan.pcsProd}%`,
         nbOperateurs: plan.nbOperateurs,
         nbHeuresPlanifiees: plan.nbHeuresPlanifiees,
-        emballage: plan.emballage
+        emballage: plan.emballage,
+        note: plan.note
       }))
     };
   }
@@ -561,7 +568,8 @@ export class SemaineService {
         decProduction: plan.decProduction,
         decMagasin: plan.decMagasin,
         deltaProd: plan.deltaProd,
-        pcsProd: `${plan.pcsProd}%`
+        pcsProd: `${plan.pcsProd}%`,
+        note: plan.note
       }))
     };
   }
@@ -619,6 +627,7 @@ export class SemaineService {
         decMagasin: plan.decMagasin,
         deltaProd: plan.deltaProd,
         pcsProd: `${plan.pcsProd}%`,
+        note: plan.note,
         semaineEntity: {
           id: plan.semaineEntity.id,
           dateDebut: plan.semaineEntity.dateDebut,
@@ -666,7 +675,8 @@ export class SemaineService {
         decProduction: plan.decProduction,
         decMagasin: plan.decMagasin,
         deltaProd: plan.deltaProd,
-        pcsProd: `${plan.pcsProd}%`
+        pcsProd: `${plan.pcsProd}%`,
+        note: plan.note
       }))
     };
   }

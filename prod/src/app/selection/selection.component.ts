@@ -8,7 +8,7 @@ import {
   Ouvrier, 
   ReferenceItem, 
   PlanningSelection, 
-  CreatePlanningSelectionDto ,
+  CreatePlanningSelectionDto,
   UpdatePlanningSelectionDto
 } from './selection.service';
 import { AuthService } from '../login/auth.service';
@@ -29,17 +29,14 @@ export interface WeekInfo {
   styleUrls: ['./selection.component.css']
 })
 export class SelectionComponent implements OnInit {
-  // Données
   semaines: WeekInfo[] = [];
   ouvriers: Ouvrier[] = [];
   references: ReferenceItem[] = [];
   plannings: PlanningSelection[] = [];
-  planningsEnAttente: PlanningSelection[] = []; //  Plannings incomplets
-  
-  // Sélections
+  planningsEnAttente: PlanningSelection[] = [];
+
   selectedSemaine: WeekInfo | null = null;
-  
-  // Formulaire
+
   formData = {
     date: '',
     matricule: null as number | null,
@@ -51,8 +48,7 @@ export class SelectionComponent implements OnInit {
     objectifHeure: null as number | null,
     numTicket: ''
   };
-  
-  //  Formulaire de complétion (modal)
+
   completionFormData = {
     planningId: null as number | null,
     reference: '',
@@ -60,27 +56,22 @@ export class SelectionComponent implements OnInit {
     objectifHeure: null as number | null,
     numTicket: ''
   };
-  
-  // Recherche de référence
+
   searchReference = '';
   filteredReferences: ReferenceItem[] = [];
   showReferenceDropdown = false;
-  
-  // Recherche de matricule
+
   searchMatricule = '';
   filteredOuvriers: Ouvrier[] = [];
   showOuvrierDropdown = false;
-  
-  //  Modal de complétion
+
   showCompletionModal = false;
   selectedPlanningEnAttente: PlanningSelection | null = null;
-  
-  //  Recherche de référence dans le modal
+
   searchReferenceModal = '';
   filteredReferencesModal: ReferenceItem[] = [];
   showReferenceDropdownModal = false;
-  
-  // État
+
   isLoading = false;
   errorMessage = '';
   successMessage = '';
@@ -96,7 +87,7 @@ export class SelectionComponent implements OnInit {
     this.loadOuvriers();
     this.loadReferences();
     this.setDefaultDate();
-    this.loadPlanningsEnAttente(); //  Charger les plannings incomplets
+    this.loadPlanningsEnAttente();
   }
 
   setDefaultDate(): void {
@@ -104,115 +95,87 @@ export class SelectionComponent implements OnInit {
     this.formData.date = today.toISOString().split('T')[0];
   }
 
-  // Charger les semaines
   loadSemaines(): void {
     this.selectionService.getSemainesForPlanning().subscribe({
       next: (response) => {
         this.semaines = this.parseWeeksFromAPI(response);
       },
-      error: (error) => {
+      error: () => {
         this.showError('Erreur lors du chargement des semaines');
       }
     });
   }
 
-  // Charger les ouvriers
   loadOuvriers(): void {
     this.selectionService.getOuvriers().subscribe({
       next: (ouvriers) => {
         this.ouvriers = ouvriers;
       },
-      error: (error) => {
-      }
+      error: () => {}
     });
   }
 
-  // Charger toutes les références (Products + MatièresPremieres)
   loadReferences(): void {
     this.selectionService.getAllReferences().subscribe({
       next: (references) => {
         this.references = references;
       },
-      error: (error) => {
+      error: () => {
         this.showError('Erreur lors du chargement des références');
       }
     });
   }
 
-  //  Charger les plannings en attente (statut = "en attente")
   loadPlanningsEnAttente(): void {
     this.selectionService.getPlanningsIncomplets().subscribe({
       next: (plannings) => {
         this.planningsEnAttente = plannings;
       },
-      error: (error) => {
-      }
+      error: () => {}
     });
   }
 
-  // Sélectionner une semaine
   selectSemaine(semaine: WeekInfo): void {
     this.selectedSemaine = semaine;
     this.loadPlanningsBySemaine(semaine.number);
   }
 
-  // Charger les plannings de la semaine
   loadPlanningsBySemaine(semaineNumber: number): void {
     this.isLoading = true;
     this.selectionService.getPlanningsBySemaine(semaineNumber).subscribe({
       next: (plannings) => {
-        //  Filtrer les plannings complets uniquement
         this.plannings = plannings.filter(p => p.statut !== 'en attente');
         this.isLoading = false;
       },
-      error: (error) => {
+      error: () => {
         this.showError('Erreur lors du chargement des plannings');
         this.isLoading = false;
       }
     });
   }
 
-  // Recherche de matricule
   onMatriculeSearch(event: any): void {
     const value = event.target.value;
     this.searchMatricule = value;
-    
     if (value) {
       this.filteredOuvriers = this.ouvriers.filter(o => {
         const searchLower = value.toLowerCase();
-        
-        if (o.matricule.toString().includes(value)) {
-          return true;
-        }
-        
-        if (o.nomPrenom && o.nomPrenom.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        
+        if (o.matricule.toString().includes(value)) return true;
+        if (o.nomPrenom && o.nomPrenom.toLowerCase().includes(searchLower)) return true;
         if (o.nom && o.prenom) {
-          const fullName = `${o.nom} ${o.prenom}`.toLowerCase();
-          if (fullName.includes(searchLower)) {
-            return true;
-          }
+          if (`${o.nom} ${o.prenom}`.toLowerCase().includes(searchLower)) return true;
         }
-        
-        if (o.nom && o.nom.toLowerCase().includes(searchLower)) {
-          return true;
-        }
-        
+        if (o.nom && o.nom.toLowerCase().includes(searchLower)) return true;
         return false;
       });
-      
       this.showOuvrierDropdown = this.filteredOuvriers.length > 0;
     } else {
       this.showOuvrierDropdown = false;
     }
   }
 
-  // Sélectionner un ouvrier
   selectOuvrier(ouvrier: Ouvrier): void {
     this.formData.matricule = ouvrier.matricule;
-    
     if (ouvrier.nomPrenom) {
       this.formData.nomPrenom = ouvrier.nomPrenom;
     } else if (ouvrier.nom && ouvrier.prenom) {
@@ -222,19 +185,16 @@ export class SelectionComponent implements OnInit {
     } else {
       this.formData.nomPrenom = `Ouvrier ${ouvrier.matricule}`;
     }
-    
     this.formData.ligne = ouvrier.ligne || 'selection';
     this.searchMatricule = ouvrier.matricule.toString();
     this.showOuvrierDropdown = false;
   }
 
-  // Recherche de référence (formulaire principal)
   onReferenceSearch(event: any): void {
     const value = event.target.value;
     this.searchReference = value;
-    
     if (value) {
-      this.filteredReferences = this.references.filter(ref => 
+      this.filteredReferences = this.references.filter(ref =>
         ref.reference.toLowerCase().includes(value.toLowerCase()) ||
         (ref.designation && ref.designation.toLowerCase().includes(value.toLowerCase())) ||
         ref.ligneRef.toLowerCase().includes(value.toLowerCase())
@@ -245,7 +205,6 @@ export class SelectionComponent implements OnInit {
     }
   }
 
-  // Sélectionner une référence (formulaire principal)
   selectReference(refItem: ReferenceItem): void {
     this.formData.reference = refItem.reference;
     this.formData.ligneRef = refItem.ligneRef;
@@ -253,13 +212,11 @@ export class SelectionComponent implements OnInit {
     this.showReferenceDropdown = false;
   }
 
-  //  Recherche de référence dans le modal
   onReferenceSearchModal(event: any): void {
     const value = event.target.value;
     this.searchReferenceModal = value;
-    
     if (value) {
-      this.filteredReferencesModal = this.references.filter(ref => 
+      this.filteredReferencesModal = this.references.filter(ref =>
         ref.reference.toLowerCase().includes(value.toLowerCase()) ||
         (ref.designation && ref.designation.toLowerCase().includes(value.toLowerCase())) ||
         ref.ligneRef.toLowerCase().includes(value.toLowerCase())
@@ -270,14 +227,12 @@ export class SelectionComponent implements OnInit {
     }
   }
 
-  //  Sélectionner une référence dans le modal
   selectReferenceModal(refItem: ReferenceItem): void {
     this.completionFormData.reference = refItem.reference;
     this.searchReferenceModal = refItem.reference;
     this.showReferenceDropdownModal = false;
   }
 
-  // Valider le formulaire
   isFormValid(): boolean {
     return !!(
       this.formData.date &&
@@ -289,7 +244,6 @@ export class SelectionComponent implements OnInit {
     );
   }
 
-  //  Valider le formulaire de complétion
   isCompletionFormValid(): boolean {
     return !!(
       this.completionFormData.reference &&
@@ -298,13 +252,11 @@ export class SelectionComponent implements OnInit {
     );
   }
 
-  // Ajouter un planning
   addPlanning(): void {
     if (!this.isFormValid()) {
       this.showError('Veuillez remplir tous les champs obligatoires');
       return;
     }
-
     const dto: CreatePlanningSelectionDto = {
       date: this.formData.date,
       matricule: this.formData.matricule!,
@@ -313,10 +265,9 @@ export class SelectionComponent implements OnInit {
       objectifHeure: this.formData.objectifHeure!,
       numTicket: this.formData.numTicket || undefined
     };
-    
     this.isLoading = true;
     this.selectionService.createPlanningSelection(dto).subscribe({
-      next: (result) => {
+      next: () => {
         this.showSuccess('Planning ajouté avec succès');
         this.resetForm();
         if (this.selectedSemaine) {
@@ -325,9 +276,7 @@ export class SelectionComponent implements OnInit {
         this.isLoading = false;
       },
       error: (error) => {
-        
         let errorMessage = 'Erreur lors de la création du planning';
-        
         if (error.error?.message) {
           errorMessage = error.error.message;
         } else if (error.status === 404) {
@@ -339,14 +288,12 @@ export class SelectionComponent implements OnInit {
             errorMessage = 'Référence introuvable';
           }
         }
-        
         this.showError(errorMessage);
         this.isLoading = false;
       }
     });
   }
 
-  //  Ouvrir le modal de complétion
   openCompletionModal(planning: PlanningSelection): void {
     this.selectedPlanningEnAttente = planning;
     this.completionFormData = {
@@ -360,7 +307,6 @@ export class SelectionComponent implements OnInit {
     this.showCompletionModal = true;
   }
 
-  //  Fermer le modal de complétion
   closeCompletionModal(): void {
     this.showCompletionModal = false;
     this.selectedPlanningEnAttente = null;
@@ -373,187 +319,148 @@ export class SelectionComponent implements OnInit {
     };
   }
 
-  //  Compléter un planning en attente
-completePlanning(): void {
-  if (!this.isCompletionFormValid() || !this.selectedPlanningEnAttente) {
-    this.showError('Veuillez remplir tous les champs obligatoires');
-    return;
+  completePlanning(): void {
+    if (!this.isCompletionFormValid() || !this.selectedPlanningEnAttente) {
+      this.showError('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+    const planningId = this.selectedPlanningEnAttente.id;
+    if (!planningId) return;
+
+    const updateData: UpdatePlanningSelectionDto = {
+      reference: this.completionFormData.reference,
+      qteASelectionne: this.completionFormData.qteASelectionne!,
+      objectifHeure: this.completionFormData.objectifHeure!,
+      numTicket: this.completionFormData.numTicket || 'non num',
+      statut: 'selection'
+    };
+    this.isLoading = true;
+    this.selectionService.updatePlanningById(planningId, updateData).subscribe({
+      next: () => {
+        this.showSuccess('Planning complété avec succès !');
+        this.closeCompletionModal();
+        this.loadPlanningsEnAttente();
+        if (this.selectedSemaine) {
+          this.loadPlanningsBySemaine(this.selectedSemaine.number);
+        }
+        this.isLoading = false;
+      },
+      error: () => {
+        this.showError('Erreur lors de la complétion du planning');
+        this.isLoading = false;
+      }
+    });
   }
 
-  const planningId = this.selectedPlanningEnAttente.id;
-  if (!planningId) return;
-
-  const updateData: UpdatePlanningSelectionDto = {
-    reference: this.completionFormData.reference,
-    qteASelectionne: this.completionFormData.qteASelectionne!,
-    objectifHeure: this.completionFormData.objectifHeure!,
-    numTicket: this.completionFormData.numTicket || 'non num',
-    statut: 'selection' //  Maintenant reconnu par le DTO
-  };
-
-  this.isLoading = true;
-  this.selectionService.updatePlanningById(planningId, updateData).subscribe({
-    next: (result) => {
-      this.showSuccess('Planning complété avec succès !');
-      this.closeCompletionModal();
-      this.loadPlanningsEnAttente(); // Recharger les plannings en attente
-      if (this.selectedSemaine) {
-        this.loadPlanningsBySemaine(this.selectedSemaine.number); // Recharger le tableau
-      }
-      this.isLoading = false;
-    },
-    error: (error) => {
-      this.showError('Erreur lors de la complétion du planning');
-      this.isLoading = false;
-    }
-  });
-}
-
-  // Mettre à jour qteASelectionne
-  updateQteASelectionne(planning: PlanningSelection, value: number): void {
-    if (!value || value < 1) {
+  updateQteASelectionne(planning: PlanningSelection, value: any): void {
+    const parsed = Number(value);
+    if (!parsed || parsed < 1) {
       this.showError('La quantité à sélectionner doit être supérieure à 0');
       return;
     }
     this.selectionService.updatePlanningByInfo(
-      planning.matricule,
-      planning.reference,
-      planning.date,
-      { qteASelectionne: Number(value) }
+      planning.matricule, planning.reference, planning.date,
+      { qteASelectionne: parsed }
     ).subscribe({
       next: () => {
-        planning.qteASelectionne = Number(value);
+        planning.qteASelectionne = parsed;
         this.showSuccess('Quantité à sélectionner mise à jour');
       },
-      error: (error) => {
-        this.showError('Erreur lors de la mise à jour');
-      }
+      error: () => { this.showError('Erreur lors de la mise à jour'); }
     });
   }
 
-  // Mettre à jour objectifHeure
-  updateObjectifHeure(planning: PlanningSelection, value: number): void {
-    if (!value || value < 1) {
+  updateObjectifHeure(planning: PlanningSelection, value: any): void {
+    const parsed = Number(value);
+    if (!parsed || parsed < 1) {
       this.showError("L'objectif par heure doit être supérieur à 0");
       return;
     }
     this.selectionService.updatePlanningByInfo(
-      planning.matricule,
-      planning.reference,
-      planning.date,
-      { objectifHeure: Number(value) }
+      planning.matricule, planning.reference, planning.date,
+      { objectifHeure: parsed }
     ).subscribe({
       next: () => {
-        planning.objectifHeure = Number(value);
+        planning.objectifHeure = parsed;
         this.showSuccess('Objectif par heure mis à jour');
       },
-      error: (error) => {
-        this.showError('Erreur lors de la mise à jour');
-      }
+      error: () => { this.showError('Erreur lors de la mise à jour'); }
     });
   }
 
-  // Mettre à jour les heures
-  updateHeures(planning: PlanningSelection, newHeures: number): void {
-    if (!newHeures || newHeures < 0.1) {
-      this.showError('Le nombre d\'heures doit être supérieur à 0');
+  updateHeures(planning: PlanningSelection, value: any): void {
+    const parsed = parseFloat(value);
+    if (isNaN(parsed) || parsed < 0.1) {
+      this.showError("Le nombre d'heures doit être supérieur à 0");
       return;
     }
-
     this.selectionService.updatePlanningByInfo(
-      planning.matricule,
-      planning.reference,
-      planning.date,
-      { nHeures: newHeures }
+      planning.matricule, planning.reference, planning.date,
+      { nHeures: parsed }
     ).subscribe({
       next: (result) => {
+        planning.nHeures = parsed;
+        planning.rendement = result.rendement;
         this.showSuccess('Heures mises à jour');
-        if (this.selectedSemaine) {
-          this.loadPlanningsBySemaine(this.selectedSemaine.number);
-        }
       },
-      error: (error) => {
-        this.showError('Erreur lors de la mise à jour des heures');
-      }
+      error: () => { this.showError('Erreur lors de la mise à jour des heures'); }
     });
   }
 
-  // Mettre à jour qteSelection
-  updateQteSelection(planning: PlanningSelection, newQteSelection: number): void {
-    if (newQteSelection < 0) {
+  updateQteSelection(planning: PlanningSelection, value: any): void {
+    const parsed = Number(value);
+    if (isNaN(parsed) || parsed < 0) {
       this.showError('La quantité sélectionnée ne peut pas être négative');
       return;
     }
-
     this.selectionService.updatePlanningByInfo(
-      planning.matricule,
-      planning.reference,
-      planning.date,
-      { qteSelection: newQteSelection }
+      planning.matricule, planning.reference, planning.date,
+      { qteSelection: parsed }
     ).subscribe({
       next: (result) => {
+        planning.qteSelection = parsed;
+        planning.rendement = result.rendement;
         this.showSuccess('Quantité sélectionnée mise à jour');
-        if (this.selectedSemaine) {
-          this.loadPlanningsBySemaine(this.selectedSemaine.number);
-        }
       },
-      error: (error) => {
-        this.showError('Erreur lors de la mise à jour de la quantité');
-      }
+      error: () => { this.showError('Erreur lors de la mise à jour de la quantité'); }
     });
   }
 
-  // Mettre à jour rebut
-  updateRebut(planning: PlanningSelection, newRebut: number): void {
-    if (newRebut < 0) {
+  updateRebut(planning: PlanningSelection, value: any): void {
+    const parsed = Number(value);
+    if (isNaN(parsed) || parsed < 0) {
       this.showError('Le rebut ne peut pas être négatif');
       return;
     }
-
     this.selectionService.updatePlanningByInfo(
-      planning.matricule,
-      planning.reference,
-      planning.date,
-      { rebut: newRebut }
+      planning.matricule, planning.reference, planning.date,
+      { rebut: parsed }
     ).subscribe({
       next: (result) => {
+        planning.rebut = parsed;
+        planning.rendement = result.rendement;
         this.showSuccess('Rebut mis à jour');
-        if (this.selectedSemaine) {
-          this.loadPlanningsBySemaine(this.selectedSemaine.number);
-        }
       },
-      error: (error) => {
-        this.showError('Erreur lors de la mise à jour du rebut');
-      }
+      error: () => { this.showError('Erreur lors de la mise à jour du rebut'); }
     });
   }
 
-  // Mettre à jour terminer (oui/non)
   updateTerminer(planning: PlanningSelection, value: string): void {
     this.selectionService.updatePlanningByInfo(
-      planning.matricule,
-      planning.reference,
-      planning.date,
+      planning.matricule, planning.reference, planning.date,
       { terminer: value }
     ).subscribe({
       next: () => {
         planning.terminer = value;
         this.showSuccess(`Planning marqué comme "${value === 'oui' ? 'Terminé' : 'Non terminé'}"`);
       },
-      error: (error) => {
-        this.showError('Erreur lors de la mise à jour');
-      }
+      error: () => { this.showError('Erreur lors de la mise à jour'); }
     });
   }
 
-  // Supprimer un planning
   deletePlanning(planning: PlanningSelection): void {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce planning ?')) {
-      return;
-    }
-
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce planning ?')) return;
     if (!planning.id) return;
-
     this.selectionService.deletePlanning(planning.id).subscribe({
       next: () => {
         this.showSuccess('Planning supprimé');
@@ -561,13 +468,10 @@ completePlanning(): void {
           this.loadPlanningsBySemaine(this.selectedSemaine.number);
         }
       },
-      error: (error) => {
-        this.showError('Erreur lors de la suppression');
-      }
+      error: () => { this.showError('Erreur lors de la suppression'); }
     });
   }
 
-  // Réinitialiser le formulaire
   resetForm(): void {
     this.formData = {
       date: new Date().toISOString().split('T')[0],
@@ -584,7 +488,6 @@ completePlanning(): void {
     this.searchReference = '';
   }
 
-  // Messages
   showError(message: string): void {
     this.errorMessage = message;
     this.successMessage = '';
@@ -597,18 +500,14 @@ completePlanning(): void {
     setTimeout(() => this.successMessage = '', 3000);
   }
 
-  // Navigation
   goBack(): void {
     const currentUser = this.authService.getCurrentUser();
-    
     if (!currentUser) {
       this.router.navigate(['/choix']);
       return;
     }
-    
     const matricule = currentUser.nom;
     const typeUser = currentUser.type;
-    
     if (typeUser === 'admin') {
       if (matricule === '1194' || matricule === '9001') {
         this.router.navigate(['/choix1']);
@@ -618,20 +517,16 @@ completePlanning(): void {
     }
   }
 
-  // Retourner le badge de type de référence
   getReferenceTypeBadge(type: string): string {
     return type === 'product' ? 'PROD' : 'MP';
   }
 
-  // Retourner la classe CSS pour le badge
   getReferenceTypeBadgeClass(type: string): string {
     return type === 'product' ? 'badge-product' : 'badge-matiere';
   }
 
-  // Parser les semaines depuis l'API
   parseWeeksFromAPI(response: any): WeekInfo[] {
     let semainesArray: any[] = [];
-    
     if (response && response.semaines && Array.isArray(response.semaines)) {
       semainesArray = response.semaines;
     } else if (Array.isArray(response)) {
@@ -639,19 +534,15 @@ completePlanning(): void {
     } else {
       return [];
     }
-    
     const weeks: WeekInfo[] = [];
-    
     semainesArray.forEach((semaine: any) => {
       let weekNumber = 0;
-      
       if (semaine.nom && typeof semaine.nom === 'string') {
         const match = semaine.nom.match(/semaine(\d+)/i);
         if (match && match[1]) {
           weekNumber = parseInt(match[1], 10);
         }
       }
-      
       if (weekNumber > 0) {
         weeks.push({
           number: weekNumber,
@@ -662,9 +553,7 @@ completePlanning(): void {
         });
       }
     });
-    
     weeks.sort((a, b) => b.number - a.number);
-    
     return weeks;
   }
 }

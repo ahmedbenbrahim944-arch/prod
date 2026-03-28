@@ -134,6 +134,15 @@ export class ProductionTimeController {
   }
 
   /**
+   * ✅ NOUVEAU - Récupérer les références planifiées de la semaine courante (OF non vide)
+   * Appelé à l'ouverture du modal de pause (étape 1)
+   */
+  @Get('line/:ligne/planned-references')
+  async getPlannedReferences(@Param('ligne') ligne: string) {
+    return this.productionTimeService.getPlannedReferencesForLine(ligne);
+  }
+
+  /**
    * Obtenir les catégories M disponibles
    */
   @Get('m-categories')
@@ -194,19 +203,23 @@ export class ProductionTimeController {
    */
   @Get('line/:ligne/status')
   async getLineStatus(@Param('ligne') ligne: string) {
+    // Décoder les noms de lignes avec des caractères spéciaux (ex: L04%3ARXT1 → L04:RXT1)
+    const decodedLigne = decodeURIComponent(ligne);
     const activeSession = await this.productionTimeService.getActiveSessions();
-    const lineSession = activeSession.find(s => s.ligne === ligne);
+    const lineSession = activeSession.find(
+      s => s.ligne === decodedLigne || s.ligne === ligne
+    );
     
     if (!lineSession) {
       return {
-        ligne,
+        ligne: decodedLigne,
         status: 'inactive',
         message: 'La ligne n\'est pas en production'
       };
     }
 
     return {
-      ligne,
+      ligne: decodedLigne,
       status: lineSession.status,
       sessionId: lineSession.id,
       startTime: lineSession.startTime,
@@ -323,9 +336,5 @@ async getAllRealTimeProduction() {
     // Pour CSV, vous pouvez ajouter une bibliothèque comme 'json2csv'
     // Pour l'instant, retournons le JSON
     return data;
-  }
-   @Get('line/:ligne/planned-references')
-  async getPlannedReferences(@Param('ligne') ligne: string) {
-    return this.productionTimeService.getPlannedReferencesForLine(ligne);
   }
 }

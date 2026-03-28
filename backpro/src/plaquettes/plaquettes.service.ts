@@ -101,22 +101,36 @@ export class PlaquettesService {
   }
 
   // ── Mettre à jour Reste / Produit fini ──────────────────────────
-  async update(id: number, dto: UpdatePlaquetteDto): Promise<Plaquette> {
-    const plaquette = await this.plaquetteRepository.findOne({ where: { id } });
-    if (!plaquette) throw new NotFoundException(`Plaquette #${id} introuvable`);
+async update(id: number, dto: UpdatePlaquetteDto): Promise<Plaquette> {
+  const plaquette = await this.plaquetteRepository.findOne({ where: { id } });
+  if (!plaquette) throw new NotFoundException(`Plaquette #${id} introuvable`);
 
-    if (dto.reste !== undefined) {
-      if (dto.reste > plaquette.quantiteDonnee)
-        throw new BadRequestException(`Le reste ne peut pas dépasser la quantité donnée (${plaquette.quantiteDonnee})`);
-      plaquette.reste = dto.reste;
+  // Mettre à jour quantiteDonnee en premier (car les validations suivantes en dépendent)
+  if (dto.quantiteDonnee !== undefined) {
+    if (dto.quantiteDonnee < Number(plaquette.reste)) {
+      throw new BadRequestException(
+        `La quantité donnée (${dto.quantiteDonnee}) ne peut pas être inférieure au reste actuel (${plaquette.reste})`,
+      );
     }
-
-    if (dto.produitFini !== undefined) plaquette.produitFini = dto.produitFini;
-    if (dto.rebut !== undefined) plaquette.rebut = dto.rebut;
-
-    plaquette.consommation = Number(plaquette.quantiteDonnee) - Number(plaquette.reste);
-    return this.plaquetteRepository.save(plaquette);
+    plaquette.quantiteDonnee = dto.quantiteDonnee;
   }
+
+  if (dto.reste !== undefined) {
+    if (dto.reste > Number(plaquette.quantiteDonnee))
+      throw new BadRequestException(
+        `Le reste ne peut pas dépasser la quantité donnée (${plaquette.quantiteDonnee})`,
+      );
+    plaquette.reste = dto.reste;
+  }
+
+  if (dto.produitFini !== undefined) plaquette.produitFini = dto.produitFini;
+  if (dto.rebut !== undefined)       plaquette.rebut = dto.rebut;
+
+  // Recalcul de la consommation après toute modification
+  plaquette.consommation = Number(plaquette.quantiteDonnee) - Number(plaquette.reste);
+
+  return this.plaquetteRepository.save(plaquette);
+}
 
   // ── Supprimer ───────────────────────────────────────────────────
   async remove(id: number): Promise<{ message: string }> {

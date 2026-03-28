@@ -20,7 +20,9 @@
   <main class="main-content">
     <header class="topbar">
       <button class="burger-btn" (click)="toggleSidebar()">
-        <span class="burger-line"></span><span class="burger-line"></span><span class="burger-line"></span>
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
+        <span class="burger-line"></span>
       </button>
       <div class="topbar-title">
         <span class="topbar-label">Plaquettes</span>
@@ -41,7 +43,10 @@
           <h3 class="card-title"><span class="card-icon">➕</span> Ajouter une plaquette</h3>
           <span class="semaine-badge">{{ selectedSemaine.nom }}</span>
         </div>
+
         <form (ngSubmit)="submitForm()" [formGroup]="form" class="plaquette-form">
+
+          <!-- Ligne (chargée depuis l'API, filtrée sur L04/L29/L32/L39/L42) -->
           <div class="form-group">
             <label class="form-label">Ligne <span class="required">*</span></label>
             <select class="form-control" formControlName="ligne" (change)="onLigneChange()"
@@ -50,44 +55,59 @@
               <option *ngFor="let l of lignes" [value]="l.ligne">{{ l.ligne }}</option>
             </select>
           </div>
+
+          <!-- Référence (chargée depuis l'API selon la ligne choisie) -->
           <div class="form-group">
             <label class="form-label">Référence <span class="required">*</span></label>
             <select class="form-control" formControlName="reference"
               [class.invalid]="form.get('reference')?.invalid && form.get('reference')?.touched"
               [attr.disabled]="references.length === 0 ? true : null">
-              <option value="">-- Choisir --</option>
+              <option value="">{{ form.value.ligne ? '-- Choisir --' : '-- Choisir une ligne d\'abord --' }}</option>
               <option *ngFor="let r of references" [value]="r">{{ r }}</option>
             </select>
           </div>
+
+          <!-- Matricule Machine -->
           <div class="form-group">
             <label class="form-label">Matricule Machine <span class="required">*</span></label>
             <select class="form-control" formControlName="matriculeMachineId"
               [class.invalid]="form.get('matriculeMachineId')?.invalid && form.get('matriculeMachineId')?.touched">
               <option value="">-- Choisir --</option>
-              <option *ngFor="let m of matricules" [value]="m.id">{{ m.matricule }}<ng-container *ngIf="m.description"> — {{ m.description }}</ng-container></option>
+              <option *ngFor="let m of matricules" [value]="m.id">
+                {{ m.matricule }}<ng-container *ngIf="m.description"> — {{ m.description }}</ng-container>
+              </option>
             </select>
           </div>
+
+          <!-- Type Plaquette (filtré selon la ligne choisie) -->
           <div class="form-group">
             <label class="form-label">Type Plaquette <span class="required">*</span></label>
             <select class="form-control" formControlName="typePlaquetteId"
-              [class.invalid]="form.get('typePlaquetteId')?.invalid && form.get('typePlaquetteId')?.touched">
-              <option value="">-- Choisir --</option>
-              <option *ngFor="let t of typesPlaquettes" [value]="t.id">{{ t.nom }}</option>
+              [class.invalid]="form.get('typePlaquetteId')?.invalid && form.get('typePlaquetteId')?.touched"
+              [attr.disabled]="typesPlaquettesFiltres.length === 0 ? true : null">
+              <option value="">{{ form.value.ligne ? '-- Choisir --' : '-- Choisir une ligne d\'abord --' }}</option>
+              <option *ngFor="let t of typesPlaquettesFiltres" [value]="t.id">{{ t.nom }}</option>
             </select>
           </div>
+
+          <!-- Quantité donnée -->
           <div class="form-group">
             <label class="form-label">Quantité donnée <span class="required">*</span></label>
-            <input type="number" class="form-control" formControlName="quantiteDonnee" placeholder="0" min="1"
+            <input type="number" class="form-control" formControlName="quantiteDonnee"
+              placeholder="0" min="1"
               [class.invalid]="form.get('quantiteDonnee')?.invalid && form.get('quantiteDonnee')?.touched" />
           </div>
+
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" [disabled]="form.invalid || formLoading">
               <span *ngIf="!formLoading">Ajouter</span>
               <span *ngIf="formLoading" class="spinner"></span>
             </button>
           </div>
-          <div *ngIf="formSuccess" class="alert alert-success"> {{ formSuccess }}</div>
-          <div *ngIf="formError"   class="alert alert-error"> {{ formError }}</div>
+
+          <div *ngIf="formSuccess" class="alert alert-success">{{ formSuccess }}</div>
+          <div *ngIf="formError"   class="alert alert-error">{{ formError }}</div>
+
         </form>
       </section>
 
@@ -97,18 +117,25 @@
           <h3 class="card-title"><span class="card-icon"></span> Plaquettes — {{ selectedSemaine.nom }}</h3>
           <span class="total-badge">{{ plaquettes.length }} entrée(s)</span>
         </div>
-        <div *ngIf="tableLoading" class="table-loading"><div class="spinner-lg"></div><p>Chargement...</p></div>
-        <div *ngIf="!tableLoading && plaquettes.length === 0" class="table-empty">Aucune plaquette pour cette semaine</div>
+
+        <div *ngIf="tableLoading" class="table-loading">
+          <div class="spinner-lg"></div>
+          <p>Chargement...</p>
+        </div>
+
+        <div *ngIf="!tableLoading && plaquettes.length === 0" class="table-empty">
+          Aucune plaquette pour cette semaine
+        </div>
+
         <div *ngIf="!tableLoading && plaquettes.length > 0" class="table-wrapper">
           <table class="data-table">
             <colgroup>
               <col style="width:120px">
-              <col style="width:200px">
-              <col style="width:200px">
               <col style="width:180px">
+              <col style="width:200px">
+              <col style="width:170px">
+              <col style="width:160px">
               <col style="width:150px">
-              <col style="width:120px">
-              <col style="width:130px">
               <col style="width:80px">
             </colgroup>
             <thead>
@@ -118,18 +145,46 @@
                 <th>Référence</th>
                 <th>Machine</th>
                 <th>Type</th>
-                <th class="th-right">Qté donnée</th>
+                <th class="th-right editable-col">Qté donnée <span class="hint"> clic</span></th>
                 <th class="th-center">Action</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let p of plaquettes; trackBy: trackById" class="table-row">
+
                 <td class="td-date">{{ p.date | date:'dd/MM/yyyy' }}</td>
                 <td><span class="tag tag-ligne">{{ p.ligne }}</span></td>
                 <td><span class="tag tag-ref">{{ p.reference }}</span></td>
                 <td class="td-machine">{{ p.matriculeMachine.matricule }}</td>
                 <td><span class="tag tag-type">{{ p.typePlaquette.nom }}</span></td>
-                <td class="td-number">{{ p.quantiteDonnee }}</td>
+
+                <!-- Quantité donnée — éditable inline -->
+                <td class="td-editable td-number"
+                    (click)="startEditQte(p)"
+                    [class.editing]="isEditingQte(p.id)">
+
+                  <ng-container *ngIf="!isEditingQte(p.id)">
+                    <div class="cell-display cell-right">
+                      <span class="cell-value">{{ p.quantiteDonnee }}</span>
+                      <span class="edit-pencil"></span>
+                    </div>
+                  </ng-container>
+
+                  <ng-container *ngIf="isEditingQte(p.id)">
+                    <div class="inline-edit" (click)="$event.stopPropagation()">
+                      <input type="number" class="inline-input" [(ngModel)]="editingQteValue"
+                        min="1"
+                        (keyup.enter)="saveEditQte(p)"
+                        (keyup.escape)="cancelEditQte()"
+                        autofocus />
+                      <button class="btn-inline-save" (click)="saveEditQte(p)" [disabled]="editQteLoading">✓</button>
+                      <button class="btn-inline-cancel" (click)="cancelEditQte()">✗</button>
+                    </div>
+                  </ng-container>
+
+                </td>
+
+                <!-- Action suppression -->
                 <td class="td-action">
                   <ng-container *ngIf="deletingId !== p.id">
                     <button class="btn-delete" (click)="confirmDelete(p.id)">🗑️</button>
@@ -142,6 +197,7 @@
                     </div>
                   </ng-container>
                 </td>
+
               </tr>
             </tbody>
           </table>
@@ -194,7 +250,8 @@
                       <input type="number" class="inline-input" [(ngModel)]="editingResumeValue"
                         min="0" [max]="r.quantiteTotale"
                         (keyup.enter)="saveEditResume(r, 'reste')"
-                        (keyup.escape)="cancelEditResume()" autofocus />
+                        (keyup.escape)="cancelEditResume()"
+                        autofocus />
                       <button class="btn-inline-save" (click)="saveEditResume(r, 'reste')" [disabled]="editResumeLoading">✓</button>
                       <button class="btn-inline-cancel" (click)="cancelEditResume()">✗</button>
                     </div>
@@ -216,7 +273,8 @@
                       <input type="number" class="inline-input" [(ngModel)]="editingResumeValue"
                         min="0"
                         (keyup.enter)="saveEditResume(r, 'produitFini')"
-                        (keyup.escape)="cancelEditResume()" autofocus />
+                        (keyup.escape)="cancelEditResume()"
+                        autofocus />
                       <button class="btn-inline-save" (click)="saveEditResume(r, 'produitFini')" [disabled]="editResumeLoading">✓</button>
                       <button class="btn-inline-cancel" (click)="cancelEditResume()">✗</button>
                     </div>
@@ -238,7 +296,8 @@
                       <input type="number" class="inline-input" [(ngModel)]="editingResumeValue"
                         min="0"
                         (keyup.enter)="saveEditResume(r, 'rebut')"
-                        (keyup.escape)="cancelEditResume()" autofocus />
+                        (keyup.escape)="cancelEditResume()"
+                        autofocus />
                       <button class="btn-inline-save" (click)="saveEditResume(r, 'rebut')" [disabled]="editResumeLoading">✓</button>
                       <button class="btn-inline-cancel" (click)="cancelEditResume()">✗</button>
                     </div>

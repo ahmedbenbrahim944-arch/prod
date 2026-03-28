@@ -2,18 +2,15 @@
 <div class="selection-container">
   <!-- Sidebar -->
   <div class="sidebar">
-    <!-- Bouton retour -->
     <button class="btn-back" (click)="goBack()">
       <i class="icon-arrow">←</i> Retour aux lignes
     </button>
 
-    <!-- Titre Ligne -->
     <div class="ligne-title">
       <h2>L04:RXT1</h2>
       <p class="subtitle">{{ references.length }} références disponibles</p>
     </div>
 
-    <!-- Liste des semaines -->
     <div class="semaines-section">
       <h3>SEMAINES DISPONIBLES</h3>
       <div class="semaines-list">
@@ -33,7 +30,6 @@
 
   <!-- Contenu principal -->
   <div class="main-content">
-    <!-- En-tête -->
     <div class="header">
       <h1>PLANNING DE SÉLECTION</h1>
       <div class="legend">
@@ -60,7 +56,6 @@
       </div>
     </div>
 
-    <!-- Messages -->
     <div class="messages">
       <div *ngIf="errorMessage" class="alert alert-error">
         {{ errorMessage }}
@@ -70,14 +65,12 @@
       </div>
     </div>
 
-    <!-- État initial -->
     <div *ngIf="!selectedSemaine" class="empty-state">
       <div class="empty-icon">📅</div>
       <h3>Sélectionnez une semaine</h3>
       <p>pour voir la planification</p>
     </div>
 
-    <!-- Formulaire et tableau -->
     <div *ngIf="selectedSemaine" class="content-area">
       <!-- Formulaire d'ajout -->
       <div class="form-card">
@@ -151,7 +144,7 @@
               readonly>
           </div>
 
-          <!-- ✅ Référence (recherche - Products + Matières Premières) -->
+          <!-- Référence (recherche) -->
           <div class="form-group autocomplete-wrapper">
             <label>Référence * <span class="required-indicator">●</span></label>
             <input 
@@ -169,7 +162,6 @@
                 *ngFor="let refItem of filteredReferences" 
                 class="autocomplete-item"
                 (click)="selectReference(refItem)">
-                <!-- ✅ Badge pour indiquer le type -->
                 <span class="ref-type-badge" 
                       [ngClass]="getReferenceTypeBadgeClass(refItem.type)">
                   {{ getReferenceTypeBadge(refItem.type) }}
@@ -223,7 +215,7 @@
             <small class="help-text">Quantité à sélectionner par heure</small>
           </div>
 
-          <!-- ✅ NOUVEAU CHAMP : Numéro de ticket -->
+          <!-- Numéro de ticket -->
           <div class="form-group">
             <label>Numéro de ticket <span class="optional-indicator">(optionnel)</span></label>
             <input 
@@ -256,7 +248,6 @@
           </button>
         </div>
         
-        <!-- Validation Status -->
         <div class="validation-status" *ngIf="!isFormValid()">
           <small class="text-warning">
             ⚠️ Champs obligatoires manquants : 
@@ -269,8 +260,7 @@
         </div>
       </div>
 
-
-      <!-- 🆕 Section Plannings en Attente -->
+      <!-- Section Plannings en Attente -->
       <div class="pending-section" *ngIf="planningsEnAttente.length > 0">
         <div class="pending-header">
           <h2 class="pending-title">
@@ -317,6 +307,7 @@
           </div>
         </div>
       </div>
+
       <!-- Tableau des plannings -->
       <div class="table-card">
         <h2 class="table-title">
@@ -335,7 +326,7 @@
                 <th>Référence</th>
                 <th>Type</th>
                 <th>Ligne Réf</th>
-                <th>Num Ticket</th> <!-- ✅ NOUVELLE COLONNE -->
+                <th>Num Ticket</th>
                 <th class="text-right">Qté à select.</th>
                 <th class="text-right">Obj./h</th>
                 <th class="text-right">Qté select.</th>
@@ -353,7 +344,6 @@
                 <td>{{ planning.nomPrenom }}</td>
                 <td>{{ planning.ligne }}</td>
                 <td><strong>{{ planning.reference }}</strong></td>
-                <!-- ✅ Badge du type de référence -->
                 <td>
                   <span class="ref-type-badge" 
                         [ngClass]="getReferenceTypeBadgeClass(planning.typeReference)">
@@ -361,59 +351,67 @@
                   </span>
                 </td>
                 <td>{{ planning.ligneRef }}</td>
-                <!-- ✅ NOUVELLE COLONNE : Numéro de ticket -->
                 <td>
                   <span class="ticket-badge">{{ planning.numTicket || 'non num' }}</span>
                 </td>
+
+                <!-- ✅ FIX : [(ngModel)] + (change) au lieu de [value] + (blur) -->
+
                 <!-- Qté à sélectionner éditable -->
                 <td class="text-right qty-cell">
                   <input 
-                    type="number" 
-                    [value]="planning.qteASelectionne || 0"
-                    (blur)="updateQteASelectionne(planning, $any($event.target).value)"
+                    type="number"
+                    [(ngModel)]="planning.qteASelectionne"
+                    (change)="updateQteASelectionne(planning, planning.qteASelectionne)"
                     class="inline-input"
                     min="1">
                 </td>
+
                 <!-- Objectif/heure éditable -->
                 <td class="text-right obj-cell">
                   <input 
-                    type="number" 
-                    [value]="planning.objectifHeure || 0"
-                    (blur)="updateObjectifHeure(planning, $any($event.target).value)"
+                    type="number"
+                    [(ngModel)]="planning.objectifHeure"
+                    (change)="updateObjectifHeure(planning, planning.objectifHeure)"
                     class="inline-input"
                     min="1">
                 </td>
-                <!-- ✅ Qté sélectionnée éditable -->
+
+                <!-- Qté sélectionnée éditable -->
                 <td class="text-right selected-cell">
                   <input 
-                    type="number" 
-                    [value]="planning.qteSelection || 0"
-                    (blur)="updateQteSelection(planning, $any($event.target).value)"
+                    type="number"
+                    [(ngModel)]="planning.qteSelection"
+                    (change)="updateQteSelection(planning, planning.qteSelection)"
                     class="inline-input"
                     min="0">
                 </td>
-                <!-- ✅ NOUVELLE COLONNE : Rebut éditable -->
+
+                <!-- Rebut éditable -->
                 <td class="text-right rebut-cell">
                   <input 
-                    type="number" 
-                    [value]="planning.rebut || 0"
-                    (blur)="updateRebut(planning, $any($event.target).value)"
+                    type="number"
+                    [(ngModel)]="planning.rebut"
+                    (change)="updateRebut(planning, planning.rebut)"
                     class="inline-input"
                     min="0">
                 </td>
+
                 <!-- Heures éditable -->
                 <td class="text-right hours-cell">
                   <input 
-                    type="number" 
-                    [value]="planning.nHeures || 0"
-                    (blur)="updateHeures(planning, $any($event.target).value)"
+                    type="number"
+                    [(ngModel)]="planning.nHeures"
+                    (change)="updateHeures(planning, planning.nHeures)"
                     class="inline-input"
                     step="0.1"
                     min="0.1">
                 </td>
+
                 <td class="text-right">
                   {{ planning.rendement ? (planning.rendement + '%') : '-' }}
                 </td>
+
                 <!-- Colonne Terminé -->
                 <td class="text-center">
                   <button
@@ -449,7 +447,8 @@
     </div>
   </div>
 </div>
-<!-- 🆕 Modal de Complétion -->
+
+<!-- Modal de Complétion -->
 <div class="modal-overlay" *ngIf="showCompletionModal" (click)="closeCompletionModal()">
   <div class="modal-container" (click)="$event.stopPropagation()">
     <div class="modal-header">
@@ -458,7 +457,6 @@
     </div>
 
     <div class="modal-body" *ngIf="selectedPlanningEnAttente">
-      <!-- Info ouvrier -->
       <div class="ouvrier-card">
         <div class="ouvrier-detail">
           <span class="label">Matricule:</span>
@@ -474,7 +472,6 @@
         </div>
       </div>
 
-      <!-- Formulaire de complétion -->
       <div class="form-grid modal-form">
         <!-- Référence (recherche) -->
         <div class="form-group autocomplete-wrapper">

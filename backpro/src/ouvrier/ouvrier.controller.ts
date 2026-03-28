@@ -23,7 +23,7 @@ export class OuvrierController {
 
   // Créer un ouvrier - Accessible seulement par admin
   @Post()
-  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   async create(@Body() createOuvrierDto: CreateOuvrierDto) {
     const ouvrier = await this.ouvrierService.createOuvrier(createOuvrierDto);

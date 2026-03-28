@@ -25,6 +25,9 @@ import { ProductionTimeModule } from './production-time/production-time.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { PlaquettesModule } from './plaquettes/plaquettes.module';
 import { ScannerModule } from './scanner/scanner.module';
+import { AffectationModule } from './affectation/affectation.module';
+import { AutosaisieModule } from './autosaisie/autosaisie.module';
+
 
 @Module({
   imports: [
@@ -37,7 +40,7 @@ import { ScannerModule } from './scanner/scanner.module';
       password: '', // Change selon ta config  
       database: 'production', // Change le nom de ta base
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // ⚠️ Mettre à false en production
+      synchronize:false, // ⚠️ Mettre à false en production
       logging: true, // Pour voir les requêtes SQL
       autoLoadEntities: true,
       timezone: 'Z',  // Force UTC
@@ -63,7 +66,9 @@ import { ScannerModule } from './scanner/scanner.module';
     ProductionTimeModule,
     TrackingModule,
     PlaquettesModule,
-    ScannerModule
+    ScannerModule,
+    AffectationModule,
+    AutosaisieModule
 
   ],
   controllers: [],

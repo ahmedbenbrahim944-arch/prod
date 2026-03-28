@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, ManyToMany, JoinTable, CreateDateColumn } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { PauseSession } from './pause-session.entity';
+import { Planification } from '../../semaine/entities/planification.entity';
 
 @Entity('production_sessions')
 export class ProductionSession {
@@ -47,6 +48,14 @@ export class ProductionSession {
   qualityStatus: string;
 
   @Column({ nullable: true })
-  userName: string; // Nom de l'utilisateur pour affichage
-  
+  userName: string;
+
+  // ✅ NOUVEAU - Références planifiées sélectionnées au démarrage de la session
+  @ManyToMany(() => Planification, { eager: true, nullable: true })
+  @JoinTable({
+    name: 'production_session_planifications',
+    joinColumn: { name: 'session_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'planification_id', referencedColumnName: 'id' }
+  })
+  planifications: Planification[];
 }

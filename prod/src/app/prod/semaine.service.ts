@@ -37,6 +37,7 @@ export interface Planification {
   decMagasin: number;
   deltaProd: number;
   pcsProd: number;
+  note?: string; // NOUVEAU
 }
 
 export interface CreatePlanificationDto {
@@ -48,6 +49,7 @@ export interface CreatePlanificationDto {
   qtePlanifiee?: number;
   qteModifiee?: number;
   emballage?: string;
+  note?: string; // NOUVEAU
 }
 
 export interface WeekInfo {
@@ -69,112 +71,70 @@ export class SemaineService {
     private authService: AuthService
   ) {}
 
-  // Méthode pour obtenir les headers avec le token
   private getAuthHeaders(): HttpHeaders {
     const token = this.authService.getToken();
-    
     if (!token) {
       console.warn('Aucun token d\'authentification trouvé');
-      return new HttpHeaders({
-        'Content-Type': 'application/json'
-      });
+      return new HttpHeaders({ 'Content-Type': 'application/json' });
     }
-    
     return new HttpHeaders({
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     });
   }
 
-  // ============ ROUTES PUBLIQUES (sans authentification) ============
+  // ============ ROUTES PUBLIQUES ============
 
   getSemainesPublic(): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/semaines/public`);
   }
 
-  // ============ ROUTES PROTÉGÉES (avec authentification) ============
+  // ============ ROUTES PROTÉGÉES ============
 
-  // Semaines
   createSemaine(semaine: CreateSemaineDto): Observable<any> {
-    return this.http.post<any>(
-      `${this.apiUrl}/semaines`,
-      semaine,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.post<any>(`${this.apiUrl}/semaines`, semaine, { headers: this.getAuthHeaders() });
   }
 
   getSemaines(): Observable<any> {
-    return this.http.get<any>(
-      `${this.apiUrl}/semaines`,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.get<any>(`${this.apiUrl}/semaines`, { headers: this.getAuthHeaders() });
   }
-  
+
   getSemainesForPlanning(): Observable<any> {
-    return this.http.get<any>(
-      `${this.apiUrl}/semaines`,
-      { headers: this.getAuthHeaders() }
-    ).pipe(
+    return this.http.get<any>(`${this.apiUrl}/semaines`, { headers: this.getAuthHeaders() }).pipe(
       catchError(error => {
         console.error('Erreur chargement semaines:', error);
-        
-        // Si erreur 401 (non autorisé), essayer la route publique
         if (error.status === 401) {
           console.log('Tentative avec route publique...');
           return this.getSemainesPublic();
         }
-        
         throw error;
       })
     );
   }
 
   deleteSemaine(id: number): Observable<any> {
-    return this.http.delete<any>(
-      `${this.apiUrl}/semaines/${id}`,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.delete<any>(`${this.apiUrl}/semaines/${id}`, { headers: this.getAuthHeaders() });
   }
 
-  // Planifications
   createPlanification(planification: CreatePlanificationDto): Observable<any> {
-    return this.http.post<any>(
-      `${this.apiUrl}/planifications`,
-      planification,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.post<any>(`${this.apiUrl}/planifications`, planification, { headers: this.getAuthHeaders() });
   }
 
   getPlanificationsBySemaine(semaine: string): Observable<any> {
-    return this.http.get<any>(
-      `${this.apiUrl}/planifications/semaine/${semaine}`,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.get<any>(`${this.apiUrl}/planifications/semaine/${semaine}`, { headers: this.getAuthHeaders() });
   }
 
   getPlanificationsForWeek(semaineNom: string): Observable<any> {
-    return this.http.post<any>(
-      `${this.apiUrl}/planifications/vue`,
-      { semaine: semaineNom },
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.post<any>(`${this.apiUrl}/planifications/vue`, { semaine: semaineNom }, { headers: this.getAuthHeaders() });
   }
 
   getAllPlanifications(): Observable<any> {
-    return this.http.get<any>(
-      `${this.apiUrl}/planifications`,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.get<any>(`${this.apiUrl}/planifications`, { headers: this.getAuthHeaders() });
   }
 
   updatePlanificationByCriteria(planification: any): Observable<any> {
     console.log('Envoi de la planification:', planification);
-    
-    return this.http.patch<any>(
-      `${this.apiUrl}/planifications`,
-      planification,
-      { headers: this.getAuthHeaders() }
-    ).pipe(
+    return this.http.patch<any>(`${this.apiUrl}/planifications`, planification, { headers: this.getAuthHeaders() }).pipe(
       catchError(error => {
         console.error('Erreur détaillée sauvegarde:', {
           status: error.status,
@@ -188,24 +148,19 @@ export class SemaineService {
   }
 
   updateProductionPlanification(production: any): Observable<any> {
-    return this.http.patch<any>(
-      `${this.apiUrl}/planifications/prod`,
-      production,
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.patch<any>(`${this.apiUrl}/planifications/prod`, production, { headers: this.getAuthHeaders() });
   }
 
   getPlanificationsVuProd(semaine: string, ligne: string): Observable<any> {
-    return this.http.post<any>(
-      `${this.apiUrl}/planifications/vuprod`,
-      { semaine, ligne },
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.post<any>(`${this.apiUrl}/planifications/vuprod`, { semaine, ligne }, { headers: this.getAuthHeaders() });
   }
 
   // ============ MÉTHODES UTILITAIRES ============
 
-  // Méthode pour convertir une semaine au format API
+  /**
+   * Formate les données d'une planification pour l'API.
+   * Inclut le champ `note` si présent.
+   */
   formatWeekForAPI(weekData: any): any {
     return {
       semaine: weekData.semaine,
@@ -213,86 +168,57 @@ export class SemaineService {
       ligne: weekData.ligne,
       reference: weekData.reference,
       of: weekData.of || '',
-       nbOperateurs: weekData.nbOperateurs || 0,
+      nbOperateurs: weekData.nbOperateurs || 0,
       qtePlanifiee: weekData.qtePlanifiee || 0,
       qteModifiee: weekData.qteModifiee || 0,
       emballage: weekData.emballage || '200',
       decProduction: weekData.decProduction || 0,
-      decMagasin: weekData.decMagasin || 0
+      decMagasin: weekData.decMagasin || 0,
+      note: weekData.note ?? null  // NOUVEAU : inclure la note
     };
   }
 
-  // Méthode pour sauvegarder plusieurs planifications en une seule requête
   saveMultiplePlanifications(planifications: any[]): Observable<any> {
-    // Si vous avez une route pour sauvegarder en batch
-    return this.http.post<any>(
-      `${this.apiUrl}/planifications/batch`,
-      { planifications },
-      { headers: this.getAuthHeaders() }
-    );
+    return this.http.post<any>(`${this.apiUrl}/planifications/batch`, { planifications }, { headers: this.getAuthHeaders() });
   }
 
-  // Helper methods pour les dates de semaine
-  // Dans votre SemaineService (frontend)
+  getWeekDates(year: number, weekNumber: number): WeekInfo {
+    const january4 = new Date(year, 0, 4);
+    const dayOfWeek = january4.getDay();
+    const mondayOfWeek1 = new Date(january4);
+    mondayOfWeek1.setDate(january4.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-getWeekDates(year: number, weekNumber: number): WeekInfo {
-  // Méthode ISO 8601 pour calculer les dates de semaine
-  
-  // 1. Trouver le 4 janvier de l'année (c'est toujours dans la semaine 1)
-  const january4 = new Date(year, 0, 4);
-  
-  // 2. Trouver le lundi de la semaine contenant le 4 janvier
-  const dayOfWeek = january4.getDay(); // 0=dimanche, 1=lundi, etc.
-  const mondayOfWeek1 = new Date(january4);
-  mondayOfWeek1.setDate(january4.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-  
-  // 3. Calculer le lundi de la semaine demandée
-  const weekStart = new Date(mondayOfWeek1);
-  weekStart.setDate(mondayOfWeek1.getDate() + (weekNumber - 1) * 7);
-  
-  // 4. Calculer le samedi (fin de semaine)
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 5); // Lundi + 5 jours = samedi
-  
-  // 5. Formater le nom
-  const semaineNom = `semaine${weekNumber}`;
-  
-  return {
-    number: weekNumber,
-    startDate: weekStart,
-    endDate: weekEnd,
-    display: semaineNom
-  };
-}
+    const weekStart = new Date(mondayOfWeek1);
+    weekStart.setDate(mondayOfWeek1.getDate() + (weekNumber - 1) * 7);
 
-  // Méthode pour parser les semaines depuis l'API
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 5);
+
+    return {
+      number: weekNumber,
+      startDate: weekStart,
+      endDate: weekEnd,
+      display: `semaine${weekNumber}`
+    };
+  }
+
   parseWeeksFromAPI(response: any): WeekInfo[] {
     let semainesArray: any[] = [];
-    
-    // Vérifier différents formats de réponse
     if (response && response.semaines && Array.isArray(response.semaines)) {
       semainesArray = response.semaines;
     } else if (Array.isArray(response)) {
       semainesArray = response;
     } else {
-      console.warn('Format de réponse inattendu:', response);
       return [];
     }
-    
+
     const weeks: WeekInfo[] = [];
-    
     semainesArray.forEach((semaine: any) => {
       let weekNumber = 0;
-      
-      // Extraire le numéro de semaine du nom (ex: "semaine1" -> 1)
       if (semaine.nom && typeof semaine.nom === 'string') {
         const match = semaine.nom.match(/semaine(\d+)/i);
-        if (match && match[1]) {
-          weekNumber = parseInt(match[1], 10);
-        }
+        if (match && match[1]) weekNumber = parseInt(match[1], 10);
       }
-      
-      // Si on a un numéro valide, créer l'objet WeekInfo
       if (weekNumber > 0) {
         weeks.push({
           number: weekNumber,
@@ -303,24 +229,20 @@ getWeekDates(year: number, weekNumber: number): WeekInfo {
         });
       }
     });
-    
-    // Trier par numéro de semaine (décroissant - les plus récentes d'abord)
+
     weeks.sort((a, b) => b.number - a.number);
-    
     return weeks;
   }
 
-  // Méthode pour vérifier si l'utilisateur est admin
   isAdmin(): boolean {
-    const userType = this.authService.getUserType();
-    return userType === 'admin';
+    return this.authService.getUserType() === 'admin';
   }
 
-  // Méthode pour vérifier si l'utilisateur est connecté
   isAuthenticated(): boolean {
     return this.authService.isLoggedIn();
   }
-    updateMagasinPlanification(data: any): Observable<any> {
-  return this.http.patch(`${this.apiUrl}/planifications/magasin`, data);
-}
+
+  updateMagasinPlanification(data: any): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/planifications/magasin`, data);
+  }
 }

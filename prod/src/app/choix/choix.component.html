@@ -65,6 +65,33 @@
         <span class="bouton-description"></span>
       </div>
     </a>
+    <a class="bouton-grand magasin" 
+       routerLink="/aff" 
+       routerLinkActive="active">
+      <div class="bouton-content">
+        <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/>
+          <path d="M12 9v12"/>
+          <path d="M8 9v12"/>
+          <path d="M16 9v12"/>
+        </svg>
+        <span class="bouton-titre">Affectation</span>
+        <span class="bouton-description"></span>
+      </div>
+    </a>
+
+    <a class="bouton-grand magasin" 
+   routerLink="/auto" 
+   routerLinkActive="active">
+  <div class="bouton-content">
+    <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 20h9"/>
+      <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+    <span class="bouton-titre">Autosaisie</span>
+    <span class="bouton-description"></span>
+  </div>
+</a>
 
     <a *ngIf="showSaisButton"
        class="bouton-grand magasin" 

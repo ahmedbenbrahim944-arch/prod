@@ -22,6 +22,38 @@ export interface AdminDashboardOverview {
   lines: LineStatusAdmin[];
 }
 
+export interface RefSessionStatus {
+  sessionId: number;
+  ligne: string;
+  productType: string;
+  status: string;
+  tempsProduction: string;
+  tempsPause: string;
+  piecesProduites: number;
+  tempsParPiece: number;
+  pauseEnCours: {
+    id: number;
+    mCategory: string;
+    subCategory?: string;
+    reason?: string;
+    startTime?: string;
+    duree: string;
+    duration?: string;
+    piecesPerdues: number;
+    lostPieces?: number;
+    matierePremierRefs: string[];
+    phasesEnPanne: string[];
+    productRefs: string[];
+    planifications?: Array<{
+      id: number;
+      reference: string;
+      of: string;
+      jour: string;
+      semaine: string;
+    }>;
+  } | null;
+}
+
 export interface LineStatusAdmin {
   ligne: string;
   status: 'active' | 'paused' | 'inactive';
@@ -32,6 +64,7 @@ export interface LineStatusAdmin {
     productType: string;
     startedBy: any;
   } | null;
+  multiSessions: RefSessionStatus[];
   realTime: {
     piecesProduites: number;
     piecesProduitesPrevisionnelles: number;
@@ -114,7 +147,6 @@ export interface ActivePauseDetails {
   phasesEnPanne?: string[];
   productRefs?: string[];
   lostPieces?: number;
-  // ✅ Références planifiées liées à cette pause
   planifications?: Array<{
     id: number;
     reference: string;

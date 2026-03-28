@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsArray, IsNumber } from 'class-validator';
 
 export class StartProductionDto {
   @IsNotEmpty()
@@ -12,4 +12,10 @@ export class StartProductionDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // ✅ NOUVEAU - Références planifiées sélectionnées au démarrage
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  planificationIds?: number[];
 }

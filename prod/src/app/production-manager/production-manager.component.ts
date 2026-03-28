@@ -3,18 +3,51 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { ProductionService, ProductLine, MCategory, ProductionSession, SessionStats, RealTimeProduction, PlannedReference } from './Production.service';
-import { interval, Subject, takeUntil } from 'rxjs';
-import { Router } from '@angular/router';
+import { interval, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { Router, ActivatedRoute } from '@angular/router';
 
-interface ProductLineWithTime extends ProductLine {
-  seconde?: number;
-}
-
+interface ProductLineWithTime extends ProductLine { seconde?: number; }
 interface ProductLineWithStatus extends ProductLine {
   seconde?: number;
   status?: 'active' | 'paused' | 'inactive';
   sessionId?: number;
   startedBy?: string;
+}
+
+export interface RefSession {
+  planificationId: number;
+  reference: string;
+  of: string;
+  jour: string;
+  semaine: string;
+  qtePlanifiee: number;
+  sessionId: number | null;
+  status: 'idle' | 'active' | 'paused' | 'completed' | 'cancelled';
+  elapsedSeconds: number;
+  productionSeconds: number;
+  pauseSeconds: number;
+  piecesProduites: number;
+  piecesPerdues: number;
+  secondesParPiece: number;
+  pauseMCategory: string | null;
+  pauseReason: string | null;
+  showPauseForm: boolean;
+  selectedMCategory: string | null;
+  pauseReasonInput: string;
+  loading: boolean;
+  startTime: Date | null;
+  // Références métier M1/M4/M5
+  availableRefs: string[];
+  selectedRefs: string[];
+  loadingRefs: boolean;
+}
+export interface SavedSessionData {
+  ligne: string | null;
+  refSessions: any[]; // Vous pouvez utiliser RefSession[] mais attention à la sérialisation
+  selectedStartRefIds: number[];
+  startRefs: PlannedReference[];
+  savedAt: string;
 }
 
 @Component({
@@ -27,764 +60,696 @@ interface ProductLineWithStatus extends ProductLine {
 export class ProductionManagerComponent implements OnInit, OnDestroy {
   private productionService = inject(ProductionService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private destroy$ = new Subject<void>();
 
-  // Signals existants
+  Math = Math;
+
+  // ── Signals ───────────────────────────────────────────────────────────────
   lines = signal<ProductLineWithStatus[]>([]);
   mCategories = signal<MCategory[]>([]);
-  selectedLine = signal<string | null>(null);
-  activeSession = signal<ProductionSession | null>(null);
-  sessionStats = signal<SessionStats | null>(null);
-  activeLineInfo = signal<ProductLineWithTime | null>(null);
   isAdmin = signal<boolean>(false);
   allActiveSessions = signal<ProductionSession[]>([]);
-
   loading = signal(false);
-  alertMessage = signal<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
+  alertMessage = signal<{ type: 'success' | 'error' | 'info'; text: string } | null>(null);
 
-  // Formulaire pause
-  showPauseForm = signal(false);
-  selectedMCategory = signal<string | null>(null);
-  selectedSubCategory = signal<string | null>(null);
-  pauseReason = signal<string>('');
+  // Vue courante : liste des lignes | sélection refs | production multi-refs
+  view = signal<'lines' | 'start-refs' | 'production'>('lines');
+  selectedLine = signal<string | null>(null);
 
-  // Références métier M1/M4/M5
-  availableReferences = signal<string[]>([]);
-  selectedReferences = signal<string[]>([]);
-  loadingReferences = signal(false);
+  // Sélection refs pour démarrage
+  startRefs = signal<PlannedReference[]>([]);
+  selectedStartRefIds = signal<number[]>([]);
+  loadingStartRefs = signal(false);
 
-  // ✅ NOUVEAU - Étape du modal pause (1 = sélection planifications, 2 = sélection M + refs métier)
-  pauseStep = signal<1 | 2>(1);
+  // Sessions par référence
+  refSessions = signal<RefSession[]>([]);
 
-  // ✅ NOUVEAU - Références planifiées (OF non null)
-  plannedReferences = signal<PlannedReference[]>([]);
-  selectedPlanificationIds = signal<number[]>([]);
-  loadingPlannedRefs = signal(false);
+  // Admin
+  adminSession = signal<ProductionSession | null>(null);
+  sessionStats = signal<SessionStats | null>(null);
 
-  // Formulaire reprise / fin
-  showResumeForm = signal(false);
-  resumeActionTaken = signal<string>('');
-  showEndForm = signal(false);
-  endNotes = signal<string>('');
-  quantityProduced = signal<number | null>(null);
-  qualityStatus = signal<string>('good');
-
-  // Chronos et pièces
-  sessionElapsedTime = signal<string>('00:00:00');
-  pauseElapsedTime = signal<string>('00:00:00');
-  piecesProduced = signal<number>(0);
-  realTimeData = signal<RealTimeProduction | null>(null);
-  totalLostPieces = signal<number>(0);
-
-  // Computed existants
+  // ── Computed ──────────────────────────────────────────────────────────────
   filteredLines = computed(() =>
-    this.lines().filter(line => line.status === 'active' || line.status === 'paused')
+    this.lines().filter(l => l.status === 'active' || l.status === 'paused')
   );
 
-  availableSubCategories = computed(() => {
-    const selectedCat = this.selectedMCategory();
-    if (!selectedCat) return [];
-    const category = this.mCategories().find(c => c.code === selectedCat);
-    return category?.subCategories || [];
-  });
+  canStartSelected = computed(() => this.selectedStartRefIds().length > 0);
 
-  currentCategoryRequiresReferences = computed(() => {
-    const selectedCat = this.selectedMCategory();
-    if (!selectedCat) return false;
-    const category = this.mCategories().find(c => c.code === selectedCat);
-    return category?.requiresReferences || false;
-  });
+  allRefsDone = computed(() =>
+    this.refSessions().length > 0 &&
+    this.refSessions().every(s => s.status === 'completed' || s.status === 'cancelled')
+  );
 
-  currentReferenceType = computed(() => {
-    const selectedCat = this.selectedMCategory();
-    if (!selectedCat) return '';
-    const category = this.mCategories().find(c => c.code === selectedCat);
-    return category?.referenceType || '';
-  });
+  totalLostPieces = computed(() =>
+    this.refSessions().reduce((sum, s) => sum + s.piecesPerdues, 0)
+  );
 
-  referenceTypeLabel = computed(() => {
-    const type = this.currentReferenceType();
-    switch (type) {
-      case 'matierePremiere': return 'Matières Premières';
-      case 'phases': return 'Phases';
-      case 'products': return 'Produits';
-      default: return 'Références';
-    }
-  });
+  totalPieces = computed(() =>
+    this.refSessions().reduce((sum, s) => sum + s.piecesProduites, 0)
+  );
 
-  canStartSession = computed(() => {
-    if (this.isAdmin()) return false;
-    return this.selectedLine() && !this.activeSession();
-  });
-
-  canPauseSession = computed(() => this.activeSession()?.status === 'active');
-  canResumeSession = computed(() => this.activeSession()?.status === 'paused');
-  canEndSession = computed(() => {
-    const status = this.activeSession()?.status;
-    return status === 'active' || status === 'paused';
-  });
-
-  // ✅ NOUVEAU - Calculé : peut-on passer à l'étape 2 ?
-  // L'étape 1 est optionnelle si aucune planification disponible
-  canProceedToStep2 = computed(() => {
-    const planned = this.plannedReferences();
-    // Si aucune planification disponible → on peut passer directement
-    if (planned.length === 0) return true;
-    // Sinon, au moins une doit être sélectionnée
-    return this.selectedPlanificationIds().length > 0;
-  });
-
-  ngOnInit(): void {
-    this.detectUserRole();
-    this.loadLines();
-    this.loadMCategories();
-    this.startTimers();
-    this.startPiecesCounter();
+  // ── Lifecycle ─────────────────────────────────────────────────────────────
+ngOnInit(): void {
+  this.detectUserRole();
+  this.loadMCategories();
+  this.startTick();
+  
+  // ✅ ÉTAPE 1 : Vérifier s'il y a une session sauvegardée
+  const savedSession: SavedSessionData | null = this.productionService.loadLastSession();
+  
+  if (savedSession && !this.isAdmin()) {
+    console.log('Session sauvegardée trouvée:', savedSession);
+    // Restaurer directement la session
+    this.restoreFromLocalStorage(savedSession);
+  } else {
+    // Pas de session, charger normalement
+    this.loadLines(() => {
+      const queryLigne = this.route.snapshot.queryParamMap.get('ligne');
+      const adminAccess = this.route.snapshot.queryParamMap.get('adminAccess');
+      if (queryLigne && adminAccess === 'true' && this.isAdmin()) {
+        this.selectedLine.set(queryLigne);
+        this.adminAccessLine(queryLigne);
+      }
+    });
   }
+  
+  // Sauvegarder périodiquement toutes les 30 secondes
+  interval(30000).pipe(takeUntil(this.destroy$)).subscribe(() => {
+    this.saveCurrentSession();
+  });
+}
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+ ngOnDestroy(): void {
+  this.saveCurrentSession(); // Sauvegarder avant de détruire
+  this.destroy$.next();
+  this.destroy$.complete();
+}
+
+ restoreFromLocalStorage(savedSession: SavedSessionData): void {
+  const { ligne, refSessions, selectedStartRefIds, startRefs } = savedSession;
+  
+  if (!ligne) return;
+  
+  // Restaurer les données
+  this.selectedLine.set(ligne);
+  this.selectedStartRefIds.set(selectedStartRefIds || []);
+  this.startRefs.set(startRefs || []);
+  
+  // Restaurer les sessions par référence
+  if (refSessions && refSessions.length > 0) {
+    // Convertir les dates string en objets Date
+    const restoredSessions: RefSession[] = refSessions.map((s: any) => ({
+      ...s,
+      startTime: s.startTime ? new Date(s.startTime) : null,
+      loading: false,
+      showPauseForm: false,
+      availableRefs: [],
+      selectedRefs: [],
+      loadingRefs: false,
+      pauseReasonInput: '',
+      selectedMCategory: null
+    }));
+    
+    this.refSessions.set(restoredSessions);
+    this.view.set('production');
+    
+    // Recharger les données temps réel pour chaque session
+    restoredSessions.forEach((session: RefSession, index: number) => {
+      if (session.sessionId && session.status !== 'completed' && session.status !== 'cancelled') {
+        this.loadTempsParPiece(index, session.sessionId);
+      }
+    });
+    
+    this.showAlert('info', `Reprise de votre session sur ${ligne}`);
+  } else {
+    // Pas de sessions, retour à la sélection
+    this.view.set('start-refs');
   }
+}
 
-  // ==================== DÉTECTION DU RÔLE ====================
-
+  // ── Rôle ──────────────────────────────────────────────────────────────────
   detectUserRole(): void {
     try {
-      const currentUserStr = localStorage.getItem('current_user');
-      if (currentUserStr) {
-        const currentUser = JSON.parse(currentUserStr);
-        this.isAdmin.set(currentUser?.type === 'admin');
-      }
-    } catch (e) {
-      this.isAdmin.set(false);
-    }
+      const u = localStorage.getItem('current_user');
+      if (u) this.isAdmin.set(JSON.parse(u)?.type === 'admin');
+    } catch { this.isAdmin.set(false); }
   }
 
-  // ==================== CHARGEMENT ====================
-
-  loadLines(): void {
-    this.loading.set(true);
+  // ── Lignes ────────────────────────────────────────────────────────────────
+  loadLines(callback?: () => void): void {
     this.productionService.getAllLines()
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
-          const linesWithStatus = response.lines.map(line => ({
-            ...line,
-            status: 'inactive' as 'active' | 'paused' | 'inactive'
-          }));
-          this.lines.set(linesWithStatus);
-          this.loading.set(false);
-          this.loadActiveSessions();
+        next: (res) => {
+          this.lines.set(res.lines.map(l => ({ ...l, status: 'inactive' as const })));
+          this.loadActiveSessions(callback);
         },
-        error: () => {
-          this.showAlert('error', 'Erreur lors du chargement des lignes');
-          this.loading.set(false);
-        }
+        error: () => { if (callback) callback(); }
+      });
+  }
+
+  loadActiveSessions(callback?: () => void): void {
+    this.productionService.getActiveSessions()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (sessions) => {
+          this.allActiveSessions.set(sessions);
+          this.lines.update(list => list.map(line => {
+            const session = sessions.find(s => s.ligne === line.ligne);
+            return session
+              ? { ...line, status: session.status as any, sessionId: session.id, startedBy: (session as any)?.startedBy }
+              : { ...line, status: 'inactive' as const };
+          }));
+          if (callback) callback();
+        },
+        error: () => { if (callback) callback(); }
       });
   }
 
   loadMCategories(): void {
     this.productionService.getMCategories()
       .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: (res) => this.mCategories.set(res.categories), error: () => {} });
+  }
+
+  // ── Sélection ligne → ouverture sélection refs ────────────────────────────
+  selectLine(ligne: string, status: string): void {
+    if (this.isAdmin()) { this.adminAccessLine(ligne); return; }
+    this.selectedLine.set(ligne);
+    this.openStartRefModal();
+  }
+
+  openStartRefModal(): void {
+    const ligne = this.selectedLine();
+    if (!ligne) { this.showAlert('error', 'Sélectionnez une ligne'); return; }
+    this.view.set('start-refs');
+    this.loadingStartRefs.set(true);
+    this.startRefs.set([]);
+    this.selectedStartRefIds.set([]);
+    this.productionService.getPlannedReferences(ligne)
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => this.mCategories.set(response.categories),
-        error: () => {}
+        next: (res) => { this.startRefs.set(res.planifications || []); this.loadingStartRefs.set(false); },
+        error: () => { this.startRefs.set([]); this.loadingStartRefs.set(false); }
       });
   }
 
-  loadActiveSessions(): void {
-    this.productionService.getActiveSessions()
+  toggleStartRef(id: number): void {
+    const cur = this.selectedStartRefIds();
+    this.selectedStartRefIds.set(cur.includes(id) ? cur.filter(i => i !== id) : [...cur, id]);
+  }
+
+  cancelStartRefs(): void {
+    this.view.set('lines');
+    this.selectedLine.set(null);
+  }
+
+  // ── Démarrage toutes sessions ─────────────────────────────────────────────
+startAllSessions(): void {
+  const ligne = this.selectedLine()!;
+  const refs = this.startRefs().filter(r => this.selectedStartRefIds().includes(r.id));
+
+  if (refs.length === 0) {
+    this.showAlert('error', 'Sélectionnez au moins une référence');
+    return;
+  }
+
+  // Initialiser les sessions
+  const initialSessions = refs.map(r => ({
+    planificationId: r.id,
+    reference: r.reference,
+    of: r.of,
+    jour: r.jour,
+    semaine: r.semaine,
+    qtePlanifiee: r.qtePlanifiee,
+    sessionId: null,
+    status: 'idle' as const,
+    elapsedSeconds: 0,
+    productionSeconds: 0,
+    pauseSeconds: 0,
+    piecesProduites: 0,
+    piecesPerdues: 0,
+    secondesParPiece: 0,
+    pauseMCategory: null,
+    pauseReason: null,
+    showPauseForm: false,
+    selectedMCategory: null,
+    pauseReasonInput: '',
+    loading: true,
+    startTime: null,
+    availableRefs: [],
+    selectedRefs: [],
+    loadingRefs: false,
+  }));
+
+  this.refSessions.set(initialSessions);
+  this.view.set('production');
+
+  let successCount = 0;
+  let failCount = 0;
+  const totalRefs = refs.length;
+
+  const startNext = (index: number) => {
+    if (index >= totalRefs) {
+      if (failCount === 0) {
+        this.showAlert('success', `${successCount} session(s) démarrée(s)`);
+        
+        // ✅ Sauvegarder après le démarrage réussi
+        this.saveCurrentSession();
+      }
+      return;
+    }
+
+    const ref = refs[index];
+    
+    this.productionService.startProduction(ligne, ref.reference, undefined, [ref.id])
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (sessions) => {
-          this.allActiveSessions.set(sessions);
-          this.updateLinesStatus(sessions);
+        next: (res) => {
+          this.refSessions.update(list => {
+            list[index] = { 
+              ...list[index], 
+              sessionId: res.session.id, 
+              status: 'active', 
+              startTime: new Date(), 
+              loading: false 
+            };
+            return [...list];
+          });
+          
+          this.loadTempsParPiece(index, res.session.id);
+          successCount++;
+          
+          // ✅ Sauvegarder après chaque session réussie
+          setTimeout(() => {
+            this.saveCurrentSession();
+          }, 500);
+          
+          setTimeout(() => startNext(index + 1), 300);
+        },
+        error: (err) => {
+          console.error(`Échec démarrage ${ref.reference}:`, err);
+          
+          this.refSessions.update(list => {
+            list[index] = { 
+              ...list[index], 
+              status: 'cancelled', 
+              loading: false 
+            };
+            return [...list];
+          });
+          
+          failCount++;
+          setTimeout(() => startNext(index + 1), 300);
+        }
+      });
+  };
 
-          console.log('=== DEBUG Sessions actives ===');
-          console.log('Sessions reçues:', sessions);
-          sessions.forEach(s => console.log(`  Session #${s.id} | ligne: ${s.ligne} | startedBy:`, (s as any).startedBy));
-          console.log('==============================');
+  startNext(0);
+}
 
-          if (this.isAdmin()) return;
+saveCurrentSession(): void {
+  if (this.isAdmin()) return; // Ne pas sauvegarder pour les admins
+  
+  const currentRefSessions: RefSession[] = this.refSessions();
+  
+  // Ne sauvegarder que si des sessions sont actives ou en pause
+  const hasActive: boolean = currentRefSessions.some((s: RefSession) => 
+    s.status === 'active' || s.status === 'paused'
+  );
+  
+  if (!hasActive) return;
+  
+  const sessionData: SavedSessionData = {
+    ligne: this.selectedLine(),
+    refSessions: currentRefSessions.map((s: RefSession) => ({
+      // Garder les données essentielles
+      planificationId: s.planificationId,
+      reference: s.reference,
+      of: s.of,
+      jour: s.jour,
+      semaine: s.semaine,
+      qtePlanifiee: s.qtePlanifiee,
+      sessionId: s.sessionId,
+      status: s.status,
+      elapsedSeconds: s.elapsedSeconds,
+      productionSeconds: s.productionSeconds,
+      pauseSeconds: s.pauseSeconds,
+      piecesProduites: s.piecesProduites,
+      piecesPerdues: s.piecesPerdues,
+      secondesParPiece: s.secondesParPiece,
+      pauseMCategory: s.pauseMCategory,
+      pauseReason: s.pauseReason,
+      startTime: s.startTime ? s.startTime.toISOString() : null,
+      // Ne pas sauvegarder les données UI
+      showPauseForm: false,
+      availableRefs: [],
+      selectedRefs: [],
+      loadingRefs: false,
+      pauseReasonInput: '',
+      selectedMCategory: null,
+      loading: false
+    })),
+    selectedStartRefIds: this.selectedStartRefIds(),
+    startRefs: this.startRefs(),
+    savedAt: new Date().toISOString()
+  };
+  
+  this.productionService.saveLastSession(sessionData);
+}
 
-          const userSession = this.findUserSession(sessions);
-          if (userSession) {
-            this.activeSession.set(userSession);
-            this.selectedLine.set(userSession.ligne);
-            this.loadSessionStats(userSession.id);
-            this.loadLineInfo(userSession.ligne);
-          } else {
-            this.activeSession.set(null);
-            this.sessionStats.set(null);
-            this.piecesProduced.set(0);
-          }
+  private loadTempsParPiece(idx: number, sessionId: number): void {
+    this.productionService.getRealTimeProduction(sessionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.refSessions.update(list => {
+            const s = list[idx];
+            // ✅ Initialiser les compteurs depuis les vraies valeurs du backend
+            const productionSec = this.parseDurationToSeconds(data.tempsProduction);
+            const pauseSec = this.parseDurationToSeconds(data.tempsPause);
+            const totalSec = productionSec + pauseSec;
+            list[idx] = {
+              ...s,
+              secondesParPiece: data.tempsParPiece || 0,
+              elapsedSeconds: totalSec,
+              productionSeconds: productionSec,
+              pauseSeconds: s.status === 'paused' ? pauseSec : s.pauseSeconds,
+              piecesProduites: data.piecesProduites || 0,
+            };
+            return [...list];
+          });
         },
         error: () => {}
       });
   }
 
-  private findUserSession(sessions: ProductionSession[]): ProductionSession | undefined {
-    let currentUser: any = null;
-    try {
-      const str = localStorage.getItem('current_user');
-      if (str) currentUser = JSON.parse(str);
-    } catch (e) {}
+  // Parse "25m 21s" ou "1h 5m 3s" ou "0s" → secondes
+  parseDurationToSeconds(duration: string): number {
+    if (!duration || duration === '0s') return 0;
+    let total = 0;
+    const h = duration.match(/(\d+)h/);
+    const m = duration.match(/(\d+)m/);
+    const s = duration.match(/(\d+)s/);
+    if (h) total += parseInt(h[1]) * 3600;
+    if (m) total += parseInt(m[1]) * 60;
+    if (s) total += parseInt(s[1]);
+    return total;
+  }
 
-    if (!currentUser) return undefined;
-
-    const matricule = (currentUser.nom || '').toString().trim().toLowerCase();
-    const prenom = (currentUser.prenom || '').toString().trim().toLowerCase();
-    const userId = currentUser.id;
-
-    return sessions.find(s => {
-      const sb = (s as any).startedBy;
-      if (!sb) return false;
-      if (typeof sb === 'string') {
-        const sbLow = sb.toLowerCase();
-        const lastWord = sbLow.split(' ').pop() || '';
-        return lastWord === matricule || sbLow.includes(matricule) || (prenom && sbLow.includes(prenom));
-      }
-      if (typeof sb === 'object') {
-        const sbNom = (sb.nom || '').toString().trim().toLowerCase();
-        const sbPrenom = (sb.prenom || '').toString().trim().toLowerCase();
-        const sbId = sb.id;
-        const sbName = (sb.name || '').toString().toLowerCase();
-        return sbNom === matricule || sbId === userId || sbName.includes(matricule) || (prenom && sbPrenom === prenom);
-      }
-      return false;
+  // ── Chrono local ──────────────────────────────────────────────────────────
+  private startTick(): void {
+    interval(1000).pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.refSessions.update(list =>
+        list.map(s => {
+          if (s.status === 'active') {
+            const u = { ...s, elapsedSeconds: s.elapsedSeconds + 1, productionSeconds: s.productionSeconds + 1 };
+            if (u.secondesParPiece > 0) u.piecesProduites = Math.floor(u.productionSeconds / u.secondesParPiece);
+            return u;
+          }
+          if (s.status === 'paused') {
+            const u = { ...s, elapsedSeconds: s.elapsedSeconds + 1, pauseSeconds: s.pauseSeconds + 1 };
+            if (u.secondesParPiece > 0) u.piecesPerdues = Math.floor(u.pauseSeconds / u.secondesParPiece);
+            return u;
+          }
+          return s;
+        })
+      );
     });
   }
 
-  private updateLinesStatus(sessions: ProductionSession[]): void {
-    const updatedLines = this.lines().map(line => {
-      const session = sessions.find(s => s.ligne === line.ligne);
-      if (session) {
-        return { ...line, status: session.status as 'active' | 'paused' | 'inactive', sessionId: session.id, startedBy: (session as any).startedBy };
-      }
-      return { ...line, status: 'inactive' as 'active' | 'paused' | 'inactive' };
+  // ── Pause ─────────────────────────────────────────────────────────────────
+  openPauseForm(idx: number): void {
+    // ✅ RÈGLE 2 : Une seule ref peut être en pause à la fois
+    const sessions = this.refSessions();
+    const currentRef = sessions[idx];
+    const alreadyPaused = sessions.find(
+      (s, i) => i !== idx && s.status === 'paused' && s.sessionId === currentRef.sessionId
+    );
+    if (alreadyPaused) {
+      this.showAlert('error', `"${alreadyPaused.reference}" est déjà en pause — reprenez-la d'abord`);
+      return;
+    }
+    this.refSessions.update(list => {
+      list[idx] = { ...list[idx], showPauseForm: true, selectedMCategory: null, pauseReasonInput: '', availableRefs: [], selectedRefs: [], loadingRefs: false };
+      return [...list];
     });
-    this.lines.set(updatedLines);
   }
 
+  cancelPauseForm(idx: number): void {
+    this.refSessions.update(list => {
+      list[idx] = { ...list[idx], showPauseForm: false };
+      return [...list];
+    });
+  }
+
+  setMCategory(idx: number, code: string): void {
+    this.refSessions.update(list => {
+      list[idx] = { ...list[idx], selectedMCategory: code, selectedRefs: [], availableRefs: [], loadingRefs: false };
+      return [...list];
+    });
+    // Charger les refs disponibles pour M1/M4/M5
+    if (['M1', 'M4', 'M5'].includes(code)) {
+      const ligne = this.selectedLine()!;
+      this.refSessions.update(list => {
+        list[idx] = { ...list[idx], loadingRefs: true };
+        return [...list];
+      });
+      this.productionService.getAvailableReferences(ligne, code)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (res) => {
+            this.refSessions.update(list => {
+              list[idx] = { ...list[idx], availableRefs: res.references || [], loadingRefs: false };
+              return [...list];
+            });
+          },
+          error: () => {
+            this.refSessions.update(list => {
+              list[idx] = { ...list[idx], availableRefs: [], loadingRefs: false };
+              return [...list];
+            });
+          }
+        });
+    }
+  }
+
+  toggleRef(idx: number, ref: string): void {
+    this.refSessions.update(list => {
+      const cur = list[idx].selectedRefs;
+      list[idx] = { ...list[idx], selectedRefs: cur.includes(ref) ? cur.filter(r => r !== ref) : [...cur, ref] };
+      return [...list];
+    });
+  }
+
+  updatePauseReason(idx: number, val: string): void {
+    this.refSessions.update(list => {
+      list[idx] = { ...list[idx], pauseReasonInput: val };
+      return [...list];
+    });
+  }
+
+  confirmPause(idx: number): void {
+    const s = this.refSessions()[idx];
+    if (!s.sessionId || !s.selectedMCategory) return;
+    // Validation : M1/M4/M5 nécessitent au moins une référence
+    if (['M1', 'M4', 'M5'].includes(s.selectedMCategory) && s.selectedRefs.length === 0) {
+      const labels: Record<string, string> = { M1: 'matières premières', M4: 'phases en panne', M5: 'produits' };
+      this.showAlert('error', `Les références ${labels[s.selectedMCategory]} sont obligatoires pour ${s.selectedMCategory}`);
+      return;
+    }
+    this.refSessions.update(list => { list[idx] = { ...list[idx], loading: true }; return [...list]; });
+
+    const matierePremierRefs = s.selectedMCategory === 'M1' ? s.selectedRefs : undefined;
+    const phasesEnPanne      = s.selectedMCategory === 'M4' ? s.selectedRefs : undefined;
+    const productRefs        = s.selectedMCategory === 'M5' ? s.selectedRefs : undefined;
+
+    this.productionService.pauseProduction(s.sessionId, s.selectedMCategory, undefined, s.pauseReasonInput || undefined, matierePremierRefs, phasesEnPanne, productRefs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.refSessions.update(list => {
+            list[idx] = { ...list[idx], status: 'paused', pauseMCategory: s.selectedMCategory, pauseReason: s.pauseReasonInput || null, pauseSeconds: 0, piecesPerdues: 0, showPauseForm: false, loading: false };
+            return [...list];
+          });
+        },
+        error: (err) => {
+          this.refSessions.update(list => { list[idx] = { ...list[idx], loading: false }; return [...list]; });
+          this.showAlert('error', err.error?.message || 'Erreur pause');
+        }
+      });
+  }
+
+  // ── Reprise ───────────────────────────────────────────────────────────────
+  resumeSession(idx: number): void {
+    const s = this.refSessions()[idx];
+    if (!s.sessionId) return;
+    this.refSessions.update(list => { list[idx] = { ...list[idx], loading: true }; return [...list]; });
+
+    this.productionService.resumeProduction(s.sessionId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.refSessions.update(list => {
+            list[idx] = { ...list[idx], status: 'active', pauseMCategory: null, pauseReason: null, loading: false };
+            return [...list];
+          });
+        },
+        error: (err) => {
+          this.refSessions.update(list => { list[idx] = { ...list[idx], loading: false }; return [...list]; });
+          this.showAlert('error', err.error?.message || 'Erreur reprise');
+        }
+      });
+  }
+
+  // ── Fin session ───────────────────────────────────────────────────────────
+ endSession(idx: number): void {
+  const s = this.refSessions()[idx];
+  if (!s.sessionId) return;
+
+  this.refSessions.update(list =>
+    list.map(r => r.sessionId === s.sessionId ? { ...r, loading: true } : r)
+  );
+
+  this.productionService.endProduction(s.sessionId, undefined, s.piecesProduites)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: () => {
+        this.refSessions.update(list =>
+          list.map(r =>
+            r.sessionId === s.sessionId
+              ? { ...r, status: 'completed' as const, loading: false }
+              : r
+          )
+        );
+        
+        // ✅ Si toutes les sessions sont terminées, nettoyer localStorage
+        if (this.allRefsDone()) {
+          this.productionService.clearLastSession();
+          setTimeout(() => this.loadLines(), 1500);
+        } else {
+          // Sinon, sauvegarder l'état mis à jour
+          this.saveCurrentSession();
+        }
+        
+        this.showAlert('success', 'Session terminée');
+      },
+      error: (err) => {
+        this.refSessions.update(list =>
+          list.map(r => r.sessionId === s.sessionId ? { ...r, loading: false } : r)
+        );
+        this.showAlert('error', err.error?.message || 'Erreur fin');
+      }
+    });
+}
+
+  // ── Retour à la liste ─────────────────────────────────────────────────────
+  returnToLines(): void {
+    this.view.set('lines');
+    this.selectedLine.set(null);
+    this.refSessions.set([]);
+    this.loadLines();
+  }
+
+  // ── Admin ─────────────────────────────────────────────────────────────────
   adminAccessLine(ligne: string): void {
-    if (!this.isAdmin()) return;
-    const session = this.allActiveSessions().find(s => s.ligne === ligne);
-    if (session) {
-      this.activeSession.set(session);
-      this.selectedLine.set(ligne);
-      this.loadSessionStats(session.id);
-      this.loadLineInfo(ligne);
-      this.showAlert('info', `Accès admin à la ligne ${ligne}`);
+    const lineSessions = this.allActiveSessions().filter(s => s.ligne === ligne);
+    if (lineSessions.length === 0) {
+      this.showAlert('error', `Aucune session active sur ${ligne}`);
+      return;
     }
-  }
 
-  private getCurrentUserMatricule(): string | null {
-    try {
-      const currentUserStr = localStorage.getItem('current_user');
-      if (currentUserStr) {
-        const currentUser = JSON.parse(currentUserStr);
-        if (currentUser?.nom) return currentUser.nom;
-      }
-      const token = localStorage.getItem('access_token');
-      if (!token) return null;
-      const payload = token.split('.')[1];
-      if (!payload) return null;
-      const decoded = JSON.parse(atob(payload));
-      return decoded.nom || null;
-    } catch (e) {
-      return null;
-    }
+    // Reconstituer les RefSessions depuis les sessions actives
+    const refSessions: RefSession[] = lineSessions.map(sess => ({
+      planificationId: 0,
+      reference: sess.productType || sess.ligne,
+      of: (sess as any).planifications?.[0]?.of || '—',
+      jour: '',
+      semaine: '',
+      qtePlanifiee: 0,
+      sessionId: sess.id,
+      status: sess.status as any,
+      elapsedSeconds: 0,
+      productionSeconds: 0,
+      pauseSeconds: 0,
+      piecesProduites: 0,
+      piecesPerdues: 0,
+      secondesParPiece: 0,
+      pauseMCategory: (sess as any).currentPause?.mCategory || null,
+      pauseReason: (sess as any).currentPause?.reason || null,
+      showPauseForm: false,
+      selectedMCategory: null,
+      pauseReasonInput: '',
+      loading: false,
+      startTime: sess.startTime ? new Date(sess.startTime) : null,
+      availableRefs: [],
+      selectedRefs: [],
+      loadingRefs: false,
+    }));
+
+    this.refSessions.set(refSessions);
+    this.selectedLine.set(ligne);
+    this.view.set('production');
+
+    // Charger le temps réel pour chaque session
+    lineSessions.forEach((sess, i) => {
+      this.loadTempsParPiece(i, sess.id);
+      this.loadSessionStats(sess.id);
+    });
+
+    this.showAlert('info', `Vue admin — ${ligne} (${lineSessions.length} session(s))`);
   }
 
   loadSessionStats(sessionId: number): void {
     this.productionService.getSessionStats(sessionId)
       .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (stats) => this.sessionStats.set(stats),
-        error: () => {}
-      });
-  }
-
-  loadLineInfo(ligne: string): void {
-    this.productionService.getLine(ligne)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (lineData: any) => {
-          this.activeLineInfo.set({
-            ligne: lineData.ligne,
-            referenceCount: lineData.referenceCount || 0,
-            lastCreated: lineData.lastCreated || '',
-            references: lineData.references || [],
-            seconde: lineData.seconde
-          });
-        },
-        error: () => {
-          this.activeLineInfo.set({ ligne, referenceCount: 0, lastCreated: '', references: [], seconde: 200 });
-        }
-      });
-  }
-
-  loadAvailableReferences(): void {
-    const ligne = this.activeSession()?.ligne;
-    const mCategory = this.selectedMCategory();
-    if (!ligne || !mCategory) return;
-    if (!this.currentCategoryRequiresReferences()) {
-      this.availableReferences.set([]);
-      this.selectedReferences.set([]);
-      return;
-    }
-    this.loadingReferences.set(true);
-    this.productionService.getAvailableReferences(ligne, mCategory)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.availableReferences.set(response.references || []);
-          this.selectedReferences.set([]);
-          this.loadingReferences.set(false);
-        },
-        error: () => {
-          this.showAlert('error', 'Impossible de charger les références');
-          this.loadingReferences.set(false);
-        }
-      });
-  }
-
-  /**
-   * ✅ NOUVEAU - Charger les références planifiées de la ligne (étape 1 du modal)
-   */
-  loadPlannedReferences(): void {
-    const ligne = this.activeSession()?.ligne;
-    if (!ligne) return;
-
-    this.loadingPlannedRefs.set(true);
-    this.plannedReferences.set([]);
-    this.selectedPlanificationIds.set([]);
-
-    this.productionService.getPlannedReferences(ligne)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.plannedReferences.set(response.planifications || []);
-          this.loadingPlannedRefs.set(false);
-        },
-        error: () => {
-          // En cas d'erreur, on continue quand même sans planifications
-          this.plannedReferences.set([]);
-          this.loadingPlannedRefs.set(false);
-        }
-      });
-  }
-
-  onMCategoryChange(): void {
-    this.availableReferences.set([]);
-    this.selectedReferences.set([]);
-    this.loadAvailableReferences();
-  }
-
-  toggleReference(ref: string): void {
-    const current = this.selectedReferences();
-    if (current.includes(ref)) {
-      this.selectedReferences.set(current.filter(r => r !== ref));
-    } else {
-      this.selectedReferences.set([...current, ref]);
-    }
-  }
-
-  /**
-   * ✅ NOUVEAU - Toggle une planification sélectionnée (étape 1)
-   */
-  togglePlanification(id: number): void {
-    const current = this.selectedPlanificationIds();
-    if (current.includes(id)) {
-      this.selectedPlanificationIds.set(current.filter(i => i !== id));
-    } else {
-      this.selectedPlanificationIds.set([...current, id]);
-    }
-  }
-
-  /**
-   * ✅ NOUVEAU - Passer de l'étape 1 à l'étape 2
-   */
-  goToStep2(): void {
-    this.pauseStep.set(2);
-    // Réinitialiser la sélection M
-    this.selectedMCategory.set(null);
-    this.selectedSubCategory.set(null);
-    this.pauseReason.set('');
-    this.availableReferences.set([]);
-    this.selectedReferences.set([]);
-  }
-
-  /**
-   * ✅ NOUVEAU - Revenir à l'étape 1 depuis l'étape 2
-   */
-  goToStep1(): void {
-    this.pauseStep.set(1);
-  }
-
-  // ==================== TIMERS ====================
-
-  startTimers(): void {
-    interval(1000)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        const session = this.activeSession();
-        if (session && session.startTime) {
-          this.sessionElapsedTime.set(this.calculateElapsedTime(session.startTime));
-        } else {
-          this.sessionElapsedTime.set('00:00:00');
-        }
-        if (session?.currentPause?.startTime) {
-          this.pauseElapsedTime.set(this.calculateElapsedTime(session.currentPause.startTime));
-        } else {
-          this.pauseElapsedTime.set('00:00:00');
-        }
-      });
-  }
-
-  startPiecesCounter(): void {
-    interval(2000)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        const session = this.activeSession();
-        if (session && session.id) {
-          this.productionService.getRealTimeProduction(session.id)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-              next: (data) => {
-                this.realTimeData.set(data);
-                this.piecesProduced.set(data.piecesProduites);
-                const stats = this.sessionStats();
-                if (stats) {
-                  let totalLost = 0;
-                  if (stats.pauses && stats.pauses.byCategory) {
-                    Object.values(stats.pauses.byCategory).forEach((category: any) => {
-                      if (category.pauses && Array.isArray(category.pauses)) {
-                        totalLost += category.pauses.filter((p: any) => p.endTime).reduce((sum: number, p: any) => sum + (p.lostPieces || 0), 0);
-                      }
-                    });
-                  }
-                  this.totalLostPieces.set(totalLost + (data.pauseEnCours?.piecesPerdues || 0));
-                }
-              },
-              error: () => this.calculateLocalPieces()
-            });
-        } else {
-          this.piecesProduced.set(0);
-          this.totalLostPieces.set(0);
-        }
-      });
-  }
-
-  private calculateLocalPieces(): void {
-    const session = this.activeSession();
-    const lineInfo = this.activeLineInfo();
-    if (session && session.status === 'active' && session.startTime && lineInfo?.seconde) {
-      const productionTimeSeconds = this.getProductionTimeInSeconds(session);
-      this.piecesProduced.set(Math.floor(productionTimeSeconds / lineInfo.seconde));
-    }
-  }
-
-  private getProductionTimeInSeconds(session: ProductionSession): number {
-    const sessionStart = new Date(session.startTime).getTime();
-    const now = new Date().getTime();
-    const totalElapsed = Math.floor((now - sessionStart) / 1000);
-    let pauseTime = 0;
-    if (session.currentPause?.startTime) {
-      pauseTime = Math.floor((now - new Date(session.currentPause.startTime).getTime()) / 1000);
-    }
-    const stats = this.sessionStats();
-    if (stats?.session.pauseTime) {
-      pauseTime += this.parseTimeToSeconds(stats.session.pauseTime);
-    }
-    return Math.max(0, totalElapsed - pauseTime);
-  }
-
-  private parseTimeToSeconds(timeStr: string): number {
-    const parts = timeStr.split(':').map(p => parseInt(p, 10));
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    return 0;
-  }
-
-  calculateElapsedTime(startTime: string): string {
-    const diff = Math.floor((new Date().getTime() - new Date(startTime).getTime()) / 1000);
-    const h = Math.floor(diff / 3600);
-    const m = Math.floor((diff % 3600) / 60);
-    const s = diff % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }
-
-  // ==================== ACTIONS PRODUCTION ====================
-
-  startSession(): void {
-    const ligne = this.selectedLine();
-    if (!ligne) { this.showAlert('error', 'Veuillez sélectionner une ligne'); return; }
-
-    this.activeSession.set(null);
-    this.sessionStats.set(null);
-    this.piecesProduced.set(0);
-    this.totalLostPieces.set(0);
-
-    this.loading.set(true);
-    this.productionService.startProduction(ligne)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.activeSession.set(response.session);
-          this.piecesProduced.set(0);
-          this.showAlert('success', 'Production démarrée avec succès');
-          this.loading.set(false);
-          if (response.session?.id) {
-            this.loadSessionStats(response.session.id);
-            this.loadLineInfo(ligne);
-          }
-          this.updateLineStatus(ligne, 'active');
-        },
-        error: (error) => {
-          this.showAlert('error', error.error?.message || 'Erreur lors du démarrage');
-          this.loading.set(false);
-        }
-      });
-  }
-
-  /**
-   * ✅ MODIFIÉ - Ouvrir le modal pause en chargeant les planifications (étape 1)
-   */
-  openPauseForm(): void {
-    this.showPauseForm.set(true);
-    this.pauseStep.set(1);
-    this.selectedMCategory.set(null);
-    this.selectedSubCategory.set(null);
-    this.pauseReason.set('');
-    this.availableReferences.set([]);
-    this.selectedReferences.set([]);
-    this.selectedPlanificationIds.set([]);
-    // Charger les planifications de la ligne
-    this.loadPlannedReferences();
-  }
-
-  /**
-   * ✅ MODIFIÉ - Soumettre la pause avec planificationIds
-   */
-  pauseSession(): void {
-    const session = this.activeSession();
-    const mCategory = this.selectedMCategory();
-
-    if (!session || !mCategory) {
-      this.showAlert('error', 'Veuillez sélectionner une catégorie M');
-      return;
-    }
-
-    if (this.currentCategoryRequiresReferences() && this.selectedReferences().length === 0) {
-      this.showAlert('error', `Veuillez sélectionner au moins une référence pour ${mCategory}`);
-      return;
-    }
-
-    this.loading.set(true);
-
-    let matierePremierRefs: string[] | undefined;
-    let phasesEnPanne: string[] | undefined;
-    let productRefs: string[] | undefined;
-
-    if (mCategory === 'M1') matierePremierRefs = this.selectedReferences();
-    else if (mCategory === 'M4') phasesEnPanne = this.selectedReferences();
-    else if (mCategory === 'M5') productRefs = this.selectedReferences();
-
-    // ✅ Récupérer les planificationIds sélectionnés à l'étape 1
-    const planificationIds = this.selectedPlanificationIds().length > 0
-      ? this.selectedPlanificationIds()
-      : undefined;
-
-    this.productionService.pauseProduction(
-      session.id,
-      mCategory,
-      this.selectedSubCategory() || undefined,
-      this.pauseReason() || undefined,
-      matierePremierRefs,
-      phasesEnPanne,
-      productRefs,
-      planificationIds  // ✅ NOUVEAU
-    )
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.activeSession.set(response.session);
-          this.showAlert('success', `Production en pause (${mCategory})`);
-          this.showPauseForm.set(false);
-          this.loading.set(false);
-          if (session.id) this.loadSessionStats(session.id);
-          this.updateLineStatus(session.ligne, 'paused');
-        },
-        error: (error) => {
-          this.showAlert('error', error.error?.message || 'Erreur lors de la pause');
-          this.loading.set(false);
-        }
-      });
-  }
-
-  openResumeForm(): void {
-    this.showResumeForm.set(true);
-    this.resumeActionTaken.set('');
-  }
-
-  resumeSession(): void {
-    const session = this.activeSession();
-    if (!session) return;
-    this.loading.set(true);
-    this.productionService.resumeProduction(session.id, this.resumeActionTaken() || undefined)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (response) => {
-          this.activeSession.set(response.session);
-          this.showAlert('success', 'Production reprise avec succès');
-          this.showResumeForm.set(false);
-          this.loading.set(false);
-          if (session.id) this.loadSessionStats(session.id);
-          this.updateLineStatus(session.ligne, 'active');
-        },
-        error: (error) => {
-          this.showAlert('error', error.error?.message || 'Erreur lors de la reprise');
-          this.loading.set(false);
-        }
-      });
-  }
-
-  openEndForm(): void {
-    this.showEndForm.set(true);
-    this.endNotes.set('');
-    this.quantityProduced.set(null);
-    this.qualityStatus.set('good');
-  }
-
-  endSession(): void {
-    const session = this.activeSession();
-    if (!session) return;
-    this.loading.set(true);
-    this.productionService.endProduction(session.id, this.endNotes() || undefined, this.quantityProduced() || undefined, this.qualityStatus())
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          const ligne = session.ligne;
-          this.activeSession.set(null);
-          this.sessionStats.set(null);
-          this.selectedLine.set(null);
-          this.piecesProduced.set(0);
-          this.showAlert('success', 'Production terminée avec succès');
-          this.showEndForm.set(false);
-          this.loading.set(false);
-          this.updateLineStatus(ligne, 'inactive');
-          this.loadLines();
-        },
-        error: (error) => {
-          this.showAlert('error', error.error?.message || 'Erreur lors de la fin');
-          this.loading.set(false);
-        }
-      });
-  }
-
-  cancelSession(): void {
-    const session = this.activeSession();
-    if (!session) return;
-    if (!confirm('Êtes-vous sûr de vouloir annuler cette session ?')) return;
-
-    this.loading.set(true);
-    this.productionService.cancelSession(session.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          const ligne = session.ligne;
-          this.activeSession.set(null);
-          this.sessionStats.set(null);
-          this.selectedLine.set(null);
-          this.piecesProduced.set(0);
-          this.showAlert('info', 'Session annulée');
-          this.loading.set(false);
-          this.updateLineStatus(ligne, 'inactive');
-        },
-        error: (error) => {
-          this.showAlert('error', error.error?.message || 'Erreur lors de l\'annulation');
-          this.loading.set(false);
-        }
-      });
-  }
-
-  private updateLineStatus(ligne: string, status: 'active' | 'paused' | 'inactive'): void {
-    this.lines.set(this.lines().map(line => line.ligne === ligne ? { ...line, status } : line));
+      .subscribe({ next: (s) => this.sessionStats.set(s), error: () => {} });
   }
 
   viewPauseHistory(): void {
     const stats = this.sessionStats();
-    if (stats && stats.pauses && stats.pauses.byCategory) {
-      let allPauses: any[] = [];
-      Object.keys(stats.pauses.byCategory).forEach(categoryKey => {
-        const category = stats.pauses.byCategory[categoryKey];
-        if (category.pauses && Array.isArray(category.pauses)) {
-          allPauses = [...allPauses, ...category.pauses];
-        }
+    let allPauses: any[] = [];
+    if (stats?.pauses?.byCategory) {
+      Object.values(stats.pauses.byCategory).forEach((cat: any) => {
+        if (Array.isArray(cat.pauses)) allPauses = [...allPauses, ...cat.pauses];
       });
       allPauses.sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-      this.router.navigate(['/pause-history'], { state: { allPauses, sessionInfo: stats.session, totalLostPieces: this.totalLostPieces() } });
-    } else {
-      this.router.navigate(['/pause-history'], { state: { allPauses: [], sessionInfo: stats?.session || null, totalLostPieces: this.totalLostPieces() } });
     }
+    this.router.navigate(['/pause-history'], { state: { allPauses, sessionInfo: stats?.session || null, totalLostPieces: this.totalLostPieces() } });
   }
 
-  // ==================== HELPERS ====================
-
-  showAlert(type: 'success' | 'error' | 'info', text: string): void {
-    this.alertMessage.set({ type, text });
-    setTimeout(() => this.alertMessage.set(null), 5000);
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  formatDuration(seconds: number): string {
+    if (!seconds || seconds <= 0) return '00:00:00';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
-
-  closeAlert(): void { this.alertMessage.set(null); }
-  closePauseForm(): void { this.showPauseForm.set(false); }
-  closeResumeForm(): void { this.showResumeForm.set(false); }
-  closeEndForm(): void { this.showEndForm.set(false); }
 
   getMCategoryIcon(code: string): string {
-    const icons: { [key: string]: string } = { 'M1': '📦', 'M2': '👷', 'M3': '📋', 'M4': '🔧', 'M5': '✅', 'M6': '🌿' };
+    const icons: Record<string, string> = { M1: '📦', M2: '👷', M3: '📋', M4: '🔧', M5: '✅', M6: '🌿' };
     return icons[code] || '⚙️';
-  }
-
-  getStatusColor(status: string): string {
-    const colors: { [key: string]: string } = { 'active': 'bg-green-500 text-white', 'paused': 'bg-orange-500 text-white', 'completed': 'bg-blue-500 text-white', 'cancelled': 'bg-gray-500 text-white' };
-    return colors[status] || 'bg-gray-500 text-white';
-  }
-
-  getStatusLabel(status: string): string {
-    const labels: { [key: string]: string } = { 'active': 'En cours', 'paused': 'En pause', 'completed': 'Terminée', 'cancelled': 'Annulée' };
-    return labels[status] || status;
   }
 
   getSessionForLine(ligne: string): ProductionSession | undefined {
     return this.allActiveSessions().find(s => s.ligne === ligne);
   }
 
-  selectLine(ligne: string, status: string): void {
-    if (status === 'inactive') {
-      if (!this.isAdmin()) this.selectedLine.set(ligne);
-      return;
-    }
-    if (status === 'active' || status === 'paused') {
-      if (this.isAdmin()) {
-        this.adminAccessLine(ligne);
-      } else {
-        const currentMatricule = this.getCurrentUserMatricule();
-        const session = this.getSessionForLine(ligne);
-        if (session && (session as any).startedBy?.includes(currentMatricule)) {
-          this.activeSession.set(session);
-          this.selectedLine.set(ligne);
-          this.loadSessionStats(session.id);
-          this.loadLineInfo(ligne);
-        } else {
-          this.showAlert('error', 'Cette ligne est déjà prise en charge par un autre opérateur');
-        }
-      }
-    }
+  /** ✅ Retourne true si une autre ref de la même session est déjà en pause */
+  hasOtherPausedRef(idx: number): boolean {
+    const sessions = this.refSessions();
+    const current = sessions[idx];
+    return sessions.some(
+      (s, i) => i !== idx && s.status === 'paused' && s.sessionId === current.sessionId
+    );
   }
 
-  navigateToAdmin(): void {
-    this.router.navigate(['/admin-dashboard']);
+  showAlert(type: 'success' | 'error' | 'info', text: string): void {
+    this.alertMessage.set({ type, text });
+    setTimeout(() => this.alertMessage.set(null), 5000);
   }
+
+  navigateToAdmin(): void { this.router.navigate(['/admin-dashboard']); }
 }

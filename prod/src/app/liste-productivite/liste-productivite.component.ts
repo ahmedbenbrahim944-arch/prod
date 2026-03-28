@@ -651,7 +651,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
       } else {
         // Sinon, défiler vers le bas (hauteur d'une ligne environ)
         tableauContainer.scrollTo({
-          top: currentScroll + 40, // 40px approximativement la hauteur d'une ligne
+          top: currentScroll + 80, // 40px approximativement la hauteur d'une ligne
           behavior: 'smooth'
         });
       }
@@ -671,7 +671,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     
     this.scrollTimeout = setTimeout(() => {
       this.isUserInteracting = false;
-    }, 10000); // 10 secondes d'inactivité
+    }, 30); // 10 secondes d'inactivité
   }
   
   // ============================================

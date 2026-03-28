@@ -45,6 +45,37 @@
        ══════════════════════════════════════════════════════════ -->
   <div *ngIf="!selectedLigneForView" class="p-4 md:p-6">
 
+     <div *ngIf="getTotalLinesWithMissingOf() > 0" 
+       class="mb-6 p-4 rounded-xl border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-orange-50 shadow-sm">
+    <div class="flex items-start gap-3">
+      <div class="flex-shrink-0">
+        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-bold text-red-800 text-lg">⚠️ Alertes OF manquants</h3>
+        <p class="text-red-700 mt-1">
+          {{ getTotalLinesWithMissingOf() }} ligne(s) ont des références avec une quantité planifiée sans OF renseigné.
+        </p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <span *ngFor="let line of getLinesWithMissingOf()" 
+                class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+            <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+            {{ line.ligne }} ({{ line.missingOfCount }} référence(s))
+          </span>
+        </div>
+      </div>
+      <button (click)="clearAllLineAlerts()" 
+              class="text-red-500 hover:text-red-700 flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
     <!-- ✅ Sélecteur de semaine AU-DESSUS des cartes -->
     <div class="flex justify-center mb-5">
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3
@@ -105,6 +136,24 @@
                     transition-transform duration-500 group-hover:scale-110"
              (error)="$any($event.target).src='assets/images/default-line.jpg'"/>
 
+         <!-- Badge d'alerte rouge si OF manquants -->
+<div *ngIf="line.hasMissingOf" 
+     class="absolute top-2 left-2 z-20 px-2 py-1 rounded-lg text-xs font-bold text-white shadow-lg flex items-center gap-1"
+     style="background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);">
+  <svg class="w-3 h-3 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+  </svg>
+  <!-- ✅ Ajouter ?? 0 pour gérer le cas undefined -->
+  {{ (line.missingOfCount ?? 0) }} OF manquant{{ (line.missingOfCount ?? 0) > 1 ? 's' : '' }}
+</div>
+
+<!-- Message d'alerte détaillé en bas -->
+<div *ngIf="line.hasMissingOf" 
+     class="mt-1 text-xs text-red-300 font-medium bg-black/50 px-1.5 py-0.5 rounded inline-block">
+  ⚠️ {{ (line.missingOfCount ?? 0) }} OF à compléter
+</div>
+
         <!-- Gradient overlay permanent bas -->
         <div class="absolute inset-0"
              style="background: linear-gradient(to top,
@@ -118,6 +167,10 @@
           <div class="text-xs mt-0.5 font-medium drop-shadow" style="color:#57E809;">
             {{ line.referenceCount }} références
           </div>
+           <div *ngIf="line.hasMissingOf" 
+             class="mt-1 text-xs text-red-300 font-medium bg-black/50 px-1.5 py-0.5 rounded inline-block">
+          ⚠️ {{ line.missingOfCount }} OF à compléter
+        </div>
         </div>
 
         <!-- Badge ACTIVE haut droite -->
@@ -151,6 +204,29 @@
     <!-- Barre info ligne + semaine (avec possibilité de changer) -->
     <div style="background:#fff; border-bottom:1px solid #e2e8f0;"
          class="px-6 py-3 flex flex-wrap items-center gap-4">
+
+         <div *ngIf="getMissingOfCount() > 0" 
+       class="mx-6 mt-4 mb-2 p-3 rounded-lg border-l-4 border-red-500 bg-red-50 text-red-700">
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+      </svg>
+      <div class="flex-1">
+        <span class="font-bold">⚠️ Attention :</span>
+        <span class="ml-1">{{ getMissingOfCount() }} référence(s) ont une quantité planifiée sans OF renseigné.</span>
+        <div class="text-xs mt-1 text-red-600">
+          Cliquez sur les cellules <span class="font-mono bg-red-100 px-1 rounded">OF</span> en surbrillance pour les compléter.
+        </div>
+      </div>
+      <button (click)="clearAllOfWarnings()" 
+              class="text-red-500 hover:text-red-700 flex-shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
 
       <!-- Miniature + nom ligne -->
       <div class="flex items-center gap-3">
@@ -205,6 +281,24 @@
           <span class="text-gray-400 italic">Cliquez sur une cellule pour modifier</span>
         </div>
 
+        <div *ngIf="ofMissingError" 
+       class="mx-6 mt-3 mb-2 p-3 rounded-lg border border-red-300 bg-red-50 text-red-700 text-sm font-medium flex items-start gap-2 animate-pulse"
+       style="border-left: 4px solid #dc2626;">
+    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+    </svg>
+    <div class="flex-1">
+      <span class="font-bold">Attention :</span> {{ ofMissingError }}
+    </div>
+    <button (click)="clearOfMissingError()" 
+            class="text-red-500 hover:text-red-700 flex-shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
         <!-- Table pleine largeur -->
         <table class="w-full border-collapse" style="min-width:900px;">
           <thead>
@@ -230,6 +324,10 @@
                   style="background:#eff6ff; color:#1d4ed8; min-width:90px;">
                 TOTAL
               </th>
+              <th class="px-2 py-2 text-center font-semibold border border-gray-200"
+                  style="background:#fefce8; color:#92400e; min-width:110px; max-width:130px; font-size:11px;">
+                NOTE
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -250,6 +348,7 @@
               <td class="px-4 py-2 text-center font-bold text-blue-900 border border-gray-200">
                 {{ getTotalCForLigne(ligneEntry) | number }}
               </td>
+              <td class="px-2 py-2 border border-gray-200" style="background:#fefce8; min-width:110px; max-width:130px;"></td>
             </tr>
 
             <!-- Références -->
@@ -272,34 +371,51 @@
                 </td>
 
                 <!-- OF inline éditable - BLEU -->
-                <td class="px-2 py-1.5 text-center border border-gray-200 cursor-pointer"
-                    (click)="startEditOf(ref)" title="Cliquer pour modifier l'OF">
-
-                  <ng-container *ngIf="isEditingOf(ref)">
-                    <input type="text" [(ngModel)]="editOfValue"
-                      (blur)="saveOf(ref)" (keyup.enter)="saveOf(ref)" (keyup.escape)="cancelEdit()"
-                      class="w-24 text-center rounded px-1 py-0.5 text-xs font-bold focus:outline-none"
-                      style="border:2px solid #3b82f6; color:#1d4ed8;"
-                      autofocus/>
-                  </ng-container>
-
-                  <ng-container *ngIf="!isEditingOf(ref)">
-                    <svg *ngIf="savingOfKey === ref.reference + '|' + ref.ligne"
-                         class="animate-spin h-4 w-4 mx-auto" style="color:#3b82f6;"
-                         fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    <ng-container *ngIf="savingOfKey !== ref.reference + '|' + ref.ligne">
-                      <!-- ✅ Valeur OF en BLEU -->
-                      <span *ngIf="getOfForRef(ref)"
-                            class="text-sm font-bold" style="color:#1d4ed8;">
-                        {{ getOfForRef(ref) }}
-                      </span>
-                      <span *ngIf="!getOfForRef(ref)" class="text-gray-300 text-xs">—</span>
-                    </ng-container>
-                  </ng-container>
-                </td>
+    <!-- OF inline éditable - avec surbrillance si warning -->
+<td class="px-2 py-1.5 text-center border border-gray-200 cursor-pointer transition-all duration-200"
+    (click)="clearOfWarning(ref); startEditOf(ref)" 
+    [class.bg-red-50]="hasOfWarning(ref)"
+    [class.border-red-400]="hasOfWarning(ref)"
+    [class.relative]="hasOfWarning(ref)"
+    title="{{ hasOfWarning(ref) ? '⚠️ OF manquant - Cliquer pour ajouter' : 'Cliquer pour modifier l'OF' }}">
+  
+  <!-- Indicateur d'alerte (point rouge) -->
+  <div *ngIf="hasOfWarning(ref)" class="absolute -top-1 -right-1">
+    <span class="relative flex h-3 w-3">
+      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+    </span>
+  </div>
+  
+  <ng-container *ngIf="isEditingOf(ref)">
+    <input type="text" [(ngModel)]="editOfValue"
+      (blur)="saveOf(ref)" (keyup.enter)="saveOf(ref)" (keyup.escape)="cancelEdit()"
+      class="w-24 text-center rounded px-1 py-0.5 text-xs font-bold focus:outline-none"
+      style="border:2px solid #3b82f6; color:#1d4ed8;"
+      autofocus/>
+  </ng-container>
+  
+  <ng-container *ngIf="!isEditingOf(ref)">
+    <svg *ngIf="savingOfKey === ref.reference + '|' + ref.ligne"
+         class="animate-spin h-4 w-4 mx-auto" style="color:#3b82f6;"
+         fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    <ng-container *ngIf="savingOfKey !== ref.reference + '|' + ref.ligne">
+      <span *ngIf="getOfForRef(ref)"
+            class="text-sm font-bold" style="color:#1d4ed8;">
+        {{ getOfForRef(ref) }}
+      </span>
+      <span *ngIf="!getOfForRef(ref)" 
+            [class.text-red-500]="hasOfWarning(ref)"
+            [class.font-bold]="hasOfWarning(ref)"
+            class="text-gray-300 text-xs">
+        {{ hasOfWarning(ref) ? '⚠️ MANQUANT' : '—' }}
+      </span>
+    </ng-container>
+  </ng-container>
+</td>
 
                 <!-- Cellules C par jour -->
                 <td *ngFor="let day of weekDays"
@@ -335,6 +451,50 @@
                     style="background:#eff6ff; color:#1d4ed8;">
                   <span *ngIf="getTotalCForRef(ref) > 0">{{ getTotalCForRef(ref) | number }}</span>
                   <span *ngIf="getTotalCForRef(ref) === 0" class="font-normal text-gray-300">—</span>
+                </td>
+
+                <!-- NOTE REF -->
+                <td class="px-1.5 py-1 border border-amber-200/60 align-middle"
+                    style="background:#fefce8; min-width:110px; max-width:130px; vertical-align:middle;">
+
+                  <!-- Mode lecture : clic pour éditer -->
+                  <div *ngIf="!isEditingNote(ref)" (click)="startEditNote(ref)"
+                       class="cursor-pointer min-h-[28px] flex items-start pt-1"
+                       title="Cliquer pour modifier la note">
+                    <span *ngIf="ref.note"
+                          class="text-amber-900 leading-snug break-words whitespace-pre-wrap font-medium"
+                          style="font-size:11px;">
+                      {{ ref.note }}
+                    </span>
+                    <span *ngIf="!ref.note"
+                          class="text-amber-300 italic"
+                          style="font-size:10px;">
+                      Ajouter une note…
+                    </span>
+                  </div>
+
+                  <!-- Mode édition -->
+                  <div *ngIf="isEditingNote(ref)">
+                    <textarea
+                      [(ngModel)]="editNoteValue"
+                      (blur)="saveNote(ref)"
+                      (keyup.escape)="cancelEdit()"
+                      rows="2"
+                      placeholder="Note..."
+                      class="w-full rounded px-1.5 py-0.5 focus:outline-none resize-none"
+                      style="font-size:11px; border:1.5px solid #f59e0b; background:#fffbeb; color:#78350f;"
+                      autofocus>
+                    </textarea>
+                    <div class="flex gap-1 mt-1">
+                      <button (click)="saveNote(ref)"
+                        class="px-1.5 py-0.5 font-bold text-white rounded"
+                        style="font-size:10px; background:#f59e0b;">✓</button>
+                      <button (click)="cancelEdit()"
+                        class="px-1.5 py-0.5 font-bold text-gray-500 bg-gray-100 rounded"
+                        style="font-size:10px;">✕</button>
+                    </div>
+                  </div>
+
                 </td>
 
               </tr>

@@ -1,99 +1,91 @@
-<div class="tv-wrapper">
+<!-- landing-page.component.html -->
+<div class="page-container">
+  <div class="content-card">
 
-  <!-- Decorative background elements -->
-  <div class="bg-orb bg-orb--1"></div>
-  <div class="bg-orb bg-orb--2"></div>
-  <div class="bg-grid"></div>
-
-  <!-- Header: Logo top-left -->
-  <header class="header">
-    
-    <div class="header-line"></div>
-  </header>
-
-  <!-- Main content -->
-  <main class="content">
-
-    <!-- Subject line -->
-    <div class="subject-badge">
-      <span class="subject-label">الموضوع</span>
-      <span class="subject-text">التزام مشترك من أجل نمو شركتنا</span>
+    <!-- En-tête -->
+    <div class="welcome-section">
+      <div class="greeting-icon">📋</div>
+      <h1 class="greeting-title">Seraf Tunisie</h1>
+      <div class="greeting-subtitle">Service des Ressources Humaines</div>
     </div>
 
-    <!-- Greeting -->
-    <p class="greeting">فريقنا العزيز، زملائي الكرام،</p>
-
-    <!-- Intro paragraph -->
-    <p class="paragraph">
-      أكتب إليكم اليوم ليس فقط بصفتي مديركم، بل كشخص يرى يوميًا الالتزام والشغف الذي تبذلونه في عملكم.
-      إذا أصبحت شركتنا هنا في تونس، فذلك بفضل موهبتكم وتفانيكم في العمل.
-    </p>
-
-    <!-- Context paragraph -->
-    <p class="paragraph">
-      نمر حاليًا بمرحلة مليئة بفرص استثنائية. لقد ارتفع الطلب على منتجاتنا بشكل كبير، ولدينا فرصة لتعزيز
-      مكانتنا في السوق الدولية. ولمواجهة هذا التحدي وضمان مستقبل "عائلتنا" المهنية، قررنا اعتماد نظام
-      العمل بنظام الحصتين لفترة محدودة.
-    </p>
-
-    <!-- Why section title -->
-    <h2 class="section-title">لماذا تُعدّ هذه الخطوة أساسية؟</h2>
-
-    <!-- Key points -->
-    <ul class="points-list">
-      <li class="point-item">
-        <span class="point-icon">✦</span>
-        <div>
-          <strong class="point-title">الموثوقية</strong>
-          <span class="point-text"> — سنُظهر لشركائنا أننا قادرون على زيادة الإنتاج دون المساس بالجودة</span>
-        </div>
-      </li>
-      <li class="point-item">
-        <span class="point-icon">✦</span>
-        <div>
-          <strong class="point-title">الاستثمار</strong>
-          <span class="point-text"> — سيشجع ذلك المساهمين على بذل جهد إضافي للاستثمار في تقنيات جديدة وتحسين البنية التحتية لموقعنا الإنتاجي</span>
-        </div>
-      </li>
-      <li class="point-item">
-        <span class="point-icon">✦</span>
-        <div>
-          <strong class="point-title">التقدير</strong>
-          <span class="point-text"> — ندرك أننا نطلب منكم تضحية من حيث الوقت والمرونة، ولذلك وضعنا نظام مكافآت مرتبط بتحقيق الأهداف</span>
-        </div>
-      </li>
-      <li class="point-item">
-        <span class="point-icon">✦</span>
-        <div>
-          <strong class="point-title">تعزيز خدمات النقل</strong>
-          <span class="point-text"> لضمان عودتكم إلى منازلكم بأمان تام</span>
-        </div>
-      </li>
-    </ul>
-
-    <!-- Unity message -->
-    <div class="unity-banner">
-      <span class="unity-heart">❤</span>
-      <span class="unity-text">قوّتنا في وحدتنا</span>
+    <!-- Message principal en arabe -->
+    <div class="message-block" dir="rtl">
+      <p class="message-title">الموظفون المكلّفون بالعمل يوم السبت 28/03/2026 هم كما يلي</p>
+      <p class="message-note">يرجى ملاحظة أنه إذا استمرت نسبة الغياب في الارتفاع خلال الأسبوع، فسيتم العمل أيام السبت لتعويض نقص الإنتاجية</p>
     </div>
 
-    <!-- Closing paragraphs -->
-    <p class="paragraph">
-      أتفهم أن تغيير الوتيرة اليومية يتطلب جهدًا، لكنني على يقين بأننا سنتجاوز هذه المرحلة بنجاح.
-      تونس بحاجة إلى شركات قوية وعمال فخورين بعملهم، ونحن نمثل الاثنين معًا.
-    </p>
-
-    <p class="paragraph closing">
-      الإدارة على أتم الاستعداد لمناقشة جميع التفاصيل اللوجستية والاستماع إلى احتياجاتكم. لنبن مستقبلنا معًا.
-    </p>
-
-    <!-- Signature -->
-    <div class="signature">
-      <p class="sign-regards">مع خالص تقديري وامتناني</p>
-      <p class="sign-name">ماركو كارتا</p>
-      <p class="sign-title">المدير العام</p>
+    <!-- Tableau des employés -->
+    <div class="table-wrapper">
+      <table class="employees-table">
+        <thead>
+          <tr>
+            <th>Mat</th>
+            <th>NOM</th>
+            <th>PRÉNOM</th>
+            <th>F.</th>
+            <th>S.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1 305</td>
+            <td>HAMROUNI</td>
+            <td>Najet</td>
+            <td>OUV</td>
+            <td>PRD</td>
+          </tr>
+          <tr>
+            <td>1 319</td>
+            <td>AYARI</td>
+            <td>Soumaya</td>
+            <td>OUV</td>
+            <td>PRD</td>
+          </tr>
+          <tr>
+            <td>1 349</td>
+            <td>MTIR</td>
+            <td>Taheni</td>
+            <td>OUV</td>
+            <td>PRD</td>
+          </tr>
+          <tr>
+            <td>1 357</td>
+            <td>MARIEM</td>
+            <td>MEJRI</td>
+            <td>OUV</td>
+            <td>PRD</td>
+          </tr>
+          <tr>
+            <td>1 358</td>
+            <td>JIHEN</td>
+            <td>JABALLAH</td>
+            <td>OUV</td>
+            <td>PRD</td>
+          </tr>
+          <tr>
+            <td>1 359</td>
+            <td>NAFFETI</td>
+            <td>Asma</td>
+            <td>OUV</td>
+            <td>PRD</td>
+          </tr>
+          <tr class="highlight-row">
+            <td>1 407</td>
+            <td>BEN ZAIED</td>
+            <td>Samar</td>
+            <td>C.QLT</td>
+            <td>QLT</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-  </main>
+    <!-- Pied de page -->
+    <div class="footer-note">
+      <p class="footer-text"> Ressources Humaines</p>
+      <p class="footer-sub"></p>
+    </div>
 
+  </div>
 </div>

@@ -69,6 +69,7 @@ interface DayEntry {
 interface ReferenceProduction {
   reference: string;
   ligne?: string;
+  note?: string;  // NOTE par référence (lecture seule dans prod2)
   [key: string]: string | DayEntry | undefined;
   lundi?: DayEntry;
   mardi?: DayEntry;
@@ -751,9 +752,15 @@ onLigneSelected(line: ProductionLine): void {
         });
         
         const ofByReference = new Map<string, string>();
+        // NOUVEAU : Map pour stocker la note par référence
+        const noteByReference = new Map<string, string>();
         planificationsLigne.forEach((plan: any) => {
           if (plan.of && !ofByReference.has(plan.reference)) {
             ofByReference.set(plan.reference, plan.of);
+          }
+          // Récupérer la note (une seule par référence)
+          if (plan.note != null && plan.note !== '' && !noteByReference.has(plan.reference)) {
+            noteByReference.set(plan.reference, plan.note);
           }
         });
         
@@ -778,6 +785,8 @@ onLigneSelected(line: ProductionLine): void {
         
         refsMap.forEach((refObj) => {
           const ofForThisRef = ofByReference.get(refObj.reference) || '';
+          // NOUVEAU : Affecter la note
+          refObj.note = noteByReference.get(refObj.reference) || '';
           this.weekDays.forEach(day => {
             if (!refObj[day]) {
               refObj[day] = {
@@ -2506,22 +2515,24 @@ saveCauses(): void {
     }
   }
 
-  // ========== ABSENCE AVEC MATRICULES ==========
+  // ========== ABSENCE AVEC MATRICULES (OBLIGATOIRE) ==========
   if (causes.m2Absence > 0) {
-    dto.absence = causes.m2Absence;
-    const matriculesAbsenceString = this.getMatriculesAbsenceString();
-    if (matriculesAbsenceString) {
-      dto.matriculesAbsence = matriculesAbsenceString;
+    if (this.selectedMatriculesAbsence().length === 0) {
+      alert('Au moins 1 matricule est obligatoire pour la cause Absence');
+      return;
     }
+    dto.absence = causes.m2Absence;
+    dto.matriculesAbsence = this.getMatriculesAbsenceString();
   }
 
-  // ========== RENDEMENT AVEC MATRICULES ==========
+  // ========== RENDEMENT AVEC MATRICULES (OBLIGATOIRE) ==========
   if (causes.m2Rendement > 0) {
-    dto.rendement = causes.m2Rendement;
-    const matriculesRendementString = this.getMatriculesRendementString();
-    if (matriculesRendementString) {
-      dto.matriculesRendement = matriculesRendementString;
+    if (this.selectedMatriculesRendement().length === 0) {
+      alert('Au moins 1 matricule est obligatoire pour la cause Rendement');
+      return;
     }
+    dto.rendement = causes.m2Rendement;
+    dto.matriculesRendement = this.getMatriculesRendementString();
   }
 
   // ========== MÉTHODE ==========
@@ -2529,13 +2540,14 @@ saveCauses(): void {
     dto.methode = causes.m3Methode;
   }
 
-  // ========== MAINTENANCE AVEC PHASES ==========
+  // ========== MAINTENANCE AVEC PHASES (OBLIGATOIRE) ==========
   if (causes.m4Maintenance > 0) {
-    dto.maintenance = causes.m4Maintenance;
-    const phasesString = this.getPhasesMaintenanceString();
-    if (phasesString) {
-      dto.phasesMaintenance = phasesString;
+    if (this.selectedPhasesMaintenance().length === 0) {
+      alert('Au moins 1 phase est obligatoire pour la cause Maintenance');
+      return;
     }
+    dto.maintenance = causes.m4Maintenance;
+    dto.phasesMaintenance = this.getPhasesMaintenanceString();
   }
 
   // ========== QUALITÉ AVEC RÉFÉRENCES ET COMMENTAIRE ==========
@@ -2661,17 +2673,24 @@ saveCauses(): void {
     }
   });
 }
-// Fonction pour vérifier si on peut sauvegarder
+// Fonction pour vérifier si on peut sauvegarder (écart + champs obligatoires)
 canSaveCauses(): boolean {
-  const totalCauses = this.getTotalCauses();
-  const ecartCDP = this.getEcartCDP();
-  
-  // Si tout est à 0, on peut sauvegarder (pour supprimer)
-  if (totalCauses === 0) return true;
-  
-  // Sinon, vérifier que les causes correspondent à l'écart
-  const difference = Math.abs(totalCauses - ecartCDP);
-  return difference <= 1; // tolérance de 1
+  const causes = this.currentCauses();
+
+  // Absence → au moins 1 matricule requis
+  if (causes.m2Absence > 0 && this.selectedMatriculesAbsence().length === 0) {
+    return false;
+  }
+  // Rendement → au moins 1 matricule requis
+  if (causes.m2Rendement > 0 && this.selectedMatriculesRendement().length === 0) {
+    return false;
+  }
+  // Maintenance → au moins 1 phase requise
+  if (causes.m4Maintenance > 0 && this.selectedPhasesMaintenance().length === 0) {
+    return false;
+  }
+
+  return true;
 }
 
   getSelectedC(): number {
@@ -4020,7 +4039,22 @@ closeRendementSuggestions(): void {
   }, 200);
 }
 
+  // ══ NOTES — bandeau rouge ══════════════════════════════════════════
+  /**
+   * Retourne la liste des références qui ont une note non vide,
+   * utilisée pour afficher le bandeau rouge en haut du tableau.
+   */
+  getReferencesWithNotes(): { reference: string; note: string }[] {
+    const planif = this.weekPlanification();
+    if (!planif) return [];
 
-
+    const result: { reference: string; note: string }[] = [];
+    planif.references.forEach(ref => {
+      if (ref.note && ref.note.trim() !== '') {
+        result.push({ reference: ref.reference, note: ref.note.trim() });
+      }
+    });
+    return result;
+  }
 
 }

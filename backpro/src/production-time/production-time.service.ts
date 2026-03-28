@@ -137,62 +137,63 @@ export class ProductionTimeService {
    * Démarrer une nouvelle session de production
    */
   async startProduction(startDto: StartProductionDto, user: User) {
-    try {
-      // Vérifier si la ligne existe
-      const products = await this.productRepo.find({
-        where: { ligne: startDto.ligne },
-        take: 1
-      });
+  try {
+    // ✅ MODIFIÉ : Supprimer la vérification de conflit pour permettre plusieurs sessions
+    // La ligne peut avoir plusieurs sessions actives si elles ont des planifications différentes
+    
+    // Option 1 : Supprimer complètement la vérification
+    // Option 2 : Vérifier seulement si la même planification est déjà en cours (plus précis)
 
-      if (products.length === 0) {
-        throw new NotFoundException(`Ligne "${startDto.ligne}" introuvable`);
-      }
+    // Créer nouvelle session
+    const session = this.productionSessionRepo.create({
+      ligne: startDto.ligne,
+      ligneId: startDto.ligne,
+      startedBy: user,
+      userName: `${user.prenom} ${user.nom}`.trim(),
+      productType: startDto.productType,
+      notes: startDto.notes,
+      status: 'active'
+    });
 
-      // Vérifier si une session est déjà active pour cette ligne
-      const activeSession = await this.productionSessionRepo.findOne({
-        where: { 
-          ligne: startDto.ligne,
-          status: In(['active', 'paused'])
-        }
-      });
+    const savedSession = await this.productionSessionRepo.save(session);
 
-      if (activeSession) {
-        throw new ConflictException(`Une session est déjà active pour la ligne "${startDto.ligne}"`);
-      }
-
-      // Créer nouvelle session
-      const session = this.productionSessionRepo.create({
-        ligne: startDto.ligne,
-        ligneId: startDto.ligne,
-        startedBy: user,
-        userName: `${user.prenom} ${user.nom}`.trim(),
-        productType: startDto.productType,
-        notes: startDto.notes,
-        status: 'active'
-      });
-
-      const savedSession = await this.productionSessionRepo.save(session);
-
-      return {
-        message: 'Production démarrée avec succès',
-        session: {
-          id: savedSession.id,
-          ligne: savedSession.ligne,
-          startTime: savedSession.startTime,
-          status: savedSession.status,
-          startedBy: {
-            id: user.id,
-            name: `${user.prenom} ${user.nom}`.trim()
-          }
-        }
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException || error instanceof ConflictException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Erreur lors du démarrage de la production');
+    // Attacher les planifications sélectionnées au démarrage
+    if (startDto.planificationIds && startDto.planificationIds.length > 0) {
+      const planifications = await this.planificationRepo.findByIds(startDto.planificationIds);
+      const validPlanifs = planifications.filter(p => p.ligne === startDto.ligne && p.of && p.of.trim() !== '');
+      savedSession.planifications = validPlanifs;
+      await this.productionSessionRepo.save(savedSession);
     }
+
+    return {
+      message: 'Production démarrée avec succès',
+      session: {
+        id: savedSession.id,
+        ligne: savedSession.ligne,
+        startTime: savedSession.startTime,
+        status: savedSession.status,
+        startedBy: {
+          id: user.id,
+          name: `${user.prenom} ${user.nom}`.trim()
+        },
+        planifications: (savedSession.planifications || []).map(p => ({
+          id: p.id,
+          reference: p.reference,
+          of: p.of,
+          jour: p.jour,
+          semaine: p.semaine,
+          qtePlanifiee: p.qtePlanifiee,
+          qteModifiee: p.qteModifiee,
+        }))
+      }
+    };
+  } catch (error) {
+    if (error instanceof NotFoundException || error instanceof ConflictException) {
+      throw error;
+    }
+    throw new InternalServerErrorException('Erreur lors du démarrage de la production');
   }
+}
 
   /**
    * ✅ MODIFIÉ - Mettre en pause la production avec références M1/M4/M5
@@ -772,52 +773,53 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
   /**
    * Obtenir les sessions actives
    */
-  async getActiveSessions() {
-    try {
-      const sessions = await this.productionSessionRepo.find({
-        where: { 
-          status: In(['active', 'paused'])
-        },
-        relations: ['pauses', 'startedBy'],
-        order: { startTime: 'DESC' }
-      });
+ async getActiveSessions() {
+  try {
+    const sessions = await this.productionSessionRepo.find({
+      where: { 
+        status: In(['active', 'paused'])
+      },
+      relations: ['pauses', 'startedBy', 'planifications'], // Ajouter planifications
+      order: { startTime: 'DESC' }
+    });
 
-      return sessions.map(session => {
-        const currentPause = session.pauses?.find(p => !p.endTime);
-        
-        return {
-          id: session.id,
-          ligne: session.ligne,
-          startTime: session.startTime,
-          status: session.status,
-          currentPause: currentPause ? {
-  id: currentPause.id,
-  mCategory: currentPause.mCategory,
-  startTime: currentPause.startTime,
-  duration: this.formatDuration(
-    Math.floor((new Date().getTime() - currentPause.startTime.getTime()) / 1000)
-  ),
-  subCategory: currentPause.subCategory,
-  matierePremierRefs: currentPause.matierePremierRefs,
-  phasesEnPanne: currentPause.phasesEnPanne,
-  productRefs: currentPause.productRefs,
-  // ✅ AJOUTER - Références planifiées liées à cette pause
-  planifications: (currentPause.planifications || []).map(p => ({
-    id: p.id,
-    reference: p.reference,
-    of: p.of,
-    jour: p.jour,
-    semaine: p.semaine,
-  }))
-} : null,
-          startedBy: session.userName || (session.startedBy ? `${session.startedBy.prenom} ${session.startedBy.nom}`.trim() : 'Inconnu'),
-          productType: session.productType
-        };
-      });
-    } catch (error) {
-      throw new InternalServerErrorException('Erreur lors de la récupération des sessions actives');
-    }
+    return sessions.map(session => {
+      const currentPause = session.pauses?.find(p => !p.endTime);
+      
+      return {
+        id: session.id,
+        ligne: session.ligne,
+        startTime: session.startTime,
+        status: session.status,
+        productType: session.productType,
+        // ✅ Ajouter les planifications pour que le frontend sache quelles références sont actives
+        planifications: session.planifications || [],
+        currentPause: currentPause ? {
+          id: currentPause.id,
+          mCategory: currentPause.mCategory,
+          startTime: currentPause.startTime,
+          duration: this.formatDuration(
+            Math.floor((new Date().getTime() - currentPause.startTime.getTime()) / 1000)
+          ),
+          subCategory: currentPause.subCategory,
+          matierePremierRefs: currentPause.matierePremierRefs,
+          phasesEnPanne: currentPause.phasesEnPanne,
+          productRefs: currentPause.productRefs,
+          planifications: (currentPause.planifications || []).map(p => ({
+            id: p.id,
+            reference: p.reference,
+            of: p.of,
+            jour: p.jour,
+            semaine: p.semaine,
+          }))
+        } : null,
+        startedBy: session.userName || (session.startedBy ? `${session.startedBy.prenom} ${session.startedBy.nom}`.trim() : 'Inconnu'),
+      };
+    });
+  } catch (error) {
+    throw new InternalServerErrorException('Erreur lors de la récupération des sessions actives');
   }
+}
 
   /**
    * Obtenir l'historique des sessions
@@ -1018,7 +1020,7 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
   try {
     const session = await this.productionSessionRepo.findOne({
       where: { id: sessionId },
-      relations: ['pauses']
+      relations: ['pauses', 'pauses.planifications', 'planifications']
     });
 
     if (!session) {
@@ -1069,6 +1071,50 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
       ? (piecesProduites / productionSeconds) * 3600 
       : 0;
 
+    // ✅ FIX - IDs des refs liées à la pause en cours
+    const pausedRefIds = new Set<number>(
+      (currentPause?.planifications || []).map(p => p.id)
+    );
+    const currentPauseDurationSec = currentPause
+      ? Math.floor((now.getTime() - currentPause.startTime.getTime()) / 1000)
+      : 0;
+
+    // ✅ Calculer pièces + temps par référence — indépendamment pour chaque ref
+    const refsAvecCompteurs = await Promise.all(
+      (session.planifications || []).map(async (p) => {
+        const ts = await this.tempsSecRepo.findOne({ where: { ligne: session.ligne, reference: p.reference } });
+        const secondesParPiece = ts?.seconde || 0;
+
+        // Si cette ref est en pause → son temps de production = productionSeconds global
+        // (la pause sur cette ref ne lui ajoute pas de temps de production)
+        // Si cette ref n'est PAS en pause → elle continue pendant la pause des autres
+        // donc son temps = productionSeconds + durée de la pause en cours
+        const estEnPause = pausedRefIds.has(p.id);
+        const tempsRefSec = estEnPause
+          ? productionSeconds                          // arrêtée
+          : productionSeconds + currentPauseDurationSec; // continue
+
+        const piecesRef = secondesParPiece > 0 ? Math.floor(tempsRefSec / secondesParPiece) : 0;
+        const piecesPerduesRef = estEnPause && secondesParPiece > 0
+          ? Math.floor(currentPauseDurationSec / secondesParPiece)
+          : 0;
+
+        return {
+          id: p.id,
+          reference: p.reference,
+          of: p.of,
+          qtePlanifiee: p.qtePlanifiee,
+          qteModifiee: p.qteModifiee,
+          secondesParPiece,
+          piecesProduites: piecesRef,
+          piecesPerdues: piecesPerduesRef,
+          estEnPause,
+          tempsProduction: this.formatDuration(tempsRefSec),
+          tempsProductionSeconds: tempsRefSec,
+        };
+      })
+    );
+
     return {
       sessionId: session.id,
       ligne: session.ligne,
@@ -1084,9 +1130,26 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
       pauseEnCours: currentPause ? {
         id: currentPause.id,
         mCategory: currentPause.mCategory,
+        subCategory: currentPause.subCategory,
+        reason: currentPause.reason,
+        startTime: currentPause.startTime,
         duree: this.formatDuration(Math.floor((now.getTime() - currentPause.startTime.getTime()) / 1000)),
-        piecesPerdues: piecesPerduesPauseEnCours
-      } : null
+        duration: this.formatDuration(Math.floor((now.getTime() - currentPause.startTime.getTime()) / 1000)),
+        piecesPerdues: piecesPerduesPauseEnCours,
+        lostPieces: piecesPerduesPauseEnCours,
+        matierePremierRefs: currentPause.matierePremierRefs ?? [],
+        phasesEnPanne: currentPause.phasesEnPanne ?? [],
+        productRefs: currentPause.productRefs ?? [],
+        planifications: (currentPause.planifications || []).map((p: any) => ({
+          id: p.id,
+          reference: p.reference,
+          of: p.of,
+          jour: p.jour,
+          semaine: p.semaine,
+        }))
+      } : null,
+      // ✅ Compteurs par référence planifiée
+      refsCompteurs: refsAvecCompteurs
     };
   } catch (error) {
     if (error instanceof NotFoundException) throw error;
@@ -1114,31 +1177,35 @@ async getAdminDashboardOverview(filters?: {
       const lignes = allLines.map(l => l.ligne);
 
       // 3. Construire les statistiques pour chaque ligne
+      // ✅ FIX : grouper TOUTES les sessions d'une ligne (multi-références)
       const lineStats = await Promise.all(
         lignes.map(async (ligne) => {
-          // Session active pour cette ligne
-          const activeSession = activeSessions.find(s => s.ligne === ligne);
-          
-          // Statistiques de la ligne (avec filtres de date si fournis)
-          const stats = await this.getLineStats(
-            ligne,
-            filters?.startDate,
-            filters?.endDate
-          );
+          // ✅ TOUTES les sessions actives de cette ligne
+          const lineSessions = activeSessions.filter(s => s.ligne === ligne);
+          const activeSession = lineSessions[0] || null;
 
-          // Données temps réel si session active
-          let realTimeData = null;
-          if (activeSession) {
+          const stats = await this.getLineStats(ligne, filters?.startDate, filters?.endDate);
+
+          // ✅ Données temps réel pour chaque session (chaque référence)
+          const multiSessions: any[] = [];
+          for (const sess of lineSessions) {
             try {
-              realTimeData = await this.getRealTimeProduction(activeSession.id);
+              const rt = await this.getRealTimeProduction(sess.id);
+              multiSessions.push(rt);
             } catch (error) {
-              console.error(`Erreur temps réel pour ligne ${ligne}:`, error);
+              console.error(`Erreur temps réel session ${sess.id}:`, error);
             }
+          }
+
+          // Statut global : active si au moins une session active, sinon paused
+          let globalStatus = 'inactive';
+          if (lineSessions.length > 0) {
+            globalStatus = lineSessions.some(s => s.status === 'active') ? 'active' : 'paused';
           }
 
           return {
             ligne,
-            status: activeSession ? activeSession.status : 'inactive',
+            status: globalStatus,
             activeSession: activeSession ? {
               id: activeSession.id,
               startTime: activeSession.startTime,
@@ -1146,7 +1213,8 @@ async getAdminDashboardOverview(filters?: {
               productType: activeSession.productType,
               startedBy: activeSession.startedBy
             } : null,
-            realTime: realTimeData,
+            multiSessions,
+            realTime: multiSessions[0] || null,
             historicalStats: stats
           };
         })
@@ -1186,9 +1254,10 @@ async getAdminDashboardOverview(filters?: {
         },
         overview: {
           totalLines: lignes.length,
-          activeLines: activeSessions.length,
-          pausedLines: activeSessions.filter(s => s.status === 'paused').length,
-          inactiveLines: lignes.length - activeSessions.length,
+          // ✅ Compter par ligne (pas par session individuelle)
+          activeLines: lineStats.filter(l => l.status === 'active').length,
+          pausedLines: lineStats.filter(l => l.status === 'paused').length,
+          inactiveLines: lineStats.filter(l => l.status === 'inactive').length,
           totalSessions,
           totalPauses,
           totalLostPieces
@@ -1459,35 +1528,51 @@ async getAdminDashboardOverview(filters?: {
   currentWeek: string | null;
 }> {
   try {
+    // ✅ FIX : formater la date en 'YYYY-MM-DD' pour comparer avec les colonnes DATE en BDD
     const today = new Date();
- 
+    const todayStr = today.toISOString().split('T')[0]; // ex: '2026-03-14'
+
+    // ✅ Déterminer le jour de la semaine en français (minuscules)
+    const joursMap: Record<number, string> = {
+      0: 'dimanche', // non utilisé
+      1: 'lundi',
+      2: 'mardi',
+      3: 'mercredi',
+      4: 'jeudi',
+      5: 'vendredi',
+      6: 'samedi',
+    };
+    const jourActuel = joursMap[today.getDay()];
+
+    console.log('[getPlannedReferencesForLine] ligne:', ligne, '| date:', todayStr, '| jour:', jourActuel);
+
     // 1. Trouver la semaine courante (today entre dateDebut et dateFin)
     const currentSemaine = await this.semaineRepo
       .createQueryBuilder('semaine')
-      .where(':today >= semaine.dateDebut', { today })
-      .andWhere(':today <= semaine.dateFin', { today })
+      .where('DATE(semaine.dateDebut) <= :today', { today: todayStr })
+      .andWhere('DATE(semaine.dateFin) >= :today', { today: todayStr })
       .getOne();
- 
+
+    console.log('[getPlannedReferencesForLine] semaine trouvée:', currentSemaine?.nom ?? 'AUCUNE');
+
     if (!currentSemaine) {
-      // Aucune semaine active aujourd'hui → retourner vide
-      return {
-        planifications: [],
-        total: 0,
-        currentWeek: null
-      };
+      return { planifications: [], total: 0, currentWeek: null };
     }
- 
-    // 2. Récupérer les planifications de cette ligne
+
+    // 2. Récupérer les planifications du jour actuel uniquement
     //    pour la semaine courante avec un OF non vide
     const planifications = await this.planificationRepo.find({
       where: {
         ligne,
         semaine: currentSemaine.nom,
+        jour: jourActuel,          // ✅ Filtre sur le jour actuel
         of: Not(''),
       },
-      order: { jour: 'ASC', reference: 'ASC' }
+      order: { reference: 'ASC' }
     });
- 
+
+    console.log(`[getPlannedReferencesForLine] ${planifications.length} planification(s) pour ${ligne} - ${currentSemaine.nom} - ${jourActuel}`);
+
     return {
       planifications: planifications.map(p => ({
         id: p.id,
@@ -1501,9 +1586,9 @@ async getAdminDashboardOverview(filters?: {
       total: planifications.length,
       currentWeek: currentSemaine.nom
     };
- 
+
   } catch (error) {
-    console.error(`Erreur récupération planifications ligne ${ligne}:`, error);
+    console.error(`[getPlannedReferencesForLine] Erreur:`, error);
     throw new InternalServerErrorException('Erreur lors de la récupération des références planifiées');
   }
 }

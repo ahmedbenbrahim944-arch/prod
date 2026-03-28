@@ -26,7 +26,6 @@ export class CreatePlanificationDto {
   @IsOptional()
   qtePlanifiee?: number;
 
-  // NOUVEAU : Qte Modifiée
   @IsNumber()
   @IsOptional()
   qteModifiee?: number;
@@ -34,4 +33,9 @@ export class CreatePlanificationDto {
   @IsString()
   @IsOptional()
   emballage?: string;
+
+  // NOUVEAU : Note de la référence
+  @IsString()
+  @IsOptional()
+  note?: string;
 }

@@ -60,7 +60,7 @@ export interface CreatePlaquetteDto {
   matriculeMachineId: number; typePlaquetteId: number; quantiteDonnee: number;
 }
 export interface UpdatePlaquetteDto {
-  reste?: number; produitFini?: number; rebut?: number;
+  reste?: number; produitFini?: number; rebut?: number; quantiteDonnee?: number;
 }
 export interface LigneAvecReferences {
   ligne: string; references: string[]; imageUrl?: string;

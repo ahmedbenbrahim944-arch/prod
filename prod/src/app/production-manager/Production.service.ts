@@ -115,6 +115,8 @@ export interface RealTimeProduction {
     duree: string;
     piecesPerdues: number;
   } | null;
+  // ✅ Compteurs par référence planifiée
+  refsCompteurs?: RefCompteur[];
 }
 
 export interface AvailableReferences {
@@ -138,6 +140,29 @@ export interface PlannedReference {
 export interface PlannedReferencesResponse {
   planifications: PlannedReference[];
   total: number;
+}
+
+// ✅ NOUVEAU - Compteur temps+pièces par référence
+export interface RefCompteur {
+  id: number;
+  reference: string;
+  of: string;
+  qtePlanifiee: number;
+  qteModifiee: number;
+  secondesParPiece: number;
+  piecesProduites: number;
+  piecesPerdues: number;       // ✅ pièces perdues pendant la pause
+  estEnPause: boolean;         // ✅ true si cette ref est en pause
+  tempsProduction: string;
+  tempsProductionSeconds: number;
+}
+
+export interface SavedSessionData {
+  ligne: string | null;
+  refSessions: any[];
+  selectedStartRefIds: number[];
+  startRefs: PlannedReference[];
+  savedAt: string;
 }
 
 @Injectable({
@@ -172,10 +197,17 @@ export class ProductionService {
 
   // ==================== PRODUCTION API ====================
 
-  startProduction(ligne: string, productType?: string, notes?: string): Observable<any> {
+  startProduction(
+    ligne: string,
+    productType?: string,
+    notes?: string,
+    planificationIds?: number[]  // ✅ NOUVEAU
+  ): Observable<any> {
+    const payload: any = { ligne, productType, notes };
+    if (planificationIds && planificationIds.length > 0) payload.planificationIds = planificationIds;
     return this.http.post(
       `${this.API_URL}/production/start`,
-      { ligne, productType, notes },
+      payload,
       { headers: this.getHeaders() }
     ).pipe(
       tap((response: any) => {
@@ -320,4 +352,44 @@ export class ProductionService {
       { headers: this.getHeaders() }
     );
   }
+
+  saveLastSession(sessionData: any): void {
+  try {
+    localStorage.setItem('last_production_session', JSON.stringify({
+      ...sessionData,
+      savedAt: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.error('Erreur sauvegarde session:', error);
+  }
+}
+
+clearLastSession(): void {
+  localStorage.removeItem('last_production_session');
+}
+
+loadLastSession(): any {
+  try {
+    const saved = localStorage.getItem('last_production_session');
+    if (!saved) return null;
+    
+    const session = JSON.parse(saved);
+    
+    // Vérifier si la session est récente (moins de 24h)
+    const savedTime = new Date(session.savedAt).getTime();
+    const now = new Date().getTime();
+    const hoursSinceSaved = (now - savedTime) / (1000 * 60 * 60);
+    
+    if (hoursSinceSaved > 24) {
+      // Session trop ancienne
+      this.clearLastSession();
+      return null;
+    }
+    
+    return session;
+  } catch (error) {
+    console.error('Erreur chargement session:', error);
+    return null;
+  }
+}
 }

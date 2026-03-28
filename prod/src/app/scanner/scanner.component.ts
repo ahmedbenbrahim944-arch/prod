@@ -115,6 +115,8 @@ export class ScannerComponent implements OnInit, OnDestroy {
         next: (data) => {
           this.semaines = data;
           this.loadingSemaines = false;
+          // ✅ AUTO-SELECT : sélectionne la semaine correspondant à la date du jour
+          this.autoSelectCurrentSemaine();
           this.cdr.markForCheck();
         },
         error: () => {
@@ -124,17 +126,46 @@ export class ScannerComponent implements OnInit, OnDestroy {
       });
   }
 
+  /**
+   * ✅ NOUVELLE MÉTHODE : Sélectionne automatiquement la semaine
+   * dont la plage de dates contient la date du jour.
+   * Si aucune semaine ne correspond, sélectionne la première de la liste.
+   */
+  private autoSelectCurrentSemaine(): void {
+    if (!this.semaines.length) return;
+
+    const today = new Date();
+    // Normaliser à minuit pour éviter les problèmes d'heure
+    today.setHours(0, 0, 0, 0);
+
+    const currentSemaine = this.semaines.find(s => {
+      const debut = new Date(s.dateDebut);
+      const fin   = new Date(s.dateFin);
+      debut.setHours(0, 0, 0, 0);
+      fin.setHours(23, 59, 59, 999);
+      return today >= debut && today <= fin;
+    });
+
+    // Utilise la semaine trouvée, sinon repli sur la première de la liste
+    const toSelect = currentSemaine ?? this.semaines[0];
+    // ✅ Sélection auto : on force autoOpenPanel = true
+    this.selectedSemaine = toSelect;
+    this.scans = [];
+    this.loadScans(toSelect.id, true);
+    if (window.innerWidth < 768) this.sidebarOpen = false;
+  }
+
   selectSemaine(s: Semaine): void {
     if (this.selectedSemaine?.id === s.id) return;
     this.selectedSemaine = s;
     this.scans = [];
     this.closeScanPanel();
-    this.loadScans(s.id);
+    this.loadScans(s.id); // false par défaut = pas d'auto-open
     // Close sidebar on mobile
     if (window.innerWidth < 768) this.sidebarOpen = false;
   }
 
-  loadScans(semaineId: number): void {
+  loadScans(semaineId: number, autoOpenPanel = false): void {
     this.loadingScans = true;
     this.scannerService.getScansBySemaine(semaineId)
       .pipe(takeUntil(this.destroy$))
@@ -142,6 +173,12 @@ export class ScannerComponent implements OnInit, OnDestroy {
         next: (data) => {
           this.scans = data;
           this.loadingScans = false;
+          // ✅ AUTO-OPEN : ouvre le panel et focus l'input automatiquement
+          // uniquement au premier chargement (sélection auto de la semaine courante)
+          if (autoOpenPanel) {
+            this.scanPanelOpen = true;
+            setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 150);
+          }
           this.cdr.markForCheck();
         },
         error: () => {
@@ -155,6 +192,8 @@ export class ScannerComponent implements OnInit, OnDestroy {
   openScanPanel(): void {
     this.scanPanelOpen = true;
     this.resetScan();
+    // ✅ AUTO-FOCUS : le cursor se place automatiquement dans l'input dès l'ouverture
+    // Le setTimeout est nécessaire pour laisser Angular rendre le DOM d'abord
     setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 100);
   }
 
@@ -257,11 +296,10 @@ export class ScannerComponent implements OnInit, OnDestroy {
           this.scanStatus     = 'success';
           this.lastScanRecord = record;
           this.scans = [record, ...this.scans];
-          setTimeout(() => {
-            this.resetScan();
-            this.cdr.markForCheck();
-            setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 50);
-          }, 3000);
+          // ✅ 0ms : reset immédiat, prêt pour le scan suivant sans attente
+          this.resetScan();
+          this.cdr.markForCheck();
+          setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 50);
           this.cdr.markForCheck();
         },
         error: (err) => {

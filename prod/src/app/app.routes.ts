@@ -31,6 +31,9 @@ import { Magasin1Component } from './magasin1/magasin1.component';
 import { ScannerComponent } from './scanner/scanner.component';
 import { Choix4Component } from './choix4/choix4.component';
 import { AdminScanComponent } from './admin-scan/admin-scan.component';
+import { Stats2Component } from './stats2/stats2.component';
+import { AffectationComponent } from './affectation/affectation.component';
+import { PointageComponent } from './pointage/pointage.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -80,5 +83,9 @@ export const routes: Routes = [
   { path: 'scan', component: ScannerComponent },
   { path: 'ch4', component: Choix4Component },
   { path: 'adscan', component: AdminScanComponent },
+  { path: 'stat2', component: Stats2Component },
+  { path: 'aff', component: AffectationComponent },
+  { path: 'auto', component: PointageComponent },
+
 
 ];

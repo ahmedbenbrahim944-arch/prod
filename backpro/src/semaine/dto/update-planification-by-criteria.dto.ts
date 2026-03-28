@@ -26,7 +26,6 @@ export class UpdatePlanificationByCriteriaDto {
   @IsOptional()
   qtePlanifiee?: number;
 
-  // NOUVEAU : Qte Modifiée
   @IsNumber()
   @IsOptional()
   qteModifiee?: number;
@@ -42,4 +41,9 @@ export class UpdatePlanificationByCriteriaDto {
   @IsNumber()
   @IsOptional()
   decMagasin?: number;
+
+  // NOUVEAU : Note de la référence
+  @IsString()
+  @IsOptional()
+  note?: string;
 }
