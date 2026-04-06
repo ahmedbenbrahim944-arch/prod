@@ -27,6 +27,7 @@ import { PlaquettesModule } from './plaquettes/plaquettes.module';
 import { ScannerModule } from './scanner/scanner.module';
 import { AffectationModule } from './affectation/affectation.module';
 import { AutosaisieModule } from './autosaisie/autosaisie.module';
+import { PlannMagModule } from './plann-mag/plann-mag.module';
 
 
 @Module({
@@ -68,7 +69,8 @@ import { AutosaisieModule } from './autosaisie/autosaisie.module';
     PlaquettesModule,
     ScannerModule,
     AffectationModule,
-    AutosaisieModule
+    AutosaisieModule,
+    PlannMagModule
 
   ],
   controllers: [],

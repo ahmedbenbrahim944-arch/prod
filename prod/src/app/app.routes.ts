@@ -34,6 +34,10 @@ import { AdminScanComponent } from './admin-scan/admin-scan.component';
 import { Stats2Component } from './stats2/stats2.component';
 import { AffectationComponent } from './affectation/affectation.component';
 import { PointageComponent } from './pointage/pointage.component';
+import { VerifStatusComponent } from './verif-status/verif-status.component';
+import { Choix5Component } from './choix5/choix5.component';
+import { PlannMagSearchComponent } from './plann-mag-search/plann-mag-search.component';
+import { PlannMagScanComponent } from './plann-mag-scan/plann-mag-scan.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -86,6 +90,10 @@ export const routes: Routes = [
   { path: 'stat2', component: Stats2Component },
   { path: 'aff', component: AffectationComponent },
   { path: 'auto', component: PointageComponent },
+  { path: 'verf', component: VerifStatusComponent },
+  { path: 'ch5', component: Choix5Component },
+  { path: 'planmag', component: PlannMagSearchComponent },
+  { path: 'scann', component: PlannMagScanComponent },
 
 
 ];

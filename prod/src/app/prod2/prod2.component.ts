@@ -13,6 +13,7 @@ import { MatierePremierService } from '../prod2/matiere-premier.service';
 import { AuthService } from '../login/auth.service';
 import { HostListener } from '@angular/core';
 import { CommentaireService } from './commentaire.service';
+import * as ExcelJS from 'exceljs';
 
 
 
@@ -4056,5 +4057,580 @@ closeRendementSuggestions(): void {
     });
     return result;
   }
+  // ==================== EXPORT EXCEL ====================
+async exportToExcel(): Promise<void> {
+  const planif = this.weekPlanification();
+  const ligne = this.selectedLigne();
+  const semaine = this.selectedWeek();
+  if (!planif || !ligne || !semaine) { alert('Aucune planification à exporter.'); return; }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'ProdSeraf';
+  workbook.created = new Date();
+
+  const sheetName = `S${semaine} - ${ligne.ligne}`.replace(/[*?:\\/\[\]]/g, '_').substring(0, 31);
+  const sheet = workbook.addWorksheet(sheetName);
+
+  const activeRefs = planif.references.filter(ref =>
+    this.weekDays.some(day => { const e = ref[day] as DayEntry; return e && e.of && e.of.trim() !== ''; })
+  );
+
+  const jourLabels: Record<string, string> = { lundi:'Lundi', mardi:'Mardi', mercredi:'Mercredi', jeudi:'Jeudi', vendredi:'Vendredi', samedi:'Samedi' };
+  const startDate = new Date(planif.startDate);
+  const dayDates: Record<string, string> = {};
+  this.weekDays.forEach((day, i) => {
+    const d = new Date(startDate); d.setDate(startDate.getDate() + i);
+    dayDates[day] = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
+  });
+
+  const COLORS = { headerBg:'1A5276', dayBg:'1F618D', subHeaderBg:'2E4053', cColor:'1ABC9C', dpColor:'27AE60', dmColor:'E67E22', deltaOk:'27AE60', deltaBad:'E74C3C', ncHeader:'6C3483', ncRowBg:'F4ECF7', white:'FFFFFF', darkText:'1C2833', rowAlt:'EBF5FB' };
+  const bw  = (s=10): Partial<ExcelJS.Font> => ({ bold:true, color:{ argb:'FF'+COLORS.white }, size:s });
+  const ab  = (c='999999') => ({ top:{style:'thin' as const,color:{argb:'FF'+c}}, left:{style:'thin' as const,color:{argb:'FF'+c}}, bottom:{style:'thin' as const,color:{argb:'FF'+c}}, right:{style:'thin' as const,color:{argb:'FF'+c}} });
+  const fill = (c: string) => ({ type:'pattern' as const, pattern:'solid' as const, fgColor:{ argb:'FF'+c } });
+  const sh   = (cell: ExcelJS.Cell, bg: string) => { cell.font=bw(); cell.alignment={horizontal:'center',vertical:'middle'}; cell.fill=fill(bg); cell.border=ab(); };
+
+  const totalCols = 2 + this.weekDays.length * 4 + 1;
+  const totalDeltaCol = 3 + this.weekDays.length * 4;
+
+  // Ligne 1 : Titre
+  sheet.mergeCells(1, 1, 1, totalCols);
+  const t = sheet.getCell(1,1);
+  t.value = `PLANIFICATION DES LIGNES — ${ligne.ligne}  |  Semaine ${semaine}  (${startDate.toLocaleDateString('fr-FR')} → ${new Date(planif.endDate).toLocaleDateString('fr-FR')})`;
+  t.font = bw(13); t.alignment={horizontal:'center',vertical:'middle'}; t.fill=fill(COLORS.headerBg);
+  sheet.getRow(1).height = 28;
+
+  // Ligne 2 : Jours
+  sheet.mergeCells(2,1,3,1); sh(sheet.getCell(2,1), COLORS.subHeaderBg); sheet.getCell(2,1).value='RÉFÉRENCE';
+  sheet.mergeCells(2,2,3,2); sh(sheet.getCell(2,2), COLORS.subHeaderBg); sheet.getCell(2,2).value='OF';
+  this.weekDays.forEach((day,i) => {
+    const col = 3+i*4; sheet.mergeCells(2,col,2,col+3);
+    const c = sheet.getCell(2,col); c.value=`${jourLabels[day]}  ${dayDates[day]}`; sh(c, COLORS.dayBg);
+  });
+  sheet.mergeCells(2,totalDeltaCol,3,totalDeltaCol);
+  const ac = sheet.getCell(2,totalDeltaCol); ac.value='Δ Moy.'; sh(ac, COLORS.subHeaderBg);
+
+  // Ligne 3 : Sous-en-têtes
+  const subH=['C','DP','DM','Δ%']; const subC=[COLORS.cColor,COLORS.dpColor,COLORS.dmColor,COLORS.deltaOk];
+  this.weekDays.forEach((_,i) => subH.forEach((lbl,j) => { const c=sheet.getCell(3,3+i*4+j); c.value=lbl; sh(c,subC[j]); }));
+  sheet.getRow(2).height=22; sheet.getRow(3).height=18;
+
+  // Données
+  let row = 4;
+  for (const ref of activeRefs) {
+    const bg = row%2===0 ? COLORS.rowAlt : COLORS.white;
+    sheet.getRow(row).height=18;
+
+    const rc=sheet.getCell(row,1); rc.value=ref.reference; rc.font={bold:true,size:10,color:{argb:'FF'+COLORS.darkText}}; rc.alignment={horizontal:'left',vertical:'middle'}; rc.fill=fill(bg); rc.border=ab();
+    const fe=this.weekDays.map(d=>ref[d] as DayEntry).find(e=>e?.of);
+    const oc=sheet.getCell(row,2); oc.value=fe?.of||'-'; oc.font={size:9,color:{argb:'FF666666'}}; oc.alignment={horizontal:'center',vertical:'middle'}; oc.fill=fill(bg); oc.border=ab();
+
+    const dvals: number[]=[];
+    this.weekDays.forEach((day,i) => {
+      const entry=ref[day] as DayEntry; const col=3+i*4;
+      const c=entry?.c||0, dp=entry?.dp||0, dm=entry?.dm||0, delta=entry?.delta||0;
+      if (dp>0) dvals.push(delta);
+      const tc=[COLORS.darkText, COLORS.dpColor, COLORS.dmColor, delta>=100?COLORS.deltaOk:delta>0?COLORS.deltaBad:COLORS.darkText];
+      [c,dp,dm,delta].forEach((val,j) => {
+        const cell=sheet.getCell(row,col+j);
+        if (j===3) { // Colonne Δ% : number format %
+          cell.value = val>0 ? val/100 : null;
+          if (val>0) cell.numFmt='0.##%';
+        } else {
+          cell.value = val>0 ? val : null;
+        }
+        cell.font={size:10,color:{argb:'FF'+tc[j]},bold:j===3&&delta>=100};
+        cell.alignment={horizontal:'center',vertical:'middle'}; cell.fill=fill(bg); cell.border=ab('CCCCCC');
+      });
+    });
+
+    const avg = dvals.length>0 ? dvals.reduce((a,b)=>a+b,0)/dvals.length : 0;
+    const adc=sheet.getCell(row,totalDeltaCol);
+    adc.value=avg>0?avg/100:null; if(avg>0) adc.numFmt='0.##%';
+    adc.font={bold:true,size:10,color:{argb:'FF'+(avg>=100?COLORS.deltaOk:avg>0?COLORS.deltaBad:COLORS.darkText)}};
+    adc.alignment={horizontal:'center',vertical:'middle'}; adc.fill=fill(bg); adc.border=ab();
+    row++;
+
+    // Ligne 7M
+    const ncData = await this.getNonConfForRefAndLigne(ref.reference, semaine, ligne.ligne);
+    sheet.mergeCells(row,1,row,2);
+    const nl=sheet.getCell(row,1); nl.value='↳ 7M'; nl.font={italic:true,size:9,bold:true,color:{argb:'FF'+COLORS.ncHeader}}; nl.alignment={horizontal:'left',vertical:'middle'}; nl.fill=fill(COLORS.ncRowBg); nl.border=ab('CCCCCC');
+
+    this.weekDays.forEach((day,i) => {
+      const col=3+i*4; sheet.mergeCells(row,col,row,col+3);
+      const nc=sheet.getCell(row,col); const nd=ncData?.[day];
+      if (nd && nd.total7M>0) {
+        const d=nd.details||{};
+        const parts: string[]=[];
+        if(d.matierePremiere>0) parts.push(`M1:${d.matierePremiere}`);
+        if(d.absence>0)         parts.push(`M2abs:${d.absence}`);
+        if(d.rendement>0)       parts.push(`M2rdt:${d.rendement}`);
+        if(d.methode>0)         parts.push(`M3:${d.methode}`);
+        if(d.maintenance>0)     parts.push(`M4:${d.maintenance}`);
+        if(d.qualite>0)         parts.push(`M5:${d.qualite}`);
+        if(d.environnement>0)   parts.push(`M6:${d.environnement}`);
+        nc.value=`Total: ${nd.total7M}  |  ${parts.join('  ')}`;
+        nc.font={italic:true,size:8,color:{argb:'FF'+COLORS.ncHeader}};
+      } else {
+        nc.value='-'; nc.font={italic:true,size:8,color:{argb:'FF999999'}};
+      }
+      nc.alignment={horizontal:'center',vertical:'middle',wrapText:true}; nc.fill=fill(COLORS.ncRowBg); nc.border=ab('CCCCCC');
+    });
+    const nac=sheet.getCell(row,totalDeltaCol); nac.value=''; nac.fill=fill(COLORS.ncRowBg); nac.border=ab('CCCCCC');
+    sheet.getRow(row).height=15; row++;
+  }
+
+  sheet.getColumn(1).width=16; sheet.getColumn(2).width=10;
+  this.weekDays.forEach((_,i) => { for(let j=0;j<4;j++) sheet.getColumn(3+i*4+j).width=9; });
+  sheet.getColumn(totalDeltaCol).width=8;
+  sheet.views=[{state:'frozen',xSplit:2,ySplit:3}];
+
+  const buf=await workbook.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`Planification_${ligne.ligne.replace(/[^a-zA-Z0-9]/g,'_')}_S${semaine}.xlsx`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/**
+ * Récupère les non-conformités pour une référence et une semaine donnée.
+ * Retourne un objet indexé par jour ou null si pas de données.
+ */
+
+
+private async getNonConfForRef(
+  reference: string,
+  semaine: number
+): Promise<Record<string, any> | null> {
+  const planif = this.weekPlanification();
+  if (!planif) return null;
+
+  return new Promise((resolve) => {
+    // Utiliser getNonConformite (POST /nonconf/detail) au lieu de getByCriteria
+    this.nonConfService.getNonConformite({
+      semaine: `semaine${semaine}`,
+      ligne: planif.ligne,
+      reference
+    }).subscribe({
+      next: (data: any) => {
+        if (!data) { resolve(null); return; }
+
+        // L'API /nonconf/detail retourne un objet unique ou un tableau
+        const items: any[] = Array.isArray(data) ? data : [data];
+        if (items.length === 0) { resolve(null); return; }
+
+        const byDay: Record<string, any> = {};
+        items.forEach((item: any) => {
+          if (item.jour) {
+            byDay[item.jour.toLowerCase()] = item;
+          }
+        });
+
+        resolve(Object.keys(byDay).length > 0 ? byDay : null);
+      },
+      error: () => resolve(null)
+    });
+  });
+}
+// ==================== EXPORT EXCEL — SEMAINE ENTIÈRE ====================
+isExportingWeek = signal(false);
+
+async exportWeekToExcel(weekNumber: number): Promise<void> {
+  if (this.isExportingWeek()) return;
+
+  const allLines = this.availableLines();
+  if (!allLines || allLines.length === 0) {
+    alert('Aucune ligne disponible.');
+    return;
+  }
+
+  this.isExportingWeek.set(true);
+  const semaineNom = `semaine${weekNumber}`;
+  const weekInfo = this.getWeekDates(new Date().getFullYear(), weekNumber);
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'ProdSeraf';
+  workbook.created = new Date();
+
+  // Récupérer les planifications de la semaine via l'API (une seule fois)
+  let allPlanifications: any[] = [];
+  try {
+    const response: any = await new Promise((resolve, reject) => {
+      this.semaineService.getPlanificationsForWeek(semaineNom).subscribe({
+        next: resolve,
+        error: reject
+      });
+    });
+    allPlanifications = response?.planifications || [];
+  } catch {
+    alert('Erreur lors du chargement des données.');
+    this.isExportingWeek.set(false);
+    return;
+  }
+
+  if (allPlanifications.length === 0) {
+    alert(`Aucune donnée pour la semaine ${weekNumber}.`);
+    this.isExportingWeek.set(false);
+    return;
+  }
+
+  // ── Styles réutilisables ──────────────────────────────────
+  const COLORS = {
+    headerBg:   '1A5276',
+    dayBg:      '1F618D',
+    subHeaderBg:'2E4053',
+    cColor:     '1ABC9C',
+    dpColor:    '27AE60',
+    dmColor:    'E67E22',
+    deltaOk:    '27AE60',
+    deltaBad:   'E74C3C',
+    ncHeader:   '6C3483',
+    ncRowBg:    'F4ECF7',
+    white:      'FFFFFF',
+    darkText:   '1C2833',
+    rowAlt:     'EBF5FB',
+  };
+
+  const boldWhite = (size = 10): Partial<ExcelJS.Font> =>
+    ({ bold: true, color: { argb: 'FF' + COLORS.white }, size });
+  const allBorders = (color = '999999') => ({
+    top:    { style: 'thin' as const, color: { argb: 'FF' + color } },
+    left:   { style: 'thin' as const, color: { argb: 'FF' + color } },
+    bottom: { style: 'thin' as const, color: { argb: 'FF' + color } },
+    right:  { style: 'thin' as const, color: { argb: 'FF' + color } },
+  });
+
+  const weekDays = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  const jourLabels: Record<string,string> = {
+    lundi:'Lundi', mardi:'Mardi', mercredi:'Mercredi',
+    jeudi:'Jeudi', vendredi:'Vendredi', samedi:'Samedi'
+  };
+
+  // Dates des jours
+  const startDate = new Date(weekInfo.startDate);
+  const dayDates: Record<string,string> = {};
+  weekDays.forEach((day, i) => {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    dayDates[day] = d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
+  });
+
+  const totalCols = 2 + weekDays.length * 4 + 1;
+
+  // ── Une feuille par ligne ────────────────────────────────
+  for (const line of allLines) {
+    // Filtrer les planifs de cette ligne
+    const planifLigne = allPlanifications.filter((p: any) => p.ligne === line.ligne);
+    if (planifLigne.length === 0) continue; // Sauter les lignes sans données
+
+    // Construire les références avec leurs données jour/jour
+    const refsMap = new Map<string, ReferenceProduction>();
+    line.references.forEach(ref => {
+      refsMap.set(ref, { reference: ref, ligne: line.ligne });
+    });
+
+    const ofByRef = new Map<string,string>();
+    planifLigne.forEach((p: any) => {
+      if (p.of && !ofByRef.has(p.reference)) ofByRef.set(p.reference, p.of);
+    });
+
+    planifLigne.forEach((p: any) => {
+      if (!refsMap.has(p.reference)) return;
+      const ref = refsMap.get(p.reference)!;
+      const jour = p.jour.toLowerCase();
+      ref[jour] = {
+        of: ofByRef.get(p.reference) || '',
+        nbOperateurs: p.nbOperateurs || 0,
+        c:  p.qtePlanifiee  || 0,
+        m:  p.qteModifiee   || 0,
+        dp: p.decProduction || 0,
+        dm: p.decMagasin    || 0,
+        delta: p.pcsProd    || 0
+      };
+    });
+
+    refsMap.forEach(ref => {
+      weekDays.forEach(day => {
+        if (!ref[day]) {
+          ref[day] = { of: ofByRef.get(ref.reference)||'', nbOperateurs:0,
+                       c:0, m:0, dp:0, dm:0, delta:0 };
+        }
+      });
+    });
+
+    // Filtrer: garder uniquement les refs avec au moins un OF
+    const activeRefs = [...refsMap.values()].filter(ref =>
+      weekDays.some(day => {
+        const e = ref[day] as DayEntry;
+        return e && e.of && e.of.trim() !== '';
+      })
+    );
+
+    if (activeRefs.length === 0) continue;
+
+    // Créer la feuille (nom sans caractères interdits)
+    const sheetName = `${line.ligne}`.replace(/[*?:\\/\[\]]/g, '_').substring(0, 31);
+    const sheet = workbook.addWorksheet(sheetName);
+
+    // ── Ligne 1 : Titre ──────────────────────────────────────
+    sheet.mergeCells(1, 1, 1, totalCols);
+    const titleCell = sheet.getCell(1, 1);
+    const startStr = weekInfo.startDate instanceof Date
+      ? weekInfo.startDate.toLocaleDateString('fr-FR') : '';
+    const endStr = weekInfo.endDate instanceof Date
+      ? weekInfo.endDate.toLocaleDateString('fr-FR') : '';
+    titleCell.value = `${line.ligne}  —  Semaine ${weekNumber}  (${startStr} → ${endStr})`;
+    titleCell.font = boldWhite(13);
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = { type: 'pattern', pattern: 'solid',
+                       fgColor: { argb: 'FF' + COLORS.headerBg } };
+    sheet.getRow(1).height = 28;
+
+    // ── Ligne 2 : En-têtes jours ─────────────────────────────
+    const styleHeader = (cell: ExcelJS.Cell, bg: string) => {
+      cell.font = boldWhite(10);
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+bg } };
+      cell.border = allBorders();
+    };
+
+    sheet.mergeCells(2, 1, 3, 1);
+    styleHeader(sheet.getCell(2,1), COLORS.subHeaderBg);
+    sheet.getCell(2,1).value = 'RÉFÉRENCE';
+
+    sheet.mergeCells(2, 2, 3, 2);
+    styleHeader(sheet.getCell(2,2), COLORS.subHeaderBg);
+    sheet.getCell(2,2).value = 'OF';
+
+    weekDays.forEach((day, i) => {
+      const col = 3 + i * 4;
+      sheet.mergeCells(2, col, 2, col + 3);
+      const cell = sheet.getCell(2, col);
+      cell.value = `${jourLabels[day]}  ${dayDates[day]}`;
+      styleHeader(cell, COLORS.dayBg);
+    });
+
+    const totalDeltaCol = 3 + weekDays.length * 4;
+    sheet.mergeCells(2, totalDeltaCol, 3, totalDeltaCol);
+    const avgCell = sheet.getCell(2, totalDeltaCol);
+    avgCell.value = 'Δ Moy.';
+    styleHeader(avgCell, COLORS.subHeaderBg);
+
+    // ── Ligne 3 : Sous-en-têtes C/DP/DM/Δ% ─────────────────
+    const subHeaders = ['C','DP','DM','Δ%'];
+    const subColors  = [COLORS.cColor, COLORS.dpColor, COLORS.dmColor, COLORS.deltaOk];
+    weekDays.forEach((_d, i) => {
+      subHeaders.forEach((label, j) => {
+        const cell = sheet.getCell(3, 3 + i * 4 + j);
+        cell.value = label;
+        styleHeader(cell, subColors[j]);
+      });
+    });
+    sheet.getRow(2).height = 22;
+    sheet.getRow(3).height = 18;
+
+    // ── Données ──────────────────────────────────────────────
+    let currentRow = 4;
+
+    for (const ref of activeRefs) {
+      const isAlt = currentRow % 2 === 0;
+      const rowBg = isAlt ? COLORS.rowAlt : COLORS.white;
+      sheet.getRow(currentRow).height = 18;
+
+      // Cellule référence
+      const refCell = sheet.getCell(currentRow, 1);
+      refCell.value = ref.reference;
+      refCell.font = { bold:true, size:10, color:{ argb:'FF'+COLORS.darkText } };
+      refCell.alignment = { horizontal:'left', vertical:'middle' };
+      refCell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+rowBg } };
+      refCell.border = allBorders();
+
+      // OF
+      const firstEntry = weekDays.map(d => ref[d] as DayEntry).find(e => e?.of);
+      const ofCell = sheet.getCell(currentRow, 2);
+      ofCell.value = firstEntry?.of || '-';
+      ofCell.font = { size:9, color:{ argb:'FF666666' } };
+      ofCell.alignment = { horizontal:'center', vertical:'middle' };
+      ofCell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+rowBg } };
+      ofCell.border = allBorders();
+
+      // Données jour par jour
+      const deltaValues: number[] = [];
+      weekDays.forEach((day, i) => {
+        const entry = ref[day] as DayEntry;
+        const col = 3 + i * 4;
+        const c  = entry?.c  || 0;
+        const dp = entry?.dp || 0;
+        const dm = entry?.dm || 0;
+        const delta = entry?.delta || 0;
+        if (dp > 0) deltaValues.push(delta);
+
+        const textColors = [
+          COLORS.darkText,
+          COLORS.dpColor,
+          COLORS.dmColor,
+          delta >= 100 ? COLORS.deltaOk : (delta > 0 ? COLORS.deltaBad : COLORS.darkText)
+        ];
+        const vals = [c, dp, dm, delta];
+
+        vals.forEach((val, j) => {
+          const cell = sheet.getCell(currentRow, col + j);
+          cell.value = val === 0 ? '-' : (j === 3 ? val / 100 : val);
+// Et changer le format de la cellule pour afficher %
+if (j === 3 && val !== 0) {
+  cell.numFmt = '0%';
+}
+          cell.font = {
+            size: 10,
+            color: { argb: 'FF' + textColors[j] },
+            bold: j === 3 && delta >= 100
+          };
+          cell.alignment = { horizontal:'center', vertical:'middle' };
+          cell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+rowBg } };
+          cell.border = allBorders('CCCCCC');
+        });
+      });
+
+      // Δ moyen
+      const avg = deltaValues.length > 0
+        ? deltaValues.reduce((a,b) => a+b, 0) / deltaValues.length : 0;
+      const avgDeltaCell = sheet.getCell(currentRow, totalDeltaCol);
+      avgDeltaCell.value = avg > 0 ? avg / 100 : null;
+      avgDeltaCell.numFmt = avg > 0 ? '0%' : '';
+      avgDeltaCell.font = {
+        bold: true, size: 10,
+        color: { argb: 'FF' + (avg >= 100 ? COLORS.deltaOk : avg > 0 ? COLORS.deltaBad : COLORS.darkText) }
+      };
+      avgDeltaCell.alignment = { horizontal:'center', vertical:'middle' };
+      avgDeltaCell.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF'+rowBg } };
+      avgDeltaCell.border = allBorders();
+      currentRow++;
+
+      // ── Sous-ligne 7M ────────────────────────────────────
+      // Récupérer les non-conformités pour cette référence
+      const ncData = await this.getNonConfForRefAndLigne(
+        ref.reference, weekNumber, line.ligne
+      );
+
+      // Afficher la ligne 7M même si pas de données (pour la lisibilité)
+      sheet.mergeCells(currentRow, 1, currentRow, 2);
+      const ncLabel = sheet.getCell(currentRow, 1);
+      ncLabel.value = '↳ 7M';
+      ncLabel.font = { italic:true, size:9, bold:true,
+                       color:{ argb:'FF'+COLORS.ncHeader } };
+      ncLabel.alignment = { horizontal:'left', vertical:'middle' };
+      ncLabel.fill = { type:'pattern', pattern:'solid',
+                       fgColor:{ argb:'FF'+COLORS.ncRowBg } };
+      ncLabel.border = allBorders('CCCCCC');
+
+      weekDays.forEach((day, i) => {
+        const col = 3 + i * 4;
+        sheet.mergeCells(currentRow, col, currentRow, col + 3);
+        const ncCell = sheet.getCell(currentRow, col);
+        const ncDay = ncData?.[day];
+
+        if (ncDay && ncDay.total7M > 0) {
+          const d = ncDay.details || {};
+          const parts: string[] = [];
+          if (d.matierePremiere > 0) parts.push(`M1:${d.matierePremiere}`);
+          if (d.absence > 0)         parts.push(`M2abs:${d.absence}`);
+          if (d.rendement > 0)       parts.push(`M2rdt:${d.rendement}`);
+          if (d.methode > 0)         parts.push(`M3:${d.methode}`);
+          if (d.maintenance > 0)     parts.push(`M4:${d.maintenance}`);
+          if (d.qualite > 0)         parts.push(`M5:${d.qualite}`);
+          if (d.environnement > 0)   parts.push(`M6:${d.environnement}`);
+          ncCell.value = `Total: ${ncDay.total7M}  |  ${parts.join('  ')}`;
+          ncCell.font = { italic:true, size:8,
+                          color:{ argb:'FF'+COLORS.ncHeader } };
+        } else {
+          ncCell.value = '-';
+          ncCell.font = { italic:true, size:8, color:{ argb:'FF999999' } };
+        }
+        ncCell.alignment = { horizontal:'center', vertical:'middle',
+                              wrapText: true };
+        ncCell.fill = { type:'pattern', pattern:'solid',
+                        fgColor:{ argb:'FF'+COLORS.ncRowBg } };
+        ncCell.border = allBorders('CCCCCC');
+      });
+
+      // Cellule Δ Moy. vide pour la ligne 7M
+      const ncAvgCell = sheet.getCell(currentRow, totalDeltaCol);
+      ncAvgCell.value = '';
+      ncAvgCell.fill = { type:'pattern', pattern:'solid',
+                         fgColor:{ argb:'FF'+COLORS.ncRowBg } };
+      ncAvgCell.border = allBorders('CCCCCC');
+      sheet.getRow(currentRow).height = 15;
+      currentRow++;
+    }
+
+    // ── Largeurs colonnes ────────────────────────────────────
+    sheet.getColumn(1).width = 16;
+    sheet.getColumn(2).width = 10;
+    weekDays.forEach((_d, i) => {
+      for (let j = 0; j < 4; j++) {
+        sheet.getColumn(3 + i * 4 + j).width = 9;
+      }
+    });
+    sheet.getColumn(totalDeltaCol).width = 8;
+
+    // Figer lignes/colonnes
+    sheet.views = [{ state:'frozen', xSplit:2, ySplit:3 }];
+  }
+
+  // ── Téléchargement ──────────────────────────────────────
+  this.isExportingWeek.set(false);
+
+  if (workbook.worksheets.length === 0) {
+    alert(`Aucune donnée à exporter pour la semaine ${weekNumber}.`);
+    return;
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Semaine_${weekNumber}_Toutes_Lignes.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Version avec ligne explicite (pour l'export semaine entière)
+ */
+
+private async getNonConfForRefAndLigne(
+  reference: string,
+  semaine: number,
+  ligne: string
+): Promise<Record<string, any> | null> {
+
+  const byDay: Record<string, any> = {};
+
+  // On interroge jour par jour via checkNonConformiteExists
+  // C'est la seule route dont on connaît le format exact : { exists, data: NonConformiteResponse }
+  const weekDaysLocal = ['lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+
+  await Promise.all(weekDaysLocal.map(async (jour) => {
+    try {
+      const response = await new Promise<{ exists: boolean; data?: any }>((res, rej) =>
+        this.nonConfService.checkNonConformiteExists({
+          semaine: `semaine${semaine}`,
+          jour,
+          ligne,
+          reference
+        }).subscribe({ next: res, error: rej })
+      );
+      if (response.exists && response.data) {
+        byDay[jour] = response.data;
+      }
+    } catch {
+      // Pas de données pour ce jour → on ignore
+    }
+  }));
+
+  return Object.keys(byDay).length > 0 ? byDay : null;
+}
 
 }

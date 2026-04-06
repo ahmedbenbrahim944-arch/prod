@@ -1,9 +1,21 @@
 // src/statut/statut.controller.ts
-import { Controller, Post, Body, Get, Query, UseGuards, UsePipes, ValidationPipe, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { StatutService } from './statut.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateStatutDto } from './dto/update-statut.dto';
 import { GetStatutByDateDto } from './dto/get-statut-by-date.dto';
+import { GetStatutByMatriculeDateDto } from './dto/get-statut-by-matricule-date.dto'; // 🆕
 
 @Controller('statut')
 export class StatutController {
@@ -39,5 +51,21 @@ export class StatutController {
   @UseGuards(JwtAuthGuard)
   async getOuvriersNonSaisis(@Query('date') date: string) {
     return this.statutService.getOuvriersNonSaisisParDate(date);
+  }
+
+  /**
+   * 🆕 Rechercher le statut d'un ouvrier par matricule + date
+   * GET /statut/ouvrier?matricule=1234&date=2026-01-05
+   */
+  @Get('ouvrier')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async getStatutOuvrier(
+    @Query() query: GetStatutByMatriculeDateDto,
+  ) {
+    return this.statutService.getStatutOuvrierParMatriculeEtDate(
+      query.matricule,
+      query.date,
+    );
   }
 }

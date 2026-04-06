@@ -328,61 +328,70 @@ checkMissingOfForLine(ligneName: string): void {
   // ─── Construction données tableau ─────────────────────────────────────────
 
   private buildLignesData(lines: ProductLine[], planifications: any[]): void {
-    const planifIndex = new Map<string, any>();
-    planifications.forEach(p => {
-      const key = `${p.ligne}|${p.reference}|${p.jour?.toLowerCase()}`;
-      planifIndex.set(key, p);
-    });
+  const planifIndex = new Map<string, any>();
+  planifications.forEach(p => {
+    const key = `${p.ligne}|${p.reference}|${p.jour?.toLowerCase()}`;
+    planifIndex.set(key, p);
+  });
 
-    const ofByRef = new Map<string, string>();
-    const noteByRef = new Map<string, string>();
-    planifications.forEach(p => {
-      if (p.of && !ofByRef.has(`${p.ligne}|${p.reference}`)) {
-        ofByRef.set(`${p.ligne}|${p.reference}`, p.of);
+  const ofByRef = new Map<string, string>();
+  const noteByRef = new Map<string, string>();
+  
+  planifications.forEach(p => {
+    // Récupérer l'OF (un seul par référence)
+    if (p.of && p.of.trim() !== '' && !ofByRef.has(`${p.ligne}|${p.reference}`)) {
+      ofByRef.set(`${p.ligne}|${p.reference}`, p.of);
+    }
+    
+    // ✅ CORRECTION : Récupérer la note (priorité à la première note non vide)
+    const key = `${p.ligne}|${p.reference}`;
+    if (p.note !== undefined && p.note !== null && p.note.trim() !== '') {
+      // Si on a déjà une note, on garde celle qui a du contenu
+      if (!noteByRef.has(key) || noteByRef.get(key) === '') {
+        noteByRef.set(key, p.note);
       }
-      // Charger la note (identique pour tous les jours d'une référence)
-      if (p.note !== undefined && p.note !== null && !noteByRef.has(`${p.ligne}|${p.reference}`)) {
-        noteByRef.set(`${p.ligne}|${p.reference}`, p.note);
-      }
-    });
+    } else if (!noteByRef.has(key)) {
+      // Initialiser à vide si aucune note trouvée
+      noteByRef.set(key, '');
+    }
+  });
 
-    const result: LigneData[] = lines
-      .sort((a, b) => this.extractLineNumber(a.ligne) - this.extractLineNumber(b.ligne))
-      .map(line => {
-        // ✅ Tri par les 3 derniers chiffres (croissant)
-        const sortedRefs = this.sortReferencesByLast3(line.references || []);
+  const result: LigneData[] = lines
+    .sort((a, b) => this.extractLineNumber(a.ligne) - this.extractLineNumber(b.ligne))
+    .map(line => {
+      const sortedRefs = this.sortReferencesByLast3(line.references || []);
 
-        const refs: ReferenceRow[] = sortedRefs.map(reference => {
-          const row: ReferenceRow = {
-            reference,
-            ligne: line.ligne,
-            note: noteByRef.get(`${line.ligne}|${reference}`) || ''
+      const refs: ReferenceRow[] = sortedRefs.map(reference => {
+        const row: ReferenceRow = {
+          reference,
+          ligne: line.ligne,
+          note: noteByRef.get(`${line.ligne}|${reference}`) || ''  // ✅ Récupérer la note
+        };
+
+        this.weekDays.forEach(day => {
+          const key = `${line.ligne}|${reference}|${day}`;
+          const plan = planifIndex.get(key);
+          const of = ofByRef.get(`${line.ligne}|${reference}`) || '';
+
+          row[day] = {
+            of: plan?.of || of,
+            nbOperateurs: plan?.nbOperateurs || 0,
+            c: plan?.qtePlanifiee || 0,
+            m: plan?.qteModifiee || 0,
+            dp: plan?.decProduction || 0,
+            dm: plan?.decMagasin || 0,
+            delta: plan?.pcsProd || 0
           };
-
-          this.weekDays.forEach(day => {
-            const key = `${line.ligne}|${reference}|${day}`;
-            const plan = planifIndex.get(key);
-            const of = ofByRef.get(`${line.ligne}|${reference}`) || '';
-
-            row[day] = {
-              of: plan?.of || of,
-              nbOperateurs: plan?.nbOperateurs || 0,
-              c: plan?.qtePlanifiee || 0,
-              m: plan?.qteModifiee || 0,
-              dp: plan?.decProduction || 0,
-              dm: plan?.decMagasin || 0,
-              delta: plan?.pcsProd || 0
-            };
-          });
-
-          return row;
         });
 
-        return { ligne: line.ligne, references: refs };
+        return row;
       });
 
-    this.lignesData = result;
-  }
+      return { ligne: line.ligne, references: refs };
+    });
+
+  this.lignesData = result;
+}
 
   // ─── Tri références par 3 derniers chiffres ───────────────────────────────
 
@@ -570,44 +579,65 @@ getMissingOfInfo(line: ProductionLine): { count: number, references: string[] } 
     this.activeRowRef = ref.reference;
   }
 
-  saveNote(ref: ReferenceRow): void {
-    if (this.editingNoteKey !== this.noteRefKey(ref)) return;
+ saveNote(ref: ReferenceRow): void {
+  if (this.editingNoteKey !== this.noteRefKey(ref)) return;
 
-    const newNote = (this.editNoteValue || '').trim();
-    this.savingNoteKey = this.noteRefKey(ref);
-    this.editingNoteKey = null;
-    ref.note = newNote;
+  const newNote = (this.editNoteValue || '').trim();
+  this.savingNoteKey = this.noteRefKey(ref);
+  this.editingNoteKey = null;
+  
+  // ✅ Sauvegarder la note dans l'objet local immédiatement
+  ref.note = newNote;
 
-    // Sauvegarder pour chaque jour (la note est identique pour tous les jours)
-    const dayToSave = this.weekDays.find(d => {
-      const e = ref[d] as DayEntry | undefined;
-      return e && e.c > 0;
-    }) || 'lundi';
-
-    const entry = ref[dayToSave] as DayEntry;
-
-    const payload = {
-      ...this.semaineService.formatWeekForAPI({
-        semaine: this.selectedSemaine,
-        jour: dayToSave,
-        ligne: ref.ligne,
-        reference: ref.reference,
-        nbOperateurs: entry?.nbOperateurs || 0,
-        of: entry?.of || '',
-        qtePlanifiee: entry?.c || 0,
-        qteModifiee: entry?.m || 0,
-        decProduction: entry?.dp || 0,
-        decMagasin: entry?.dm || 0
-      }),
-      note: newNote
-    };
-
-    this.semaineService.updatePlanificationByCriteria(payload).subscribe({
-      next: () => { this.savingNoteKey = null; this.showSuccess('Note sauvegardée ✓'); },
-      error: () => { this.errorMessage = 'Erreur lors de la sauvegarde de la note'; this.savingNoteKey = null; }
-    });
+  // Trouver un jour qui a une quantité planifiée pour sauvegarder la note
+  let dayToSave = 'lundi';
+  for (const day of this.weekDays) {
+    const e = ref[day] as DayEntry | undefined;
+    if (e && e.c > 0) {
+      dayToSave = day;
+      break;
+    }
   }
 
+  const entry = ref[dayToSave] as DayEntry;
+
+  // ✅ Construire le payload avec la note
+  const payload = {
+    semaine: this.selectedSemaine,
+    jour: dayToSave,
+    ligne: ref.ligne,
+    reference: ref.reference,
+    nbOperateurs: entry?.nbOperateurs || 0,
+    of: entry?.of || '',
+    qtePlanifiee: entry?.c || 0,
+    qteModifiee: entry?.m || 0,
+    decProduction: entry?.dp || 0,
+    decMagasin: entry?.dm || 0,
+    note: newNote  // ✅ La note est bien incluse
+  };
+
+  console.log('Sauvegarde note:', payload); // Debug
+
+  this.semaineService.updatePlanificationByCriteria(payload).subscribe({
+    next: (response) => {
+      this.savingNoteKey = null;
+      this.showSuccess('Note sauvegardée ✓');
+      console.log('Note sauvegardée avec succès:', response);
+      
+      // ✅ Recharger les données pour la ligne courante pour être sûr
+      if (this.selectedLigneForView && this.selectedSemaine) {
+        setTimeout(() => {
+          this.loadDataForLigne(this.selectedLigneForView!.ligne);
+        }, 500);
+      }
+    },
+    error: (err) => {
+      console.error('Erreur sauvegarde note:', err);
+      this.errorMessage = 'Erreur lors de la sauvegarde de la note';
+      this.savingNoteKey = null;
+    }
+  });
+}
   goBack(): void {
     this.router.navigate(['/prod']);
   }

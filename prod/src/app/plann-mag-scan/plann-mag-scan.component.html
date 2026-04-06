@@ -1,0 +1,267 @@
+<!-- src/app/plann-mag-scan/plann-mag-scan.component.html -->
+<div class="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 md:p-6">
+
+  <!-- ─── En-tête ─────────────────────────────────────────────────── -->
+  <div class="mb-6 text-center">
+    <h1 class="text-3xl md:text-4xl font-bold text-white mb-1 tracking-wide">
+      📦 Scan Livraison Magasin
+    </h1>
+    <p class="text-gray-400 text-sm">Scannez un code barre pour marquer le planning comme servi</p>
+  </div>
+
+  <!-- ─── Zone de scan ─────────────────────────────────────────────── -->
+  <div class="max-w-xl mx-auto mb-6">
+    <div class="bg-gray-800 border-2 border-gray-600 rounded-2xl p-6 shadow-2xl">
+
+      <!-- Icône scan animée -->
+      <div class="flex justify-center mb-4">
+        <div [class]="isLoading
+            ? 'w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center animate-pulse'
+            : 'w-16 h-16 rounded-full bg-gray-700 border-2 border-gray-500 flex items-center justify-center'">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Label -->
+      <label class="block text-center text-gray-400 text-sm font-semibold mb-3 uppercase tracking-widest">
+        Code document
+      </label>
+
+      <!-- Input douchette — reçoit le scan comme saisie clavier -->
+      <input
+        #scanInput
+        type="text"
+        [(ngModel)]="scanValue"
+        (keyup.enter)="onScan()"
+        [disabled]="isLoading"
+        placeholder="Scannez ou tapez le code barre…"
+        autocomplete="off"
+        class="w-full px-4 py-4 text-center text-xl font-mono font-bold
+               bg-black border-2 border-gray-600 rounded-xl text-white
+               placeholder-gray-600 focus:outline-none focus:border-blue-400
+               focus:ring-2 focus:ring-blue-400 transition disabled:opacity-50"
+      />
+
+      <p class="text-center text-gray-500 text-xs mt-2">
+        La douchette envoie automatiquement la touche Enter après le scan
+      </p>
+
+      <!-- Bouton manuel -->
+      <button
+        (click)="onScan()"
+        [disabled]="!scanValue || isLoading"
+        class="mt-4 w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700
+               disabled:text-gray-500 disabled:cursor-not-allowed
+               text-white font-bold rounded-xl transition flex items-center justify-center gap-2"
+      >
+        <ng-container *ngIf="!isLoading">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Valider
+        </ng-container>
+        <ng-container *ngIf="isLoading">
+          <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          Traitement…
+        </ng-container>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Résultat du dernier scan ─────────────────────────────────── -->
+  <div *ngIf="lastStatus" class="max-w-3xl mx-auto mb-6">
+
+    <!-- ══ SUCCÈS ══ -->
+    <div *ngIf="lastStatus === 'success' && lastResult"
+         class="bg-green-50 border-2 border-green-400 rounded-2xl overflow-hidden shadow-xl">
+
+      <!-- Bandeau vert -->
+      <div class="bg-green-500 px-6 py-4 flex justify-between items-center">
+        <div>
+          <p class="text-white font-black text-2xl tracking-wide">✅ SERVI AVEC SUCCÈS</p>
+          <p class="text-green-100 text-sm font-mono">{{ lastResult.codeDocument }}</p>
+        </div>
+        <button (click)="clearResult()"
+                class="text-white hover:text-green-200 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Infos contexte -->
+      <div class="px-6 py-4 grid grid-cols-2 md:grid-cols-4 gap-3 border-b border-green-200">
+        <div class="text-center">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Date</p>
+          <p class="font-bold text-gray-800">{{ lastResult.dateFormatee }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Jour</p>
+          <p class="font-bold text-gray-800">{{ lastResult.jour | titlecase }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-gray-500 uppercase font-semibold">Semaine</p>
+          <p class="font-bold text-gray-800">{{ lastResult.semaine }}</p>
+        </div>
+        <div class="text-center">
+          <p class="text-xs text-gray-500 uppercase font-semibold">OF</p>
+          <p class="font-bold text-gray-800 font-mono">{{ lastResult.of }}</p>
+        </div>
+      </div>
+
+      <!-- Tableaux MP par référence -->
+      <div class="p-4 space-y-4">
+        <div *ngFor="let ref of refGroupsFromResult"
+             class="border border-green-200 rounded-xl overflow-hidden">
+          <div class="bg-gray-900 px-4 py-3 flex justify-between items-center">
+            <span class="text-white font-mono font-bold text-lg">{{ ref.reference }}</span>
+            <span class="text-gray-400 text-sm">Ligne : {{ ref.ligne }} · Qté : {{ ref.qtePlanifiee }}</span>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="px-3 py-2 text-left font-bold text-gray-600">REF MP</th>
+                <th class="px-3 py-2 text-left font-bold text-gray-600">DESCRIPTION</th>
+                <th class="px-3 py-2 text-center font-bold text-gray-600">QTÉ</th>
+                <th class="px-3 py-2 text-center font-bold text-gray-600">COEFF</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mp of ref.mpRows; let i = index"
+                  [class]="i % 2 === 0 ? 'bg-white' : 'bg-gray-50'">
+                <td class="px-3 py-2 font-mono font-bold text-gray-800">{{ mp.refMp }}</td>
+                <td class="px-3 py-2 text-gray-600 text-xs">{{ mp.descriptionMp }}</td>
+                <td class="px-3 py-2 text-center font-bold text-black">{{ mp.qteNecessaire }}</td>
+                <td class="px-3 py-2 text-center text-gray-500">{{ mp.coeffImpiego }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DÉJÀ SERVI ══ -->
+    <div *ngIf="lastStatus === 'already_served' && lastError"
+         class="bg-orange-50 border-2 border-orange-400 rounded-2xl shadow-xl">
+      <div class="bg-orange-500 px-6 py-4 flex justify-between items-center">
+        <div>
+          <p class="text-white font-black text-2xl">⚠️ DÉJÀ SERVI</p>
+          <p class="text-orange-100 text-sm font-mono">{{ lastError.codeDocument }}</p>
+        </div>
+        <button (click)="clearResult()" class="text-white hover:text-orange-200 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="px-6 py-5 space-y-2">
+        <p class="text-orange-800 font-semibold text-lg">{{ lastError.message }}</p>
+        <div class="grid grid-cols-2 gap-3 mt-3">
+          <div class="bg-orange-100 rounded-xl p-3 text-center">
+            <p class="text-xs text-orange-600 font-semibold uppercase">Servi le</p>
+            <p class="font-bold text-orange-900">{{ lastError.serviLe | date:'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+          <div class="bg-orange-100 rounded-xl p-3 text-center">
+            <p class="text-xs text-orange-600 font-semibold uppercase">Par</p>
+            <p class="font-bold text-orange-900">{{ lastError.serviPar || '—' }}</p>
+          </div>
+          <div class="bg-orange-100 rounded-xl p-3 text-center">
+            <p class="text-xs text-orange-600 font-semibold uppercase">Ligne</p>
+            <p class="font-bold text-orange-900">{{ lastError.ligne || '—' }}</p>
+          </div>
+          <div class="bg-orange-100 rounded-xl p-3 text-center">
+            <p class="text-xs text-orange-600 font-semibold uppercase">Semaine</p>
+            <p class="font-bold text-orange-900">{{ lastError.semaine || '—' }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INTROUVABLE / ERREUR ══ -->
+    <div *ngIf="lastStatus === 'not_found' || lastStatus === 'error'"
+         class="bg-red-50 border-2 border-red-400 rounded-2xl shadow-xl">
+      <div class="bg-red-500 px-6 py-4 flex justify-between items-center">
+        <div>
+          <p class="text-white font-black text-2xl">
+            {{ lastStatus === 'not_found' ? '❌ INTROUVABLE' : '🔴 ERREUR' }}
+          </p>
+          <p class="text-red-100 text-sm font-mono">{{ lastError?.codeDocument }}</p>
+        </div>
+        <button (click)="clearResult()" class="text-white hover:text-red-200 transition">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="px-6 py-5">
+        <p class="text-red-700 font-semibold">{{ lastError?.message }}</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── Historique de session ─────────────────────────────────────── -->
+  <div *ngIf="history.length > 0" class="max-w-3xl mx-auto">
+    <div class="flex justify-between items-center mb-3">
+      <h2 class="text-white font-bold text-lg">
+        Historique de session
+        <span class="text-gray-400 font-normal text-sm ml-2">({{ history.length }} scan(s))</span>
+      </h2>
+      <button
+        (click)="clearHistory()"
+        class="text-gray-400 hover:text-red-400 text-sm transition flex items-center gap-1"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        Vider
+      </button>
+    </div>
+
+    <div class="space-y-2">
+      <div
+        *ngFor="let item of history"
+        class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-3
+               flex items-center justify-between gap-4"
+      >
+        <!-- Code doc + ligne -->
+        <div class="flex items-center gap-3 min-w-0">
+          <span [class]="'px-2 py-1 rounded-lg text-xs font-bold shrink-0 ' + getBadgeClass(item.status)">
+            {{ getStatusLabel(item.status) }}
+          </span>
+          <div class="min-w-0">
+            <p class="text-white font-mono font-bold truncate">{{ item.codeDocument }}</p>
+            <p class="text-gray-400 text-xs truncate">
+              {{ item.ligne || '—' }} · {{ item.semaine || '—' }} · {{ item.dateFormatee || '—' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Heure du scan -->
+        <span class="text-gray-500 text-xs shrink-0">
+          {{ item.scannedAt | date:'HH:mm:ss' }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── État vide (avant premier scan) ───────────────────────────── -->
+  <div *ngIf="!lastStatus && history.length === 0"
+       class="max-w-xl mx-auto text-center mt-8 text-gray-600">
+    <svg class="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+    </svg>
+    <p class="text-gray-500">En attente d'un scan…</p>
+    <p class="text-gray-600 text-xs mt-1">Pointez la douchette sur le code barre du document imprimé</p>
+  </div>
+
+</div>

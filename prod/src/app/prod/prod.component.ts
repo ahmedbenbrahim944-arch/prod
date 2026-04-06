@@ -24,6 +24,8 @@ import { Chart } from 'chart.js';
 import { StatsAnnuelService, StatsAnnuellesResponse } from './stats-annuel.service';
 import { Stats5MAnnuelService , Stats5MAnnuellesResponse} from '../prod/stats-5m-annuel.service';
 import { MatierePremiereService } from './matiere-premiere.service';
+import { MatierePremiereMagasinService, MatierePremiereMagasin, CreateMatierePremiereMagasinDto, UpdateMatierePremiereMagasinDto, SearchMatierePremiereMagasinDto } from './matiere-premiere-magasin.service';
+
 
 
 
@@ -108,6 +110,30 @@ interface UserForm {
   };
 }
 
+interface MatierePremiereMagasinForm {
+  mode: 'add' | 'edit';
+  ligne: string;
+  referenceLigne: string;
+  refMp: string;
+  description: string;
+  coeffImpiego: number | null;
+  editingId: number | null;
+  errors: {
+    ligne?: string;
+    referenceLigne?: string;
+    refMp?: string;
+    description?: string;
+    coeffImpiego?: string;
+  };
+}
+
+interface SearchMpMagasinForm {
+  ligne: string;
+  referenceLigne: string;
+  refMp: string;
+  description: string;
+}
+
 interface TimeForm {
   selectedLine: string; // Changez de 'ligne' à 'selectedLine'
   selectedReference: string; // Changez de 'reference' à 'selectedReference'
@@ -181,6 +207,8 @@ export class ProdComponent implements OnInit {
   private statsAnnuelService = inject(StatsAnnuelService);
   private stats5MAnnuelService = inject(Stats5MAnnuelService);
   private matierePremiereService = inject(MatierePremiereService);
+  private matierePremiereMagasinService = inject(MatierePremiereMagasinService);
+  
 
   matierePremieres = signal<MatierePremiere[]>([]);
 
@@ -327,6 +355,7 @@ stats5MAnnuellesPreview = signal<Stats5MAnnuellesResponse | null>(null);
   this.loadMatierePremieres();
    this.loadOuvriers();
    this.loadOuvriers();
+   this.loadMatieresMagasin();
     
   
   // Watcher pour le changement de semaine
@@ -2870,7 +2899,8 @@ getTabTitle(): string {
     'download-phase': 'Télécharger les Rapports de Phase',
     'download-line-summary': 'Résumé par Ligne',
     'stats-annuelles': 'Productivité Annuelle',
-    'view-stats': 'Voir les Statistiques' // Ajouter cette ligne
+    'view-stats': 'Voir les Statistiques',
+     'mp-magasin': 'Matières Premières Magasin',
   };
   return titles[this.activeTab()] || 'PDP - Système de Gestion';
 }
@@ -3434,5 +3464,222 @@ onDeleteOuvrier(matricule: number) {
       });
   }
 }
+matieresMagasin = signal<MatierePremiereMagasin[]>([]);
+matieresMagasinFiltered = signal<MatierePremiereMagasin[]>([]);
+loadingMatieresMagasin = signal(false);
+mpMagasinForm: MatierePremiereMagasinForm = {
+  mode: 'add',
+  ligne: '',
+  referenceLigne: '',
+  refMp: '',
+  description: '',
+  coeffImpiego: null,
+  editingId: null,
+  errors: {}
+};
+
+searchMpMagasinForm: SearchMpMagasinForm = {
+  ligne: '',
+  referenceLigne: '',
+  refMp: '',
+  description: ''
+};
+// ─── MATIÈRES PREMIÈRES MAGASIN ───────────────────────────────────────────
+
+public loadMatieresMagasin() {
+  this.loadingMatieresMagasin.set(true);
+
+  this.matierePremiereMagasinService.findAll()
+    .pipe(
+      takeUntilDestroyed(this.destroyRef),
+      catchError(() => {
+        this.errorMessage.set('Impossible de charger les matières premières magasin');
+        return of([]);
+      }),
+      finalize(() => this.loadingMatieresMagasin.set(false))
+    )
+    .subscribe(data => {
+      this.matieresMagasin.set(data);
+      this.matieresMagasinFiltered.set(data);
+    });
+}
+
+onSearchMpMagasin() {
+  const dto: SearchMatierePremiereMagasinDto = {};
+  if (this.searchMpMagasinForm.ligne.trim())        dto.ligne = this.searchMpMagasinForm.ligne.trim();
+  if (this.searchMpMagasinForm.referenceLigne.trim()) dto.referenceLigne = this.searchMpMagasinForm.referenceLigne.trim();
+  if (this.searchMpMagasinForm.refMp.trim())         dto.refMp = this.searchMpMagasinForm.refMp.trim();
+  if (this.searchMpMagasinForm.description.trim())   dto.description = this.searchMpMagasinForm.description.trim();
+
+  // Si tous les champs sont vides, recharger tout
+  if (Object.keys(dto).length === 0) {
+    this.matieresMagasinFiltered.set(this.matieresMagasin());
+    return;
+  }
+
+  this.loadingMatieresMagasin.set(true);
+  this.errorMessage.set(null);
+
+  this.matierePremiereMagasinService.search(dto)
+    .pipe(
+      takeUntilDestroyed(this.destroyRef),
+      catchError(() => {
+        this.errorMessage.set('Erreur lors de la recherche');
+        return of({ total: 0, data: [] });
+      }),
+      finalize(() => this.loadingMatieresMagasin.set(false))
+    )
+    .subscribe(result => this.matieresMagasinFiltered.set(result.data));
+}
+
+onResetSearchMpMagasin() {
+  this.searchMpMagasinForm = { ligne: '', referenceLigne: '', refMp: '', description: '' };
+  this.matieresMagasinFiltered.set(this.matieresMagasin());
+}
+
+onSubmitMpMagasin() {
+  // Validation
+  this.mpMagasinForm.errors = {};
+  let hasErrors = false;
+
+  if (!this.mpMagasinForm.ligne.trim()) {
+    this.mpMagasinForm.errors.ligne = 'La ligne est requise';
+    hasErrors = true;
+  }
+  if (!this.mpMagasinForm.referenceLigne.trim()) {
+    this.mpMagasinForm.errors.referenceLigne = 'La référence ligne est requise';
+    hasErrors = true;
+  }
+  if (!this.mpMagasinForm.refMp.trim()) {
+    this.mpMagasinForm.errors.refMp = 'La référence MP est requise';
+    hasErrors = true;
+  }
+  if (!this.mpMagasinForm.description.trim()) {
+    this.mpMagasinForm.errors.description = 'La description est requise';
+    hasErrors = true;
+  }
+  if (this.mpMagasinForm.coeffImpiego === null || this.mpMagasinForm.coeffImpiego < 0) {
+    this.mpMagasinForm.errors.coeffImpiego = 'Le coefficient doit être ≥ 0';
+    hasErrors = true;
+  }
+
+  if (hasErrors) return;
+
+  this.loading.set(true);
+  this.errorMessage.set(null);
+
+  if (this.mpMagasinForm.mode === 'add') {
+    const dto: CreateMatierePremiereMagasinDto = {
+      ligne: this.mpMagasinForm.ligne.trim(),
+      referenceLigne: this.mpMagasinForm.referenceLigne.trim(),
+      refMp: this.mpMagasinForm.refMp.trim(),
+      description: this.mpMagasinForm.description.trim(),
+      coeffImpiego: this.mpMagasinForm.coeffImpiego!
+    };
+
+    this.matierePremiereMagasinService.create(dto)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(error => {
+          this.errorMessage.set(error.error?.message || 'Erreur lors de la création');
+          return of(null);
+        }),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe(response => {
+        if (response) {
+          this.showSuccessMessage('Matière première magasin ajoutée avec succès !');
+          this.resetMpMagasinForm();
+          this.loadMatieresMagasin();
+        }
+      });
+
+  } else {
+    const dto: UpdateMatierePremiereMagasinDto = {
+      ligne: this.mpMagasinForm.ligne.trim(),
+      referenceLigne: this.mpMagasinForm.referenceLigne.trim(),
+      refMp: this.mpMagasinForm.refMp.trim(),
+      description: this.mpMagasinForm.description.trim(),
+      coeffImpiego: this.mpMagasinForm.coeffImpiego!
+    };
+
+    this.matierePremiereMagasinService.update(this.mpMagasinForm.editingId!, dto)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        catchError(error => {
+          this.errorMessage.set(error.error?.message || 'Erreur lors de la modification');
+          return of(null);
+        }),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe(response => {
+        if (response) {
+          this.showSuccessMessage('Matière première magasin modifiée avec succès !');
+          this.resetMpMagasinForm();
+          this.loadMatieresMagasin();
+        }
+      });
+  }
+}
+
+onEditMpMagasin(item: MatierePremiereMagasin) {
+  this.mpMagasinForm = {
+    mode: 'edit',
+    ligne: item.ligne,
+    referenceLigne: item.referenceLigne,
+    refMp: item.refMp,
+    description: item.description,
+    coeffImpiego: item.coeffImpiego,
+    editingId: item.id!,
+    errors: {}
+  };
+  // Scroll vers le formulaire
+  setTimeout(() => {
+    document.querySelector('.mp-magasin-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+onDeleteMpMagasin(id: number, refMp: string) {
+  if (!confirm(`Supprimer la matière première "${refMp}" ?`)) return;
+
+  this.loading.set(true);
+  this.errorMessage.set(null);
+
+  this.matierePremiereMagasinService.remove(id)
+    .pipe(
+      takeUntilDestroyed(this.destroyRef),
+      catchError(error => {
+        this.errorMessage.set(error.error?.message || 'Erreur lors de la suppression');
+        return of(null);
+      }),
+      finalize(() => this.loading.set(false))
+    )
+    .subscribe(response => {
+      if (response) {
+        this.showSuccessMessage(`Matière première "${refMp}" supprimée !`);
+        this.loadMatieresMagasin();
+      }
+    });
+}
+
+onCancelMpMagasin() {
+  this.resetMpMagasinForm();
+  this.activeTab.set('view');
+}
+
+private resetMpMagasinForm() {
+  this.mpMagasinForm = {
+    mode: 'add',
+    ligne: '',
+    referenceLigne: '',
+    refMp: '',
+    description: '',
+    coeffImpiego: null,
+    editingId: null,
+    errors: {}
+  };
+  this.errorMessage.set(null);
+}
+
 
 }

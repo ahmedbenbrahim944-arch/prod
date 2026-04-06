@@ -76,6 +76,13 @@
           <img src="assets/icons/plus.png" alt="Matière Première" class="nav-button-icon">
           Ajouter Matière Première
         </button>
+        <button
+  (click)="setActiveTab('mp-magasin')"
+  class="nav-button"
+  [class.active]="activeTab() === 'mp-magasin'">
+  <img src="assets/icons/plus.png" alt="MP Magasin" class="nav-button-icon">
+  MP Magasin
+</button>
       </div>
 
       <!-- ─── PLANNING ─── -->
@@ -202,6 +209,22 @@
         </button>
 
         <button
+          [routerLink]="['/planmag']"
+          class="nav-button"
+          [class.active]="activeTab() === 'view-stats'">
+          <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
+          Planification Magasin
+        </button>
+
+        <button
+          [routerLink]="['/scann']"
+          class="nav-button"
+          [class.active]="activeTab() === 'view-stats'">
+          <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
+          scanner
+        </button>
+
+        <button
           [routerLink]="['/admin/tracking']"
           class="nav-button"
           [class.active]="activeTab() === 'view-stats'">
@@ -245,6 +268,288 @@
         <div class="text-indigo-200">Utilisateurs</div>
       </div>
     </div>
+    <!-- Onglet: Matières Premières Magasin -->
+<div *ngIf="activeTab() === 'mp-magasin'" class="fade-in">
+  <div class="max-w-5xl mx-auto space-y-8">
+
+    <!-- ─── FORMULAIRE AJOUT / MODIFICATION ─── -->
+    <div class="creation-card mp-magasin-form">
+
+      <!-- Sélecteur mode -->
+      <div class="flex space-x-4 mb-6">
+        <button
+          type="button"
+          (click)="mpMagasinForm.mode = 'add'; mpMagasinForm.editingId = null; mpMagasinForm.errors = {}"
+          class="flex-1 py-3 rounded-xl font-semibold transition-all duration-300"
+          [class]="mpMagasinForm.mode === 'add'
+                   ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/25'
+                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
+          <span class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Ajouter
+          </span>
+        </button>
+        <button
+          type="button"
+          (click)="mpMagasinForm.mode = 'edit'"
+          class="flex-1 py-3 rounded-xl font-semibold transition-all duration-300"
+          [class]="mpMagasinForm.mode === 'edit'
+                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
+                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'">
+          <span class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Modifier
+          </span>
+        </button>
+      </div>
+
+      <h2 class="text-2xl font-bold mb-6"
+          [class]="mpMagasinForm.mode === 'add' ? 'text-orange-400' : 'text-blue-400'">
+        {{ mpMagasinForm.mode === 'add' ? 'Ajouter une Matière Première Magasin' : 'Modifier une Matière Première Magasin' }}
+      </h2>
+
+      <!-- Message d'erreur -->
+      <div *ngIf="errorMessage()" class="mb-6 p-4 bg-red-900/30 border border-red-700 rounded-xl">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-red-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-red-300 font-medium">{{ errorMessage() }}</p>
+        </div>
+      </div>
+
+      <!-- Formulaire -->
+      <form (ngSubmit)="onSubmitMpMagasin()" class="space-y-5">
+
+        <!-- Ligne + Référence Ligne (côte à côte) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div>
+            <label class="form-label">Ligne *</label>
+            <select
+              [(ngModel)]="mpMagasinForm.ligne"
+              name="mp_ligne"
+              class="form-input"
+              [class.error]="mpMagasinForm.errors.ligne">
+              <option value="" disabled selected>Sélectionnez une ligne</option>
+              <option *ngFor="let line of lines()" [value]="line.ligne">{{ line.ligne }}</option>
+            </select>
+            <div *ngIf="mpMagasinForm.errors.ligne" class="form-error">{{ mpMagasinForm.errors.ligne }}</div>
+          </div>
+
+          <div>
+            <label class="form-label">Référence Ligne *</label>
+            <input
+              type="text"
+              [(ngModel)]="mpMagasinForm.referenceLigne"
+              name="mp_referenceLigne"
+              placeholder="Ex: REF-A001"
+              class="form-input"
+              [class.error]="mpMagasinForm.errors.referenceLigne">
+            <div *ngIf="mpMagasinForm.errors.referenceLigne" class="form-error">{{ mpMagasinForm.errors.referenceLigne }}</div>
+          </div>
+
+        </div>
+
+        <!-- Référence MP + Coefficient (côte à côte) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+          <div>
+            <label class="form-label">Référence MP *</label>
+            <input
+              type="text"
+              [(ngModel)]="mpMagasinForm.refMp"
+              name="mp_refMp"
+              placeholder="Ex: MAT-001"
+              class="form-input"
+              [class.error]="mpMagasinForm.errors.refMp">
+            <div *ngIf="mpMagasinForm.errors.refMp" class="form-error">{{ mpMagasinForm.errors.refMp }}</div>
+          </div>
+
+          <div>
+            <label class="form-label">Coefficient d'impiego *</label>
+            <input
+              type="number"
+              [(ngModel)]="mpMagasinForm.coeffImpiego"
+              name="mp_coeff"
+              placeholder="Ex: 1.5"
+              min="0"
+              step="0.01"
+              class="form-input"
+              [class.error]="mpMagasinForm.errors.coeffImpiego">
+            <div *ngIf="mpMagasinForm.errors.coeffImpiego" class="form-error">{{ mpMagasinForm.errors.coeffImpiego }}</div>
+          </div>
+
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="form-label">Description *</label>
+          <input
+            type="text"
+            [(ngModel)]="mpMagasinForm.description"
+            name="mp_description"
+            placeholder="Ex: Tissu coton 200g/m²"
+            class="form-input"
+            [class.error]="mpMagasinForm.errors.description">
+          <div *ngIf="mpMagasinForm.errors.description" class="form-error">{{ mpMagasinForm.errors.description }}</div>
+        </div>
+
+        <!-- Boutons -->
+        <div class="flex gap-4 pt-2">
+          <button
+            type="button"
+            (click)="onCancelMpMagasin()"
+            class="flex-1 py-4 rounded-xl font-semibold bg-gray-600 hover:bg-gray-500 text-white transition-all duration-300">
+            Annuler
+          </button>
+          <button
+            type="submit"
+            [disabled]="loading()"
+            class="flex-1 py-4 rounded-xl font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            [class]="mpMagasinForm.mode === 'add' ? 'bg-orange-600 hover:bg-orange-500' : 'bg-blue-600 hover:bg-blue-500'">
+            <span class="flex items-center justify-center gap-2">
+              <span *ngIf="loading()" class="loader-small"></span>
+              {{ loading() ? 'Enregistrement...' : (mpMagasinForm.mode === 'add' ? 'Ajouter' : 'Enregistrer les modifications') }}
+            </span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- ─── RECHERCHE ─── -->
+    <div class="creation-card">
+      <h3 class="text-xl font-bold text-gray-200 mb-5">Recherche multicritères</h3>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="form-label">Ligne</label>
+          <input type="text" [(ngModel)]="searchMpMagasinForm.ligne"
+            placeholder="Ligne..." class="form-input" (keyup.enter)="onSearchMpMagasin()">
+        </div>
+        <div>
+          <label class="form-label">Référence Ligne</label>
+          <input type="text" [(ngModel)]="searchMpMagasinForm.referenceLigne"
+            placeholder="Réf. ligne..." class="form-input" (keyup.enter)="onSearchMpMagasin()">
+        </div>
+        <div>
+          <label class="form-label">Référence MP</label>
+          <input type="text" [(ngModel)]="searchMpMagasinForm.refMp"
+            placeholder="Réf. MP..." class="form-input" (keyup.enter)="onSearchMpMagasin()">
+        </div>
+        <div>
+          <label class="form-label">Description</label>
+          <input type="text" [(ngModel)]="searchMpMagasinForm.description"
+            placeholder="Description..." class="form-input" (keyup.enter)="onSearchMpMagasin()">
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button (click)="onSearchMpMagasin()" [disabled]="loadingMatieresMagasin()"
+          class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 disabled:opacity-50">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Rechercher
+        </button>
+        <button (click)="onResetSearchMpMagasin()"
+          class="px-5 py-2.5 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-semibold transition-all duration-300">
+          Réinitialiser
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── TABLEAU ─── -->
+    <div class="creation-card">
+
+      <!-- Stats -->
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-bold text-orange-400">
+          Liste des Matières Premières Magasin
+        </h3>
+        <div class="flex gap-4 items-center">
+          <span class="text-sm text-gray-400">
+            {{ matieresMagasinFiltered().length }} / {{ matieresMagasin().length }} entrées
+          </span>
+          <button (click)="loadMatieresMagasin()"
+            [disabled]="loadingMatieresMagasin()"
+            class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-lg text-sm flex items-center gap-2 transition-all duration-300 disabled:opacity-50">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Rafraîchir
+          </button>
+        </div>
+      </div>
+
+      <!-- Chargement -->
+      <div *ngIf="loadingMatieresMagasin()" class="text-center py-10">
+        <div class="loader-small mx-auto"></div>
+        <p class="text-gray-400 mt-3">Chargement...</p>
+      </div>
+
+      <!-- Tableau -->
+      <div *ngIf="!loadingMatieresMagasin()" class="overflow-x-auto rounded-xl border border-gray-700/30">
+        <table class="w-full">
+          <thead>
+            <tr class="bg-gray-800/70">
+              <th class="p-3 text-left text-gray-300 font-semibold">Ligne</th>
+              <th class="p-3 text-left text-gray-300 font-semibold">Réf. Ligne</th>
+              <th class="p-3 text-left text-gray-300 font-semibold">Réf. MP</th>
+              <th class="p-3 text-left text-gray-300 font-semibold">Description</th>
+              <th class="p-3 text-center text-gray-300 font-semibold">Coeff.</th>
+              <th class="p-3 text-center text-gray-300 font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of matieresMagasinFiltered()"
+                class="border-b border-gray-700/30 hover:bg-gray-800/40 transition-colors duration-200">
+              <td class="p-3 text-gray-300 font-medium">{{ item.ligne }}</td>
+              <td class="p-3 text-cyan-300">{{ item.referenceLigne }}</td>
+              <td class="p-3 text-orange-300 font-semibold">{{ item.refMp }}</td>
+              <td class="p-3 text-gray-400">{{ item.description }}</td>
+              <td class="p-3 text-center text-green-300 font-semibold">{{ item.coeffImpiego }}</td>
+              <td class="p-3">
+                <div class="flex items-center justify-center gap-2">
+                  <!-- Modifier -->
+                  <button (click)="onEditMpMagasin(item)"
+                    class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Modifier
+                  </button>
+                  <!-- Supprimer -->
+                  <button (click)="onDeleteMpMagasin(item.id!, item.refMp)"
+                    class="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-300 rounded-lg text-sm transition-all duration-300 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Supprimer
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Vide -->
+        <div *ngIf="matieresMagasinFiltered().length === 0" class="text-center py-12">
+          <svg class="w-14 h-14 text-gray-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+          </svg>
+          <p class="text-gray-400 text-lg">Aucune matière première trouvée</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
     <!-- Onglet: Voir les lignes -->
     <div *ngIf="activeTab() === 'view'" class="fade-in">

@@ -32,16 +32,24 @@ export class AutosaisieService {
    * Obtenir la semaine ISO au format "semaineX"
    */
   private getSemaineISO(date: Date = new Date()): string {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const dayOfWeek = d.getDay();
-    const targetDay = dayOfWeek === 0 ? -3 : 4 - dayOfWeek;
-    d.setDate(d.getDate() + targetDay);
-    const yearStart = new Date(d.getFullYear(), 0, 4);
-    const daysDiff = Math.floor((d.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000));
-    const weekNumber = Math.ceil((daysDiff + 1) / 7);
-    return `semaine${weekNumber}`;
-  }
+  // Travailler en UTC pour éviter les décalages de fuseau horaire
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+
+  // ISO 8601 : lundi=1 ... dimanche=7
+  const day = d.getUTCDay() || 7;
+
+  // Se positionner sur le jeudi de la semaine courante
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+
+  // Comparer avec le 1er janvier de l'année du jeudi trouvé
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+
+  const weekNumber = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7,
+  );
+
+  return `semaine${weekNumber}`;
+}
 
   /**
    * Obtenir le jour de la semaine en français

@@ -953,10 +953,10 @@ private initialiserDatesHier(): void {
   hier.setDate(today.getDate() - 1);
   
   // Vérifier si hier est dimanche (0 = dimanche en JavaScript)
-  while (hier.getDay() === 0) { // 0 = Dimanche
-    console.log(`${this.formatDate(hier)} est un dimanche (pas de données), on prend la veille`);
-    hier.setDate(hier.getDate() - 1);
-  }
+  while (hier.getDay() === 0 || hier.getDay() === 6) { // 0 = Dimanche, 6 = Samedi
+  console.log(`${this.formatDate(hier)} est un ${hier.getDay() === 0 ? 'dimanche' : 'samedi'} (pas de données), on prend la veille`);
+  hier.setDate(hier.getDate() - 1);
+}
   
   const hierFormatted = this.formatDate(hier);
   

@@ -350,7 +350,7 @@ export class StatutService {
   /**
    * Obtenir tous les statuts pour une date donnée
    */
- /**
+  /**
  * Obtenir tous les statuts pour une date donnée
  */
 async getStatutsByDate(getStatutByDateDto: GetStatutByDateDto) {
@@ -768,4 +768,93 @@ async getStatutsByDate(getStatutByDateDto: GetStatutByDateDto) {
       );
     }
   }
+
+  async getStatutOuvrierParMatriculeEtDate(matricule: number, date: string) {
+  console.log(`=== RECHERCHE STATUT OUVRIER : matricule=${matricule} / date=${date} ===`);
+ 
+  try {
+    // 1. Vérifier que l'ouvrier existe
+    const ouvrier = await this.ouvrierRepository.findOne({
+      where: { matricule: matricule as any },
+    });
+ 
+    if (!ouvrier) {
+      throw new NotFoundException(
+        `Ouvrier avec le matricule ${matricule} introuvable`,
+      );
+    }
+ 
+    // 2. Chercher le statut pour ce matricule + cette date
+    const statutTrouve = await this.statutOuvrierRepository.findOne({
+      where: { matricule: matricule as any, date },
+    });
+ 
+    // 3. Si aucun statut enregistré, vérifier s'il a saisi un rapport ce jour-là
+    //    (ce qui signifie qu'il est implicitement Présent)
+    if (!statutTrouve) {
+      const { semaine, jour } = this.convertirDateEnSemaineEtJour(date);
+      const rapport = await this.saisieRapportRepository.findOne({
+        where: { matricule: matricule as any, semaine, jour },
+      });
+ 
+      // Pas de statut ET pas de rapport → aucune donnée pour cette date
+      if (!rapport) {
+        return {
+          message: `Aucun statut enregistré pour le matricule ${matricule} à la date ${date}`,
+          ouvrier: {
+            matricule: ouvrier.matricule,
+            nomPrenom: ouvrier.nomPrenom,
+          },
+          date,
+          statut: null,
+          libelleStatut: 'Non défini',
+          source: 'aucune_donnee',
+          commentaire: null,
+        };
+      }
+ 
+      // A saisi un rapport → Présent implicite
+      return {
+        message: `Statut trouvé pour ${ouvrier.nomPrenom}`,
+        ouvrier: {
+          matricule: ouvrier.matricule,
+          nomPrenom: ouvrier.nomPrenom,
+        },
+        date,
+        statut: 'P',
+        libelleStatut: this.getLibelleStatut('P'),
+        source: 'saisie_rapport', // 💡 indique que le statut vient du rapport, pas de la table statut
+        commentaire: 'Présent — rapport saisi ce jour',
+      };
+    }
+ 
+    // 4. Statut explicite trouvé dans la table statut_ouvrier
+    return {
+      message: `Statut trouvé pour ${ouvrier.nomPrenom}`,
+      ouvrier: {
+        matricule: statutTrouve.matricule,
+        nomPrenom: statutTrouve.nomPrenom,
+      },
+      date: statutTrouve.date,
+      statut: statutTrouve.statut,
+      libelleStatut: this.getLibelleStatut(statutTrouve.statut),
+      source: 'statut_ouvrier', // 💡 vient de la table statut_ouvrier
+      commentaire: statutTrouve.commentaire ?? null,
+    };
+ 
+  } catch (error) {
+    console.error(`Erreur dans getStatutOuvrierParMatriculeEtDate:`, error);
+ 
+    if (
+      error instanceof NotFoundException ||
+      error instanceof BadRequestException
+    ) {
+      throw error;
+    }
+ 
+    throw new InternalServerErrorException(
+      `Erreur lors de la recherche du statut: ${error.message}`,
+    );
+  }
+}
 }

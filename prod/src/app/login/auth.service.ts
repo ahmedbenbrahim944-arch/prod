@@ -56,6 +56,9 @@ export class AuthService {
           if (matricule === '0929') {
             this.router.navigate(['/ch3']);
           }
+          else if (matricule === '1411') {
+            this.router.navigate(['/ch5']);
+          }
           else if (matricule === '1952') {
             this.router.navigate(['/ecran']);
           }
