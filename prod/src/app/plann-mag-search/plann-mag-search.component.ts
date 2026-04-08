@@ -280,11 +280,22 @@ export class PlannMagSearchComponent {
     doc.setLineWidth(0.5);
     doc.line(mg, 37, pw - mg, 37);
 
+    // ── Numéro de planification (centré dans l'en-tête) ───────────────────
+    const numeroPlan = this.buildNumeroPlanification(ref);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`N° Planning : ${numeroPlan}`, pw / 2, 45, { align: 'center' });
+
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.line(mg, 49, pw - mg, 49);
+
     // ── Référence produit ─────────────────────────────────────────────────
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(38);
     doc.setTextColor(0, 0, 0);
-    doc.text(ref.reference, pw / 2, 58, { align: 'center' });
+    doc.text(ref.reference, pw / 2, 67, { align: 'center' });
 
     // Quantité : totalQte (somme de tous les OFs)
     doc.setFont('helvetica', 'normal');
@@ -293,14 +304,14 @@ export class PlannMagSearchComponent {
     const qteLabel = ref.ofs.length > 1
       ? `Quantité totale planifiée : ${ref.totalQte}  (${ref.ofs.map(o => `OF ${o.of} : ${o.qtePlanifiee}`).join(' / ')})`
       : `Quantité planifiée : ${ref.totalQte}`;
-    doc.text(qteLabel, pw / 2, 67, { align: 'center' });
+    doc.text(qteLabel, pw / 2, 76, { align: 'center' });
 
     doc.setDrawColor(180, 180, 180);
     doc.setLineWidth(0.4);
-    doc.line(mg, 71, pw - mg, 71);
+    doc.line(mg, 80, pw - mg, 80);
 
     // ── Tableau MP ────────────────────────────────────────────────────────
-    let y = 77;
+    let y = 86;
     const rowH    = 10;
     const colRef  = 40;
     const colDes  = 65;
@@ -480,6 +491,63 @@ export class PlannMagSearchComponent {
 
   private capitalizeFirst(str: string): string {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+  }
+
+  // ─── Numéro de planification ──────────────────────────────────────────────
+  /**
+   * Construit le numéro de planification :
+   *   [LetAnnée][JJ][NumJour][NumLigne][NumOF]
+   *   Exemple : G080336069739
+   *     G     → 2026  (A=2020, B=2021 … G=2026)
+   *     08    → 8ème jour du mois
+   *     03    → Mercredi (lundi=01 … dimanche=07)
+   *     36    → ligne L36:RXT1
+   *     069739 → numéro OF
+   */
+  buildNumeroPlanification(ref: RefGroupDisplay): string {
+    // 1. Lettre de l'année
+    const yearLetter = this.getYearLetter(this.annee);
+
+    // 2. Jour du mois (2 premiers caractères de this.date au format JJMM)
+    const dd = this.date.substring(0, 2);
+
+    // 3. Numéro du jour de la semaine
+    const jourNum = this.getJourNum(ref.jour);
+
+    // 4. Numéro de ligne (2 chiffres après "L" dans ref.ligne ex: "L04:RXT1" → "04")
+    const ligneNum = this.getLigneNum(ref.ligne);
+
+    // 5. Numéro OF (premier OF disponible)
+    const ofNum = (ref.ofs && ref.ofs.length > 0)
+      ? (ref.ofs[0].of || '')
+      : (ref.codeDocument || '');
+
+    return `${yearLetter}${dd}${jourNum}${ligneNum}${ofNum}`;
+  }
+
+  private getYearLetter(annee: string): string {
+    const base = 2020; // A = 2020
+    const diff = parseInt(annee, 10) - base;
+    return String.fromCharCode(65 + Math.max(0, diff)); // 65 = 'A'
+  }
+
+  private getJourNum(jour: string): string {
+    const map: Record<string, string> = {
+      'lundi':    '01',
+      'mardi':    '02',
+      'mercredi': '03',
+      'jeudi':    '04',
+      'vendredi': '05',
+      'samedi':   '06',
+      'dimanche': '07',
+    };
+    return map[jour.toLowerCase()] || '00';
+  }
+
+  private getLigneNum(ligne: string): string {
+    // "L04:RXT1" → "04" / "L36:RXT2" → "36"
+    const m = ligne.match(/L(\d{2,})/i);
+    return m ? m[1].padStart(2, '0') : '00';
   }
 
   /** Helper appelé depuis le template — évite les arrow functions interdites dans Angular */

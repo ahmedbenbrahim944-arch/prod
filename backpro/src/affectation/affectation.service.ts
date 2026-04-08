@@ -37,7 +37,8 @@ export class AffectationService {
       matricule: a.ouvrier.matricule,
       nomPrenom: a.ouvrier.nomPrenom,
       ligne: a.ligne,
-      estCapitaine: a.estCapitaine, // Ajout
+      estCapitaine: a.estCapitaine,
+      poste: a.poste, // ← ajouté
       phases: (a.phases ?? []).map((p) => ({
         id: p.id,
         phase: p.phase,
@@ -48,7 +49,7 @@ export class AffectationService {
     };
   }
 
-   private async verifierCapitaineUnique(ligne: string, matriculeExclu?: number): Promise<void> {
+  private async verifierCapitaineUnique(ligne: string, matriculeExclu?: number): Promise<void> {
     const capitaineExistant = await this.affectationRepository.findOne({
       where: {
         ligne,
@@ -125,6 +126,7 @@ export class AffectationService {
       affectation.ouvrier = ouvrier;
       affectation.ligne = dto.ligne;
       affectation.estCapitaine = dto.estCapitaine || false;
+      affectation.poste = dto.poste; // ← ajouté
       affectation.phases = dto.phases.map((p) => {
         const ap = new AffectationPhase();
         ap.phase = p.phase;
@@ -174,7 +176,7 @@ export class AffectationService {
     return list.map((a) => this.format(a));
   }
 
-  // ─── Modifier (remplace ligne + phases) ──────────────────────────────────
+  // ─── Modifier (remplace ligne et/ou phases) ───────────────────────────────
 
   async update(matricule: number, dto: UpdateAffectationDto): Promise<any> {
     const affectation = await this.affectationRepository.findOne({
@@ -190,10 +192,14 @@ export class AffectationService {
     // Gérer le changement de statut capitaine
     if (dto.estCapitaine !== undefined) {
       if (dto.estCapitaine === true) {
-        // Vérifier qu'il n'y a pas déjà un autre capitaine sur cette ligne
         await this.verifierCapitaineUnique(ligneCible, matricule);
       }
       affectation.estCapitaine = dto.estCapitaine;
+    }
+
+    // ← Gérer le changement de poste
+    if (dto.poste !== undefined) {
+      affectation.poste = dto.poste;
     }
 
     if (dto.phases) {
@@ -218,6 +224,7 @@ export class AffectationService {
     const saved = await this.affectationRepository.save(affectation);
     return this.format(saved);
   }
+
   // ─── Ajouter une phase à une affectation existante ────────────────────────
 
   async addPhase(matricule: number, dto: AddPhaseDto): Promise<any> {
@@ -247,7 +254,6 @@ export class AffectationService {
 
     await this.affectationPhaseRepository.save(ap);
 
-    // Recharger
     return this.findByMatricule(matricule);
   }
 
@@ -316,38 +322,39 @@ export class AffectationService {
     await this.affectationRepository.remove(affectation);
   }
 
+  // ─── Nommer capitaine ─────────────────────────────────────────────────────
+
   async nommerCapitaine(matricule: number): Promise<any> {
     const affectation = await this.affectationRepository.findOne({
       where: { ouvrier: { matricule } },
       relations: ['ouvrier'],
     });
-    
+
     if (!affectation) {
       throw new NotFoundException(
         `L'ouvrier ${matricule} n'a pas d'affectation. Créez d'abord une affectation.`,
       );
     }
 
-    // Vérifier qu'il n'y a pas déjà un capitaine sur cette ligne
     await this.verifierCapitaineUnique(affectation.ligne, matricule);
 
-    // Désigner cet ouvrier comme capitaine
     affectation.estCapitaine = true;
     const saved = await this.affectationRepository.save(affectation);
-    
+
     return {
       message: `${saved.ouvrier.nomPrenom} (matricule: ${matricule}) est maintenant capitaine de la ligne "${saved.ligne}"`,
       data: this.format(saved),
     };
   }
 
-  // ─── Nouvelle méthode : retirer le statut capitaine ───────────────────────
+  // ─── Retirer le statut capitaine ──────────────────────────────────────────
+
   async retirerCapitaine(matricule: number): Promise<any> {
     const affectation = await this.affectationRepository.findOne({
       where: { ouvrier: { matricule }, estCapitaine: true },
       relations: ['ouvrier'],
     });
-    
+
     if (!affectation) {
       throw new NotFoundException(
         `L'ouvrier ${matricule} n'est pas capitaine ou n'a pas d'affectation.`,
@@ -356,21 +363,22 @@ export class AffectationService {
 
     affectation.estCapitaine = false;
     const saved = await this.affectationRepository.save(affectation);
-    
+
     return {
       message: `${saved.ouvrier.nomPrenom} n'est plus capitaine de la ligne "${saved.ligne}"`,
       data: this.format(saved),
     };
   }
 
-  // ─── Lire tous les capitaines par ligne ───────────────────────────────────
+  // ─── Lire tous les capitaines ─────────────────────────────────────────────
+
   async findAllCapitaines(): Promise<any[]> {
     const capitaines = await this.affectationRepository.find({
       where: { estCapitaine: true },
       relations: ['ouvrier', 'phases'],
       order: { ligne: 'ASC' },
     });
-    
+
     return capitaines.map((c) => ({
       ligne: c.ligne,
       matricule: c.ouvrier.matricule,
@@ -380,16 +388,17 @@ export class AffectationService {
   }
 
   // ─── Lire le capitaine d'une ligne spécifique ─────────────────────────────
+
   async findCapitaineByLigne(ligne: string): Promise<any> {
     const capitaine = await this.affectationRepository.findOne({
       where: { ligne, estCapitaine: true },
       relations: ['ouvrier', 'phases'],
     });
-    
+
     if (!capitaine) {
       throw new NotFoundException(`Aucun capitaine trouvé pour la ligne "${ligne}"`);
     }
-    
+
     return this.format(capitaine);
   }
 }

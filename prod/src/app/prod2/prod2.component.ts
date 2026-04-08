@@ -47,6 +47,7 @@ interface Causes5M {
 }
 
 interface RecordForEdit {
+   id?: number;
   matricule: string;
   nomPrenom: string;
   semaine: string;
@@ -1419,41 +1420,42 @@ private formatDateToFrench(date: Date): string {
     return `${day}/${month}/${year}`;
   }
 
-  private loadExistingRapportsForDay(day: string): void {
-    const planif = this.weekPlanification();
-    if (!planif || !this.selectedLigne()) return;
+ private loadExistingRapportsForDay(day: string): void {
+  const planif = this.weekPlanification();
+  if (!planif || !this.selectedLigne()) return;
 
-    const semaineNom = `semaine${planif.weekNumber}`;
-    
-    this.saisieRapportService.getRapportsBySemaineJour(semaineNom, day).subscribe({
-      next: (response) => {
-        // Transformer les rapports en ProductionRecord
-        const records: ProductionRecord[] = response.rapports?.map((rapport: any) => {
-          const phasesLigne1: WorkPhase[] = rapport.phases?.map((phase: any) => ({
-            phase: phase.phase,
-            heures: phase.heures,
-            ligne: rapport.ligne
-          })) || [];
-          
-          return {
-            id: rapport.id.toString(),
-            matricule: rapport.matricule.toString(),
-            nomPrenom: rapport.nomPrenom,
-            date: this.currentDate(),
-            ligne1: rapport.ligne,
-            phasesLigne1: phasesLigne1,
-            ligne2: '',
-            phasesLigne2: [],
-            totalHeures: rapport.totalHeuresJour
-          };
-        }) || [];
+  const semaineNom = `semaine${planif.weekNumber}`;
+  
+  this.saisieRapportService.getRapportsBySemaineJour(semaineNom, day).subscribe({
+    next: (response) => {
+      // Transformer les rapports en ProductionRecord en CONSERVANT L'ID
+      const records: ProductionRecord[] = response.rapports?.map((rapport: any) => {
+        const phasesLigne1: WorkPhase[] = rapport.phases?.map((phase: any) => ({
+          phase: phase.phase,
+          heures: phase.heures,
+          ligne: rapport.ligne
+        })) || [];
         
-        this.productionRecords.set(records);
-      },
-      error: (error) => {
-      }
-    });
-  }
+        return {
+          id: rapport.id?.toString() || Date.now().toString(),  // GARDER L'ID ORIGINAL
+          matricule: rapport.matricule.toString(),
+          nomPrenom: rapport.nomPrenom,
+          date: this.currentDate(),
+          ligne1: rapport.ligne,
+          phasesLigne1: phasesLigne1,
+          ligne2: '',
+          phasesLigne2: [],
+          totalHeures: rapport.totalHeuresJour
+        };
+      }) || [];
+      
+      this.productionRecords.set(records);
+    },
+    error: (error) => {
+      console.error('Erreur chargement rapports:', error);
+    }
+  });
+}
 
   private loadAvailablePhases(ligne: string): void {
   
@@ -1908,7 +1910,6 @@ private loadFilteredRecords(): void {
 
 
 showRecordDetails(record: ProductionRecord): void {
-  
   // Convertir le matricule en nombre si nécessaire
   let matriculeNumber: number;
   
@@ -1919,30 +1920,34 @@ showRecordDetails(record: ProductionRecord): void {
   }
   
   if (isNaN(matriculeNumber)) {
+    console.error('Matricule invalide:', record.matricule);
     return;
   }
   
   // Récupérer la semaine
   const planif = this.weekPlanification();
   if (!planif) {
+    console.error('Planification non trouvée');
     return;
   }
   
   const semaineNom = `semaine${planif.weekNumber}`;
-  const jour = record.date.split('/')[0]; // Extraire le jour depuis la date
+  const jour = this.selectedDayForProduction();
   const ligne = record.ligne1;
   
-  
-  // Récupérer les données complètes du rapport
   this.loading.set(true);
   
   this.saisieRapportService.getRapportParCriteres(semaineNom, jour, ligne, matriculeNumber).subscribe({
     next: (response) => {
-      
+      console.log('✅ Rapport trouvé:', response);
       const rapport = response.rapport || response;
       
-      // Préparer les données pour l'édition
+      // IMPORTANT: S'assurer que l'ID est un nombre
+      const rapportId = rapport.id ? Number(rapport.id) : null;
+      
+      // Préparer les données pour l'édition avec l'ID
       const recordForEdit: RecordForEdit = {
+        id: rapportId ?? undefined,
         matricule: rapport.matricule.toString(),
         nomPrenom: rapport.nomPrenom,
         semaine: rapport.semaine,
@@ -1963,9 +1968,10 @@ showRecordDetails(record: ProductionRecord): void {
       this.loading.set(false);
     },
     error: (error) => {
-      
-      // Fallback: utiliser les données locales
+      console.error('❌ Erreur récupération rapport:', error);
+      // Fallback: utiliser les données locales sans ID
       const recordForEdit: RecordForEdit = {
+        id: undefined,
         matricule: record.matricule,
         nomPrenom: record.nomPrenom,
         semaine: semaineNom,
@@ -3330,13 +3336,17 @@ saveRecordEdit(): void {
 private updateLocalRecord(updatedRecord: RecordForEdit): void {
   const records = this.productionRecords();
   const updatedRecords = records.map(record => {
+    // Comparer par matricule ET ligne ET jour pour être plus précis
     if (record.matricule === updatedRecord.matricule && 
-        record.ligne1 === updatedRecord.ligne) {
+        record.ligne1 === updatedRecord.ligne &&
+        record.date === this.currentDate()) {
       
       return {
         ...record,
         phasesLigne1: updatedRecord.phases,
-        totalHeures: updatedRecord.totalHeures
+        totalHeures: updatedRecord.totalHeures,
+        // Garder l'ID original
+        id: record.id
       };
     }
     return record;
@@ -3347,25 +3357,86 @@ private updateLocalRecord(updatedRecord: RecordForEdit): void {
 
 // Supprimer un rapport
 deleteRecord(): void {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce rapport ?')) {
+  const record = this.selectedRecordForEdit();
+  if (!record) {
+    alert('Aucun rapport sélectionné');
     return;
   }
 
-  const record = this.selectedRecordForEdit();
-  if (!record) return;
+  // Vérifier si on a l'ID
+  if (!record.id) {
+    alert('Impossible de supprimer : ID du rapport non trouvé. Veuillez recharger la page et réessayer.');
+    return;
+  }
 
-  // Ici, vous devriez avoir l'ID du rapport
-  // Pour l'instant, on utilisera les critères pour identifier le rapport
+  // Convertir l'ID en nombre (l'API attend un nombre)
+  const idNumber = typeof record.id === 'string' ? parseInt(record.id, 10) : record.id;
   
-  const planif = this.weekPlanification();
-  if (!planif) return;
+  if (isNaN(idNumber)) {
+    alert('ID du rapport invalide');
+    return;
+  }
 
-  const semaineNom = `semaine${planif.weekNumber}`;
-  
-  // Note: Vous devriez récupérer l'ID du rapport d'abord
-  // Pour l'exemple, on utilise une approche alternative
-  
-  alert('La suppression nécessite l\'ID du rapport. Cette fonctionnalité sera implémentée prochainement.');
+  // Demander confirmation avec les détails
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer définitivement le rapport de ${record.nomPrenom} (${record.matricule}) ?\n\nJour: ${record.jour}\nLigne: ${record.ligne}\nTotal heures: ${record.totalHeures}h`)) {
+    return;
+  }
+
+  this.loading.set(true);
+
+  // Utiliser la méthode deleteRapport avec l'ID en nombre
+  this.saisieRapportService.deleteRapport(idNumber).subscribe({
+    next: (response) => {
+      console.log('✅ Suppression réussie:', response);
+      this.loading.set(false);
+      
+      // Supprimer le rapport de la liste locale
+      const updatedRecords = this.productionRecords().filter(r => {
+        const rId = typeof r.id === 'string' ? parseInt(r.id, 10) : r.id;
+        return rId !== idNumber;
+      });
+      this.productionRecords.set(updatedRecords);
+      
+      // Fermer le modal
+      this.closeRecordDetails();
+      
+      // Afficher le message de succès
+      this.showSuccessMessage(`Rapport de ${record.nomPrenom} supprimé avec succès`);
+      
+      // Recharger les rapports pour ce jour pour mettre à jour la liste
+      if (this.selectedDayForProduction()) {
+        this.loadExistingRapportsForDay(this.selectedDayForProduction());
+      }
+    },
+    error: (error) => {
+      console.error('❌ Erreur suppression:', error);
+      this.loading.set(false);
+      
+      let errorMessage = 'Erreur lors de la suppression: ';
+      if (error.status === 404) {
+        errorMessage += 'Rapport non trouvé (peut-être déjà supprimé)';
+        // Supprimer localement quand même
+        const updatedRecords = this.productionRecords().filter(r => {
+          const rId = typeof r.id === 'string' ? parseInt(r.id, 10) : r.id;
+          return rId !== idNumber;
+        });
+        this.productionRecords.set(updatedRecords);
+        this.closeRecordDetails();
+        this.showSuccessMessage(`Rapport supprimé localement (déjà absent du serveur)`);
+        return;
+      } else if (error.status === 403) {
+        errorMessage += 'Vous n\'avez pas les droits pour supprimer ce rapport';
+      } else if (error.status === 401) {
+        errorMessage += 'Session expirée, veuillez vous reconnecter';
+      } else if (error.error?.message) {
+        errorMessage += error.error.message;
+      } else {
+        errorMessage += 'Erreur serveur';
+      }
+      
+      alert(errorMessage);
+    }
+  });
 }
 
 // Fermer les détails

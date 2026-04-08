@@ -37,4 +37,7 @@ export class Affectation {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @Column({ type: 'varchar', length: 10 })  // 'jour' ou 'nuit'
+poste: string;
 }

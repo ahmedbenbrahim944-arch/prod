@@ -1,24 +1,38 @@
 // src/app/scanner/scanner.component.ts
 import {
-  Component,
-  OnInit,
-  OnDestroy,
-  ViewChild,
-  ElementRef,
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
+  Component, OnInit, OnDestroy,
+  ViewChild, ElementRef,
+  ChangeDetectionStrategy, ChangeDetectorRef,
+  Pipe, PipeTransform,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { Subject, takeUntil } from 'rxjs';
-import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
-import { ScannerService , Semaine, ScanRecord, ScanStatus} from './scanner.service';
+import { trigger, transition, style, animate } from '@angular/animations';
+import { ScannerService, Semaine, ScanRecord, ScanStatus } from './scanner.service';
+
+// ─── Pipe pure : formatage date — calculé UNE SEULE FOIS par valeur ──────────
+@Pipe({ name: 'frDate', standalone: true, pure: true })
+export class FrDatePipe implements PipeTransform {
+  private cache = new Map<string, string>();
+  transform(value: string, withTime = false): string {
+    if (!value) return '';
+    const key = value + withTime;
+    if (this.cache.has(key)) return this.cache.get(key)!;
+    const d = new Date(value);
+    const result = withTime
+      ? d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    this.cache.set(key, result);
+    return result;
+  }
+}
 
 @Component({
   selector: 'app-scanner',
   standalone: true,
-  imports: [CommonModule, FormsModule, HttpClientModule],
+  imports: [CommonModule, FormsModule, HttpClientModule, FrDatePipe],
   providers: [ScannerService],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './scanner.component.html',
@@ -39,18 +53,13 @@ import { ScannerService , Semaine, ScanRecord, ScanStatus} from './scanner.servi
         animate('320ms cubic-bezier(0.34,1.56,0.64,1)', style({ opacity: 1, transform: 'scale(1)' })),
       ]),
     ]),
-    trigger('listStagger', [
-      transition('* => *', [
-        query(':enter', [
-          style({ opacity: 0, transform: 'translateX(-12px)' }),
-          stagger(35, animate('220ms ease-out', style({ opacity: 1, transform: 'translateX(0)' }))),
-        ], { optional: true }),
-      ]),
-    ]),
-    trigger('rowEnter', [
+    // ✅ SUPPRIMÉ : listStagger et rowEnter sur tbody
+    // Ils animaient les 900 lignes à chaque ajout = freeze UI
+    // Remplacé par newRowPulse uniquement sur la 1ère ligne
+    trigger('newRowPulse', [
       transition(':enter', [
-        style({ opacity: 0, transform: 'translateX(16px)' }),
-        animate('260ms ease-out', style({ opacity: 1, transform: 'translateX(0)' })),
+        style({ opacity: 0, background: 'rgba(56,189,248,0.15)', transform: 'translateX(8px)' }),
+        animate('250ms ease-out', style({ opacity: 1, background: 'transparent', transform: 'translateX(0)' })),
       ]),
     ]),
   ],
@@ -59,96 +68,76 @@ export class ScannerComponent implements OnInit, OnDestroy {
 
   @ViewChild('scanInput') scanInputRef!: ElementRef<HTMLInputElement>;
 
-  // ─── State ───────────────────────────────────────────────────────────────
   semaines: Semaine[] = [];
   selectedSemaine: Semaine | null = null;
   scans: ScanRecord[] = [];
 
+  // ✅ Set pour lookup doublon O(1) — pas de .find() sur 900 éléments
+  private scansSet = new Set<string>();
+
   loadingSemaines = false;
   loadingScans    = false;
-  sidebarOpen     = true;  // desktop default open
+  sidebarOpen     = true;
 
-  // Scan panel
-  scanPanelOpen = false;
-  fullnumber    = '';
+  scanPanelOpen    = false;
+  fullnumber       = '';
   scanStatus: ScanStatus = 'idle';
   scanErrorMessage = '';
   lastScanRecord: ScanRecord | null = null;
 
-  // Choix L1 / L2 / null avant chaque scan
   ligneChoix: 'L1' | 'L2' | null = null;
   isSubmitting = false;
 
-  // Parsed preview (live)
   parsedPreview: {
     annee: string; semaine: string; compteur: string;
     codeProduit: string; fournisseur: string; indice: string;
   } | null = null;
   parseError = '';
 
-  // Current user id (adapt to your auth service)
+  // ✅ Id du scan le plus récent — pour animer SEULEMENT la nouvelle ligne
+  newestScanId: number | null = null;
+
   readonly currentUserId = 1;
 
   private destroy$ = new Subject<void>();
+  private successResetTimer: any = null;
 
   constructor(
     private scannerService: ScannerService,
     private cdr: ChangeDetectorRef,
   ) {}
 
-  // ─── Lifecycle ───────────────────────────────────────────────────────────
-  ngOnInit(): void {
-    this.loadSemaines();
-  }
+  ngOnInit(): void { this.loadSemaines(); }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.successResetTimer) clearTimeout(this.successResetTimer);
   }
 
   // ─── Semaines ─────────────────────────────────────────────────────────────
   loadSemaines(): void {
     this.loadingSemaines = true;
-    this.scannerService.getSemaines()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (data) => {
-          this.semaines = data;
-          this.loadingSemaines = false;
-          // ✅ AUTO-SELECT : sélectionne la semaine correspondant à la date du jour
-          this.autoSelectCurrentSemaine();
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loadingSemaines = false;
-          this.cdr.markForCheck();
-        },
-      });
+    this.scannerService.getSemaines().pipe(takeUntil(this.destroy$)).subscribe({
+      next: (data) => {
+        this.semaines = data;
+        this.loadingSemaines = false;
+        this.autoSelectCurrentSemaine();
+        this.cdr.markForCheck();
+      },
+      error: () => { this.loadingSemaines = false; this.cdr.markForCheck(); },
+    });
   }
 
-  /**
-   * ✅ NOUVELLE MÉTHODE : Sélectionne automatiquement la semaine
-   * dont la plage de dates contient la date du jour.
-   * Si aucune semaine ne correspond, sélectionne la première de la liste.
-   */
   private autoSelectCurrentSemaine(): void {
     if (!this.semaines.length) return;
-
-    const today = new Date();
-    // Normaliser à minuit pour éviter les problèmes d'heure
-    today.setHours(0, 0, 0, 0);
-
-    const currentSemaine = this.semaines.find(s => {
-      const debut = new Date(s.dateDebut);
-      const fin   = new Date(s.dateFin);
-      debut.setHours(0, 0, 0, 0);
-      fin.setHours(23, 59, 59, 999);
-      return today >= debut && today <= fin;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const found = this.semaines.find(s => {
+      const d = new Date(s.dateDebut); d.setHours(0, 0, 0, 0);
+      const f = new Date(s.dateFin);   f.setHours(23, 59, 59, 999);
+      return today >= d && today <= f;
     });
-
-    // Utilise la semaine trouvée, sinon repli sur la première de la liste
-    const toSelect = currentSemaine ?? this.semaines[0];
-    // ✅ Sélection auto : on force autoOpenPanel = true
+    const toSelect = found ?? this.semaines[0];
     this.selectedSemaine = toSelect;
     this.scans = [];
     this.loadScans(toSelect.id, true);
@@ -159,51 +148,45 @@ export class ScannerComponent implements OnInit, OnDestroy {
     if (this.selectedSemaine?.id === s.id) return;
     this.selectedSemaine = s;
     this.scans = [];
+    this.scansSet.clear();
+    this.newestScanId = null;
     this.closeScanPanel();
-    this.loadScans(s.id); // false par défaut = pas d'auto-open
-    // Close sidebar on mobile
+    this.loadScans(s.id);
     if (window.innerWidth < 768) this.sidebarOpen = false;
   }
 
   loadScans(semaineId: number, autoOpenPanel = false): void {
     this.loadingScans = true;
-    this.scannerService.getScansBySemaine(semaineId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (data) => {
-          this.scans = data;
-          this.loadingScans = false;
-          // ✅ AUTO-OPEN : ouvre le panel et focus l'input automatiquement
-          // uniquement au premier chargement (sélection auto de la semaine courante)
-          if (autoOpenPanel) {
-            this.scanPanelOpen = true;
-            setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 150);
-          }
-          this.cdr.markForCheck();
-        },
-        error: () => {
-          this.loadingScans = false;
-          this.cdr.markForCheck();
-        },
-      });
+    this.scannerService.getScansBySemaine(semaineId).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (data) => {
+        this.scans = data;
+        this.scansSet = new Set(data.map(s => s.fullnumber));
+        this.loadingScans = false;
+        if (autoOpenPanel) {
+          this.scanPanelOpen = true;
+          setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 150);
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => { this.loadingScans = false; this.cdr.markForCheck(); },
+    });
   }
 
   // ─── Scan Panel ───────────────────────────────────────────────────────────
   openScanPanel(): void {
     this.scanPanelOpen = true;
     this.resetScan();
-    // ✅ AUTO-FOCUS : le cursor se place automatiquement dans l'input dès l'ouverture
-    // Le setTimeout est nécessaire pour laisser Angular rendre le DOM d'abord
     setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 100);
   }
 
   closeScanPanel(): void {
-    this.ligneChoix   = null;  // reset L1/L2 seulement à la fermeture du panel
+    this.ligneChoix    = null;
     this.scanPanelOpen = false;
     this.resetScan();
   }
 
   resetScan(): void {
+    if (this.successResetTimer) { clearTimeout(this.successResetTimer); this.successResetTimer = null; }
     this.fullnumber       = '';
     this.scanStatus       = 'idle';
     this.scanErrorMessage = '';
@@ -211,128 +194,115 @@ export class ScannerComponent implements OnInit, OnDestroy {
     this.parsedPreview    = null;
     this.parseError       = '';
     this.isSubmitting     = false;
-    // ⚠️ ligneChoix intentionnellement NON réinitialisé :
-    // le choix L1/L2 reste fixé pour tous les scans suivants.
-    // L'user doit changer manuellement via les boutons.
   }
 
-  // Réinitialisation complète (fermeture du panel)
-  closeScanPanelFull(): void {
-    this.ligneChoix = null;
-    this.resetScan();
-    this.scanPanelOpen = false;
-  }
-
-  // ─── Live parsing while typing ───────────────────────────────────────────
+  // ─── Live parsing ─────────────────────────────────────────────────────────
   onFullnumberInput(): void {
     const fn = this.fullnumber.trim().toUpperCase();
     this.fullnumber = fn;
-    this.scanStatus = 'idle';
-    this.scanErrorMessage = '';
-
-    if (fn.length === 0) {
-      this.parsedPreview = null;
-      this.parseError = '';
-      return;
-    }
-
-    const result = this.scannerService.parseFullnumber(fn);
-    if (result.valid) {
-      this.parsedPreview = {
-        annee:       result.annee!,
-        semaine:     result.semaine!,
-        compteur:    result.compteur!,
-        codeProduit: result.codeProduit!,
-        fournisseur: result.fournisseur!,
-        indice:      result.indice!,
-      };
-      this.parseError = '';
+    if (fn.length === 16) { this.submitScan(); return; }
+    if (fn.length > 0) {
+      const r = this.scannerService.parseFullnumber(fn);
+      this.parsedPreview = r.valid ? ({ ...r } as any) : null;
+      this.parseError    = (!r.valid && fn.length >= 4) ? (r.error ?? '') : '';
     } else {
       this.parsedPreview = null;
-      this.parseError = fn.length < 16 ? '' : (result.error ?? '');
+      this.parseError = '';
     }
   }
 
-  // ─── Submit scan (called by Enter key or scan button) ────────────────────
+  // ─── Submit — Optimistic UI ───────────────────────────────────────────────
   submitScan(): void {
-    // ── Guard triple : pas de semaine, déjà en cours, déjà réussi ──
-    if (!this.selectedSemaine || this.isSubmitting || this.scanStatus === 'success') return;
-
     const fn = this.fullnumber.trim().toUpperCase();
+    if (!this.selectedSemaine || fn.length !== 16) return;
 
-    // ── Vérification doublon côté frontend avant même d'appeler l'API ──
-    const alreadyScanned = this.scans.find(s => s.fullnumber === fn);
-    if (alreadyScanned) {
-      this.scanStatus = 'duplicate';
-      this.scanErrorMessage = `Ce ticket a déjà été scanné dans cette session (${alreadyScanned.fullnumber})`;
-      this.cdr.markForCheck();
-      // Focus pour que l'user puisse scanner le prochain immédiatement
-      setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 50);
-      return;
-    }
-
-    const parseResult = this.scannerService.parseFullnumber(fn);
-    if (!parseResult.valid) {
+    const parsed = this.scannerService.parseFullnumber(fn);
+    if (!parsed.valid) {
       this.scanStatus = 'error';
-      this.scanErrorMessage = parseResult.error ?? 'Fullnumber invalide';
+      this.scanErrorMessage = parsed.error ?? 'Format invalide';
+      this.fullnumber = '';
       this.cdr.markForCheck();
       return;
     }
 
-    // ── Bloquer immédiatement toute nouvelle soumission ──
-    this.isSubmitting = true;
-    this.scanStatus   = 'scanning';
+    if (this.scansSet.has(fn)) {
+      this.scanStatus = 'duplicate';
+      this.scanErrorMessage = 'Ce ticket a déjà été scanné';
+      this.fullnumber = '';
+      this.focusInput();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const tempId = -(Date.now());
+    const tempRecord: ScanRecord = {
+      id: tempId, fullnumber: fn,
+      annee: parsed.annee!, semaineParsed: parsed.semaine!,
+      compteur: parsed.compteur!, codeProduitParsed: parsed.codeProduit!,
+      fournisseur: parsed.fournisseur!, indice: parsed.indice!,
+      reference: null, ligne: null,
+      semaineId: this.selectedSemaine.id,
+      scanneParId: this.currentUserId,
+      scannedAt: new Date().toISOString(),
+      ligneChoix: this.ligneChoix,
+    };
+
+    // ✅ Mise à jour UI immédiate
+    this.scans       = [tempRecord, ...this.scans];
+    this.scansSet.add(fn);
+    this.newestScanId   = tempId;     // anime SEULEMENT cette ligne
+    this.lastScanRecord = tempRecord;
+    this.scanStatus     = 'success';
+    this.fullnumber     = '';
+    this.parsedPreview  = null;
+
+    this.focusInput();
     this.cdr.markForCheck();
 
+    if (this.successResetTimer) clearTimeout(this.successResetTimer);
+    this.successResetTimer = setTimeout(() => {
+      this.scanStatus     = 'idle';
+      this.lastScanRecord = null;
+      this.cdr.markForCheck();
+    }, 2000);
+
+    // HTTP en arrière-plan
     this.scannerService.submitScan({
-      fullnumber:   fn,
-      semaineId:    this.selectedSemaine.id,
-      scanneParId:  this.currentUserId,
-      ligneChoix:   this.ligneChoix,   // 'L1', 'L2', ou null
-    }).pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (record: ScanRecord) => {
-          this.isSubmitting   = false;
-          this.scanStatus     = 'success';
-          this.lastScanRecord = record;
-          this.scans = [record, ...this.scans];
-          // ✅ 0ms : reset immédiat, prêt pour le scan suivant sans attente
-          this.resetScan();
-          this.cdr.markForCheck();
-          setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 50);
-          this.cdr.markForCheck();
-        },
-        error: (err) => {
-          this.isSubmitting = false;
-          if (err.status === 409) {
-            this.scanStatus = 'duplicate';
-            this.scanErrorMessage = err.message;
-          } else {
-            this.scanStatus = 'error';
-            this.scanErrorMessage = err.message ?? 'Erreur lors du scan';
-          }
-          this.cdr.markForCheck();
-          // Focus sur l'input même après erreur pour permettre correction immédiate
-          setTimeout(() => this.scanInputRef?.nativeElement?.focus(), 50);
-        },
-      });
+      fullnumber: fn, semaineId: this.selectedSemaine.id,
+      scanneParId: this.currentUserId, ligneChoix: this.ligneChoix,
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (real) => {
+        this.scans = this.scans.map(s => s.id === tempId ? real : s);
+        if (this.newestScanId === tempId) this.newestScanId = real.id;
+        if (this.lastScanRecord?.id === tempId) this.lastScanRecord = real;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        // Rollback
+        this.scans = this.scans.filter(s => s.id !== tempId);
+        this.scansSet.delete(fn);
+        if (this.successResetTimer) { clearTimeout(this.successResetTimer); this.successResetTimer = null; }
+        this.newestScanId   = null;
+        this.lastScanRecord = null;
+        this.scanStatus     = err.status === 409 ? 'duplicate' : 'error';
+        this.scanErrorMessage = err.message ?? 'Erreur serveur';
+        this.fullnumber = fn;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
-  // ─── Keyboard : Enter submits scan ───────────────────────────────────────
   onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      // Ne pas soumettre si déjà en cours ou succès
-      if (!this.isSubmitting && this.scanStatus !== 'success') {
-        this.submitScan();
-      }
-    }
-    if (event.key === 'Escape') {
-      this.closeScanPanel();
-    }
+    if (event.key === 'Enter') { event.preventDefault(); if (this.scanStatus !== 'scanning') this.submitScan(); }
+    if (event.key === 'Escape') this.closeScanPanel();
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
+  private focusInput(): void {
+    requestAnimationFrame(() => this.scanInputRef?.nativeElement?.focus());
+  }
+
+  // ✅ Ces méthodes restent pour compatibilité HTML existant
+  // mais dans le template, remplacez par le pipe | frDate et | frDate:true
   formatDate(date: string): string {
     if (!date) return '';
     return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
@@ -341,12 +311,9 @@ export class ScannerComponent implements OnInit, OnDestroy {
   formatDateTime(date: string): string {
     if (!date) return '';
     return new Date(date).toLocaleString('fr-FR', {
-      day: '2-digit', month: '2-digit', year: '2-digit',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit',
     });
   }
 
-  trackById(_: number, item: { id: number }): number {
-    return item.id;
-  }
+  trackById(_: number, item: { id: number }): number { return item.id; }
 }

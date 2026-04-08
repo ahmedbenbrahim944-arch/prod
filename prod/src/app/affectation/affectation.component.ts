@@ -21,14 +21,27 @@ interface OuvrierRow extends Ouvrier {
   formLigne: string;
   formPhases: PhaseRow[];
   formEstCapitaine: boolean;
+  formPoste: '1ere poste' | '2eme poste'; // ← modifié
   availablePhases: string[];
   loadingPhases: boolean;
   liveTotal: number;
 }
+
 interface LigneGroup {
   ligne: string;
-  ouvriers: OuvrierRow[];
+  posteGroups: {
+    '1ere poste': PosteGroup;
+    '2eme poste': PosteGroup;
+  };
   capitaine?: OuvrierRow;
+  totalOuvriers: number;
+  totalHeures: number;
+}
+
+interface PosteGroup {
+  poste: '1ere poste' | '2eme poste';
+  ouvriers: OuvrierRow[];
+  totalHeures: number;
   totalOuvriers: number;
 }
 
@@ -46,7 +59,7 @@ export class AffectationComponent implements OnInit {
   globalError: string | null = null;
   searchTerm = '';
   filterStatus: 'all' | 'assigned' | 'unassigned' = 'all';
-   viewMode: 'table' | 'grouped' = 'table'; // 'table' = vue normale, 'grouped' = vue groupée par ligne
+  viewMode: 'table' | 'grouped' = 'table';
   selectedLigne: string = '';
 
   constructor(
@@ -64,9 +77,9 @@ export class AffectationComponent implements OnInit {
     this.globalError = null;
 
     forkJoin({
-      ouvriers:    this.svc.getAllOuvriers(),
+      ouvriers:     this.svc.getAllOuvriers(),
       affectations: this.svc.getAllAffectations(),
-      lignesResp:  this.svc.getAllLignes(),
+      lignesResp:   this.svc.getAllLignes(),
     }).subscribe({
       next: ({ ouvriers, affectations, lignesResp }) => {
         this.lignes = lignesResp.lignes;
@@ -84,7 +97,8 @@ export class AffectationComponent implements OnInit {
             success: false,
             formLigne: '',
             formPhases: [{ phase: '', heures: 0 }],
-            formEstCapitaine: false, 
+            formEstCapitaine: false,
+            formPoste: '1ere poste', // ← modifié: valeur par défaut "1ere poste"
             availablePhases: [],
             loadingPhases: false,
             liveTotal: 0,
@@ -101,26 +115,20 @@ export class AffectationComponent implements OnInit {
     });
   }
 
-  // ── Filtres ─────────────────────────────────────────────────────────────────
-
-  
-
- 
-
   // ── Édition inline ─────────────────────────────────────────────────────────
 
-startEdit(row: OuvrierRow): void {
-    // Fermer toute autre édition ouverte
+  startEdit(row: OuvrierRow): void {
     this.rows.forEach((r) => { if (r !== row) r.editing = false; });
 
-    row.editing    = true;
-    row.error      = null;
-    row.formLigne  = row.affectation?.ligne ?? '';
-    row.formPhases = row.affectation
+    row.editing          = true;
+    row.error            = null;
+    row.formLigne        = row.affectation?.ligne ?? '';
+    row.formEstCapitaine = row.affectation?.estCapitaine ?? false;
+    row.formPoste        = row.affectation?.poste ?? '1ere poste'; // ← modifié: "1ere poste" par défaut
+    row.formPhases       = row.affectation
       ? row.affectation.phases.map((p) => ({ phase: p.phase, heures: p.heures }))
       : [{ phase: '', heures: 0 }];
-    row.formEstCapitaine = row.affectation?.estCapitaine ?? false; // Ajout
-    row.liveTotal  = row.affectation?.totalHeures ?? 0;
+    row.liveTotal        = row.affectation?.totalHeures ?? 0;
 
     if (row.formLigne) {
       this.loadPhases(row, row.formLigne);
@@ -133,9 +141,9 @@ startEdit(row: OuvrierRow): void {
   }
 
   onLigneChange(row: OuvrierRow): void {
-    row.formPhases    = [{ phase: '', heures: 0 }];
+    row.formPhases      = [{ phase: '', heures: 0 }];
     row.availablePhases = [];
-    row.liveTotal     = 0;
+    row.liveTotal       = 0;
     if (row.formLigne) this.loadPhases(row, row.formLigne);
   }
 
@@ -154,7 +162,7 @@ startEdit(row: OuvrierRow): void {
     });
   }
 
-  // ── Gestion des lignes de phases ────────────────────────────────────────────
+  // ── Gestion des phases ──────────────────────────────────────────────────────
 
   addPhaseRow(row: OuvrierRow): void {
     row.formPhases.push({ phase: '', heures: 0 });
@@ -198,11 +206,13 @@ startEdit(row: OuvrierRow): void {
     }
 
     row.saving = true;
-    const dto  = { 
-      ligne: row.formLigne, 
-      phases: row.formPhases,
-      estCapitaine: row.formEstCapitaine  // Ajout
+    const dto = {
+      ligne:          row.formLigne,
+      phases:         row.formPhases,
+      estCapitaine:   row.formEstCapitaine,
+      poste:          row.formPoste, // ← modifié: "1ere poste" ou "2eme poste"
     };
+
     const obs$ = row.affectation
       ? this.svc.updateAffectation(row.matricule, dto)
       : this.svc.createAffectation({ matricule: row.matricule, ...dto });
@@ -223,27 +233,27 @@ startEdit(row: OuvrierRow): void {
     });
   }
 
-   async toggleCapitaine(row: OuvrierRow): Promise<void> {
+  async toggleCapitaine(row: OuvrierRow): Promise<void> {
     if (!row.affectation) return;
-    
+
     const nouvelleValeur = !row.affectation.estCapitaine;
-    const action$ = nouvelleValeur 
+    const action$ = nouvelleValeur
       ? this.svc.nommerCapitaine(row.matricule)
       : this.svc.retirerCapitaine(row.matricule);
-    
+
     row.saving = true;
     action$.subscribe({
       next: (resp) => {
         row.affectation = resp.data;
-        row.saving = false;
-        row.success = true;
+        row.saving      = false;
+        row.success     = true;
         setTimeout(() => (row.success = false), 3000);
         this.cdr.markForCheck();
       },
       error: (err) => {
         row.saving = false;
-        row.error = err?.error?.message ?? 'Erreur lors du changement de statut capitaine.';
-      }
+        row.error  = err?.error?.message ?? 'Erreur lors du changement de statut capitaine.';
+      },
     });
   }
 
@@ -264,6 +274,7 @@ startEdit(row: OuvrierRow): void {
       },
     });
   }
+
   // ── Export Excel ────────────────────────────────────────────────────────────
 
   exporting = false;
@@ -282,79 +293,106 @@ startEdit(row: OuvrierRow): void {
       this.exporting = false;
     }
   }
+
+  // ── Vue groupée ─────────────────────────────────────────────────────────────
+
 get groupedRows(): LigneGroup[] {
-    const groupes = new Map<string, LigneGroup>();
+  const groupes = new Map<string, LigneGroup>();
+  
+  const dataSource = this.rows;
+  
+  dataSource.forEach((row) => {
+    if (!row.affectation) return;
     
-    this.filteredRows.forEach(row => {
-      const ligne = row.affectation?.ligne ?? 'Non affecté';
-      if (!groupes.has(ligne)) {
-        groupes.set(ligne, {
-          ligne: ligne,
-          ouvriers: [],
-          totalOuvriers: 0
-        });
-      }
-      const group = groupes.get(ligne)!;
-      group.ouvriers.push(row);
-      group.totalOuvriers++;
-      
-      // Identifier le capitaine
-      if (row.affectation?.estCapitaine) {
-        group.capitaine = row;
-      }
-    });
+    // 🔧 Ignorer les affectations avec poste invalide
+    const poste = row.affectation.poste;
+    if (poste !== '1ere poste' && poste !== '2eme poste') {
+      console.warn(`Affectation ignorée pour ${row.matricule}: poste invalide = ${poste}`);
+      return;
+    }
     
-    // Trier les groupes
-    return Array.from(groupes.values()).sort((a, b) => {
-      if (a.ligne === 'Non affecté') return 1;
-      if (b.ligne === 'Non affecté') return -1;
-      return a.ligne.localeCompare(b.ligne);
-    });
-  }
+    const ligne = row.affectation.ligne;
+    
+    if (!groupes.has(ligne)) {
+      groupes.set(ligne, {
+        ligne,
+        posteGroups: {
+          '1ere poste': {
+            poste: '1ere poste',
+            ouvriers: [],
+            totalHeures: 0,
+            totalOuvriers: 0
+          },
+          '2eme poste': {
+            poste: '2eme poste',
+            ouvriers: [],
+            totalHeures: 0,
+            totalOuvriers: 0
+          }
+        },
+        totalOuvriers: 0,
+        totalHeures: 0
+      });
+    }
+    
+    const group = groupes.get(ligne)!;
+    const posteGroup = group.posteGroups[poste];
+    
+    posteGroup.ouvriers.push(row);
+    posteGroup.totalOuvriers++;
+    posteGroup.totalHeures += (row.affectation.totalHeures || 0);
+    group.totalOuvriers++;
+    group.totalHeures += (row.affectation.totalHeures || 0);
+    
+    if (row.affectation.estCapitaine) {
+      group.capitaine = row;
+    }
+  });
+
+  return Array.from(groupes.values()).sort((a, b) => a.ligne.localeCompare(b.ligne));
+}
+  // ── Filtres ─────────────────────────────────────────────────────────────────
 
   get filteredRows(): OuvrierRow[] {
     let filtered = this.rows.filter((r) => {
       const s = this.searchTerm.toLowerCase();
-      const matchSearch = !s
-        || r.nomPrenom.toLowerCase().includes(s)
-        || r.matricule.toString().includes(s);
+      const matchSearch =
+        !s ||
+        r.nomPrenom.toLowerCase().includes(s) ||
+        r.matricule.toString().includes(s);
       const matchStatus =
-        this.filterStatus === 'all'
-        || (this.filterStatus === 'assigned'   && r.affectation !== null)
-        || (this.filterStatus === 'unassigned' && r.affectation === null);
+        this.filterStatus === 'all' ||
+        (this.filterStatus === 'assigned'   && r.affectation !== null) ||
+        (this.filterStatus === 'unassigned' && r.affectation === null);
       return matchSearch && matchStatus;
     });
-    
-    // Filtrer par ligne si sélectionnée
+
     if (this.selectedLigne) {
-      filtered = filtered.filter(r => r.affectation?.ligne === this.selectedLigne);
+      filtered = filtered.filter((r) => r.affectation?.ligne === this.selectedLigne);
     }
-    
+
     return filtered;
   }
 
   get assignedCount():   number { return this.rows.filter((r) => r.affectation !== null).length; }
   get unassignedCount(): number { return this.rows.filter((r) => r.affectation === null).length; }
-  
-  // Compter les ouvriers par ligne
+
   getLigneCount(ligne: string): number {
-    return this.rows.filter(r => r.affectation?.ligne === ligne).length;
-  }
-  
-  // Vérifier si une ligne a un capitaine
-  getLigneCapitaine(ligne: string): OuvrierRow | undefined {
-    return this.rows.find(r => r.affectation?.ligne === ligne && r.affectation?.estCapitaine);
+    return this.rows.filter((r) => r.affectation?.ligne === ligne).length;
   }
 
-   isCapitaine(row: OuvrierRow): boolean {
+  getLigneCapitaine(ligne: string): OuvrierRow | undefined {
+    return this.rows.find((r) => r.affectation?.ligne === ligne && r.affectation?.estCapitaine);
+  }
+
+  isCapitaine(row: OuvrierRow): boolean {
     return row.affectation?.estCapitaine === true;
   }
-  
+
   getCapitaineStyle(row: OuvrierRow): any {
     if (this.isCapitaine(row)) {
       return { 'background-color': '#fff3e0', 'border-left': '4px solid #ff9800' };
     }
     return {};
   }
-
 }

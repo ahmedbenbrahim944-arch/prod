@@ -3,7 +3,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-
 export interface Ouvrier {
   matricule: number;
   nomPrenom: string;
@@ -21,6 +20,7 @@ export interface Affectation {
   nomPrenom: string;
   ligne: string;
   estCapitaine?: boolean;
+  poste: '1ere poste' | '2eme poste'; // ← modifié
   phases: PhaseHeures[];
   totalHeures: number;
   createdAt?: string;
@@ -30,18 +30,20 @@ export interface CreateAffectationDto {
   matricule: number;
   ligne: string;
   estCapitaine?: boolean;
+  poste: '1ere poste' | '2eme poste'; // ← modifié
   phases: PhaseHeures[];
 }
 
 export interface UpdateAffectationDto {
   ligne?: string;
   estCapitaine?: boolean;
+  poste?: '1ere poste' | '2eme poste'; // ← modifié
   phases?: PhaseHeures[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class AffectationService {
-  private api = 'http://102.207.250.53:3000'; // URL de base de votre API
+  private api = 'http://102.207.250.53:3000';
 
   constructor(private http: HttpClient) {}
 
@@ -52,12 +54,10 @@ export class AffectationService {
     });
   }
 
-  // Ouvriers
   getAllOuvriers(): Observable<Ouvrier[]> {
     return this.http.get<Ouvrier[]>(`${this.api}/ouvrier`, { headers: this.headers() });
   }
 
-  // Lignes & Phases
   getAllLignes(): Observable<{ lignes: string[] }> {
     return this.http.get<{ lignes: string[] }>(`${this.api}/phase/lignes`, { headers: this.headers() });
   }
@@ -66,7 +66,6 @@ export class AffectationService {
     return this.http.get<string[]>(`${this.api}/phase/ligne/${ligne}`, { headers: this.headers() });
   }
 
-  // Affectations
   getAllAffectations(): Observable<{ total: number; data: Affectation[] }> {
     return this.http.get<{ total: number; data: Affectation[] }>(`${this.api}/affectation`, { headers: this.headers() });
   }
@@ -114,7 +113,6 @@ export class AffectationService {
     );
   }
 
-  // Ajouter une méthode pour retirer le statut capitaine
   retirerCapitaine(matricule: number): Observable<{ message: string; data: Affectation }> {
     return this.http.delete<{ message: string; data: Affectation }>(
       `${this.api}/affectation/${matricule}/retirer-capitaine`,
@@ -122,7 +120,6 @@ export class AffectationService {
     );
   }
 
-  // Ajouter une méthode pour récupérer tous les capitaines
   getAllCapitaines(): Observable<{ total: number; data: Affectation[] }> {
     return this.http.get<{ total: number; data: Affectation[] }>(
       `${this.api}/affectation/capitaines`,

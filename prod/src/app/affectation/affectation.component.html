@@ -1,4 +1,4 @@
-<!-- src/app/affectation/affectation.component.html (modifié) -->
+<!-- src/app/affectation/affectation.component.html -->
 
 <div class="aff-wrapper">
 
@@ -43,8 +43,7 @@
       </svg>
       <input class="aff-search" type="text" placeholder="Matricule ou nom..." [(ngModel)]="searchTerm"/>
     </div>
-    
-    <!-- Nouveau: Filtre par ligne -->
+
     <div class="aff-ligne-filter">
       <select class="sel" [(ngModel)]="selectedLigne" (ngModelChange)="filterStatus='all'">
         <option value="">Toutes les lignes</option>
@@ -54,23 +53,18 @@
         </option>
       </select>
     </div>
-    
-    <!-- Vue switch -->
+
     <div class="aff-view-switch">
-      <button class="view-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">
-        Tableau
-      </button>
-      <button class="view-btn" [class.active]="viewMode === 'grouped'" (click)="viewMode = 'grouped'">
-         Par ligne
-      </button>
+      <button class="view-btn" [class.active]="viewMode === 'table'" (click)="viewMode = 'table'">Tableau</button>
+      <button class="view-btn" [class.active]="viewMode === 'grouped'" (click)="viewMode = 'grouped'">Par ligne</button>
     </div>
-    
+
     <div class="aff-filters">
       <button class="aff-filter-btn" [class.active]="filterStatus==='all'" (click)="filterStatus='all'">Tous</button>
       <button class="aff-filter-btn aff-filter-assigned" [class.active]="filterStatus==='assigned'" (click)="filterStatus='assigned'">Affectés</button>
       <button class="aff-filter-btn aff-filter-unassigned" [class.active]="filterStatus==='unassigned'" (click)="filterStatus='unassigned'">Non affectés</button>
     </div>
-    
+
     <button class="btn-export" (click)="exportExcel()" [disabled]="exporting || assignedCount === 0">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -111,6 +105,7 @@
           <th>Phases & Heures</th>
           <th style="width:90px;text-align:center">Total H</th>
           <th style="width:100px">Statut</th>
+          <th style="width:100px;text-align:center">Poste</th>  <!-- ← ajouté -->
           <th style="width:115px">Capitaine</th>
           <th style="width:195px;text-align:right">Actions</th>
         </tr>
@@ -118,7 +113,7 @@
       <tbody>
 
         <tr *ngIf="filteredRows.length === 0">
-          <td colspan="8" class="aff-empty">Aucun ouvrier trouvé</td>
+          <td colspan="9" class="aff-empty">Aucun ouvrier trouvé</td>
         </tr>
 
         <tr *ngFor="let row of filteredRows"
@@ -130,6 +125,7 @@
           <td><span class="badge-mat">{{ row.matricule }}</span></td>
           <td class="td-nom">{{ row.nomPrenom }}</td>
 
+          <!-- ══ MODE LECTURE ══ -->
           <ng-container *ngIf="!row.editing">
             <td>
               <span *ngIf="row.affectation" class="chip-ligne">{{ row.affectation.ligne }}</span>
@@ -154,10 +150,21 @@
               </span>
               <span *ngIf="row.success" class="status-badge saved">✓ Sauvegardé</span>
             </td>
+
+            <!-- ── Colonne Poste (Jour / Nuit) ── -->
+           <td style="text-align:center">
+  <span *ngIf="row.affectation" class="poste-badge"
+    [class.poste-jour]="row.affectation.poste === '1ere poste'"
+    [class.poste-nuit]="row.affectation.poste === '2eme poste'">
+    {{ row.affectation.poste === '1ere poste' ? '☀️ 1ere poste' : '🌙 2eme poste' }}
+  </span>
+  <span *ngIf="!row.affectation" class="dash">—</span>
+</td>
+
             <td>
               <div *ngIf="row.affectation" class="capitaine-toggle">
                 <label class="capitaine-checkbox">
-                  <input type="checkbox" 
+                  <input type="checkbox"
                     [checked]="row.affectation.estCapitaine"
                     (change)="toggleCapitaine(row)"
                     [disabled]="row.saving">
@@ -187,7 +194,7 @@
             </td>
           </ng-container>
 
-          <!-- ══ ÉDITION INLINE ══ -->
+          <!-- ══ MODE ÉDITION INLINE ══ -->
           <ng-container *ngIf="row.editing">
             <td class="td-edit" colspan="2">
               <div class="sel-wrap">
@@ -196,11 +203,27 @@
                   <option *ngFor="let l of lignes" [value]="l">{{ l }}</option>
                 </select>
               </div>
+
+              <!-- ── Boutons Jour / Nuit ── -->
+              <div class="poste-toggle-wrap">
+  <span class="poste-label">Poste :</span>
+  <button class="btn-poste"
+    [class.btn-poste-jour-active]="row.formPoste === '1ere poste'"
+    (click)="row.formPoste = '1ere poste'">
+    ☀️ 1ere poste
+  </button>
+  <button class="btn-poste"
+    [class.btn-poste-nuit-active]="row.formPoste === '2eme poste'"
+    (click)="row.formPoste = '2eme poste'">
+    🌙 2eme poste
+  </button>
+</div>
+
               <!-- Checkbox Capitaine -->
               <div class="capitaine-checkbox-wrap">
                 <label class="capitaine-checkbox">
                   <input type="checkbox" [(ngModel)]="row.formEstCapitaine">
-                  <span class="checkbox-label"> Désigner comme capitaine de la ligne</span>
+                  <span class="checkbox-label">Désigner comme capitaine de la ligne</span>
                 </label>
               </div>
             </td>
@@ -235,6 +258,7 @@
             <td>
               <span class="status-badge editing">✎ Édition</span>
             </td>
+            <td></td> <!-- colonne Poste vide en édition (déjà dans le form) -->
             <td colspan="2" class="td-actions">
               <button class="btn-save" (click)="saveAffectation(row)" [disabled]="row.saving">
                 <span *ngIf="row.saving" class="mini-spinner"></span>
@@ -253,75 +277,172 @@
   </div>
 
   <!-- ── Vue GROUPÉE PAR LIGNE ─────────────────────────────────────────────── -->
-  <div *ngIf="!loading && !globalError && viewMode === 'grouped'" class="aff-grouped-view">
-    <div *ngFor="let group of groupedRows" class="ligne-card">
-      <div class="ligne-card-header" [class.has-capitaine]="group.capitaine">
-        <div class="ligne-info">
-          <h3 class="ligne-name">
-            {{ group.ligne }}
-            <span class="ligne-badge">Ligne</span>
-          </h3>
-          <div class="ligne-stats">
-            <span class="stat">
-              👥 {{ group.totalOuvriers }} ouvrier{{ group.totalOuvriers > 1 ? 's' : '' }}
-            </span>
-            <span *ngIf="group.capitaine" class="stat capitaine-info">
-               Capitaine: {{ group.capitaine.nomPrenom }} ({{ group.capitaine.matricule }})
-            </span>
-            <span *ngIf="!group.capitaine && group.ligne !== 'Non affecté'" class="stat no-capitaine">
-              Aucun capitaine désigné
-            </span>
-          </div>
-        </div>
-      </div>
-      <div class="ligne-card-body">
-        <table class="aff-table mini-table">
-          <thead>
-            <tr>
-              <th>Matricule</th>
-              <th>Nom & Prénom</th>
-              <th>Phases & Heures</th>
-              <th>Total H</th>
-              <th>Rôle</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let row of group.ouvriers" 
-              [class.capitaine-row]="isCapitaine(row)">
-              <td>{{ row.matricule }}</td>
-              <td>{{ row.nomPrenom }}</td>
-              <td>
-                <div class="phases-wrap">
-                  <span *ngFor="let p of row.affectation?.phases" class="chip-phase">
-                    {{ p.phase }}<span class="chip-h">{{ p.heures }}h</span>
-                  </span>
-                </div>
-              </td>
-              <td class="total-h">{{ row.affectation?.totalHeures || 0 }}h</td>
-              <td>
-                <span *ngIf="isCapitaine(row)" class="capitaine-tag"> Capitaine</span>
-                <span *ngIf="!isCapitaine(row) && row.affectation" class="ouvrier-tag"> Ouvrier</span>
-                <span *ngIf="!row.affectation" class="dash">—</span>
-              </td>
-              <td class="td-actions">
-                <button class="btn-edit" (click)="startEdit(row)">
-                  {{ row.affectation ? 'Modifier' : 'Affecter' }}
-                </button>
-                <button *ngIf="row.affectation && !isCapitaine(row)" class="btn-capitaine" 
-                  (click)="toggleCapitaine(row)" [disabled]="row.saving">
-                  Nommer capitaine
-                </button>
-                <button *ngIf="row.affectation && isCapitaine(row)" class="btn-uncapitaine" 
-                  (click)="toggleCapitaine(row)" [disabled]="row.saving">
-                  Retirer capitaine
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+ <!-- ── Vue GROUPÉE PAR LIGNE AVEC SÉPARATION PAR POSTE ─────────────────────────── -->
+<div *ngIf="!loading && !globalError && viewMode === 'grouped'" class="aff-grouped-view">
+  
+  <!-- Message si aucune affectation -->
+  <div *ngIf="groupedRows.length === 0" class="aff-empty-grouped">
+    <div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <h3>Aucune affectation trouvée</h3>
+      <p>Commencez par affecter des ouvriers à des lignes.</p>
     </div>
   </div>
+
+  <!-- Affichage des lignes -->
+  <div *ngFor="let group of groupedRows" class="ligne-card">
+    <div class="ligne-card-header" [class.has-capitaine]="group.capitaine">
+      <div class="ligne-info">
+        <h3 class="ligne-name">
+          {{ group.ligne }}
+          <span class="ligne-badge">Ligne</span>
+        </h3>
+        <div class="ligne-stats">
+          <span class="stat">
+            👥 {{ group.totalOuvriers }} ouvrier{{ group.totalOuvriers > 1 ? 's' : '' }}
+          </span>
+          <span class="stat">
+            ⏱️ {{ group.totalHeures }} heures totales
+          </span>
+          <span *ngIf="group.capitaine" class="stat capitaine-info">
+            ⭐ Capitaine: {{ group.capitaine.nomPrenom }} ({{ group.capitaine.matricule }})
+          </span>
+          <span *ngIf="!group.capitaine && group.ligne !== 'Non affecté'" class="stat no-capitaine">
+            ⚠️ Aucun capitaine désigné
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="ligne-card-body">
+      
+      <!-- ── 1ERE POSTE ── -->
+      <div class="poste-section" *ngIf="group.posteGroups['1ere poste'].ouvriers.length > 0">
+        <div class="poste-section-header poste-jour-header">
+          <span class="poste-icon">☀️</span>
+          <span class="poste-title">1ere poste</span>
+          <span class="poste-stats">
+            ({{ group.posteGroups['1ere poste'].totalOuvriers }} ouvrier{{ group.posteGroups['1ere poste'].totalOuvriers > 1 ? 's' : '' }} - 
+            {{ group.posteGroups['1ere poste'].totalHeures }}h)
+          </span>
+        </div>
+        <div class="table-responsive">
+          <table class="aff-table mini-table">
+            <thead>
+              <tr>
+                <th style="width:90px">Matricule</th>
+                <th>Nom & Prénom</th>
+                <th>Phases & Heures</th>
+                <th style="width:90px">Total H</th>
+                <th style="width:100px">Rôle</th>
+                <th style="width:140px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of group.posteGroups['1ere poste'].ouvriers"
+                [class.capitaine-row]="isCapitaine(row)">
+                <td><span class="badge-mat">{{ row.matricule }}</span></td>
+                <td class="td-nom">{{ row.nomPrenom }}</td>
+                <td>
+                  <div class="phases-wrap">
+                    <span *ngFor="let p of row.affectation?.phases" class="chip-phase">
+                      {{ p.phase }}<span class="chip-h">{{ p.heures }}h</span>
+                    </span>
+                  </div>
+                </td>
+                <td class="total-h text-center">{{ row.affectation?.totalHeures || 0 }}h</td>
+                <td>
+                  <span *ngIf="isCapitaine(row)" class="capitaine-tag">⭐ Capitaine</span>
+                  <span *ngIf="!isCapitaine(row) && row.affectation" class="ouvrier-tag">👷 Ouvrier</span>
+                </td>
+                <td class="td-actions">
+                  <button class="btn-edit btn-sm" (click)="startEdit(row)" title="Modifier">
+                    ✏️ Modifier
+                  </button>
+                  <button *ngIf="row.affectation && !isCapitaine(row)" class="btn-capitaine btn-sm"
+                    (click)="toggleCapitaine(row)" [disabled]="row.saving" title="Nommer capitaine">
+                    👑 Nommer
+                  </button>
+                  <button *ngIf="row.affectation && isCapitaine(row)" class="btn-uncapitaine btn-sm"
+                    (click)="toggleCapitaine(row)" [disabled]="row.saving" title="Retirer capitaine">
+                    🔻 Retirer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── 2EME POSTE ── -->
+      <div class="poste-section" *ngIf="group.posteGroups['2eme poste'].ouvriers.length > 0">
+        <div class="poste-section-header poste-nuit-header">
+          <span class="poste-icon">🌙</span>
+          <span class="poste-title">2eme poste</span>
+          <span class="poste-stats">
+            ({{ group.posteGroups['2eme poste'].totalOuvriers }} ouvrier{{ group.posteGroups['2eme poste'].totalOuvriers > 1 ? 's' : '' }} - 
+            {{ group.posteGroups['2eme poste'].totalHeures }}h)
+          </span>
+        </div>
+        <div class="table-responsive">
+          <table class="aff-table mini-table">
+            <thead>
+              <tr>
+                <th style="width:90px">Matricule</th>
+                <th>Nom & Prénom</th>
+                <th>Phases & Heures</th>
+                <th style="width:90px">Total H</th>
+                <th style="width:100px">Rôle</th>
+                <th style="width:140px">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of group.posteGroups['2eme poste'].ouvriers"
+                [class.capitaine-row]="isCapitaine(row)">
+                <td><span class="badge-mat">{{ row.matricule }}</span></td>
+                <td class="td-nom">{{ row.nomPrenom }}</td>
+                <td>
+                  <div class="phases-wrap">
+                    <span *ngFor="let p of row.affectation?.phases" class="chip-phase">
+                      {{ p.phase }}<span class="chip-h">{{ p.heures }}h</span>
+                    </span>
+                  </div>
+                </td>
+                <td class="total-h text-center">{{ row.affectation?.totalHeures || 0 }}h</td>
+                <td>
+                  <span *ngIf="isCapitaine(row)" class="capitaine-tag">⭐ Capitaine</span>
+                  <span *ngIf="!isCapitaine(row) && row.affectation" class="ouvrier-tag">👷 Ouvrier</span>
+                </td>
+                <td class="td-actions">
+                  <button class="btn-edit btn-sm" (click)="startEdit(row)" title="Modifier">
+                    ✏️ Modifier
+                  </button>
+                  <button *ngIf="row.affectation && !isCapitaine(row)" class="btn-capitaine btn-sm"
+                    (click)="toggleCapitaine(row)" [disabled]="row.saving" title="Nommer capitaine">
+                    👑 Nommer
+                  </button>
+                  <button *ngIf="row.affectation && isCapitaine(row)" class="btn-uncapitaine btn-sm"
+                    (click)="toggleCapitaine(row)" [disabled]="row.saving" title="Retirer capitaine">
+                    🔻 Retirer
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Message si aucun ouvrier dans les deux postes -->
+      <div *ngIf="group.posteGroups['1ere poste'].ouvriers.length === 0 && group.posteGroups['2eme poste'].ouvriers.length === 0" 
+           class="no-workers-message">
+        <span>📋 Aucun ouvrier affecté à cette ligne pour le moment</span>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 </div>

@@ -2,10 +2,7 @@
 <div class="scanner-shell">
 
   <!-- ░░░ SIDEBAR OVERLAY (mobile) ░░░ -->
-  <div class="sidebar-overlay"
-       [class.visible]="sidebarOpen"
-       (click)="sidebarOpen = false">
-  </div>
+  <div class="sidebar-overlay" [class.visible]="sidebarOpen" (click)="sidebarOpen = false"></div>
 
   <!-- ░░░ SIDEBAR ░░░ -->
   <aside class="sidebar" [class.open]="sidebarOpen">
@@ -21,13 +18,10 @@
         <span class="brand-label">SEMAINES</span>
       </div>
       <button class="sidebar-close" (click)="sidebarOpen = false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6 6 18M6 6l12 12"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
     </div>
 
-    <!-- Skeleton loading -->
     @if (loadingSemaines) {
       <div class="sidebar-body">
         @for (i of [1,2,3,4]; track i) {
@@ -39,33 +33,23 @@
       </div>
     }
 
-    <!-- Semaine list -->
     @if (!loadingSemaines) {
-      <div class="sidebar-body" [@listStagger]="semaines.length">
+      <div class="sidebar-body">
         @for (s of semaines; track s.id) {
-          <button
-            class="semaine-item"
-            [class.active]="selectedSemaine?.id === s.id"
-            (click)="selectSemaine(s)">
+          <button class="semaine-item" [class.active]="selectedSemaine?.id === s.id" (click)="selectSemaine(s)">
             <div class="semaine-item-inner">
               <span class="semaine-nom">{{ s.nom }}</span>
-              <span class="semaine-dates">
-                {{ formatDate(s.dateDebut) }} → {{ formatDate(s.dateFin) }}
-              </span>
+              <span class="semaine-dates">{{ s.dateDebut | frDate }} → {{ s.dateFin | frDate }}</span>
             </div>
             <div class="semaine-arrow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="m9 18 6-6-6-6"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
             </div>
           </button>
         }
-
         @if (semaines.length === 0) {
           <div class="sidebar-empty">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <path d="M16 2v4M8 2v4M3 10h18"/>
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
             <p>Aucune semaine disponible</p>
           </div>
@@ -78,31 +62,25 @@
   <!-- ░░░ MAIN CONTENT ░░░ -->
   <div class="main-wrapper">
 
-    <!-- Top bar -->
     <header class="topbar">
       <button class="menu-btn" (click)="sidebarOpen = !sidebarOpen">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12h18M3 6h18M3 18h18"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
       </button>
-
       <div class="topbar-info">
         @if (selectedSemaine) {
           <span class="topbar-semaine" @fadeSlide>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <path d="M16 2v4M8 2v4M3 10h18"/>
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
             {{ selectedSemaine.nom | uppercase }}
             <span class="topbar-dates">
-              {{ formatDate(selectedSemaine.dateDebut) }} – {{ formatDate(selectedSemaine.dateFin) }}
+              {{ selectedSemaine.dateDebut | frDate }} – {{ selectedSemaine.dateFin | frDate }}
             </span>
           </span>
         } @else {
           <span class="topbar-placeholder">Sélectionnez une semaine</span>
         }
       </div>
-
       @if (selectedSemaine) {
         <div class="topbar-count" @fadeSlide>
           <span class="count-badge">{{ scans.length }} scan{{ scans.length !== 1 ? 's' : '' }}</span>
@@ -110,10 +88,8 @@
       }
     </header>
 
-    <!-- Body -->
     <div class="main-body">
 
-      <!-- ── Empty state (no semaine selected) ── -->
       @if (!selectedSemaine) {
         <div class="empty-state" @scaleIn>
           <div class="empty-icon-wrap">
@@ -129,11 +105,10 @@
         </div>
       }
 
-      <!-- ── Semaine selected content ── -->
       @if (selectedSemaine) {
         <div class="content-area" @fadeSlide>
 
-          <!-- ─ Scanner Button ─ -->
+          <!-- Scan Button -->
           @if (!scanPanelOpen) {
             <div class="scanner-trigger-row">
               <button class="btn-scan-open" (click)="openScanPanel()" @scaleIn>
@@ -148,7 +123,7 @@
             </div>
           }
 
-          <!-- ─ Scan Panel ─ -->
+          <!-- Scan Panel -->
           @if (scanPanelOpen) {
             <div class="scan-panel" @scaleIn>
 
@@ -161,13 +136,11 @@
                   Scanner un ticket
                 </div>
                 <button class="scan-panel-close" (click)="closeScanPanel()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6 6 18M6 6l12 12"/>
-                  </svg>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
               </div>
 
-              <!-- Input zone -->
+              <!-- Input -->
               <div class="scan-input-zone" [class.has-error]="scanStatus === 'error' || scanStatus === 'duplicate'">
                 <div class="scan-input-wrap">
                   <div class="scan-cursor-icon">
@@ -186,111 +159,54 @@
                     maxlength="16"
                     autocomplete="off"
                     spellcheck="false"
-                    [disabled]="isSubmitting || scanStatus === 'success'">
+                    [disabled]="isSubmitting">
                   <span class="scan-input-counter" [class.complete]="fullnumber.length === 16">
                     {{ fullnumber.length }}/16
                   </span>
                 </div>
 
-                <!-- Parse error hint -->
-                @if (parseError) {
-                  <div class="parse-hint error-hint" @fadeSlide>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/>
-                      <path d="M12 8v4m0 4h.01"/>
+                @if (parseError && scanStatus === 'idle') {
+                  <div class="parse-error">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="parse-error-icon">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
                     </svg>
                     {{ parseError }}
                   </div>
                 }
               </div>
 
-              <!-- ─ Choix L1 / L2 ─ -->
-              <div class="ligne-choix-row">
-                <span class="ligne-choix-label">Ligne :</span>
-                <button
-                  class="btn-ligne"
-                  [class.active]="ligneChoix === 'L1'"
-                  (click)="ligneChoix = ligneChoix === 'L1' ? null : 'L1'">
-                  L1
-                </button>
-                <button
-                  class="btn-ligne"
-                  [class.active]="ligneChoix === 'L2'"
-                  (click)="ligneChoix = ligneChoix === 'L2' ? null : 'L2'">
-                  L2
-                </button>
-                @if (ligneChoix) {
-                  <span class="ligne-choix-selected">{{ ligneChoix }} sélectionné</span>
-                } @else {
-                  <span class="ligne-choix-empty">Aucune (vide)</span>
-                }
-              </div>
-
-              <!-- Live preview of parsed fields -->
-              @if (parsedPreview && scanStatus !== 'success') {
+              <!-- Live parsed preview -->
+              @if (parsedPreview && scanStatus === 'idle') {
                 <div class="parsed-preview" @fadeSlide>
-                  <div class="parsed-grid">
-                    <div class="parsed-chip">
-                      <span class="chip-label">Année</span>
-                      <span class="chip-value">{{ parsedPreview.annee }}</span>
-                    </div>
-                    <div class="parsed-chip">
-                      <span class="chip-label">Semaine</span>
-                      <span class="chip-value">{{ parsedPreview.semaine }}</span>
-                    </div>
-                    <div class="parsed-chip">
-                      <span class="chip-label">Compteur</span>
-                      <span class="chip-value">{{ parsedPreview.compteur }}</span>
-                    </div>
-                    <div class="parsed-chip highlight">
-                      <span class="chip-label">Code produit</span>
-                      <span class="chip-value">{{ parsedPreview.codeProduit }}</span>
-                    </div>
-                    <div class="parsed-chip">
-                      <span class="chip-label">Fournisseur</span>
-                      <span class="chip-value">{{ parsedPreview.fournisseur }}</span>
-                    </div>
-                    <div class="parsed-chip">
-                      <span class="chip-label">Indice</span>
-                      <span class="chip-value">{{ parsedPreview.indice }}</span>
-                    </div>
+                  <div class="parsed-chips">
+                    <div class="parsed-chip"><span class="chip-label">Année</span><span class="chip-value">{{ parsedPreview.annee }}</span></div>
+                    <div class="parsed-chip"><span class="chip-label">Semaine</span><span class="chip-value">{{ parsedPreview.semaine }}</span></div>
+                    <div class="parsed-chip"><span class="chip-label">Compteur</span><span class="chip-value">{{ parsedPreview.compteur }}</span></div>
+                    <div class="parsed-chip"><span class="chip-label">Code produit</span><span class="chip-value">{{ parsedPreview.codeProduit }}</span></div>
+                    <div class="parsed-chip"><span class="chip-label">Fournisseur</span><span class="chip-value">{{ parsedPreview.fournisseur }}</span></div>
+                    <div class="parsed-chip"><span class="chip-label">Indice</span><span class="chip-value">{{ parsedPreview.indice }}</span></div>
                   </div>
                 </div>
               }
 
-              <!-- Status: scanning -->
-              @if (scanStatus === 'scanning') {
-                <div class="status-row status-scanning" @fadeSlide>
-                  <div class="spinner"></div>
-                  <span>Enregistrement en cours…</span>
-                </div>
-              }
-
-              <!-- Status: success -->
+              <!-- Status success -->
               @if (scanStatus === 'success' && lastScanRecord) {
                 <div class="status-row status-success" @scaleIn>
                   <div class="success-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                      <path d="m20 6-11 11-5-5"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m20 6-11 11-5-5"/></svg>
                   </div>
                   <div class="success-info">
                     <span class="success-title">Ticket enregistré !</span>
                     <span class="success-detail">
                       {{ lastScanRecord.fullnumber }}
-                      @if (lastScanRecord.reference) {
-                        · <strong>{{ lastScanRecord.reference }}</strong>
-                      }
-                      @if (lastScanRecord.ligne) {
-                        · {{ lastScanRecord.ligne }}
-                      }
+                      @if (lastScanRecord.reference) { · <strong>{{ lastScanRecord.reference }}</strong> }
+                      @if (lastScanRecord.ligne) { · {{ lastScanRecord.ligne }} }
                     </span>
                   </div>
-                  <span class="success-auto">Réinitialisation auto dans 3s…</span>
                 </div>
               }
 
-              <!-- Status: duplicate -->
+              <!-- Status duplicate -->
               @if (scanStatus === 'duplicate') {
                 <div class="status-row status-duplicate" @fadeSlide>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -298,19 +214,17 @@
                     <path d="M12 9v4m0 4h.01"/>
                   </svg>
                   <div>
-                    <span class="dup-title">⚠️ Ticket déjà enregistré !</span>
-                    <span class="dup-detail">{{ scanErrorMessage }}</span>
-                    <span class="dup-hint">Ce fullnumber existe déjà en base — scan ignoré.</span>
+                    <span class="dup-title">⚠️ Ticket déjà scanné !</span>
+                    <span class="dup-hint">Ce fullnumber existe déjà — scan ignoré.</span>
                   </div>
                 </div>
               }
 
-              <!-- Status: error -->
+              <!-- Status error -->
               @if (scanStatus === 'error') {
                 <div class="status-row status-error" @fadeSlide>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 8v4m0 4h.01"/>
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
                   </svg>
                   <div>
                     <span class="err-title">Erreur</span>
@@ -319,21 +233,19 @@
                 </div>
               }
 
-              <!-- Action buttons -->
+              <!-- Ligne choice -->
+              <div class="ligne-choice">
+                <span class="ligne-label">LIGNE :</span>
+                <button class="btn-ligne" [class.active]="ligneChoix === 'L1'" (click)="ligneChoix = 'L1'">L1</button>
+                <button class="btn-ligne" [class.active]="ligneChoix === 'L2'" (click)="ligneChoix = 'L2'">L2</button>
+                @if (!ligneChoix) { <span class="no-ligne">Aucune (vide)</span> }
+              </div>
+
+              <!-- Actions -->
               <div class="scan-actions">
-                <button
-                  class="btn-submit"
-                  (click)="submitScan()"
-                  [disabled]="isSubmitting || fullnumber.length !== 16 || scanStatus === 'success'">
-                  @if (isSubmitting) {
-                    <div class="btn-spinner"></div>
-                    Enregistrement…
-                  } @else {
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20 6 9 17l-5-5"/>
-                    </svg>
-                    Enregistrer le scan
-                  }
+                <button class="btn-submit" (click)="submitScan()" [disabled]="fullnumber.length !== 16">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                  Enregistrer le scan
                 </button>
                 <button class="btn-cancel" (click)="closeScanPanel()">Annuler</button>
               </div>
@@ -345,8 +257,7 @@
           <div class="scans-section">
             <div class="scans-header">
               <h2 class="scans-title">
-                SCANS —
-                <span class="scans-semaine-name">{{ selectedSemaine.nom | uppercase }}</span>
+                SCANS — <span class="scans-semaine-name">{{ selectedSemaine.nom | uppercase }}</span>
               </h2>
               <span class="scans-badge">{{ scans.length }} entrée{{ scans.length !== 1 ? 's' : '' }}</span>
             </div>
@@ -391,38 +302,65 @@
                       <th>Scanné le</th>
                     </tr>
                   </thead>
-                  <tbody [@listStagger]="scans.length">
-                    @for (scan of scans; track scan.id) {
-                      <tr @rowEnter>
-                        <td class="td-fn">
-                          <code>{{ scan.fullnumber }}</code>
-                        </td>
-                        <td class="td-lc">
-                          @if (scan.ligneChoix) {
-                            <span class="lc-badge lc-{{ scan.ligneChoix | lowercase }}">{{ scan.ligneChoix }}</span>
-                          } @else {
-                            <span class="no-data">—</span>
-                          }
-                        </td>
-                        <td class="td-ref">
-                          @if (scan.reference) {
-                            <span class="ref-badge">{{ scan.reference }}</span>
-                          } @else {
-                            <span class="no-data">—</span>
-                          }
-                        </td>
-                        <td class="td-ligne">
-                          @if (scan.ligne) {
-                            <span class="ligne-tag">{{ scan.ligne }}</span>
-                          } @else {
-                            <span class="no-data">—</span>
-                          }
-                        </td>
-                        <td class="td-code">{{ scan.codeProduitParsed }}</td>
-                        <td class="td-four">{{ scan.fournisseur }}</td>
-                        <td class="td-indice">{{ scan.indice }}</td>
-                        <td class="td-date">{{ formatDateTime(scan.scannedAt) }}</td>
-                      </tr>
+                  <tbody>
+                    <!--
+                      ✅ SUPPRIMÉ : [@listStagger]="scans.length" sur tbody
+                         Ce trigger re-animait les 900 lignes à chaque ajout.
+
+                      ✅ NOUVEAU : @newRowPulse uniquement sur la 1ère ligne
+                         (la plus récente). Les 899 autres ne bougent pas.
+                    -->
+                    @for (scan of scans; track scan.id; let i = $index) {
+                      @if (i === 0) {
+                        <!-- Seule la nouvelle ligne reçoit l'animation -->
+                        <tr [@newRowPulse] class="row-newest">
+                          <td class="td-fn"><code>{{ scan.fullnumber }}</code></td>
+                          <td class="td-lc">
+                            @if (scan.ligneChoix) {
+                              <span class="lc-badge lc-{{ scan.ligneChoix | lowercase }}">{{ scan.ligneChoix }}</span>
+                            } @else { <span class="no-data">—</span> }
+                          </td>
+                          <td class="td-ref">
+                            @if (scan.reference) {
+                              <span class="ref-badge">{{ scan.reference }}</span>
+                            } @else { <span class="no-data">—</span> }
+                          </td>
+                          <td class="td-ligne">
+                            @if (scan.ligne) {
+                              <span class="ligne-tag">{{ scan.ligne }}</span>
+                            } @else { <span class="no-data">—</span> }
+                          </td>
+                          <td class="td-code">{{ scan.codeProduitParsed }}</td>
+                          <td class="td-four">{{ scan.fournisseur }}</td>
+                          <td class="td-indice">{{ scan.indice }}</td>
+                          <!-- ✅ Pipe frDate au lieu de formatDateTime() — calculé 1 seule fois -->
+                          <td class="td-date">{{ scan.scannedAt | frDate:true }}</td>
+                        </tr>
+                      } @else {
+                        <!-- Lignes existantes : AUCUNE animation, rendu statique -->
+                        <tr>
+                          <td class="td-fn"><code>{{ scan.fullnumber }}</code></td>
+                          <td class="td-lc">
+                            @if (scan.ligneChoix) {
+                              <span class="lc-badge lc-{{ scan.ligneChoix | lowercase }}">{{ scan.ligneChoix }}</span>
+                            } @else { <span class="no-data">—</span> }
+                          </td>
+                          <td class="td-ref">
+                            @if (scan.reference) {
+                              <span class="ref-badge">{{ scan.reference }}</span>
+                            } @else { <span class="no-data">—</span> }
+                          </td>
+                          <td class="td-ligne">
+                            @if (scan.ligne) {
+                              <span class="ligne-tag">{{ scan.ligne }}</span>
+                            } @else { <span class="no-data">—</span> }
+                          </td>
+                          <td class="td-code">{{ scan.codeProduitParsed }}</td>
+                          <td class="td-four">{{ scan.fournisseur }}</td>
+                          <td class="td-indice">{{ scan.indice }}</td>
+                          <td class="td-date">{{ scan.scannedAt | frDate:true }}</td>
+                        </tr>
+                      }
                     }
                   </tbody>
                 </table>

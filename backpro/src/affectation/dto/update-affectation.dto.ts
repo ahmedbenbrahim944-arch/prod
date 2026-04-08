@@ -1,4 +1,5 @@
 // src/affectation/dto/update-affectation.dto.ts
+
 import {
   IsOptional,
   IsString,
@@ -6,6 +7,7 @@ import {
   ValidateNested,
   ArrayMinSize,
   IsBoolean,
+  IsIn,  // Ajouter cette ligne
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PhaseHeuresDto } from './phase-heures.dto';
@@ -17,7 +19,13 @@ export class UpdateAffectationDto {
 
   @IsBoolean()
   @IsOptional()
-  estCapitaine?: boolean; // Ajout : permettre de changer le statut capitaine
+  estCapitaine?: boolean;
+
+  // Ajouter ce champ
+  @IsString()
+  @IsOptional()
+  @IsIn(['1ere poste', '2eme poste'], { message: 'Le poste doit être "1ere poste" ou "2eme poste"' })
+  poste?: string;
 
   @IsArray()
   @ArrayMinSize(1)

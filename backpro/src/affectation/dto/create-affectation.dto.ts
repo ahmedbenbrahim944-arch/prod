@@ -1,4 +1,5 @@
 // src/affectation/dto/create-affectation.dto.ts
+
 import {
   IsNotEmpty,
   IsNumber,
@@ -8,6 +9,7 @@ import {
   ArrayMinSize,
   IsBoolean,
   IsOptional,
+  IsIn,  // Ajouter cette ligne
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PhaseHeuresDto } from './phase-heures.dto';
@@ -23,7 +25,13 @@ export class CreateAffectationDto {
 
   @IsBoolean()
   @IsOptional()
-  estCapitaine?: boolean; // Ajout : optionnel, par défaut false
+  estCapitaine?: boolean;
+
+  // Ajouter ce champ
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['1ere poste', '2eme poste'], { message: 'Le poste doit être "jour" ou "nuit"' })
+  poste: string;
 
   @IsArray()
   @ArrayMinSize(1)
