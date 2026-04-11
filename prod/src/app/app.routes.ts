@@ -38,6 +38,11 @@ import { VerifStatusComponent } from './verif-status/verif-status.component';
 import { Choix5Component } from './choix5/choix5.component';
 import { PlannMagSearchComponent } from './plann-mag-search/plann-mag-search.component';
 import { PlannMagScanComponent } from './plann-mag-scan/plann-mag-scan.component';
+import { AffichageComponent } from './affichage/affichage.component';
+import { ScannerpfinComponent } from './scannerpfin/scannerpfin.component';
+import { Choix6Component } from './choix6/choix6.component';
+import { ScreenSaverComponent } from './screen-saver/screen-saver.component';
+import { VideoComponent } from './video/video.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -94,6 +99,11 @@ export const routes: Routes = [
   { path: 'ch5', component: Choix5Component },
   { path: 'planmag', component: PlannMagSearchComponent },
   { path: 'scann', component: PlannMagScanComponent },
+  { path: 'affi', component: AffichageComponent },
+  { path: 'scanpf', component: ScannerpfinComponent },
+  { path: 'ch6', component: Choix6Component },
+  { path: 'dashboard', component: ScreenSaverComponent },
+  { path: 'video', component: VideoComponent },
 
 
 ];

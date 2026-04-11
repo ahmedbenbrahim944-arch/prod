@@ -1,0 +1,420 @@
+/* src/app/affichage/affichage.component.css */
+
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #ffffff;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+}
+
+.affichage-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── HEADER plus grand ── */
+.affichage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 85px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-ligne {
+  font-size: 1.8rem;      /* Plus grand */
+  font-weight: 700;
+  color: #2c3e50;
+  background: #eef2ff;
+  padding: 6px 16px;
+  border-radius: 10px;
+  font-family: 'Courier New', monospace;
+}
+
+.header-separator {
+  color: #dee2e6;
+  font-size: 22px;
+}
+
+.header-date {
+  font-size: 1.1rem;      /* Plus grand */
+  color: #6c757d;
+}
+
+.header-jour {
+  font-size: 1rem;        /* Plus grand */
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 5px 14px;
+  border-radius: 24px;
+  font-weight: 500;
+}
+
+.header-semaine {
+  font-size: 0.9rem;      /* Plus grand */
+  color: #6c757d;
+  background: #f1f3f5;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.select-input {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  color: #2c3e50;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 1rem;        /* Plus grand */
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  outline: none;
+  min-width: 180px;
+}
+
+.btn-refresh {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 1rem;        /* Plus grand */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.last-update {
+  font-size: 0.85rem;     /* Plus grand */
+  color: #adb5bd;
+  font-family: monospace;
+}
+
+/* ── GRILLE 2x2 ── */
+.quadrant-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  background: #e9ecef;
+  overflow: hidden;
+}
+
+.quadrant {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.quadrant-label {
+  font-size: 0.9rem;      /* Plus grand */
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #adb5bd;
+  padding: 24px 28px 12px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.quadrant-content {
+  flex: 1;
+  padding: 12px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.quadrant-content.center {
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Q1 : Productivité (TRÈS GRAND) ── */
+.oee-value {
+  font-size: clamp(80px, 12vw, 160px);  /* Plus grand */
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.oee-percent {
+  font-size: 0.45em;
+  font-weight: 600;
+}
+
+.oee-success { color: #2e7d32; }
+.oee-warning { color: #ed6c02; }
+.oee-danger  { color: #d32f2f; }
+
+.oee-bar-track {
+  width: 70%;
+  height: 14px;           /* Plus épais */
+  background: #e9ecef;
+  border-radius: 7px;
+  margin: 24px 0 16px;
+  overflow: hidden;
+}
+
+.oee-bar-fill {
+  height: 100%;
+  border-radius: 7px;
+  transition: width 0.4s ease;
+}
+
+.bar-success { background: #2e7d32; }
+.bar-warning { background: #ed6c02; }
+.bar-danger  { background: #d32f2f; }
+
+.oee-sublabel {
+  font-size: 1rem;        /* Plus grand */
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* ── Q2 : Opérateurs (TRÈS GRAND) ── */
+.op-value {
+  font-size: clamp(90px, 13vw, 180px);  /* Plus grand */
+  font-weight: 800;
+  color: #4a90e2;
+  line-height: 1;
+}
+
+.op-sublabel {
+  font-size: 1rem;        /* Plus grand */
+  color: #6c757d;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+.op-capitaine {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;        /* Plus grand */
+  color: #2c3e50;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  padding: 10px 20px;
+  border-radius: 50px;
+}
+
+.cap-badge {
+  color: #f9a825;
+  font-size: 18px;
+}
+
+/* ── Q3 : Planification ── */
+.prod-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.prod-kpi-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.prod-kpi-label {
+  font-size: 0.8rem;      /* Plus grand */
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.prod-kpi-value {
+  font-size: 1.8rem;      /* Plus grand */
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.delta-pos .prod-kpi-value { color: #2e7d32; }
+.delta-neg .prod-kpi-value { color: #d32f2f; }
+
+/* Tableau des références */
+.ref-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;        /* Plus grand */
+}
+
+.ref-table th {
+  text-align: left;
+  padding: 14px 10px;
+  font-size: 0.85rem;     /* Plus grand */
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.ref-table td {
+  padding: 14px 10px;
+  color: #495057;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 1rem;        /* Plus grand */
+}
+
+.ref-table tbody tr:hover td {
+  background: #f8f9fa;
+}
+
+.no-data {
+  text-align: center;
+  color: #adb5bd;
+  padding: 30px;
+  font-size: 1rem;
+}
+
+/* ── Q4 : Production temps réel (TRÈS GRAND) ── */
+.pcs-row {
+  display: flex;
+  align-items: center;
+  gap: 48px;
+  margin-bottom: 32px;
+}
+
+.pcs-block {
+  text-align: center;
+}
+
+.pcs-value {
+  font-size: clamp(55px, 8vw, 110px);  /* Plus grand */
+  font-weight: 800;
+  line-height: 1;
+}
+
+.pcs-value.highlight { color: #2e7d32; }
+.pcs-value.muted { color: #adb5bd; }
+
+.pcs-sub {
+  font-size: 0.9rem;      /* Plus grand */
+  color: #6c757d;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.pcs-divider {
+  width: 2px;
+  height: 70px;
+  background: #dee2e6;
+}
+
+.pcs-bar-track {
+  width: 80%;
+  height: 12px;           /* Plus épais */
+  background: #e9ecef;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.pcs-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+.pcs-scans {
+  font-size: 0.9rem;      /* Plus grand */
+  color: #6c757d;
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+/* Scrollbar - plus visible */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* États */
+.empty-state, .loader-overlay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  color: #adb5bd;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1.1rem;      /* Plus grand */
+}
+
+.empty-icon {
+  font-size: 64px;        /* Plus grand */
+  opacity: 0.5;
+}
+
+.error-banner {
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  color: #c62828;
+  padding: 14px 24px;
+  margin: 12px 20px;
+  border-radius: 10px;
+  font-size: 0.95rem;     /* Plus grand */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.error-banner button {
+  background: none;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.loader-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e9ecef;
+  border-top-color: #4a90e2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

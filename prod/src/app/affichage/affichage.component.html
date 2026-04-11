@@ -1,0 +1,139 @@
+<div class="affichage-wrapper">
+  <header class="affichage-header">
+    <div class="header-left">
+      <span class="header-ligne">{{ selectedLigne || '—' }}</span>
+      <span class="header-separator">|</span>
+      <span class="header-date">{{ today | date:'EEEE dd MMMM yyyy' : undefined : 'fr' }}</span>
+      <span class="header-jour" *ngIf="data">{{ data.jour | titlecase }}</span>
+      <span class="header-semaine" *ngIf="data">{{ data.semaine.nom }}</span>
+    </div>
+    <div class="header-right">
+      <select [(ngModel)]="selectedLigne" class="select-input" (change)="loadData()">
+        <option value="" disabled>Sélectionner une ligne</option>
+        <option *ngFor="let l of lignes" [value]="l">{{ l }}</option>
+      </select>
+      <button class="btn-refresh" (click)="loadData()" [disabled]="loading || !selectedLigne">
+        {{ loading ? 'Chargement...' : 'Actualiser' }}
+      </button>
+      <span class="last-update" *ngIf="lastUpdate">{{ lastUpdate | date:'HH:mm:ss' }}</span>
+    </div>
+  </header>
+
+  <!-- État vide -->
+  <div class="empty-state" *ngIf="!data && !loading && !error">
+    <div class="empty-icon">📋</div>
+    <p>Sélectionnez une ligne</p>
+  </div>
+
+  <!-- Erreur -->
+  <div class="error-banner" *ngIf="error">
+    <span>⚠️ {{ error }}</span>
+    <button (click)="error = null">✕</button>
+  </div>
+
+  <!-- Chargement -->
+  <div class="loader-overlay" *ngIf="loading">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- Contenu principal -->
+  <main class="quadrant-grid" *ngIf="data && !loading">
+    <!-- Quadrant 1 : Productivité -->
+    <div class="quadrant">
+      <div class="quadrant-label">PRODUCTIVITÉ</div>
+      <div class="quadrant-content center">
+        <div class="oee-value" 
+             [class.oee-danger]="data.kpis.productiviteValeur < 60"
+             [class.oee-warning]="data.kpis.productiviteValeur >= 60 && data.kpis.productiviteValeur < 85"
+             [class.oee-success]="data.kpis.productiviteValeur >= 85">
+          {{ data.kpis.productiviteValeur | number:'1.1-1' }}<span class="oee-percent">%</span>
+        </div>
+        <div class="oee-bar-track">
+          <div class="oee-bar-fill" 
+               [style.width.%]="clamp(data.kpis.productiviteValeur, 0, 100)"
+               [class.bar-danger]="data.kpis.productiviteValeur < 60"
+               [class.bar-warning]="data.kpis.productiviteValeur >= 60 && data.kpis.productiviteValeur < 85"
+               [class.bar-success]="data.kpis.productiviteValeur >= 85"></div>
+        </div>
+        <div class="oee-sublabel">Objectif atteint</div>
+      </div>
+    </div>
+
+    <!-- Quadrant 2 : Opérateurs -->
+    <div class="quadrant">
+      <div class="quadrant-label">OPÉRATEURS</div>
+      <div class="quadrant-content center">
+        <div class="op-value">{{ data.kpis.nbOuvriers }}</div>
+        <div class="op-sublabel">affectés aujourd'hui</div>
+        <div class="op-capitaine" *ngIf="data.ouvriers.capitaine">
+          <span class="cap-badge">★</span> {{ data.ouvriers.capitaine.nomPrenom }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Quadrant 3 : Planification -->
+    <div class="quadrant">
+      <div class="quadrant-label">PLANIFICATION</div>
+      <div class="quadrant-content">
+        <div class="prod-kpi-row">
+          <div class="prod-kpi-card">
+            <div class="prod-kpi-label">Objectif</div>
+            <div class="prod-kpi-value">{{ data.kpis.totalQtePlanifiee | number }}</div>
+          </div>
+          <div class="prod-kpi-card">
+            <div class="prod-kpi-label">Réalisé</div>
+            <div class="prod-kpi-value">{{ data.kpis.totalQteProduite | number }}</div>
+          </div>
+          <div class="prod-kpi-card" [class.delta-pos]="data.kpis.delta >= 0" [class.delta-neg]="data.kpis.delta < 0">
+            <div class="prod-kpi-label">Écart</div>
+            <div class="prod-kpi-value">{{ data.kpis.delta > 0 ? '+' : '' }}{{ data.kpis.delta | number }}</div>
+          </div>
+        </div>
+        <div class="ref-table-wrap">
+          <table class="ref-table">
+            <thead>
+              <tr><th>Référence</th><th>OF</th><th>Quantité</th><th>Emballage</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ref of data.planification.references">
+                <td>{{ ref.reference }}</td>
+                <td>{{ ref.of || '—' }}</td>
+                <td>{{ ref.qteSource | number }}</td>
+                <td>{{ ref.emballage }}</td>
+              </tr>
+              <tr *ngIf="data.planification.references.length === 0">
+                <td colspan="4" class="no-data">Aucune référence planifiée</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quadrant 4 : Production -->
+    <div class="quadrant">
+      <div class="quadrant-label">PRODUCTION</div>
+      <div class="quadrant-content center">
+        <div class="pcs-row">
+          <div class="pcs-block">
+            <div class="pcs-value highlight">{{ data.kpis.totalQteProduite | number }}</div>
+            <div class="pcs-sub">pièces produites</div>
+          </div>
+          <div class="pcs-divider"></div>
+          <div class="pcs-block">
+            <div class="pcs-value muted">{{ data.kpis.totalQtePlanifiee | number }}</div>
+            <div class="pcs-sub">objectif</div>
+          </div>
+        </div>
+        <div class="pcs-bar-track">
+          <div class="pcs-bar-fill" 
+               [style.width.%]="clamp(data.kpis.productiviteValeur, 0, 100)"
+               [class.bar-danger]="data.kpis.productiviteValeur < 60"
+               [class.bar-warning]="data.kpis.productiviteValeur >= 60 && data.kpis.productiviteValeur < 85"
+               [class.bar-success]="data.kpis.productiviteValeur >= 85"></div>
+        </div>
+        <div class="pcs-scans">{{ data.production.nbScans }} scan(s) enregistré(s)</div>
+      </div>
+    </div>
+  </main>
+</div>

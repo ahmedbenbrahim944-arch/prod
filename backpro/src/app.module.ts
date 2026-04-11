@@ -28,6 +28,8 @@ import { ScannerModule } from './scanner/scanner.module';
 import { AffectationModule } from './affectation/affectation.module';
 import { AutosaisieModule } from './autosaisie/autosaisie.module';
 import { PlannMagModule } from './plann-mag/plann-mag.module';
+import { AffichageModule } from './affichage/affichage.module';
+import { ProductionModule } from './production/production.module';
 
 
 @Module({
@@ -70,7 +72,9 @@ import { PlannMagModule } from './plann-mag/plann-mag.module';
     ScannerModule,
     AffectationModule,
     AutosaisieModule,
-    PlannMagModule
+    PlannMagModule,
+    AffichageModule,
+    ProductionModule
 
   ],
   controllers: [],

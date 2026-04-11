@@ -241,7 +241,12 @@
               <!-- Un seul OF -->
               <ng-container *ngIf="ref.ofs.length === 1">
                 <p class="text-white font-mono text-base font-bold">{{ ref.ofs[0].codeDocument }}</p>
-                <p class="text-gray-400 text-sm">OF : {{ ref.ofs[0].of }} · Qté : {{ ref.ofs[0].qtePlanifiee }}</p>
+                <ng-container *ngIf="ref.ofs[0].of; else noOf">
+                  <p class="text-gray-400 text-sm">OF : {{ ref.ofs[0].of }} · Qté : {{ ref.ofs[0].qtePlanifiee }}</p>
+                </ng-container>
+                <ng-template #noOf>
+                  <p class="text-amber-400 text-sm font-semibold">⚠ OF non assigné · Qté : {{ ref.ofs[0].qtePlanifiee }}</p>
+                </ng-template>
               </ng-container>
               <!-- Plusieurs OFs -->
               <ng-container *ngIf="ref.ofs.length > 1">

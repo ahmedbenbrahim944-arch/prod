@@ -210,10 +210,19 @@ export class PlannMagService {
       }
 
       const entry = refMap.get(plan.reference)!;
+
+      // ── Sécurisation OF null/vide ──────────────────────────────────────
+      // Certaines planifications n'ont pas encore d'OF assigné en base.
+      // On normalise : null / undefined / '   ' → chaîne vide.
+      const ofValue = (plan.of ?? '').toString().trim();
+      const codeDoc = ofValue
+        ? `G${ofValue}${date}`   // OF présent  → ex: G0697390704
+        : `G${date}`;            // OF absent   → ex: G0704 (date seule)
+
       entry.ofs.push({
-        of:           plan.of,
+        of:           ofValue,
         qtePlanifiee: plan.qtePlanifiee,
-        codeDocument: `G${plan.of}${date}`,
+        codeDocument: codeDoc,
       });
       entry.totalQte += plan.qtePlanifiee;
     }

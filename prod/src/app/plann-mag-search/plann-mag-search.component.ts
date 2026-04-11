@@ -496,63 +496,59 @@ export class PlannMagSearchComponent {
   // ─── Numéro de planification ──────────────────────────────────────────────
   /**
    * Construit le numéro de planification :
-   *   [LetAnnée][JJ][NumJour][NumLigne][NumOF]
-   *   Exemple : G080336069739
-   *     G     → 2026  (A=2020, B=2021 … G=2026)
-   *     08    → 8ème jour du mois
-   *     03    → Mercredi (lundi=01 … dimanche=07)
-   *     36    → ligne L36:RXT1
-   *     069739 → numéro OF
+   *   [LetAnnée][NumSemaine][NumJour][Ligne]
+   *   Exemple : G151L04
+   *     G   → 2026  (A=2020, B=2021 … G=2026)
+   *     15  → numéro de semaine ("semaine15" → "15")
+   *     1   → jour sans zéro (lundi=1 … dimanche=7)
+   *     L04 → ligne avec préfixe L ("L04:RXT1" → "L04")
    */
   buildNumeroPlanification(ref: RefGroupDisplay): string {
-    // 1. Lettre de l'année
     const yearLetter = this.getYearLetter(this.annee);
-
-    // 2. Jour du mois (2 premiers caractères de this.date au format JJMM)
-    const dd = this.date.substring(0, 2);
-
-    // 3. Numéro du jour de la semaine
-    const jourNum = this.getJourNum(ref.jour);
-
-    // 4. Numéro de ligne (2 chiffres après "L" dans ref.ligne ex: "L04:RXT1" → "04")
-    const ligneNum = this.getLigneNum(ref.ligne);
-
-    // 5. Numéro OF (premier OF disponible)
-    const ofNum = (ref.ofs && ref.ofs.length > 0)
-      ? (ref.ofs[0].of || '')
-      : (ref.codeDocument || '');
-
-    return `${yearLetter}${dd}${jourNum}${ligneNum}${ofNum}`;
+    const semaineNum = this.getSemaineNum(ref.semaine);
+    const jourNum    = this.getJourNum(ref.jour);
+    const ligneCode  = this.getLigneCode(ref.ligne);
+    return `${yearLetter}${semaineNum}${jourNum}${ligneCode}`;
   }
 
   private getYearLetter(annee: string): string {
     const base = 2020; // A = 2020
     const diff = parseInt(annee, 10) - base;
-    return String.fromCharCode(65 + Math.max(0, diff)); // 65 = 'A'
+    return String.fromCharCode(65 + Math.max(0, diff));
+  }
+
+  private getSemaineNum(semaine: string): string {
+    // "semaine15" ou "semaine 15" → "15"
+    const m = semaine.match(/\d+/);
+    return m ? m[0] : '';
   }
 
   private getJourNum(jour: string): string {
+    // Sans zéro devant : lundi=1 … dimanche=7
     const map: Record<string, string> = {
-      'lundi':    '01',
-      'mardi':    '02',
-      'mercredi': '03',
-      'jeudi':    '04',
-      'vendredi': '05',
-      'samedi':   '06',
-      'dimanche': '07',
+      'lundi':    '1',
+      'mardi':    '2',
+      'mercredi': '3',
+      'jeudi':    '4',
+      'vendredi': '5',
+      'samedi':   '6',
+      'dimanche': '7',
     };
-    return map[jour.toLowerCase()] || '00';
+    return map[jour.toLowerCase()] || '';
   }
 
-  private getLigneNum(ligne: string): string {
-    // "L04:RXT1" → "04" / "L36:RXT2" → "36"
-    const m = ligne.match(/L(\d{2,})/i);
-    return m ? m[1].padStart(2, '0') : '00';
+  private getLigneCode(ligne: string): string {
+    // "L04:RXT1" → "L04" / "L36:RXT2" → "L36"
+    const m = ligne.match(/(L\d{2,})/i);
+    return m ? m[1].toUpperCase() : ligne;
   }
 
   /** Helper appelé depuis le template — évite les arrow functions interdites dans Angular */
   getOfsLabel(ofs: OfsDetail[]): string {
-    const visible = ofs.slice(0, 4).map(o => o.of).join(', ');
+    const visible = ofs
+      .slice(0, 4)
+      .map(o => o.of ? o.of : '⚠ sans OF')
+      .join(', ');
     return ofs.length > 4 ? `${visible} +${ofs.length - 4}` : visible;
   }
 }

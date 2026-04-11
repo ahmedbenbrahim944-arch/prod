@@ -60,7 +60,7 @@ export class AuthService {
             this.router.navigate(['/ch5']);
           }
           else if (matricule === '1952') {
-            this.router.navigate(['/ecran']);
+            this.router.navigate(['/video']);
           }
           else if (matricule === '1922') {
             this.router.navigate(['/lan']);
@@ -100,6 +100,9 @@ export class AuthService {
           // ── Matricule 1234 → choix4 (/ch4) ──────────────────────────────
           if (matricule === '1234') {
             this.router.navigate(['/ch4']);
+          }
+          else if (matricule === '1212') {
+            this.router.navigate(['/dashboard']);
           }
           // ── Matricule 9999 → stat2 ───────────────────────────────────────
           else if (matricule === '9999') {

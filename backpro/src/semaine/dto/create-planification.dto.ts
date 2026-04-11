@@ -37,5 +37,5 @@ export class CreatePlanificationDto {
   // NOUVEAU : Note de la référence
   @IsString()
   @IsOptional()
-  note?: string;
+  note?: string | null;
 }
