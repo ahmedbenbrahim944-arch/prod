@@ -1,0 +1,185 @@
+<!-- src/app/affichage/overview/affichage-overview.component.html -->
+<div class="overview-wrapper">
+
+  <!-- ══════════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════════ -->
+  <header class="overview-header">
+    <div class="header-left">
+      <span class="header-title">Vue Globale Production</span>
+      <span class="header-sep">|</span>
+      <span class="header-clock">{{ today | date:'HH:mm:ss' }}</span>
+      <span class="header-jour" *ngIf="data">{{ data.jour | titlecase }}</span>
+      <span class="header-semaine" *ngIf="data">{{ data.semaine.nom }}</span>
+    </div>
+    <div class="header-right">
+      <input type="date" class="date-input" [(ngModel)]="selectedDate" (change)="loadOverview()" />
+      <button class="btn-refresh" (click)="loadOverview()" [disabled]="loading">
+        {{ loading ? 'Chargement...' : '↺ Actualiser' }}
+      </button>
+      <span class="last-update" *ngIf="lastUpdate">Màj {{ lastUpdate | date:'HH:mm:ss' }}</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════
+       KPIs GLOBAUX
+  ═══════════════════════════════════════════════════════ -->
+  <section class="global-bar" *ngIf="data && !loading">
+    <div class="global-kpi">
+      <span class="gk-value">{{ data.global.nbLignes }}</span>
+      <span class="gk-label">Lignes actives</span>
+    </div>
+    <div class="global-kpi">
+      <span class="gk-value">{{ data.global.totalQteProduite | number:'1.0-0':'fr' }}</span>
+      <span class="gk-label">Pièces produites</span>
+    </div>
+    <div class="global-kpi">
+      <span class="gk-value">{{ data.global.totalQtePlanifiee | number:'1.0-0':'fr' }}</span>
+      <span class="gk-label">Objectif total</span>
+    </div>
+    <div class="global-kpi" [class.kpi-pos]="data.global.delta >= 0" [class.kpi-neg]="data.global.delta < 0">
+      <span class="gk-value">{{ data.global.delta > 0 ? '+' : '' }}{{ data.global.delta | number:'1.0-0':'fr' }}</span>
+      <span class="gk-label">Écart global</span>
+    </div>
+    <div class="global-kpi global-oee"
+         [class.oee-success]="data.global.productiviteGlobale >= 85"
+         [class.oee-warning]="data.global.productiviteGlobale >= 60 && data.global.productiviteGlobale < 85"
+         [class.oee-danger]="data.global.productiviteGlobale < 60">
+      <span class="gk-value">{{ data.global.productiviteGlobale | number:'1.1-1':'fr' }}%</span>
+      <span class="gk-label">Productivité globale</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       ÉTATS : VIDE / ERREUR / CHARGEMENT
+  ═══════════════════════════════════════════════════════ -->
+  <div class="empty-state" *ngIf="!data && !loading && !error">
+    <div class="empty-icon">📋</div>
+    <p>Sélectionnez une date pour afficher toutes les lignes</p>
+  </div>
+
+  <div class="error-banner" *ngIf="error">
+    <span>⚠️ {{ error }}</span>
+    <button (click)="error = null">✕</button>
+  </div>
+
+  <div class="loader-overlay" *ngIf="loading">
+    <div class="loader-spinner"></div>
+    <span>Chargement des lignes...</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       GRILLE DES LIGNES (page courante seulement)
+  ═══════════════════════════════════════════════════════ -->
+  <main class="lines-grid" *ngIf="data && !loading">
+
+    <div
+      class="line-card"
+      *ngFor="let ligne of currentPageLines; trackBy: trackByLigne"
+      [class.card-success]="ligne.statut === 'success'"
+      [class.card-warning]="ligne.statut === 'warning'"
+      [class.card-danger]="ligne.statut === 'danger'"
+      (click)="goToLigne(ligne.ligne)"
+    >
+      <!-- En-tête -->
+      <div class="card-header">
+        <span class="card-ligne-name">{{ ligne.ligne }}</span>
+        <span class="card-dot"
+              [class.dot-success]="ligne.statut === 'success'"
+              [class.dot-warning]="ligne.statut === 'warning'"
+              [class.dot-danger]="ligne.statut === 'danger'">
+        </span>
+      </div>
+
+      <!-- Productivité -->
+      <div class="card-productivite"
+           [class.prod-success]="ligne.statut === 'success'"
+           [class.prod-warning]="ligne.statut === 'warning'"
+           [class.prod-danger]="ligne.statut === 'danger'">
+        {{ ligne.productivite | number:'1.1-1':'fr' }}<span class="prod-pct">%</span>
+      </div>
+
+      <!-- Barre -->
+      <div class="card-bar-track">
+        <div class="card-bar-fill"
+             [style.width.%]="clamp(ligne.productivite, 0, 100)"
+             [class.fill-success]="ligne.statut === 'success'"
+             [class.fill-warning]="ligne.statut === 'warning'"
+             [class.fill-danger]="ligne.statut === 'danger'">
+        </div>
+      </div>
+
+      <!-- Pièces -->
+      <div class="card-pcs">
+        <div class="card-pcs-main">
+          <span class="pcs-produced">{{ ligne.totalQteProduite | number:'1.0-0':'fr' }}</span>
+          <span class="pcs-sep">&nbsp;/&nbsp;</span>
+          <span class="pcs-target">{{ ligne.totalQtePlanifiee | number:'1.0-0':'fr' }}</span>
+        </div>
+        <div class="card-pcs-label">pièces produites / objectif</div>
+      </div>
+
+      <!-- Écart -->
+      <div class="card-delta"
+           [class.delta-pos]="ligne.delta >= 0"
+           [class.delta-neg]="ligne.delta < 0">
+        {{ ligne.delta > 0 ? '+' : '' }}{{ ligne.delta | number:'1.0-0':'fr' }}<span class="delta-unit"> pcs</span>
+      </div>
+
+      <!-- Scans -->
+      <div class="card-scans">{{ ligne.nbScans }} scan{{ ligne.nbScans > 1 ? 's' : '' }}</div>
+    </div>
+
+    <!-- Aucune ligne -->
+    <div class="no-lines" *ngIf="data.lignes.length === 0">
+      <span class="empty-icon">🔍</span>
+      <p>Aucune ligne planifiée pour cette date</p>
+    </div>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════
+       BARRE DE PAGINATION  (visible seulement si > 1 page)
+  ═══════════════════════════════════════════════════════ -->
+  <nav class="pagination-bar" *ngIf="data && !loading && totalPages > 1">
+
+    <!-- Barre de progression rotation auto -->
+    <div class="rotate-progress-track" *ngIf="autoRotate">
+      <div class="rotate-progress-fill" [style.width.%]="progressPct"></div>
+    </div>
+
+    <div class="pagination-controls">
+
+      <!-- Bouton précédent -->
+      <button class="page-btn page-arrow" (click)="prevPage()" title="Page précédente">‹</button>
+
+      <!-- Points indicateurs -->
+      <button
+        *ngFor="let p of pageIndices"
+        class="page-dot"
+        [class.dot-active]="p === currentPage"
+        (click)="goToPage(p)"
+        [title]="'Page ' + (p + 1)"
+      ></button>
+
+      <!-- Bouton suivant -->
+      <button class="page-btn page-arrow" (click)="nextPage()" title="Page suivante">›</button>
+
+      <!-- Compteur -->
+      <span class="page-counter">{{ currentPage + 1 }} / {{ totalPages }}</span>
+
+      <!-- Toggle auto-rotation -->
+      <button
+        class="btn-auto-rotate"
+        [class.active]="autoRotate"
+        (click)="toggleAutoRotate()"
+        [title]="autoRotate ? 'Pause rotation' : 'Démarrer rotation'"
+      >
+        {{ autoRotate ? '⏸ Auto' : '▶ Auto' }}
+      </button>
+
+    </div>
+
+  </nav>
+
+</div>

@@ -1,12 +1,13 @@
 // src/affichage/affichage.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Planification } from '../semaine/entities/planification.entity';
 import { Semaine } from '../semaine/entities/semaine.entity';
 import { Affectation } from '../affectation/entities/affectation.entity';
 import { ProductionRecord } from '../production/entities/production-record.entity';
 import { GetAffichageDto } from './dto/get-affichage.dto';
+import { GetOverviewDto } from './dto/get-overview.dto';
 
 @Injectable()
 export class AffichageService {
@@ -24,19 +25,21 @@ export class AffichageService {
     private productionRepository: Repository<ProductionRecord>,
   ) {}
 
+  // ══════════════════════════════════════════════════════════════════════════
+  //  HELPERS PRIVÉS
+  // ══════════════════════════════════════════════════════════════════════════
+
   /**
    * Normalise la ligne : extrait le préfixe L04 depuis L04:RXT1, L04-RXT1, etc.
-   * Retourne le préfixe court (ex: "L04") pour les recherches LIKE
    */
   private normalizeLigne(ligne: string): string {
     if (!ligne) return '';
-    // Extraire le préfixe Lxx (ex: L04 depuis L04:RXT1 ou L04-RXT1)
     const match = ligne.trim().toUpperCase().match(/^(L\d{2})/);
     return match ? match[1] : ligne.trim().toUpperCase();
   }
 
   /**
-   * Convertir une date (ex: "2026-04-06") en nom de jour
+   * Convertir une date (ex: "2026-04-06") en nom de jour français
    */
   private getJourFromDate(dateStr: string): string {
     const date = new Date(dateStr);
@@ -63,15 +66,60 @@ export class AffichageService {
   }
 
   /**
-   * Endpoint principal : récupérer les données d'affichage pour une ligne + date
+   * Calcule les KPIs de production pour une ligne et une date données
+   * (méthode partagée entre getAffichage et getOverview)
    */
+  private async computeKpisLigne(
+    lignePrefix: string,
+    planificationsActives: Planification[],
+    date: string,
+  ) {
+    // Quantité planifiée totale
+    const totalQtePlanifiee = planificationsActives.reduce((sum, p) => {
+      return sum + (p.qteModifiee > 0 ? p.qteModifiee : p.qtePlanifiee);
+    }, 0);
+
+    // Records de production du jour
+    const dateDebut = new Date(date);
+    dateDebut.setHours(0, 0, 0, 0);
+    const dateFin = new Date(date);
+    dateFin.setHours(23, 59, 59, 999);
+
+    const productionRecords = await this.productionRepository
+      .createQueryBuilder('pr')
+      .where('pr.ligne LIKE :ligne', { ligne: `${lignePrefix}%` })
+      .andWhere('pr.dateScan BETWEEN :debut AND :fin', {
+        debut: dateDebut,
+        fin: dateFin,
+      })
+      .getMany();
+
+    const totalQteProduite = productionRecords.reduce(
+      (sum, r) => sum + r.quantite,
+      0,
+    );
+
+    const productivite =
+      totalQtePlanifiee > 0
+        ? Math.round((totalQteProduite / totalQtePlanifiee) * 10000) / 100
+        : 0;
+
+    return {
+      totalQtePlanifiee,
+      totalQteProduite,
+      productivite,
+      nbScans: productionRecords.length,
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ENDPOINT 1 : Affichage détaillé d'une ligne
+  // ══════════════════════════════════════════════════════════════════════════
+
   async getAffichage(dto: GetAffichageDto) {
     const { date, ligne } = dto;
-
-    // Normaliser la ligne pour la recherche (L04 -> cherche L04%)
     const lignePrefix = this.normalizeLigne(ligne);
 
-    // ── 1. Trouver la semaine correspondant à la date ──────────────────────
     const semaine = await this.findSemaineByDate(date);
     if (!semaine) {
       throw new NotFoundException(
@@ -79,13 +127,11 @@ export class AffichageService {
       );
     }
 
-    // ── 2. Trouver le jour de la semaine ──────────────────────────────────
     const jour = this.getJourFromDate(date);
     if (jour === 'dimanche') {
       throw new NotFoundException(`Le dimanche n'est pas un jour de travail planifié.`);
     }
 
-    // ── 3. Récupérer les planifications avec LIKE pour matcher L04:RXT1, L04-RXT1, etc. ─
     const planifications = await this.planificationRepository
       .createQueryBuilder('p')
       .where('p.semaine = :semaine', { semaine: semaine.nom })
@@ -93,16 +139,11 @@ export class AffichageService {
       .andWhere('p.ligne LIKE :ligne', { ligne: `${lignePrefix}%` })
       .getMany();
 
-    // Filtrer uniquement celles avec une quantité planifiée > 0
     const planificationsActives = planifications.filter(
       (p) => p.qtePlanifiee > 0 || p.qteModifiee > 0,
     );
 
-    // ── 4. Calculer la qtéPlanifiée totale ────────────────────────────────
-    const totalQtePlanifiee = planificationsActives.reduce((sum, p) => {
-      const qteSource = p.qteModifiee > 0 ? p.qteModifiee : p.qtePlanifiee;
-      return sum + qteSource;
-    }, 0);
+    const kpis = await this.computeKpisLigne(lignePrefix, planificationsActives, date);
 
     const detailReferences = planificationsActives.map((p) => ({
       reference: p.reference,
@@ -114,7 +155,6 @@ export class AffichageService {
       nbOperateurs: p.nbOperateurs,
     }));
 
-    // ── 5. Récupérer les affectations avec LIKE ────────────────────────────
     const affectations = await this.affectationRepository
       .createQueryBuilder('a')
       .leftJoinAndSelect('a.ouvrier', 'ouvrier')
@@ -123,7 +163,6 @@ export class AffichageService {
       .getMany();
 
     const nbOuvriers = affectations.length;
-
     const ouvriersList = affectations.map((a) => ({
       matricule: a.ouvrier.matricule,
       nomPrenom: a.ouvrier.nomPrenom,
@@ -134,7 +173,7 @@ export class AffichageService {
       })),
     }));
 
-    // ── 6. Récupérer la qtéProduite ────────────────────────────────────────
+    // Records de production pour le détail
     const dateDebut = new Date(date);
     dateDebut.setHours(0, 0, 0, 0);
     const dateFin = new Date(date);
@@ -150,25 +189,6 @@ export class AffichageService {
       .orderBy('pr.dateScan', 'ASC')
       .getMany();
 
-    const totalQteProduite = productionRecords.reduce(
-      (sum, record) => sum + record.quantite,
-      0,
-    );
-
-    const detailProduction = productionRecords.map((r) => ({
-      id: r.id,
-      reference: r.reference,
-      quantite: r.quantite,
-      dateScan: r.dateScan,
-    }));
-
-    // ── 7. Calculer la productivité / OEE ─────────────────────────────────
-    const productivite =
-      totalQtePlanifiee > 0
-        ? Math.round((totalQteProduite / totalQtePlanifiee) * 10000) / 100
-        : 0;
-
-    // ── 8. Construire et retourner la réponse ──────────────────────────────
     return {
       message: `Affichage pour la ligne "${ligne}" le ${date}`,
       date,
@@ -181,12 +201,12 @@ export class AffichageService {
       },
       ligne,
       kpis: {
-        productivite: `${productivite}%`,
-        productiviteValeur: productivite,
+        productivite: `${kpis.productivite}%`,
+        productiviteValeur: kpis.productivite,
         nbOuvriers,
-        totalQtePlanifiee,
-        totalQteProduite,
-        delta: totalQteProduite - totalQtePlanifiee,
+        totalQtePlanifiee: kpis.totalQtePlanifiee,
+        totalQteProduite: kpis.totalQteProduite,
+        delta: kpis.totalQteProduite - kpis.totalQtePlanifiee,
       },
       planification: {
         nbReferences: planificationsActives.length,
@@ -199,29 +219,124 @@ export class AffichageService {
       },
       production: {
         nbScans: productionRecords.length,
-        enregistrements: detailProduction,
+        enregistrements: productionRecords.map((r) => ({
+          id: r.id,
+          reference: r.reference,
+          quantite: r.quantite,
+          dateScan: r.dateScan,
+        })),
       },
     };
   }
 
-  /**
-   * Retourne les lignes disponibles (préfixes uniques ex: L04, L09...)
-   */
-  async getLignes(): Promise<string[]> {
-  const result = await this.planificationRepository
-    .createQueryBuilder('planification')
-    .select('DISTINCT planification.ligne', 'ligne')
-    .where('planification.ligne IS NOT NULL')
-    .andWhere("planification.ligne != ''")
-    .orderBy('planification.ligne', 'ASC')
-    .getRawMany();
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ENDPOINT 2 : Vue globale — toutes les lignes d'une journée
+  // ══════════════════════════════════════════════════════════════════════════
 
-  // Retourner les lignes complètes, pas seulement les préfixes
-  const lignes = result
-    .map(item => String(item.ligne).trim())
-    .filter(ligne => ligne.length > 0);
-  
-  // Dédupliquer et trier
-  return [...new Set(lignes)].sort();
-}
+  async getOverview(dto: GetOverviewDto) {
+    const { date } = dto;
+
+    // ── 1. Semaine et jour ────────────────────────────────────────────────
+    const semaine = await this.findSemaineByDate(date);
+    if (!semaine) {
+      throw new NotFoundException(
+        `Aucune semaine trouvée pour la date "${date}".`,
+      );
+    }
+
+    const jour = this.getJourFromDate(date);
+    if (jour === 'dimanche') {
+      throw new NotFoundException(`Le dimanche n'est pas un jour de travail planifié.`);
+    }
+
+    // ── 2. Toutes les planifications actives du jour ───────────────────────
+    const toutesLesPlanifications = await this.planificationRepository
+      .createQueryBuilder('p')
+      .where('p.semaine = :semaine', { semaine: semaine.nom })
+      .andWhere('p.jour = :jour', { jour })
+      .andWhere('(p.qtePlanifiee > 0 OR p.qteModifiee > 0)')
+      .getMany();
+
+    // ── 3. Lignes uniques triées ──────────────────────────────────────────
+    const lignesUniques = [...new Set(
+      toutesLesPlanifications.map((p) => p.ligne).filter(Boolean),
+    )].sort();
+
+    // ── 4. KPIs par ligne en parallèle ────────────────────────────────────
+    const lignesData = await Promise.all(
+      lignesUniques.map(async (ligne) => {
+        const lignePrefix = this.normalizeLigne(ligne);
+
+        // Planifications actives pour cette ligne
+        const planifLigne = toutesLesPlanifications.filter(
+          (p) => this.normalizeLigne(p.ligne) === lignePrefix,
+        );
+
+        const kpis = await this.computeKpisLigne(lignePrefix, planifLigne, date);
+
+        return {
+          ligne,
+          lignePrefix,
+          totalQtePlanifiee: kpis.totalQtePlanifiee,
+          totalQteProduite: kpis.totalQteProduite,
+          productivite: kpis.productivite,
+          nbScans: kpis.nbScans,
+          delta: kpis.totalQteProduite - kpis.totalQtePlanifiee,
+          statut:
+            kpis.productivite >= 85
+              ? 'success'
+              : kpis.productivite >= 60
+              ? 'warning'
+              : 'danger',
+        };
+      }),
+    );
+
+    // ── 5. KPIs globaux de la journée ─────────────────────────────────────
+    const totalPlanifie = lignesData.reduce((s, l) => s + l.totalQtePlanifiee, 0);
+    const totalProduit  = lignesData.reduce((s, l) => s + l.totalQteProduite, 0);
+    const productiviteGlobale =
+      totalPlanifie > 0
+        ? Math.round((totalProduit / totalPlanifie) * 10000) / 100
+        : 0;
+
+    return {
+      date,
+      jour,
+      semaine: {
+        id: semaine.id,
+        nom: semaine.nom,
+        dateDebut: semaine.dateDebut,
+        dateFin: semaine.dateFin,
+      },
+      global: {
+        nbLignes: lignesData.length,
+        totalQtePlanifiee: totalPlanifie,
+        totalQteProduite: totalProduit,
+        productiviteGlobale,
+        delta: totalProduit - totalPlanifie,
+      },
+      lignes: lignesData,
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  ENDPOINT 3 : Liste des lignes disponibles
+  // ══════════════════════════════════════════════════════════════════════════
+
+  async getLignes(): Promise<string[]> {
+    const result = await this.planificationRepository
+      .createQueryBuilder('planification')
+      .select('DISTINCT planification.ligne', 'ligne')
+      .where('planification.ligne IS NOT NULL')
+      .andWhere("planification.ligne != ''")
+      .orderBy('planification.ligne', 'ASC')
+      .getRawMany();
+
+    const lignes = result
+      .map((item) => String(item.ligne).trim())
+      .filter((ligne) => ligne.length > 0);
+
+    return [...new Set(lignes)].sort();
+  }
 }

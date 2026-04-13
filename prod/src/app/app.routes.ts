@@ -43,6 +43,7 @@ import { ScannerpfinComponent } from './scannerpfin/scannerpfin.component';
 import { Choix6Component } from './choix6/choix6.component';
 import { ScreenSaverComponent } from './screen-saver/screen-saver.component';
 import { VideoComponent } from './video/video.component';
+import { AffichageOverviewComponent } from './affichage-overview/affichage-overview.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -104,6 +105,7 @@ export const routes: Routes = [
   { path: 'ch6', component: Choix6Component },
   { path: 'dashboard', component: ScreenSaverComponent },
   { path: 'video', component: VideoComponent },
+  { path: 'view', component: AffichageOverviewComponent },
 
 
 ];

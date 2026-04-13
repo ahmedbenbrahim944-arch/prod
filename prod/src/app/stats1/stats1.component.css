@@ -1676,3 +1676,70 @@
     margin-bottom: 1rem;
   }
 }
+/* ============================================ */
+/* CARTE EFFECTIF TOTAL SOCIÉTÉ - À AJOUTER     */
+/* ============================================ */
+.entreprise-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  transition: all 0.3s ease;
+}
+
+.entreprise-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+}
+
+/* Surcharger le card-header pour la carte entreprise */
+.entreprise-card .card-header {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+}
+
+.entreprise-card .card-header svg {
+  color: white;
+}
+
+.entreprise-card .card-header h3 {
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.entreprise-total-wrapper {
+  text-align: center;
+  padding: 0.75rem 0;
+}
+
+.entreprise-value {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+  letter-spacing: -2px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.entreprise-sublabel {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ============================================ */
+/* CORRECTIF 6M - AFFICHAGE SANS SCROLL         */
+/* ============================================ */
+
+/* Forcer 7 colonnes sur grand écran */
+
+
+/* ============================================ */
+/* RESPONSIVE 6M CORRECTIF                      */
+/* ============================================ */
+

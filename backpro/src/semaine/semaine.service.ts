@@ -207,86 +207,29 @@ export class SemaineService {
   }
 
   // ==================== MISE À JOUR PLANIFICATION (Admin) ====================
-  async updatePlanificationByCriteria(updatePlanificationDto: UpdatePlanificationByCriteriaDto) {
-    const { semaine, jour, ligne, reference, qtePlanifiee, qteModifiee, decProduction } = updatePlanificationDto;
+async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Promise<any> {
+  const { semaine, jour, ligne, reference, ...fieldsToUpdate } = dto;
 
-    const planification = await this.planificationRepository.findOne({
-      where: { semaine, jour, ligne, reference }
-    });
-
-    if (!planification) {
-      throw new NotFoundException('Planification non trouvée');
-    }
-
-    const ancienneQuantiteSource = this.getQuantitySource(planification);
-
-    // Mettre à jour les champs de base
-    if (updatePlanificationDto.of !== undefined) planification.of = updatePlanificationDto.of;
-    if (qtePlanifiee !== undefined) planification.qtePlanifiee = qtePlanifiee;
-    if (qteModifiee !== undefined) planification.qteModifiee = qteModifiee;
-    if (decProduction !== undefined) planification.decProduction = decProduction;
-    if (updatePlanificationDto.decMagasin !== undefined) planification.decMagasin = updatePlanificationDto.decMagasin;
-    if (updatePlanificationDto.emballage !== undefined) planification.emballage = updatePlanificationDto.emballage;
-    // NOUVEAU : Sauvegarder la note si elle est fournie
-    if (updatePlanificationDto.note !== undefined) planification.note = updatePlanificationDto.note;
-
-    const nouvelleQuantiteSource = this.getQuantitySource(planification);
-
-    // SI LA QUANTITÉ SOURCE CHANGE, RECALCULER LES TEMPS
-    if (nouvelleQuantiteSource !== ancienneQuantiteSource) {
-      const tempsSec = await this.tempsSecRepository.findOne({
-        where: { ligne, reference }
-      });
-
-      if (tempsSec) {
-        const { nbHeuresPlanifiees, nbOperateurs } = this.calculateAutoPlanificationFields(
-          nouvelleQuantiteSource, 
-          tempsSec.seconde
-        );
-        planification.nbOperateurs = nbOperateurs;
-        planification.nbHeuresPlanifiees = nbHeuresPlanifiees;
-      }
-    }
-
-    // RECALCULER LES CHAMPS DE PRODUCTION
-    const { deltaProd, pcsProd } = this.calculateAutoProductionFields(
-      nouvelleQuantiteSource,
-      planification.decProduction
+  // 1. OF → propagé à TOUS les jours
+  if (fieldsToUpdate.of !== undefined) {
+    await this.planificationRepository.update(
+      { semaine, ligne, reference },  // ← pas de "jour"
+      { of: fieldsToUpdate.of }
     );
-    planification.deltaProd = deltaProd;
-    planification.pcsProd = pcsProd;
-
-    planification.updatedAt = new Date();
-    const updatedPlanification = await this.planificationRepository.save(planification);
-
-    // ✅ NOUVEAU : Nettoyer automatiquement la non-conformité si deltaProd = 0
-    if (deltaProd === 0) {
-      await this.nonConfService.cleanNonConformiteIfNeeded(updatedPlanification.id);
-    }
-
-    return {
-      message: 'Planification mise à jour',
-      planification: {
-        id: updatedPlanification.id,
-        semaine: updatedPlanification.semaine,
-        jour: updatedPlanification.jour,
-        ligne: updatedPlanification.ligne,
-        reference: updatedPlanification.reference,
-        of: updatedPlanification.of,
-        qtePlanifiee: updatedPlanification.qtePlanifiee,
-        qteModifiee: updatedPlanification.qteModifiee,
-        emballage: updatedPlanification.emballage,
-        nbOperateurs: updatedPlanification.nbOperateurs,
-        nbHeuresPlanifiees: updatedPlanification.nbHeuresPlanifiees,
-        decProduction: updatedPlanification.decProduction,
-        decMagasin: updatedPlanification.decMagasin,
-        deltaProd: updatedPlanification.deltaProd,
-        pcsProd: `${updatedPlanification.pcsProd}%`,
-        note: updatedPlanification.note,
-        updatedAt: updatedPlanification.updatedAt
-      }
-    };
   }
+
+  // 2. Tout le reste → seulement le jour concerné
+  const { of: _, ...perDayFields } = fieldsToUpdate;
+  
+  if (Object.keys(perDayFields).length > 0) {
+    await this.planificationRepository.update(
+      { semaine, jour, ligne, reference },  // ← avec "jour"
+      perDayFields
+    );
+  }
+
+  return { success: true };
+}
 
   // ==================== DÉCLARATION PRODUCTION (User) ====================
   async updateProductionPlanification(updateProductionDto: UpdateProductionPlanificationDto) {

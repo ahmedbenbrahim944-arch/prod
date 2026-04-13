@@ -223,6 +223,13 @@
           <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
           scanner
         </button>
+        <button
+          [routerLink]="['/view']"
+          class="nav-button"
+          [class.active]="activeTab() === 'view-stats'">
+          <img src="assets/icons/production.png" alt="View" class="nav-button-icon">
+          View Global
+        </button>
 
         <button
           [routerLink]="['/admin/tracking']"

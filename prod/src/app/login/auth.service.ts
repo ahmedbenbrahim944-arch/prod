@@ -60,10 +60,10 @@ export class AuthService {
             this.router.navigate(['/ch5']);
           }
           else if (matricule === '1952') {
-            this.router.navigate(['/video']);
+            this.router.navigate(['/ecran']);
           }
           else if (matricule === '1922') {
-            this.router.navigate(['/lan']);
+            this.router.navigate(['/video']);
           }
           else if (matricule === this.SPECIAL_MATRICULE_LISTP) {
             this.router.navigate(['/listP']);
