@@ -1,43 +1,57 @@
 <!-- src/app/affichage/overview/affichage-overview.component.html -->
 <div class="overview-wrapper">
 
-  <!-- ══════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
        HEADER
-  ═══════════════════════════════════════════════════════ -->
+  ═══════════════════════════════════════════════════════════ -->
   <header class="overview-header">
     <div class="header-left">
-      <span class="header-title">Vue Globale Production</span>
-      <span class="header-sep">|</span>
-      <span class="header-clock">{{ today | date:'HH:mm:ss' }}</span>
+      <span class="header-dot"></span>
+      <span class="header-title">ProdSeraf</span>
+      <span class="header-separator">|</span>
+      <span class="header-date">{{ today | date:'EEEE dd MMMM yyyy' : undefined : 'fr' }}</span>
       <span class="header-jour" *ngIf="data">{{ data.jour | titlecase }}</span>
       <span class="header-semaine" *ngIf="data">{{ data.semaine.nom }}</span>
     </div>
+    <div class="header-center">
+      <span class="header-clock">{{ today | date:'HH:mm:ss' }}</span>
+    </div>
     <div class="header-right">
-      <input type="date" class="date-input" [(ngModel)]="selectedDate" (change)="loadOverview()" />
-      <button class="btn-refresh" (click)="loadOverview()" [disabled]="loading">
-        {{ loading ? 'Chargement...' : '↺ Actualiser' }}
+      <input
+        type="date"
+        class="date-input"
+        [(ngModel)]="selectedDate"
+        (change)="loadOverview()"
+      />
+      <button class="btn-refresh" (click)="manualRefresh()" [disabled]="loading">
+        <span class="refresh-icon">↺</span>
+        {{ loading ? 'Chargement...' : 'Actualiser' }}
       </button>
-      <span class="last-update" *ngIf="lastUpdate">Màj {{ lastUpdate | date:'HH:mm:ss' }}</span>
+      <span class="last-update" *ngIf="lastUpdate">
+        Màj {{ lastUpdate | date:'HH:mm:ss' }}
+      </span>
     </div>
   </header>
 
-  <!-- ══════════════════════════════════════════════════════
-       KPIs GLOBAUX
-  ═══════════════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════════════════════
+       BARRE KPI GLOBAUX
+  ═══════════════════════════════════════════════════════════ -->
   <section class="global-bar" *ngIf="data && !loading">
     <div class="global-kpi">
       <span class="gk-value">{{ data.global.nbLignes }}</span>
       <span class="gk-label">Lignes actives</span>
     </div>
     <div class="global-kpi">
-      <span class="gk-value">{{ data.global.totalQteProduite | number:'1.0-0':'fr' }}</span>
+      <span class="gk-value blue">{{ data.global.totalQteProduite | number:'1.0-0':'fr' }}</span>
       <span class="gk-label">Pièces produites</span>
     </div>
     <div class="global-kpi">
       <span class="gk-value">{{ data.global.totalQtePlanifiee | number:'1.0-0':'fr' }}</span>
       <span class="gk-label">Objectif total</span>
     </div>
-    <div class="global-kpi" [class.kpi-pos]="data.global.delta >= 0" [class.kpi-neg]="data.global.delta < 0">
+    <div class="global-kpi"
+         [class.kpi-pos]="data.global.delta >= 0"
+         [class.kpi-neg]="data.global.delta < 0">
       <span class="gk-value">{{ data.global.delta > 0 ? '+' : '' }}{{ data.global.delta | number:'1.0-0':'fr' }}</span>
       <span class="gk-label">Écart global</span>
     </div>
@@ -48,11 +62,15 @@
       <span class="gk-value">{{ data.global.productiviteGlobale | number:'1.1-1':'fr' }}%</span>
       <span class="gk-label">Productivité globale</span>
     </div>
+    <div class="global-kpi">
+      <span class="gk-value blue">{{ activeLignes.length }}</span>
+      <span class="gk-label">En production</span>
+    </div>
   </section>
 
-  <!-- ══════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════
        ÉTATS : VIDE / ERREUR / CHARGEMENT
-  ═══════════════════════════════════════════════════════ -->
+  ═══════════════════════════════════════════════════════════ -->
   <div class="empty-state" *ngIf="!data && !loading && !error">
     <div class="empty-icon">📋</div>
     <p>Sélectionnez une date pour afficher toutes les lignes</p>
@@ -68,118 +86,189 @@
     <span>Chargement des lignes...</span>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       GRILLE DES LIGNES (page courante seulement)
-  ═══════════════════════════════════════════════════════ -->
-  <main class="lines-grid" *ngIf="data && !loading">
+  <!-- ══════════════════════════════════════════════════════════
+       GRILLE 2 COLONNES — LIGNES ACTIVES (productivite > 0)
+  ═══════════════════════════════════════════════════════════ -->
+  <main class="detail-grid" *ngIf="data && !loading">
 
-    <div
-      class="line-card"
-      *ngFor="let ligne of currentPageLines; trackBy: trackByLigne"
-      [class.card-success]="ligne.statut === 'success'"
-      [class.card-warning]="ligne.statut === 'warning'"
-      [class.card-danger]="ligne.statut === 'danger'"
-      (click)="goToLigne(ligne.ligne)"
-    >
-      <!-- En-tête -->
-      <div class="card-header">
-        <span class="card-ligne-name">{{ ligne.ligne }}</span>
-        <span class="card-dot"
-              [class.dot-success]="ligne.statut === 'success'"
-              [class.dot-warning]="ligne.statut === 'warning'"
-              [class.dot-danger]="ligne.statut === 'danger'">
-        </span>
-      </div>
-
-      <!-- Productivité -->
-      <div class="card-productivite"
-           [class.prod-success]="ligne.statut === 'success'"
-           [class.prod-warning]="ligne.statut === 'warning'"
-           [class.prod-danger]="ligne.statut === 'danger'">
-        {{ ligne.productivite | number:'1.1-1':'fr' }}<span class="prod-pct">%</span>
-      </div>
-
-      <!-- Barre -->
-      <div class="card-bar-track">
-        <div class="card-bar-fill"
-             [style.width.%]="clamp(ligne.productivite, 0, 100)"
-             [class.fill-success]="ligne.statut === 'success'"
-             [class.fill-warning]="ligne.statut === 'warning'"
-             [class.fill-danger]="ligne.statut === 'danger'">
-        </div>
-      </div>
-
-      <!-- Pièces -->
-      <div class="card-pcs">
-        <div class="card-pcs-main">
-          <span class="pcs-produced">{{ ligne.totalQteProduite | number:'1.0-0':'fr' }}</span>
-          <span class="pcs-sep">&nbsp;/&nbsp;</span>
-          <span class="pcs-target">{{ ligne.totalQtePlanifiee | number:'1.0-0':'fr' }}</span>
-        </div>
-        <div class="card-pcs-label">pièces produites / objectif</div>
-      </div>
-
-      <!-- Écart -->
-      <div class="card-delta"
-           [class.delta-pos]="ligne.delta >= 0"
-           [class.delta-neg]="ligne.delta < 0">
-        {{ ligne.delta > 0 ? '+' : '' }}{{ ligne.delta | number:'1.0-0':'fr' }}<span class="delta-unit"> pcs</span>
-      </div>
-
-      <!-- Scans -->
-      <div class="card-scans">{{ ligne.nbScans }} scan{{ ligne.nbScans > 1 ? 's' : '' }}</div>
-    </div>
-
-    <!-- Aucune ligne -->
-    <div class="no-lines" *ngIf="data.lignes.length === 0">
+    <!-- Message si aucune ligne active -->
+    <div class="no-active-lines" *ngIf="activeLignes.length === 0">
       <span class="empty-icon">🔍</span>
-      <p>Aucune ligne planifiée pour cette date</p>
+      <p>Aucune ligne en production pour cette date</p>
     </div>
+
+    <!-- ── BLOC DÉTAIL PAR LIGNE ACTIVE ─────────────────────── -->
+    <div
+      class="detail-block"
+      *ngFor="let ligne of activeLignes; trackBy: trackByLigne"
+      [class.block-success]="ligne.statut === 'success'"
+      [class.block-warning]="ligne.statut === 'warning'"
+      [class.block-danger]="ligne.statut === 'danger'"
+    >
+
+      <!-- En-tête du bloc -->
+      <div class="block-header">
+        <div class="block-header-left">
+          <span class="block-ligne-name">{{ ligne.ligne }}</span>
+          <span class="block-statut-dot"
+                [class.dot-success]="ligne.statut === 'success'"
+                [class.dot-warning]="ligne.statut === 'warning'"
+                [class.dot-danger]="ligne.statut === 'danger'">
+          </span>
+        </div>
+        
+      </div>
+
+      <!-- Loader pendant le chargement du détail -->
+      <div class="block-loader" *ngIf="lineLoadingMap[ligne.ligne]">
+        <div class="loader-spinner"></div>
+        <span>Chargement...</span>
+      </div>
+
+      <!-- Erreur si le détail n'a pas pu être chargé -->
+      <div class="block-error" *ngIf="!lineLoadingMap[ligne.ligne] && !lineDataMap[ligne.ligne]">
+        <span>⚠️ Impossible de charger le détail</span>
+      </div>
+
+      <!-- ── GRILLE 4 QUADRANTS ─────────────────────────────── -->
+      <div class="quadrant-grid" *ngIf="lineDataMap[ligne.ligne] && !lineLoadingMap[ligne.ligne]">
+        <ng-container [ngTemplateOutlet]="tplQuadrants"
+                      [ngTemplateOutletContext]="{ d: lineDataMap[ligne.ligne], th: theoriquePiecesMap[ligne.ligne] ?? 0 }">
+        </ng-container>
+      </div>
+
+    </div>
+    <!-- ── FIN BLOC ──────────────────────────────────────────── -->
 
   </main>
 
-  <!-- ══════════════════════════════════════════════════════
-       BARRE DE PAGINATION  (visible seulement si > 1 page)
-  ═══════════════════════════════════════════════════════ -->
-  <nav class="pagination-bar" *ngIf="data && !loading && totalPages > 1">
-
-    <!-- Barre de progression rotation auto -->
-    <div class="rotate-progress-track" *ngIf="autoRotate">
-      <div class="rotate-progress-fill" [style.width.%]="progressPct"></div>
-    </div>
-
-    <div class="pagination-controls">
-
-      <!-- Bouton précédent -->
-      <button class="page-btn page-arrow" (click)="prevPage()" title="Page précédente">‹</button>
-
-      <!-- Points indicateurs -->
-      <button
-        *ngFor="let p of pageIndices"
-        class="page-dot"
-        [class.dot-active]="p === currentPage"
-        (click)="goToPage(p)"
-        [title]="'Page ' + (p + 1)"
-      ></button>
-
-      <!-- Bouton suivant -->
-      <button class="page-btn page-arrow" (click)="nextPage()" title="Page suivante">›</button>
-
-      <!-- Compteur -->
-      <span class="page-counter">{{ currentPage + 1 }} / {{ totalPages }}</span>
-
-      <!-- Toggle auto-rotation -->
-      <button
-        class="btn-auto-rotate"
-        [class.active]="autoRotate"
-        (click)="toggleAutoRotate()"
-        [title]="autoRotate ? 'Pause rotation' : 'Démarrer rotation'"
-      >
-        {{ autoRotate ? '⏸ Auto' : '▶ Auto' }}
-      </button>
-
-    </div>
-
-  </nav>
-
 </div>
+
+<!-- ══════════════════════════════════════════════════════════
+     TEMPLATE RÉUTILISABLE : 4 QUADRANTS
+     Paramètres : d = AffichageData, th = theoriquePieces
+═══════════════════════════════════════════════════════════ -->
+<ng-template #tplQuadrants let-d="d" let-th="th">
+
+  <!-- Q1 : Productivité -->
+  <div class="quadrant">
+    <div class="quadrant-label">PRODUCTIVITÉ</div>
+    <div class="quadrant-content center">
+      <div class="oee-value"
+           [class.oee-danger]="d.kpis.productiviteValeur < 60"
+           [class.oee-warning]="d.kpis.productiviteValeur >= 60 && d.kpis.productiviteValeur < 85"
+           [class.oee-success]="d.kpis.productiviteValeur >= 85">
+        {{ d.kpis.productiviteValeur | number:'1.1-1':'fr' }}<span class="oee-percent">%</span>
+      </div>
+      <div class="oee-bar-track">
+        <div class="oee-bar-fill"
+             [style.width.%]="clamp(d.kpis.productiviteValeur, 0, 100)"
+             [class.bar-danger]="d.kpis.productiviteValeur < 60"
+             [class.bar-warning]="d.kpis.productiviteValeur >= 60 && d.kpis.productiviteValeur < 85"
+             [class.bar-success]="d.kpis.productiviteValeur >= 85">
+        </div>
+      </div>
+      <div class="oee-sublabel">Objectif atteint</div>
+    </div>
+  </div>
+
+  <!-- Q2 : Opérateurs + Pièce Théorique -->
+  <div class="quadrant">
+    <div class="quadrant-label">OPÉRATEURS</div>
+    <div class="quadrant-content center op-top-section">
+      <div class="op-value">{{ d.ouvriers.total }}</div>
+      <div class="op-sublabel">affectés aujourd'hui</div>
+      <div class="op-capitaine" *ngIf="d.ouvriers.capitaine">
+        <span class="cap-badge">★</span>
+        {{ d.ouvriers.capitaine.nomPrenom }}
+      </div>
+    </div>
+
+    <div class="op-divider"></div>
+
+    <div class="quadrant-label theorique-label">PIÈCE THÉORIQUE</div>
+    <div class="quadrant-content center theorique-section">
+      <div class="theorique-value"
+           [class.th-ahead]="th <= d.kpis.totalQteProduite"
+           [class.th-behind]="th > d.kpis.totalQteProduite">
+        {{ th | number:'1.0-0':'fr' }}
+      </div>
+      <div class="theorique-sublabel">pièces théoriques dues</div>
+      <div class="theorique-time">{{ today | date:'HH:mm:ss' }}</div>
+    </div>
+  </div>
+
+  <!-- Q3 : Planification -->
+  <div class="quadrant">
+    <div class="quadrant-label">PLANIFICATION</div>
+    <div class="quadrant-content">
+      <div class="prod-kpi-row">
+        <div class="prod-kpi-card">
+          <div class="prod-kpi-label">OBJECTIF</div>
+          <div class="prod-kpi-value">{{ d.kpis.totalQtePlanifiee | number:'1.0-0':'fr' }}</div>
+        </div>
+        <div class="prod-kpi-card">
+          <div class="prod-kpi-label">RÉALISÉ</div>
+          <div class="prod-kpi-value">{{ d.kpis.totalQteProduite | number:'1.0-0':'fr' }}</div>
+        </div>
+        <div class="prod-kpi-card"
+             [class.delta-pos]="d.kpis.delta >= 0"
+             [class.delta-neg]="d.kpis.delta < 0">
+          <div class="prod-kpi-label">ÉCART</div>
+          <div class="prod-kpi-value">{{ d.kpis.delta > 0 ? '+' : '' }}{{ d.kpis.delta | number:'1.0-0':'fr' }}</div>
+        </div>
+      </div>
+      <div class="ref-table-wrap">
+        <table class="ref-table">
+          <thead>
+            <tr>
+              <th>RÉFÉRENCE</th>
+              <th>OF</th>
+              <th>QUANTITÉ</th>
+              <th>EMBALLAGE</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ref of d.planification.references">
+              <td>{{ ref.reference }}</td>
+              <td>{{ ref.of || '—' }}</td>
+              <td>{{ ref.qteSource | number:'1.0-0':'fr' }}</td>
+              <td>{{ ref.emballage }}</td>
+            </tr>
+            <tr *ngIf="d.planification.references.length === 0">
+              <td colspan="4" class="no-data">Aucune référence planifiée</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q4 : Production -->
+  <div class="quadrant">
+    <div class="quadrant-label">PRODUCTION</div>
+    <div class="quadrant-content center">
+      <div class="pcs-row">
+        <div class="pcs-block">
+          <div class="pcs-value highlight">{{ d.kpis.totalQteProduite | number:'1.0-0':'fr' }}</div>
+          <div class="pcs-sub">pièces produites</div>
+        </div>
+        <div class="pcs-divider"></div>
+        <div class="pcs-block">
+          <div class="pcs-value muted">{{ d.kpis.totalQtePlanifiee | number:'1.0-0':'fr' }}</div>
+          <div class="pcs-sub">objectif</div>
+        </div>
+      </div>
+      <div class="pcs-bar-track">
+        <div class="pcs-bar-fill"
+             [style.width.%]="clamp(d.kpis.productiviteValeur, 0, 100)"
+             [class.bar-danger]="d.kpis.productiviteValeur < 60"
+             [class.bar-warning]="d.kpis.productiviteValeur >= 60 && d.kpis.productiviteValeur < 85"
+             [class.bar-success]="d.kpis.productiviteValeur >= 85">
+        </div>
+      </div>
+      <div class="pcs-scans">{{ d.production.nbScans }} scan(s) enregistré(s)</div>
+    </div>
+  </div>
+
+</ng-template>

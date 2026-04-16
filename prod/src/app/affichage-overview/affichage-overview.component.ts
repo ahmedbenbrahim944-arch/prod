@@ -8,6 +8,9 @@ import localeFr from '@angular/common/locales/fr';
 
 registerLocaleData(localeFr, 'fr');
 
+// ─────────────────────────────────────────────────────────────
+//  Interfaces Overview
+// ─────────────────────────────────────────────────────────────
 export interface LigneOverview {
   ligne: string;
   lignePrefix: string;
@@ -33,6 +36,51 @@ export interface OverviewData {
   lignes: LigneOverview[];
 }
 
+// ─────────────────────────────────────────────────────────────
+//  Interface Détail ligne (réponse /affichage)
+// ─────────────────────────────────────────────────────────────
+export interface AffichageData {
+  date: string;
+  jour: string;
+  semaine: { nom: string; dateDebut: string; dateFin: string };
+  ligne: string;
+  kpis: {
+    productivite: string;
+    productiviteValeur: number;
+    nbOuvriers: number;
+    totalQtePlanifiee: number;
+    totalQteProduite: number;
+    delta: number;
+  };
+  planification: {
+    nbReferences: number;
+    references: Array<{
+      reference: string;
+      of: string;
+      qteSource: number;
+      emballage: string;
+      nbOperateurs: number;
+    }>;
+  };
+  ouvriers: {
+    total: number;
+    capitaine: { matricule: number; nomPrenom: string } | null;
+    liste: Array<{ matricule: number; nomPrenom: string; estCapitaine: boolean }>;
+  };
+  production: {
+    nbScans: number;
+    enregistrements: Array<{
+      id: number;
+      reference: string;
+      quantite: number;
+      dateScan: string;
+    }>;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Component
+// ─────────────────────────────────────────────────────────────
 @Component({
   selector: 'app-affichage-overview',
   standalone: true,
@@ -47,154 +95,197 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
   error: string | null = null;
   lastUpdate: Date | null = null;
   today = new Date();
+
+  /** Date sélectionnée (format YYYY-MM-DD) */
   selectedDate: string = this.formatDate(new Date());
 
-  // ── Pagination ────────────────────────────────────────────
-  readonly PAGE_SIZE = 27;          // lignes max par page
-  readonly AUTO_ROTATE_MS = 10000;  // 10 secondes entre pages
+  /** Données détaillées par ligne  { 'L24:RXT2': AffichageData, ... } */
+  lineDataMap: { [ligne: string]: AffichageData } = {};
 
-  currentPage = 0;
-  totalPages = 1;
-  autoRotate = true;
-  progressPct = 0;                  // avancement barre de rotation (0-100)
+  /** État de chargement par ligne */
+  lineLoadingMap: { [ligne: string]: boolean } = {};
+
+  /** Compteur théorique par ligne (recalculé chaque seconde) */
+  theoriquePiecesMap: { [ligne: string]: number } = {};
 
   private clockInterval: any;
-  private rotateInterval: any;
-  private progressInterval: any;
+  private autoRefreshInterval: any;          // ← NOUVEAU : Interval d'auto-refresh
+  private readonly REFRESH_INTERVAL_MS = 5000; // ← 5 secondes
   private apiUrl = 'http://102.207.250.53:3000';
 
   constructor(private http: HttpClient, private router: Router) {}
 
+  // ── Lifecycle ──────────────────────────────────────────────
   ngOnInit(): void {
-    this.clockInterval = setInterval(() => { this.today = new Date(); }, 1000);
+    // Horloge + recalcul théorique chaque seconde
+    this.clockInterval = setInterval(() => {
+      this.today = new Date();
+      for (const ligne of Object.keys(this.lineDataMap)) {
+        this.theoriquePiecesMap[ligne] = this.calculateTheorique(this.lineDataMap[ligne]);
+      }
+    }, 1000);
+
+    // Auto-refresh des données toutes les 5 secondes
+    this.startAutoRefresh();
+
+    // Chargement initial
     this.loadOverview();
   }
 
   ngOnDestroy(): void {
-    this.clearAllIntervals();
+    if (this.clockInterval) clearInterval(this.clockInterval);
+    this.stopAutoRefresh();                  // ← Nettoyer l'interval d'auto-refresh
   }
 
-  // ── Chargement ────────────────────────────────────────────
+  // ── Auto-Refresh ───────────────────────────────────────────
+  /**
+   * Démarre le rafraîchissement automatique toutes les 5 secondes
+   */
+  private startAutoRefresh(): void {
+    this.autoRefreshInterval = setInterval(() => {
+      // Ne pas rafraîchir si un chargement est déjà en cours
+      if (!this.loading) {
+        console.log('🔄 Auto-refresh des données...');
+        this.loadOverview();
+      } else {
+        console.log('⏳ Auto-refresh ignoré (chargement en cours)');
+      }
+    }, this.REFRESH_INTERVAL_MS);
+  }
+
+  /**
+   * Arrête le rafraîchissement automatique
+   */
+  private stopAutoRefresh(): void {
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+      this.autoRefreshInterval = null;
+    }
+  }
+
+  /**
+   * Force un rafraîchissement manuel (appelé par le bouton)
+   */
+  manualRefresh(): void {
+    console.log('🔄 Rafraîchissement manuel...');
+    this.loadOverview();
+  }
+
+  // ── Chargement vue globale ─────────────────────────────────
   loadOverview(): void {
     if (!this.selectedDate) return;
+
     this.loading = true;
     this.error = null;
-    this.currentPage = 0;
-    this.stopAutoRotate();
+    // Réinitialiser les détails précédents
+    this.lineDataMap = {};
+    this.lineLoadingMap = {};
+    this.theoriquePiecesMap = {};
 
     const token = localStorage.getItem('access_token') || '';
+
     this.http
       .post<OverviewData>(
         `${this.apiUrl}/affichage/overview`,
         { date: this.selectedDate },
-        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
       )
       .subscribe({
         next: (res) => {
           this.data = res;
           this.lastUpdate = new Date();
           this.loading = false;
-          this.initPagination();
+          // Charger le détail pour toutes les lignes actives
+          this.loadLineDetails();
         },
         error: (err) => {
+          console.error('Erreur overview:', err);
           if (err.status === 401) {
             this.error = 'Session expirée. Veuillez vous reconnecter.';
             localStorage.removeItem('access_token');
           } else if (err.status === 404) {
-            this.error = err.error?.message || 'Aucune planification trouvée pour cette date.';
+            this.error =
+              err.error?.message || 'Aucune planification trouvée pour cette date.';
           } else {
-            this.error = err?.error?.message || 'Erreur lors du chargement.';
+            this.error =
+              err?.error?.message || 'Erreur lors du chargement des données.';
           }
           this.loading = false;
         },
       });
   }
 
-  // ── Pagination ────────────────────────────────────────────
-  private initPagination(): void {
-    const nb = this.data?.lignes?.length ?? 0;
-    this.totalPages = Math.max(1, Math.ceil(nb / this.PAGE_SIZE));
-    this.currentPage = 0;
-    if (this.totalPages > 1 && this.autoRotate) {
-      this.startAutoRotate();
+  // ── Chargement détail pour chaque ligne active ─────────────
+  loadLineDetails(): void {
+    if (!this.data) return;
+
+    const activeLignes = this.data.lignes.filter((l) => l.productivite > 0);
+    const token = localStorage.getItem('access_token') || '';
+
+    for (const ligne of activeLignes) {
+      this.lineLoadingMap[ligne.ligne] = true;
+
+      this.http
+        .post<AffichageData>(
+          `${this.apiUrl}/affichage`,
+          { date: this.selectedDate, ligne: ligne.ligne },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        )
+        .subscribe({
+          next: (res) => {
+            this.lineDataMap[ligne.ligne] = res;
+            this.theoriquePiecesMap[ligne.ligne] = this.calculateTheorique(res);
+            this.lineLoadingMap[ligne.ligne] = false;
+          },
+          error: (err) => {
+            console.error(`Erreur chargement détail ligne ${ligne.ligne}:`, err);
+            this.lineLoadingMap[ligne.ligne] = false;
+          },
+        });
     }
   }
 
-  /** Slice des lignes visibles sur la page courante */
-  get currentPageLines(): LigneOverview[] {
-    if (!this.data) return [];
-    const start = this.currentPage * this.PAGE_SIZE;
-    return this.data.lignes.slice(start, start + this.PAGE_SIZE);
+  // ── Getter : lignes actives uniquement ─────────────────────
+  get activeLignes(): LigneOverview[] {
+  // Afficher UNIQUEMENT les lignes avec productivité > 0 (en production)
+  return this.data?.lignes.filter((l) => l.productivite > 0) ?? [];
+}
+
+  // ── Calcul pièces théoriques ───────────────────────────────
+  calculateTheorique(data: AffichageData): number {
+    const objective = data?.kpis?.totalQtePlanifiee ?? 0;
+    if (objective === 0) return 0;
+
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(6, 0, 0, 0);
+
+    const totalSeconds = 8 * 3600;
+    const ratePerSecond = objective / totalSeconds;
+    const elapsedSeconds = Math.max(0, (now.getTime() - start.getTime()) / 1000);
+
+    return Math.round(elapsedSeconds * ratePerSecond);
   }
 
-  /** Array d'indices pour les points indicateurs */
-  get pageIndices(): number[] {
-    return Array.from({ length: this.totalPages }, (_, i) => i);
-  }
+  // ── Navigation vers le détail d'une ligne ──────────────────
+  
 
-  goToPage(page: number): void {
-    this.currentPage = page;
-    this.progressPct = 0;
-  }
-
-  nextPage(): void {
-    this.currentPage = (this.currentPage + 1) % this.totalPages;
-    this.progressPct = 0;
-  }
-
-  prevPage(): void {
-    this.currentPage = (this.currentPage - 1 + this.totalPages) % this.totalPages;
-    this.progressPct = 0;
-  }
-
-  // ── Auto-rotation ─────────────────────────────────────────
-  private startAutoRotate(): void {
-    this.progressPct = 0;
-    const step = 100 / (this.AUTO_ROTATE_MS / 100);
-    this.progressInterval = setInterval(() => {
-      this.progressPct = Math.min(100, this.progressPct + step);
-    }, 100);
-    this.rotateInterval = setInterval(() => {
-      this.currentPage = (this.currentPage + 1) % this.totalPages;
-      this.progressPct = 0;
-    }, this.AUTO_ROTATE_MS);
-  }
-
-  private stopAutoRotate(): void {
-    clearInterval(this.rotateInterval);
-    clearInterval(this.progressInterval);
-    this.rotateInterval = null;
-    this.progressInterval = null;
-    this.progressPct = 0;
-  }
-
-  toggleAutoRotate(): void {
-    this.autoRotate = !this.autoRotate;
-    if (this.autoRotate && this.totalPages > 1) {
-      this.startAutoRotate();
-    } else {
-      this.stopAutoRotate();
-    }
-  }
-
-  private clearAllIntervals(): void {
-    clearInterval(this.clockInterval);
-    this.stopAutoRotate();
-  }
-
-  // ── Navigation détail ─────────────────────────────────────
-  goToLigne(ligne: string): void {
-    this.router.navigate(['/affichage'], {
-      queryParams: { ligne, date: this.selectedDate },
-    });
-  }
-
-  // ── Utilitaires ───────────────────────────────────────────
+  // ── Utilitaires ────────────────────────────────────────────
   clamp(val: number, min: number, max: number): number {
     return Math.min(Math.max(val, min), max);
   }
 
-  trackByLigne(_i: number, item: LigneOverview): string {
+  trackByLigne(_index: number, item: LigneOverview): string {
     return item.ligne;
   }
 

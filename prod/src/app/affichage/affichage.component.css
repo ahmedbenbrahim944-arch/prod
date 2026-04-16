@@ -418,3 +418,152 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+/* ── Séparateur quadrant Opérateurs ── */
+.op-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 0 28px;
+  flex-shrink: 0;
+}
+
+.op-top-section {
+  flex: 1;
+  padding-bottom: 16px;
+}
+
+/* ── Section Pièce Théorique ── */
+.theorique-label {
+  padding-top: 14px;
+  padding-bottom: 8px;
+  color: #7c3aed;        /* violet pour différencier */
+}
+
+.theorique-section {
+  flex: 1.2;
+  gap: 6px;
+}
+
+.theorique-time {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #6c757d;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  margin-bottom: 4px;
+}
+
+.theorique-value {
+  font-size: clamp(50px, 7vw, 90px);
+  font-weight: 800;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+/* En avance ou à l'objectif */
+.theorique-value.th-ahead { color: #2e7d32; }
+/* En retard */
+.theorique-value.th-behind { color: #7c3aed; }
+
+.theorique-sublabel {
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+/* Comparaison Réel vs Théorique */
+.th-compare-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 14px;
+  padding: 10px 18px;
+}
+
+.th-compare-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.th-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.th-badge.real {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.th-badge.theo {
+  background: #ede7f6;
+  color: #7c3aed;
+}
+
+.th-compare-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.th-gap {
+  font-size: 1.3rem;
+  font-weight: 800;
+  min-width: 60px;
+  text-align: center;
+}
+
+.th-gap-pos { color: #2e7d32; }
+.th-gap-neg { color: #d32f2f; }
+
+/* Taux de cadence */
+.th-rate {
+  font-size: 0.8rem;
+  color: #adb5bd;
+  font-family: monospace;
+  margin-top: 6px;
+}
+.theorique-time {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #495057;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+}
+/* ── Language Switcher ── */
+.lang-switcher {
+  display: flex;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.lang-btn {
+  background: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+
+.lang-btn:hover {
+  background: #f1f3f5;
+}
+
+.lang-active {
+  background: #2c3e50 !important;
+  color: #ffffff !important;
+}

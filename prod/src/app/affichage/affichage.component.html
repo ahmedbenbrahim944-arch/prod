@@ -5,16 +5,29 @@
       <span class="header-separator">|</span>
       <span class="header-date">{{ today | date:'EEEE dd MMMM yyyy' : undefined : 'fr' }}</span>
       <span class="header-jour" *ngIf="data">{{ data.jour | titlecase }}</span>
-      <span class="header-semaine" *ngIf="data">{{ data.semaine.nom }}</span>
+      <span class="header-semaine" *ngIf="data">{{ t.semaine }}{{ data.semaine.nom }}</span>
     </div>
     <div class="header-right">
+
+      <!-- ── Boutons FR / EN ── -->
+      <div class="lang-switcher">
+        <button class="lang-btn"
+                [class.lang-active]="currentLang === 'fr'"
+                (click)="setLang('fr')">FR</button>
+        <button class="lang-btn"
+                [class.lang-active]="currentLang === 'en'"
+                (click)="setLang('en')">EN</button>
+      </div>
+
       <select [(ngModel)]="selectedLigne" class="select-input" (change)="loadData()">
-        <option value="" disabled>Sélectionner une ligne</option>
+        <option value="" disabled>{{ currentLang === 'fr' ? 'Sélectionner une ligne' : 'Select a line' }}</option>
         <option *ngFor="let l of lignes" [value]="l">{{ l }}</option>
       </select>
+
       <button class="btn-refresh" (click)="loadData()" [disabled]="loading || !selectedLigne">
-        {{ loading ? 'Chargement...' : 'Actualiser' }}
+        {{ loading ? (currentLang === 'fr' ? 'Chargement...' : 'Loading...') : t.actualiser }}
       </button>
+
       <span class="last-update" *ngIf="lastUpdate">{{ lastUpdate | date:'HH:mm:ss' }}</span>
     </div>
   </header>
@@ -22,7 +35,7 @@
   <!-- État vide -->
   <div class="empty-state" *ngIf="!data && !loading && !error">
     <div class="empty-icon">📋</div>
-    <p>Sélectionnez une ligne</p>
+    <p>{{ currentLang === 'fr' ? 'Sélectionnez une ligne' : 'Select a line' }}</p>
   </div>
 
   <!-- Erreur -->
@@ -38,61 +51,95 @@
 
   <!-- Contenu principal -->
   <main class="quadrant-grid" *ngIf="data && !loading">
-    <!-- Quadrant 1 : Productivité -->
+
+    <!-- ── Q1 : Productivité ── -->
     <div class="quadrant">
-      <div class="quadrant-label">PRODUCTIVITÉ</div>
+      <div class="quadrant-label">{{ t.productivite }}</div>
       <div class="quadrant-content center">
-        <div class="oee-value" 
+        <div class="oee-value"
              [class.oee-danger]="data.kpis.productiviteValeur < 60"
              [class.oee-warning]="data.kpis.productiviteValeur >= 60 && data.kpis.productiviteValeur < 85"
              [class.oee-success]="data.kpis.productiviteValeur >= 85">
           {{ data.kpis.productiviteValeur | number:'1.1-1' }}<span class="oee-percent">%</span>
         </div>
         <div class="oee-bar-track">
-          <div class="oee-bar-fill" 
+          <div class="oee-bar-fill"
                [style.width.%]="clamp(data.kpis.productiviteValeur, 0, 100)"
                [class.bar-danger]="data.kpis.productiviteValeur < 60"
                [class.bar-warning]="data.kpis.productiviteValeur >= 60 && data.kpis.productiviteValeur < 85"
                [class.bar-success]="data.kpis.productiviteValeur >= 85"></div>
         </div>
-        <div class="oee-sublabel">Objectif atteint</div>
+        <div class="oee-sublabel">{{ t.objectifAtteint }}</div>
       </div>
     </div>
 
-    <!-- Quadrant 2 : Opérateurs -->
+    <!-- ── Q2 : Opérateurs + Pièce Théorique ── -->
     <div class="quadrant">
-      <div class="quadrant-label">OPÉRATEURS</div>
-      <div class="quadrant-content center">
-        <div class="op-value">{{ data.kpis.nbOuvriers }}</div>
-        <div class="op-sublabel">affectés aujourd'hui</div>
+      <div class="quadrant-label">{{ t.operateurs }}</div>
+
+      <!-- Partie haute : nombre d'opérateurs -->
+      <div class="quadrant-content center op-top-section">
+        <div class="op-value">{{ data.ouvriers.total }}</div>
+        <div class="op-sublabel">{{ t.affectesAujourdhui }}</div>
         <div class="op-capitaine" *ngIf="data.ouvriers.capitaine">
-          <span class="cap-badge">★</span> {{ data.ouvriers.capitaine.nomPrenom }}
+          <span class="cap-badge">★</span>
+          {{ data.ouvriers.capitaine.nomPrenom }}
         </div>
       </div>
+
+      <!-- Séparateur -->
+      <div class="op-divider"></div>
+
+      <!-- Partie basse : Pièce Théorique -->
+      <div class="quadrant-label theorique-label">{{ t.pieceTheorique }}</div>
+      <div class="quadrant-content center theorique-section">
+
+        <!-- Compteur pièces théoriques — augmente chaque seconde -->
+        <div class="theorique-value"
+             [class.th-ahead]="theoriquePieces <= data.kpis.totalQteProduite"
+             [class.th-behind]="theoriquePieces > data.kpis.totalQteProduite">
+          {{ theoriquePieces | number:'1.0-0' }}
+        </div>
+
+        <div class="theorique-sublabel">{{ t.pieceTheoriquesDues }}</div>
+
+        <!-- Heure en bas -->
+        <div class="theorique-time">
+          {{ today | date:'HH:mm:ss' }}
+        </div>
+
+      </div>
     </div>
 
-    <!-- Quadrant 3 : Planification -->
+    <!-- ── Q3 : Planification ── -->
     <div class="quadrant">
-      <div class="quadrant-label">PLANIFICATION</div>
+      <div class="quadrant-label">{{ t.planification }}</div>
       <div class="quadrant-content">
         <div class="prod-kpi-row">
           <div class="prod-kpi-card">
-            <div class="prod-kpi-label">Objectif</div>
+            <div class="prod-kpi-label">{{ t.objectif }}</div>
             <div class="prod-kpi-value">{{ data.kpis.totalQtePlanifiee | number }}</div>
           </div>
           <div class="prod-kpi-card">
-            <div class="prod-kpi-label">Réalisé</div>
+            <div class="prod-kpi-label">{{ t.realise }}</div>
             <div class="prod-kpi-value">{{ data.kpis.totalQteProduite | number }}</div>
           </div>
-          <div class="prod-kpi-card" [class.delta-pos]="data.kpis.delta >= 0" [class.delta-neg]="data.kpis.delta < 0">
-            <div class="prod-kpi-label">Écart</div>
+          <div class="prod-kpi-card"
+               [class.delta-pos]="data.kpis.delta >= 0"
+               [class.delta-neg]="data.kpis.delta < 0">
+            <div class="prod-kpi-label">{{ t.ecart }}</div>
             <div class="prod-kpi-value">{{ data.kpis.delta > 0 ? '+' : '' }}{{ data.kpis.delta | number }}</div>
           </div>
         </div>
         <div class="ref-table-wrap">
           <table class="ref-table">
             <thead>
-              <tr><th>Référence</th><th>OF</th><th>Quantité</th><th>Emballage</th></tr>
+              <tr>
+                <th>{{ t.reference }}</th>
+                <th>OF</th>
+                <th>{{ t.quantite }}</th>
+                <th>{{ t.emballage }}</th>
+              </tr>
             </thead>
             <tbody>
               <tr *ngFor="let ref of data.planification.references">
@@ -102,7 +149,9 @@
                 <td>{{ ref.emballage }}</td>
               </tr>
               <tr *ngIf="data.planification.references.length === 0">
-                <td colspan="4" class="no-data">Aucune référence planifiée</td>
+                <td colspan="4" class="no-data">
+                  {{ currentLang === 'fr' ? 'Aucune référence planifiée' : 'No planned references' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -110,30 +159,31 @@
       </div>
     </div>
 
-    <!-- Quadrant 4 : Production -->
+    <!-- ── Q4 : Production ── -->
     <div class="quadrant">
-      <div class="quadrant-label">PRODUCTION</div>
+      <div class="quadrant-label">{{ t.production }}</div>
       <div class="quadrant-content center">
         <div class="pcs-row">
           <div class="pcs-block">
             <div class="pcs-value highlight">{{ data.kpis.totalQteProduite | number }}</div>
-            <div class="pcs-sub">pièces produites</div>
+            <div class="pcs-sub">{{ t.pieceProduites }}</div>
           </div>
           <div class="pcs-divider"></div>
           <div class="pcs-block">
             <div class="pcs-value muted">{{ data.kpis.totalQtePlanifiee | number }}</div>
-            <div class="pcs-sub">objectif</div>
+            <div class="pcs-sub">{{ t.objectifLabel }}</div>
           </div>
         </div>
         <div class="pcs-bar-track">
-          <div class="pcs-bar-fill" 
+          <div class="pcs-bar-fill"
                [style.width.%]="clamp(data.kpis.productiviteValeur, 0, 100)"
                [class.bar-danger]="data.kpis.productiviteValeur < 60"
                [class.bar-warning]="data.kpis.productiviteValeur >= 60 && data.kpis.productiviteValeur < 85"
                [class.bar-success]="data.kpis.productiviteValeur >= 85"></div>
         </div>
-        <div class="pcs-scans">{{ data.production.nbScans }} scan(s) enregistré(s)</div>
+        <div class="pcs-scans">{{ data.production.nbScans }} {{ t.scansEnregistres }}</div>
       </div>
     </div>
+
   </main>
 </div>

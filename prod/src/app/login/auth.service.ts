@@ -41,9 +41,7 @@ export class AuthService {
     private router: Router
   ) {}
 
-  /**
-   * Connexion Admin
-   */
+ 
   adminLogin(credentials: LoginCredentials): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials)
       .pipe(
@@ -102,6 +100,18 @@ export class AuthService {
             this.router.navigate(['/ch4']);
           }
           else if (matricule === '1212') {
+            this.router.navigate(['/dashboard']);
+          }
+          else if (matricule === '1313') {
+            this.router.navigate(['/dashboard']);
+          }
+          else if (matricule === '1414') {
+            this.router.navigate(['/dashboard']);
+          }
+          else if (matricule === '1515') {
+            this.router.navigate(['/dashboard']);
+          }
+          else if (matricule === '1616') {
             this.router.navigate(['/dashboard']);
           }
           // ── Matricule 9999 → stat2 ───────────────────────────────────────

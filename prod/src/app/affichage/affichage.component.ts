@@ -72,18 +72,7 @@ export class AffichageComponent implements OnInit, OnDestroy {
   constructor(private http: HttpClient , private authService: AuthService ) {}
   
 
- ngOnInit(): void {
-  this.refreshInterval = setInterval(() => { this.today = new Date(); }, 1000);
 
-  // ✅ Auto-refresh des données toutes les 10 secondes
-  this.dataRefreshInterval = setInterval(() => {
-    if (this.selectedLigne && !this.loading) {
-      this.loadData();
-    }
-  }, 10000);
-
-  this.loadLignes();
-}
 
 ngOnDestroy(): void {
   if (this.refreshInterval) clearInterval(this.refreshInterval);
@@ -110,6 +99,14 @@ loadLignes(): void {
       // ✅ Si matricule 1212 → forcer L24:RXT2
       if (matricule === '1212') {
         this.selectedLigne = 'L24:RXT2';
+       } else if(matricule === '1313') {
+        this.selectedLigne = 'L31:RXT4';
+       } else if(matricule === '1414') {
+        this.selectedLigne = 'L04:RXT1';
+       }else if(matricule === '1515') {
+        this.selectedLigne = 'L30:SG COLPO';
+       } else if(matricule === '1616') {
+        this.selectedLigne = 'L34:POLO XT5';
       } else if (this.lignes.length > 0 && !this.selectedLigne) {
         this.selectedLigne = this.lignes[0];
       }
@@ -160,6 +157,7 @@ loadLignes(): void {
       this.data = res;
       this.lastUpdate = new Date();
       this.loading = false;
+      this.theoriquePieces = this.calculateTheorique();
     },
     error: (err) => {
       console.error('Erreur chargement données:', err);
@@ -187,4 +185,75 @@ loadLignes(): void {
   private formatDate(date: Date): string {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
+  // Ajouter cette propriété
+theoriquePieces: number = 0;
+
+// Modifier ngOnInit : mettre à jour la valeur chaque seconde
+ngOnInit(): void {
+  // ✅ Chaque seconde : mettre à jour l'heure ET le compteur théorique
+  this.refreshInterval = setInterval(() => {
+    this.today = new Date();
+    this.theoriquePieces = this.calculateTheorique(); // ← DOIT être ici
+  }, 1000);
+
+  // Auto-refresh données toutes les 10 secondes
+  this.dataRefreshInterval = setInterval(() => {
+    if (this.selectedLigne && !this.loading) {
+      this.loadData();
+    }
+  }, 10000);
+
+  this.loadLignes();
+}
+
+// Ajouter cette méthode dans la classe
+calculateTheorique(): number {
+  const objective = this.data?.kpis?.totalQtePlanifiee ?? 0;
+  if (objective === 0) return 0;
+
+  const now = new Date();
+
+  // Début de production : 6h00
+  const start = new Date(now);
+  start.setHours(6, 0, 0, 0);
+
+  const totalSeconds = 8 * 3600; // 28 800 secondes
+  const ratePerSecond = objective / totalSeconds; // ex: 2000/28800 = 0.0694
+
+  const elapsedSeconds = Math.max(0, (now.getTime() - start.getTime()) / 1000);
+
+  // ❌ Supprimer le cap — laisser monter librement
+  // const cappedSeconds = Math.min(elapsedSeconds, totalSeconds); ← SUPPRIMER
+
+  return Math.round(elapsedSeconds * ratePerSecond); // ✅ sans plafond
+}
+currentLang: 'fr' | 'en' = 'fr';
+
+labels = {
+  fr: {
+    productivite: 'PRODUCTIVITÉ', operateurs: 'OPÉRATEURS',
+    planification: 'PLANIFICATION', production: 'PRODUCTION',
+    pieceTheorique: 'PIÈCE THÉORIQUE', affectesAujourdhui: "affectés aujourd'hui",
+    objectif: 'OBJECTIF', objectifLabel: 'objectif', realise: 'RÉALISÉ', ecart: 'ÉCART',
+    reference: 'RÉFÉRENCE', quantite: 'QUANTITÉ', emballage: 'EMBALLAGE',
+    pieceProduites: 'pièces produites', scansEnregistres: 'scan(s) enregistré(s)',
+    objectifAtteint: 'Objectif atteint', actualiser: 'Actualiser',
+    pieceTheoriquesDues: 'pièces théoriques dues', semaine: 'semaine',
+  },
+  en: {
+    productivite: 'PRODUCTIVITY', operateurs: 'OPERATORS',
+    planification: 'PLANNING', production: 'PRODUCTION',
+    pieceTheorique: 'THEORETICAL PARTS', affectesAujourdhui: 'assigned today',
+    objectif: 'TARGET', objectifLabel: 'target', realise: 'ACHIEVED', ecart: 'GAP',
+    reference: 'REFERENCE', quantite: 'QUANTITY', emballage: 'PACKAGING',
+    pieceProduites: 'parts produced', scansEnregistres: 'scan(s) recorded',
+    objectifAtteint: 'Target reached', actualiser: 'Refresh',
+    pieceTheoriquesDues: 'theoretical parts due', semaine: 'week',
+  }
+};
+
+get t() { return this.labels[this.currentLang]; }
+setLang(lang: 'fr' | 'en'): void { this.currentLang = lang; }
+
+
 }
