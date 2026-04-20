@@ -114,6 +114,9 @@ export class AuthService {
           else if (matricule === '1616') {
             this.router.navigate(['/dashboard']);
           }
+          else if (matricule === '1717') {
+            this.router.navigate(['/dashboard']);
+          }
           // ── Matricule 9999 → stat2 ───────────────────────────────────────
           else if (matricule === '9999') {
             this.router.navigate(['/stat2']);

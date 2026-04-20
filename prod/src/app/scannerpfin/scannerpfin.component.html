@@ -133,7 +133,7 @@
       <!-- ── Semaine selected → affichage production ── -->
       @if (selectedSemaine) {
         <div class="dual-columns" @fadeSlide>
-          
+
           <!-- ════════════════════════════════════════════════════════════════
                COLONNE UNIQUE — Scanner Produit Fini
           ═════════════════════════════════════════════════════════════════ -->
@@ -176,9 +176,7 @@
                     </svg>
                     Scanner un produit fini — Semaine {{ selectedSemaine.nom }}
                   </div>
-                  <button class="scan-panel-close" (click)="closeProdPanel()">
-                    
-                  </button>
+                  <button class="scan-panel-close" (click)="closeProdPanel()">✕</button>
                 </div>
 
                 <!-- Format hint -->
@@ -192,7 +190,9 @@
                 </div>
 
                 <!-- Input -->
-                <div class="scan-input-zone prod-input-zone" [class.has-error]="prodStatus === 'error'">
+                <div class="scan-input-zone prod-input-zone"
+                     [class.has-error]="prodStatus === 'error'"
+                     [class.has-duplicate]="prodDuplicateWarning">
                   <div class="scan-input-wrap">
                     <div class="scan-cursor-icon prod-cursor-icon">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -236,11 +236,36 @@
                         <span class="chip-value prod-quantite">{{ prodParsedPreview.quantite | number }}</span>
                       </div>
                       @if (prodParsedPreview.dernierePartie) {
-                        <div class="parsed-chip prod-chip">
+                        <div class="parsed-chip prod-chip" [class.chip-duplicate]="prodDuplicateWarning">
                           <span class="chip-label">Dernière partie</span>
-                          <span class="chip-value">{{ prodParsedPreview.dernierePartie }}</span>
+                          <span class="chip-value">
+                            {{ prodParsedPreview.dernierePartie }}
+                            @if (prodDuplicateWarning) {
+                              <span class="chip-dup-badge">DOUBLON</span>
+                            }
+                          </span>
                         </div>
                       }
+                    </div>
+                  </div>
+                }
+
+                <!-- ══════════════════════════════════════════════════
+                     STATUS : DOUBLON DÉTECTÉ (warning live orange)
+                ═══════════════════════════════════════════════════ -->
+                @if (prodDuplicateWarning && prodParsedPreview && prodStatus !== 'error') {
+                  <div class="status-row status-duplicate" @fadeSlide>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/>
+                      <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <div>
+                      <span class="err-title">Doublon détecté</span>
+                      <span class="err-detail">
+                        La partie <strong>{{ prodParsedPreview.dernierePartie }}</strong>
+                        a déjà été scannée cette semaine.
+                      </span>
                     </div>
                   </div>
                 }
@@ -295,13 +320,20 @@
                 <div class="scan-actions">
                   <button
                     class="btn-submit btn-submit-prod"
+                    [class.btn-submit-blocked]="prodDuplicateWarning"
                     (click)="submitProd()"
-                    [disabled]="prodIsSubmitting || !prodQrCode.trim() || prodStatus === 'success'">
+                    [disabled]="prodIsSubmitting || !prodQrCode.trim() || prodStatus === 'success' || prodDuplicateWarning">
                     @if (prodIsSubmitting) {
                       <div class="btn-spinner"></div>
                       Enregistrement…
+                    } @else if (prodDuplicateWarning) {
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      Doublon — bloqué
                     } @else {
-                      
                       Enregistrer
                     }
                   </button>

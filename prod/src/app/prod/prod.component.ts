@@ -3680,6 +3680,22 @@ private resetMpMagasinForm() {
   };
   this.errorMessage.set(null);
 }
+// Ajouter dans la classe ProdComponent
+collapsedSections: Record<string, boolean> = {
+  production: false,  // ouvert par défaut
+  planning: true,
+  operations: true,
+  statistiques: true,
+  administration: true,
+};
+
+toggleSection(section: string) {
+  this.collapsedSections[section] = !this.collapsedSections[section];
+}
+
+isSectionOpen(section: string): boolean {
+  return !this.collapsedSections[section];
+}
 
 
 }

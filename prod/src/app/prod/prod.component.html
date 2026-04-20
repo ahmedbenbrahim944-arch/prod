@@ -41,206 +41,172 @@
     <!-- Navigation -->
     <nav class="sidebar-nav">
 
-      <!-- ─── PRODUCTION ─── -->
-      <div class="nav-section">
-        <div class="nav-section-title">Production</div>
+  <!-- ─── PRODUCTION ─── -->
+  <div class="nav-section">
+    <button class="nav-section-toggle" (click)="toggleSection('production')">
+      <span>Production</span>
+      <svg class="toggle-arrow" [class.rotated]="isSectionOpen('production')"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-        <button
-          (click)="setActiveTab('view')"
-          class="nav-button"
-          [class.active]="activeTab() === 'view'">
-          <img src="assets/icons/production.png" alt="View" class="nav-button-icon">
-          Voir les Lignes
-        </button>
-
-        <button
-          (click)="setActiveTab('create')"
-          class="nav-button"
-          [class.active]="activeTab() === 'create'">
-          <img src="assets/icons/plus.png" alt="Create" class="nav-button-icon">
-          Nouvelle Ligne
-        </button>
-
-        <button
-          (click)="setActiveTab('add-ref')"
-          class="nav-button"
-          [class.active]="activeTab() === 'add-ref'">
-          <img src="assets/icons/ajouter.png" alt="Références" class="nav-button-icon">
-          Ajouter Références
-        </button>
-
-        <button
-          (click)="setActiveTab('add-matiere-premiere')"
-          class="nav-button"
-          [class.active]="activeTab() === 'add-matiere-premiere'">
-          <img src="assets/icons/plus.png" alt="Matière Première" class="nav-button-icon">
-          Ajouter Matière Première
-        </button>
-        <button
-  (click)="setActiveTab('mp-magasin')"
-  class="nav-button"
-  [class.active]="activeTab() === 'mp-magasin'">
-  <img src="assets/icons/plus.png" alt="MP Magasin" class="nav-button-icon">
-  MP Magasin
-</button>
-      </div>
-
-      <!-- ─── PLANNING ─── -->
-      <div class="nav-section">
-        <div class="nav-section-title">Planning</div>
-
-        <button
-          (click)="setActiveTab('new-week')"
-          class="nav-button"
-          [class.active]="activeTab() === 'new-week'">
-          <img src="assets/icons/semaine.png" alt="Semaine" class="nav-button-icon">
-          Nouvelle Semaine
-        </button>
-
-        <button
-          [routerLink]="['/pl1']"
-          class="nav-button"
-          [class.active]="activeTab() === 'planning'">
-          <img src="assets/icons/planifier.png" alt="Planning" class="nav-button-icon">
-          Création Planning
-        </button>
-
-        <button
-          [routerLink]="['/planification']"
-          class="nav-button"
-          [class.active]="activeTab() === 'planning'">
-          <img src="assets/icons/planifier.png" alt="Planification" class="nav-button-icon">
-          Planification
-        </button>
-      </div>
-
-      <!-- ─── OPÉRATIONS ─── -->
-      <div class="nav-section">
-        <div class="nav-section-title">Opérations</div>
-
-        <button
-          (click)="setActiveTab('add-time')"
-          class="nav-button"
-          [class.active]="activeTab() === 'add-time'">
-          <img src="assets/icons/temps.png" alt="Temps" class="nav-button-icon">
-          Ajouter Temps
+    <div class="nav-section-items" [class.open]="isSectionOpen('production')">
+      <button (click)="setActiveTab('view')" class="nav-button"
+              [class.active]="activeTab() === 'view'">
+        <img src="assets/icons/production.png" alt="View" class="nav-button-icon">
+        Voir les Lignes
       </button>
+      <button (click)="setActiveTab('create')" class="nav-button"
+              [class.active]="activeTab() === 'create'">
+        <img src="assets/icons/plus.png" alt="Create" class="nav-button-icon">
+        Nouvelle Ligne
+      </button>
+      <button (click)="setActiveTab('add-ref')" class="nav-button"
+              [class.active]="activeTab() === 'add-ref'">
+        <img src="assets/icons/ajouter.png" alt="Références" class="nav-button-icon">
+        Ajouter Références
+      </button>
+      <button (click)="setActiveTab('add-matiere-premiere')" class="nav-button"
+              [class.active]="activeTab() === 'add-matiere-premiere'">
+        <img src="assets/icons/plus.png" alt="Matière Première" class="nav-button-icon">
+        Ajouter Matière Première
+      </button>
+      <button (click)="setActiveTab('mp-magasin')" class="nav-button"
+              [class.active]="activeTab() === 'mp-magasin'">
+        <img src="assets/icons/plus.png" alt="MP Magasin" class="nav-button-icon">
+        MP Magasin
+      </button>
+    </div>
+  </div>
 
-        <button
-          (click)="setActiveTab('add-phase')"
-          class="nav-button"
-          [class.active]="activeTab() === 'add-phase'">
-          <img src="assets/icons/pahse.png" alt="Phase" class="nav-button-icon">
-          Ajouter Phase
-        </button>
+  <!-- ─── PLANNING ─── -->
+  <div class="nav-section">
+    <button class="nav-section-toggle" (click)="toggleSection('planning')">
+      <span>Planning</span>
+      <svg class="toggle-arrow" [class.rotated]="isSectionOpen('planning')"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-        
-      </div>
+    <div class="nav-section-items" [class.open]="isSectionOpen('planning')">
+      <button (click)="setActiveTab('new-week')" class="nav-button"
+              [class.active]="activeTab() === 'new-week'">
+        <img src="assets/icons/semaine.png" alt="Semaine" class="nav-button-icon">
+        Nouvelle Semaine
+      </button>
+      <button [routerLink]="['/pl1']" class="nav-button">
+        <img src="assets/icons/planifier.png" alt="Planning" class="nav-button-icon">
+        Création Planning
+      </button>
+      <button [routerLink]="['/planification']" class="nav-button">
+        <img src="assets/icons/planifier.png" alt="Planification" class="nav-button-icon">
+        Planification
+      </button>
+    </div>
+  </div>
 
-      
+  <!-- ─── OPÉRATIONS ─── -->
+  <div class="nav-section">
+    <button class="nav-section-toggle" (click)="toggleSection('operations')">
+      <span>Opérations</span>
+      <svg class="toggle-arrow" [class.rotated]="isSectionOpen('operations')"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-      <!-- ─── STATISTIQUES ─── -->
-      <div class="nav-section">
-        <div class="nav-section-title">Statistiques</div>
+    <div class="nav-section-items" [class.open]="isSectionOpen('operations')">
+      <button (click)="setActiveTab('add-time')" class="nav-button"
+              [class.active]="activeTab() === 'add-time'">
+        <img src="assets/icons/temps.png" alt="Temps" class="nav-button-icon">
+        Ajouter Temps
+      </button>
+      <button (click)="setActiveTab('add-phase')" class="nav-button"
+              [class.active]="activeTab() === 'add-phase'">
+        <img src="assets/icons/pahse.png" alt="Phase" class="nav-button-icon">
+        Ajouter Phase
+      </button>
+    </div>
+  </div>
 
-        <button
-          (click)="setActiveTab('stats-annuelles')"
-          class="nav-button"
-          [class.active]="activeTab() === 'stats-annuelles'">
-          <img src="assets/icons/stat.png" alt="Stats" class="nav-button-icon">
-          Productivité Annuelle
-        </button>
+  <!-- ─── STATISTIQUES ─── -->
+  <div class="nav-section">
+    <button class="nav-section-toggle" (click)="toggleSection('statistiques')">
+      <span>Statistiques</span>
+      <svg class="toggle-arrow" [class.rotated]="isSectionOpen('statistiques')"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-        <button
-          (click)="setActiveTab('stats-5m-annuelles')"
-          class="nav-button"
-          [class.active]="activeTab() === 'stats-5m-annuelles'">
-          <img src="assets/icons/stat.png" alt="Stats 5M" class="nav-button-icon">
-          Non Productivité Annuelle
-        </button>
+    <div class="nav-section-items" [class.open]="isSectionOpen('statistiques')">
+      <button (click)="setActiveTab('stats-annuelles')" class="nav-button"
+              [class.active]="activeTab() === 'stats-annuelles'">
+        <img src="assets/icons/stat.png" alt="Stats" class="nav-button-icon">
+        Productivité Annuelle
+      </button>
+      <button (click)="setActiveTab('stats-5m-annuelles')" class="nav-button"
+              [class.active]="activeTab() === 'stats-5m-annuelles'">
+        <img src="assets/icons/stat.png" alt="Stats 5M" class="nav-button-icon">
+        Non Productivité Annuelle
+      </button>
+      <button *ngIf="isAdmin()" [routerLink]="['/stat1']" class="nav-button">
+        <img src="assets/icons/stat.png" alt="Statistiques" class="nav-button-icon">
+        Voir Statistiques
+      </button>
+      <button *ngIf="isAdmin()" [routerLink]="['/statP']" class="nav-button">
+        <img src="assets/icons/stat.png" alt="Période" class="nav-button-icon">
+        Statistiques Période
+      </button>
+      <button *ngIf="isAdmin()" [routerLink]="['/ad']" class="nav-button">
+        <img src="assets/icons/stat.png" alt="Temps" class="nav-button-icon">
+        Statistiques Temps
+      </button>
+    </div>
+  </div>
 
-        <button
-          *ngIf="isAdmin()"
-          [routerLink]="['/stat1']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/stat.png" alt="Statistiques" class="nav-button-icon">
-          Voir Statistiques
-        </button>
+  <!-- ─── ADMINISTRATION ─── -->
+  <div class="nav-section" *ngIf="isAdmin()">
+    <button class="nav-section-toggle" (click)="toggleSection('administration')">
+      <span>Administration</span>
+      <svg class="toggle-arrow" [class.rotated]="isSectionOpen('administration')"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
 
-        <button
-          *ngIf="isAdmin()"
-          [routerLink]="['/statP']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/stat.png" alt="Période" class="nav-button-icon">
-          Statistiques Période
-        </button>
+    <div class="nav-section-items" [class.open]="isSectionOpen('administration')">
+      <button (click)="setActiveTab('add-user')" class="nav-button"
+              [class.active]="activeTab() === 'add-user'">
+        <img src="assets/icons/adduser.png" alt="Utilisateur" class="nav-button-icon">
+        Ajouter Utilisateur
+      </button>
+      <button [routerLink]="['/magasin1']" class="nav-button">
+        <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
+        Extraction des Données
+      </button>
+      <button [routerLink]="['/planmag']" class="nav-button">
+        <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
+        Planification Magasin
+      </button>
+      <button [routerLink]="['/scann']" class="nav-button">
+        <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
+        Scanner
+      </button>
+      <button [routerLink]="['/view']" class="nav-button">
+        <img src="assets/icons/production.png" alt="View" class="nav-button-icon">
+        View Global
+      </button>
+      <button [routerLink]="['/admin/tracking']" class="nav-button">
+        <img src="assets/icons/ouvriers.png" alt="Tracking" class="nav-button-icon">
+        Admin Tracking
+      </button>
+    </div>
+  </div>
 
-        <button
-          *ngIf="isAdmin()"
-          [routerLink]="['/ad']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/stat.png" alt="Temps" class="nav-button-icon">
-          Statistiques Temps
-        </button>
-       
-      </div>
-
-      <!-- ─── ADMINISTRATION (Admin uniquement) ─── -->
-      <div class="nav-section" *ngIf="isAdmin()">
-        <div class="nav-section-title">Administration</div>
-
-        <button
-          (click)="setActiveTab('add-user')"
-          class="nav-button"
-          [class.active]="activeTab() === 'add-user'">
-          <img src="assets/icons/adduser.png" alt="Utilisateur" class="nav-button-icon">
-          Ajouter Utilisateur
-        </button>
-
-        <button
-          [routerLink]="['/magasin1']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
-          Extraction des Données
-        </button>
-
-        <button
-          [routerLink]="['/planmag']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
-          Planification Magasin
-        </button>
-
-        <button
-          [routerLink]="['/scann']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/planifier.png" alt="Extraction" class="nav-button-icon">
-          scanner
-        </button>
-        <button
-          [routerLink]="['/view']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/production.png" alt="View" class="nav-button-icon">
-          View Global
-        </button>
-
-        <button
-          [routerLink]="['/admin/tracking']"
-          class="nav-button"
-          [class.active]="activeTab() === 'view-stats'">
-          <img src="assets/icons/ouvriers.png" alt="Tracking" class="nav-button-icon">
-          Admin Tracking
-        </button>
-      </div>
-
-    </nav>
+</nav>
 
     <!-- Bouton de déconnexion -->
     <button class="logout-button" (click)="goBackToLogin()">

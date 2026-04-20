@@ -931,4 +931,79 @@ select.form-input optgroup {
   margin-bottom: 4px;
 }
 
-/* Si vous voulez que l'icône change de couleur au survol ou quand active */
+/* ── Titre toggle de section (REMPLACE nav-section-title) ── */
+.nav-section-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.90);
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transition: color 0.2s ease;
+}
+
+.nav-section-toggle:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-section-toggle span {
+ display: flex;
+  align-items: center;
+  justify-content: center;  /* centrer le texte */
+  gap: 8px;
+  flex: 1;                  /* prend tout l'espace */
+  text-align: center;
+}
+
+.nav-section-toggle span::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.5), transparent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.nav-section-toggle span::after {
+  content: '';
+  display: inline-block;
+  width: 22px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Flèche rotative ── */
+.toggle-arrow {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.toggle-arrow.rotated {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* ── Conteneur des items (accordion) ── */
+.nav-section-items {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+  opacity: 0;
+}
+
+.nav-section-items.open {
+  max-height: 500px; /* assez grand pour tous les items */
+  opacity: 1;
+}

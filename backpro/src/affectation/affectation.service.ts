@@ -31,23 +31,39 @@ export class AffectationService {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  private format(a: Affectation) {
+ private format(a: Affectation) {
+  // Vérifier si ouvrier existe
+  if (!a.ouvrier) {
+    console.warn(`Affectation ${a.id} sans ouvrier associé`);
     return {
       id: a.id,
-      matricule: a.ouvrier.matricule,
-      nomPrenom: a.ouvrier.nomPrenom,
+      matricule: null,
+      nomPrenom: 'Ouvrier inconnu',
       ligne: a.ligne,
       estCapitaine: a.estCapitaine,
-      poste: a.poste, // ← ajouté
-      phases: (a.phases ?? []).map((p) => ({
-        id: p.id,
-        phase: p.phase,
-        heures: Number(p.heures),
-      })),
-      totalHeures: (a.phases ?? []).reduce((s, p) => s + Number(p.heures), 0),
+      poste: a.poste,
+      phases: [],
+      totalHeures: 0,
       createdAt: a.createdAt,
     };
   }
+
+  return {
+    id: a.id,
+    matricule: a.ouvrier.matricule,
+    nomPrenom: a.ouvrier.nomPrenom,
+    ligne: a.ligne,
+    estCapitaine: a.estCapitaine,
+    poste: a.poste,
+    phases: (a.phases ?? []).map((p) => ({
+      id: p.id,
+      phase: p.phase,
+      heures: Number(p.heures),
+    })),
+    totalHeures: (a.phases ?? []).reduce((s, p) => s + Number(p.heures), 0),
+    createdAt: a.createdAt,
+  };
+}
 
   private async verifierCapitaineUnique(ligne: string, matriculeExclu?: number): Promise<void> {
     const capitaineExistant = await this.affectationRepository.findOne({

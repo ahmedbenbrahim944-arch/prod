@@ -8,9 +8,7 @@ import localeFr from '@angular/common/locales/fr';
 
 registerLocaleData(localeFr, 'fr');
 
-// ─────────────────────────────────────────────────────────────
-//  Interfaces Overview
-// ─────────────────────────────────────────────────────────────
+
 export interface LigneOverview {
   ligne: string;
   lignePrefix: string;
@@ -277,10 +275,6 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
     return Math.round(elapsedSeconds * ratePerSecond);
   }
 
-  // ── Navigation vers le détail d'une ligne ──────────────────
-  
-
-  // ── Utilitaires ────────────────────────────────────────────
   clamp(val: number, min: number, max: number): number {
     return Math.min(Math.max(val, min), max);
   }

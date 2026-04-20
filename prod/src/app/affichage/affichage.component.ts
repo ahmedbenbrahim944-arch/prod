@@ -107,6 +107,8 @@ loadLignes(): void {
         this.selectedLigne = 'L30:SG COLPO';
        } else if(matricule === '1616') {
         this.selectedLigne = 'L34:POLO XT5';
+       } else if(matricule === '1717') {
+        this.selectedLigne = 'L33:COM XT5';
       } else if (this.lignes.length > 0 && !this.selectedLigne) {
         this.selectedLigne = this.lignes[0];
       }

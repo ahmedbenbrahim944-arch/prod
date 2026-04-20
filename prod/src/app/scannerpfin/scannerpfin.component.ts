@@ -88,6 +88,9 @@ export class ScannerpfinComponent implements OnInit, OnDestroy {
   } | null = null;
   prodParseError = '';
 
+  // ─── Doublon ─────────────────────────────────────────────────────────────
+  prodDuplicateWarning = false;
+
   // ─── Shared ─────────────────────────────────────────────────────────────
   readonly currentUserId = 1;
   private destroy$ = new Subject<void>();
@@ -161,24 +164,21 @@ export class ScannerpfinComponent implements OnInit, OnDestroy {
   // ════════════════════════════════════════════════════════════════════════
 
   loadProductionsForSemaine(semaineId: number): void {
-  this.loadingProductions = true;
-  // Alternative : charger toutes les productions et filtrer côté frontend
-  this.scannerService.getRecentProductions(1, 100)
-    .pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (result) => {
-        // Si les productions ont un champ semaineId, filtrez-les
-        // Sinon, affichez toutes les productions
-        this.productionRecords = result.data;
-        this.loadingProductions = false;
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        this.loadingProductions = false;
-        this.cdr.markForCheck();
-      },
-    });
-}
+    this.loadingProductions = true;
+    this.scannerService.getRecentProductions(1, 100)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => {
+          this.productionRecords = result.data;
+          this.loadingProductions = false;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.loadingProductions = false;
+          this.cdr.markForCheck();
+        },
+      });
+  }
 
   openProdPanel(): void {
     this.prodPanelOpen = true;
@@ -199,12 +199,22 @@ export class ScannerpfinComponent implements OnInit, OnDestroy {
     this.prodParsedPreview = null;
     this.prodParseError = '';
     this.prodIsSubmitting = false;
+    this.prodDuplicateWarning = false; // ← reset doublon
+  }
+
+  // ─── Helper : détection doublon par dernierePartie ───────────────────────
+  private isDuplicatePart(dernierePartie: string | null): boolean {
+    if (!dernierePartie) return false;
+    return this.productionRecords.some(
+      r => r.dernierePartie?.trim() === dernierePartie.trim()
+    );
   }
 
   onProdInput(): void {
     const qr = this.prodQrCode.trim();
     this.prodStatus = 'idle';
     this.prodErrorMessage = '';
+    this.prodDuplicateWarning = false; // reset à chaque frappe
 
     if (!qr) {
       this.prodParsedPreview = null;
@@ -220,6 +230,10 @@ export class ScannerpfinComponent implements OnInit, OnDestroy {
         dernierePartie: result.dernierePartie ?? null,
       };
       this.prodParseError = '';
+
+      // ─── Vérification doublon live ───────────────────────────────────────
+      this.prodDuplicateWarning = this.isDuplicatePart(result.dernierePartie ?? null);
+
     } else {
       this.prodParsedPreview = null;
       this.prodParseError = (qr.includes('/') || qr.includes('—')) ? (result.error ?? '') : '';
@@ -238,48 +252,54 @@ export class ScannerpfinComponent implements OnInit, OnDestroy {
     }
   }
 
- submitProd(): void {
-  if (!this.selectedSemaine || this.prodIsSubmitting || this.prodStatus === 'success') return;
+  submitProd(): void {
+    if (!this.selectedSemaine || this.prodIsSubmitting || this.prodStatus === 'success') return;
 
-  const qr = this.prodQrCode.trim();
+    const qr = this.prodQrCode.trim();
 
-  const parseResult = this.scannerService.parseProductionQR(qr);
-  if (!parseResult.valid) {
-    this.prodStatus = 'error';
-    this.prodErrorMessage = parseResult.error ?? 'QR code invalide';
+    const parseResult = this.scannerService.parseProductionQR(qr);
+    if (!parseResult.valid) {
+      this.prodStatus = 'error';
+      this.prodErrorMessage = parseResult.error ?? 'QR code invalide';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // ─── Blocage doublon à la soumission ─────────────────────────────────
+    if (this.isDuplicatePart(parseResult.dernierePartie ?? null)) {
+      this.prodStatus = 'error';
+      this.prodErrorMessage = `La partie "${parseResult.dernierePartie}" a déjà été scannée cette semaine.`;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.prodIsSubmitting = true;
+    this.prodStatus = 'scanning';
     this.cdr.markForCheck();
-    return;
+
+    this.scannerService.scanProduction({
+      qrCode: qr,
+      scanneParId: this.currentUserId,
+    }).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (record: ProductionRecord) => {
+          this.prodIsSubmitting = false;
+          this.prodStatus = 'success';
+          this.prodLastRecord = record;
+          this.loadProductionsForSemaine(this.selectedSemaine!.id);
+          this.resetProd();
+          this.cdr.markForCheck();
+          setTimeout(() => this.prodInputRef?.nativeElement?.focus(), 50);
+        },
+        error: (err) => {
+          this.prodIsSubmitting = false;
+          this.prodStatus = 'error';
+          this.prodErrorMessage = err.message ?? 'Erreur lors du scan produit fini';
+          this.cdr.markForCheck();
+          setTimeout(() => this.prodInputRef?.nativeElement?.focus(), 50);
+        },
+      });
   }
-
-  this.prodIsSubmitting = true;
-  this.prodStatus = 'scanning';
-  this.cdr.markForCheck();
-
-  // Utiliser l'endpoint existant scanProduction
-  this.scannerService.scanProduction({
-    qrCode: qr,
-    scanneParId: this.currentUserId,
-  }).pipe(takeUntil(this.destroy$))
-    .subscribe({
-      next: (record: ProductionRecord) => {
-        this.prodIsSubmitting = false;
-        this.prodStatus = 'success';
-        this.prodLastRecord = record;
-        // Recharger les productions de la semaine courante
-        this.loadProductionsForSemaine(this.selectedSemaine!.id);
-        this.resetProd();
-        this.cdr.markForCheck();
-        setTimeout(() => this.prodInputRef?.nativeElement?.focus(), 50);
-      },
-      error: (err) => {
-        this.prodIsSubmitting = false;
-        this.prodStatus = 'error';
-        this.prodErrorMessage = err.message ?? 'Erreur lors du scan produit fini';
-        this.cdr.markForCheck();
-        setTimeout(() => this.prodInputRef?.nativeElement?.focus(), 50);
-      },
-    });
-}
 
   deleteProduction(record: ProductionRecord): void {
     if (!confirm(`Supprimer l'enregistrement ${record.reference} (×${record.quantite}) ?`)) return;
