@@ -1,10 +1,10 @@
-// src/app/pointage/pointage.service.ts
+﻿// src/app/pointage/pointage.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
-/* ─── Interfaces réponse backend ─── */
+/* â”€â”€â”€ Interfaces réponse backend â”€â”€â”€ */
 export interface PointageResult {
   nomPrenom: string;
   ligne: string;
@@ -31,14 +31,14 @@ interface AutosaisieResponse {
   };
 }
 
-/* ─── Service ─── */
+/* â”€â”€â”€ Service â”€â”€â”€ */
 @Injectable({ providedIn: 'root' })
 export class PointageService {
   private readonly API = 'http://102.207.250.53:3000';
 
   constructor(private http: HttpClient) {}
 
-  /* ── JWT depuis localStorage ── */
+  /* â”€â”€ JWT depuis localStorage â”€â”€ */
   private getHeaders(): HttpHeaders {
     const token = localStorage.getItem('token') ?? '';
     return new HttpHeaders({
@@ -47,7 +47,7 @@ export class PointageService {
     });
   }
 
-  /* ── Normalise les deux formats de réponse ── */
+  /* â”€â”€ Normalise les deux formats de réponse â”€â”€ */
   private normalize(res: AutosaisieResponse): PointageResult {
     const nomPrenom =
       res.data.badge?.nomPrenom ??
@@ -65,7 +65,7 @@ export class PointageService {
 
   /**
    * Pointage via badge RFID
-   * POST /autosaisie  →  { n_badget: "1152" }
+   * POST /autosaisie  â†’  { n_badget: "1152" }
    */
   pointerParBadge(n_badget: string): Observable<PointageResult> {
     return this.http
@@ -82,7 +82,7 @@ export class PointageService {
 
   /**
    * Pointage via saisie manuelle du matricule
-   * POST /autosaisie/matricule  →  { matricule: 1234 }
+   * POST /autosaisie/matricule  â†’  { matricule: 1234 }
    */
   pointerParMatricule(matricule: string): Observable<PointageResult> {
     return this.http
@@ -97,7 +97,7 @@ export class PointageService {
       );
   }
 
-  /* ── Gestion d'erreurs HTTP ── */
+  /* â”€â”€ Gestion d'erreurs HTTP â”€â”€ */
   private handleError(err: HttpErrorResponse): Observable<never> {
     if (err.status === 404) {
       return throwError(() => new Error('MATRICULE_NOT_FOUND'));
@@ -112,3 +112,4 @@ export class PointageService {
     return throwError(() => new Error('ERREUR_SERVEUR'));
   }
 }
+

@@ -45,12 +45,19 @@
     </div>
 
     <div class="aff-ligne-filter">
-      <select class="sel" [(ngModel)]="selectedLigne" (ngModelChange)="filterStatus='all'">
+      <select class="sel" [(ngModel)]="selectedLigne" (ngModelChange)="onLigneSelected($event)">
         <option value="">Toutes les lignes</option>
         <option *ngFor="let l of lignes" [value]="l">
           {{ l }} ({{ getLigneCount(l) }} ouvriers)
           <ng-container *ngIf="getLigneCapitaine(l) as cap"> - Capitaine: {{ cap.nomPrenom }}</ng-container>
         </option>
+      </select>
+    </div>
+
+    <div class="aff-bus-filter">
+      <select class="sel" [(ngModel)]="selectedBus">
+        <option value="">Tous les bus</option>
+        <option *ngFor="let b of availableBuses" [value]="b">🚌 Bus {{ b }}</option>
       </select>
     </div>
 
@@ -105,7 +112,8 @@
           <th>Phases & Heures</th>
           <th style="width:90px;text-align:center">Total H</th>
           <th style="width:100px">Statut</th>
-          <th style="width:100px;text-align:center">Poste</th>  <!-- ← ajouté -->
+          <th style="width:90px;text-align:center">Poste</th>  <!-- ← ajouté -->
+          <th style="width:80px;text-align:center">Bus</th>
           <th style="width:115px">Capitaine</th>
           <th style="width:195px;text-align:right">Actions</th>
         </tr>
@@ -113,7 +121,7 @@
       <tbody>
 
         <tr *ngIf="filteredRows.length === 0">
-          <td colspan="9" class="aff-empty">Aucun ouvrier trouvé</td>
+          <td colspan="10" class="aff-empty">Aucun ouvrier trouvé</td>
         </tr>
 
         <tr *ngFor="let row of filteredRows"
@@ -160,6 +168,12 @@
   </span>
   <span *ngIf="!row.affectation" class="dash">—</span>
 </td>
+
+            <!-- ── Colonne Bus ── -->
+            <td style="text-align:center">
+              <span *ngIf="row.affectation?.bus" class="bus-badge">🚌 {{ row.affectation!.bus }}</span>
+              <span *ngIf="!row.affectation?.bus" class="dash">—</span>
+            </td>
 
             <td>
               <div *ngIf="row.affectation" class="capitaine-toggle">
@@ -219,6 +233,18 @@
   </button>
 </div>
 
+              <!-- ── Numéro de Bus ── -->
+              <div class="bus-input-wrap">
+                <span class="bus-input-label">🚌 Bus :</span>
+                <input
+                  type="text"
+                  class="inp-bus"
+                  [(ngModel)]="row.formBus"
+                  placeholder="N° bus (ex: 42)"
+                  maxlength="20"
+                />
+              </div>
+
               <!-- Checkbox Capitaine -->
               <div class="capitaine-checkbox-wrap">
                 <label class="capitaine-checkbox">
@@ -259,6 +285,7 @@
               <span class="status-badge editing">✎ Édition</span>
             </td>
             <td></td> <!-- colonne Poste vide en édition (déjà dans le form) -->
+            <td></td> <!-- colonne Bus vide en édition (déjà dans le form) -->
             <td colspan="2" class="td-actions">
               <button class="btn-save" (click)="saveAffectation(row)" [disabled]="row.saving">
                 <span *ngIf="row.saving" class="mini-spinner"></span>
@@ -320,13 +347,19 @@
     <div class="ligne-card-body">
       
       <!-- ── 1ERE POSTE ── -->
-      <div class="poste-section" *ngIf="group.posteGroups['1ere poste'].ouvriers.length > 0">
+          <div class="poste-section" *ngIf="group.posteGroups['1ere poste'].ouvriers.length > 0">
         <div class="poste-section-header poste-jour-header">
           <span class="poste-icon">☀️</span>
           <span class="poste-title">1ere poste</span>
           <span class="poste-stats">
-            ({{ group.posteGroups['1ere poste'].totalOuvriers }} ouvrier{{ group.posteGroups['1ere poste'].totalOuvriers > 1 ? 's' : '' }} - 
+            ({{ group.posteGroups['1ere poste'].totalOuvriers }} ouvrier{{ group.posteGroups['1ere poste'].totalOuvriers > 1 ? 's' : '' }} -
             {{ group.posteGroups['1ere poste'].totalHeures }}h)
+          </span>
+          <!-- ── Stats par bus ── -->
+          <span class="bus-stats-wrap">
+            <span *ngFor="let b of group.posteGroups['1ere poste'].busStats" class="bus-stat-chip bus-stat-jour">
+              🚌 Bus {{ b.bus }} : <strong>{{ b.count }}</strong>p
+            </span>
           </span>
         </div>
         <div class="table-responsive">
@@ -345,7 +378,10 @@
               <tr *ngFor="let row of group.posteGroups['1ere poste'].ouvriers"
                 [class.capitaine-row]="isCapitaine(row)">
                 <td><span class="badge-mat">{{ row.matricule }}</span></td>
-                <td class="td-nom">{{ row.nomPrenom }}</td>
+                <td class="td-nom">
+                  {{ row.nomPrenom }}
+                  <span *ngIf="row.affectation?.bus" class="bus-badge-sm">🚌 {{ row.affectation!.bus }}</span>
+                </td>
                 <td>
                   <div class="phases-wrap">
                     <span *ngFor="let p of row.affectation?.phases" class="chip-phase">
@@ -378,13 +414,19 @@
       </div>
 
       <!-- ── 2EME POSTE ── -->
-      <div class="poste-section" *ngIf="group.posteGroups['2eme poste'].ouvriers.length > 0">
+     <div class="poste-section" *ngIf="group.posteGroups['2eme poste'].ouvriers.length > 0">
         <div class="poste-section-header poste-nuit-header">
           <span class="poste-icon">🌙</span>
           <span class="poste-title">2eme poste</span>
           <span class="poste-stats">
-            ({{ group.posteGroups['2eme poste'].totalOuvriers }} ouvrier{{ group.posteGroups['2eme poste'].totalOuvriers > 1 ? 's' : '' }} - 
+            ({{ group.posteGroups['2eme poste'].totalOuvriers }} ouvrier{{ group.posteGroups['2eme poste'].totalOuvriers > 1 ? 's' : '' }} -
             {{ group.posteGroups['2eme poste'].totalHeures }}h)
+          </span>
+          <!-- ── Stats par bus ── -->
+          <span class="bus-stats-wrap">
+            <span *ngFor="let b of group.posteGroups['2eme poste'].busStats" class="bus-stat-chip bus-stat-nuit">
+              🚌 Bus {{ b.bus }} : <strong>{{ b.count }}</strong>p
+            </span>
           </span>
         </div>
         <div class="table-responsive">
@@ -403,7 +445,10 @@
               <tr *ngFor="let row of group.posteGroups['2eme poste'].ouvriers"
                 [class.capitaine-row]="isCapitaine(row)">
                 <td><span class="badge-mat">{{ row.matricule }}</span></td>
-                <td class="td-nom">{{ row.nomPrenom }}</td>
+                <td class="td-nom">
+                  {{ row.nomPrenom }}
+                  <span *ngIf="row.affectation?.bus" class="bus-badge-sm">🚌 {{ row.affectation!.bus }}</span>
+                </td>
                 <td>
                   <div class="phases-wrap">
                     <span *ngFor="let p of row.affectation?.phases" class="chip-phase">

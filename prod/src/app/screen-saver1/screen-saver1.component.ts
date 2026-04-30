@@ -1,18 +1,18 @@
 import { Component, HostListener, OnDestroy, OnInit, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AffichageComponent } from '../affichage/affichage.component';
-import { Choix6Component } from '../choix6/choix6.component';
+import { Choix4Component } from '../choix4/choix4.component';
 
 @Component({
-  selector: 'app-screen-saver',
+  selector: 'app-screen-saver1',
   standalone: true,
-  imports: [CommonModule, AffichageComponent, Choix6Component],
+  imports: [CommonModule, AffichageComponent, Choix4Component],
   template: `
     <div class="screen-saver-container">
 
       <!-- Choix6 : visible quand l'utilisateur est actif -->
       <div *ngIf="showChoix6" class="fullscreen-component">
-        <app-choix6></app-choix6>
+        <app-choix4></app-choix4>
       </div>
 
       <!-- Alerte : visible pendant le compte à rebours -->
@@ -212,7 +212,7 @@ import { Choix6Component } from '../choix6/choix6.component';
     }
   `]
 })
-export class ScreenSaverComponent implements OnInit, OnDestroy {
+export class ScreenSaver1Component implements OnInit, OnDestroy {
 
   showChoix6    = true;
   showAlert     = false;

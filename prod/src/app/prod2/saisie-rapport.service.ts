@@ -1,4 +1,4 @@
-// src/app/services/saisie-rapport.service.ts
+﻿// src/app/services/saisie-rapport.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -117,16 +117,16 @@ export class SaisieRapportService {
   }
   voirRapportsFiltres(dto: VoirRapportsDto): Observable<any> {
     return this.http.post<any>(
-      `${this.apiUrl}/saisie-rapport/filtres`,  // ✅ CORRECTION: utiliser la route correcte
+      `${this.apiUrl}/saisie-rapport/filtres`,  // âœ… CORRECTION: utiliser la route correcte
       dto,
       { headers: this.getAuthHeaders() }
     );
   }
 
-  // Mettre à jour un rapport (nouvelle méthode - sans ID)
+  // Mettre Ã  jour un rapport (nouvelle méthode - sans ID)
   updateRapport(dto: UpdateSaisieRapportDto): Observable<any> {
     return this.http.put<any>(
-      `${this.apiUrl}/saisie-rapport`,  // ✅ CORRECTION: sans ID dans l'URL
+      `${this.apiUrl}/saisie-rapport`,  // âœ… CORRECTION: sans ID dans l'URL
       dto,
       { headers: this.getAuthHeaders() }
     );
@@ -153,3 +153,4 @@ export class SaisieRapportService {
     );
   }
 }
+

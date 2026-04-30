@@ -9,6 +9,7 @@
   </div>
 
   <!-- Header -->
+    <!-- Header -->
   <div class="flex items-center justify-between mb-6 bg-white/10 backdrop-blur-xl p-4 md:p-6 rounded-3xl">
     <div>
       <h1 class="text-2xl md:text-3xl font-black text-white">⚙️ Gestion de Production</h1>
@@ -25,8 +26,43 @@
     </div>
   </div>
 
+  <!-- ══════════════ BANNIÈRE DE RECONNEXION AUTOMATIQUE ══════════════ -->
+  <!-- ✅ S'affiche quand l'utilisateur a une session active sauvegardée -->
+  <div *ngIf="reconnectBannerVisible()" 
+       class="mb-6 px-5 py-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-2xl border-2 border-green-400/40 shadow-lg animate-pulse">
+    <div class="flex items-center justify-between flex-wrap gap-3">
+      <!-- Message gauche -->
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🔄</span>
+        <div>
+          <p class="text-white font-bold text-lg leading-tight">Session de production détectée</p>
+          <p class="text-white/70 text-sm mt-0.5">
+            Vous avez une session active sur la ligne 
+            <span class="font-black text-green-300 bg-green-500/20 px-2 py-0.5 rounded-lg">{{ reconnectLineName() }}</span>
+          </p>
+        </div>
+      </div>
+      
+      <!-- Boutons droite -->
+      <div class="flex items-center gap-3">
+        <button (click)="reconnectToExistingSession()" 
+                class="px-6 py-2.5 bg-green-500 hover:bg-green-400 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
+          <span>🔄</span>
+          <span>Reconnecter</span>
+        </button>
+        <button (click)="dismissReconnectBanner()" 
+                class="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white/80 hover:text-white rounded-xl transition-all text-sm font-semibold">
+          ✕ Ignorer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  
+
   <!-- ══════════════ VUE : LISTE DES LIGNES ══════════════ -->
   <div *ngIf="view() === 'lines'">
+    
 
     <!-- Aucune ligne active -->
     <div *ngIf="filteredLines().length === 0 && !loading()" class="flex justify-center mt-4">
@@ -176,6 +212,78 @@
         </button>
       </div>
     </div>
+    <!-- ══════ BOUTON + Ajouter une référence ══════ -->
+<div *ngIf="view() === 'production' && !isAdmin()" class="mb-4 flex justify-end">
+  <button
+    (click)="openAddRefPanel()"
+    [disabled]="showAddRefPanel()"
+    class="flex items-center gap-2 px-5 py-2.5 bg-white text-indigo-600 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-50">
+    <span class="text-xl font-black">+</span>
+    <span>Ajouter une référence</span>
+  </button>
+</div>
+
+<!-- ══════ PANNEAU D'AJOUT DE RÉFÉRENCE ══════ -->
+<div *ngIf="showAddRefPanel()"
+     class="mb-5 bg-white rounded-3xl p-6 shadow-2xl border-2 border-indigo-200 animate-fade-in-down">
+
+  <!-- Header panneau -->
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h3 class="text-lg font-black text-gray-900">➕ Ajouter une référence</h3>
+      <p class="text-xs text-gray-500 mt-0.5">
+        Références planifiées aujourd'hui, pas encore démarrées
+      </p>
+    </div>
+    <button (click)="closeAddRefPanel()"
+            class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 font-bold transition-all">
+      ✕
+    </button>
+  </div>
+
+  <!-- Chargement -->
+  <div *ngIf="loadingAddRefs()" class="flex items-center justify-center py-6 gap-3 text-gray-400">
+    <span class="animate-spin text-xl">⟳</span>
+    <span class="text-sm">Chargement du planning...</span>
+  </div>
+
+  <!-- Aucune référence disponible -->
+  <div *ngIf="!loadingAddRefs() && availableToAddComputed().length === 0"
+       class="text-center py-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+    <div class="text-3xl mb-2">📋</div>
+    <p class="text-gray-500 font-medium text-sm">Toutes les références du jour sont déjà démarrées</p>
+    <p class="text-gray-400 text-xs mt-1">Aucune référence disponible à ajouter.</p>
+  </div>
+
+  <!-- Liste des refs disponibles -->
+  <div *ngIf="!loadingAddRefs() && availableToAddComputed().length > 0"
+       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div *ngFor="let ref of availableToAddComputed()"
+         class="flex items-center justify-between p-4 bg-gray-50 hover:bg-indigo-50 rounded-2xl border-2 border-gray-200 hover:border-indigo-300 transition-all group">
+
+      <!-- Infos référence -->
+      <div class="flex-1 min-w-0 mr-3">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <span class="font-black text-gray-900 text-base">{{ ref.reference }}</span>
+          <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full">
+            OF: {{ ref.of }}
+          </span>
+        </div>
+        <div class="flex gap-2 text-xs text-gray-500">
+          <span>📅 {{ ref.jour }}</span>
+          <span>S{{ ref.semaine }}</span>
+          <span>🎯 {{ ref.qtePlanifiee }} pcs</span>
+        </div>
+      </div>
+
+      <!-- Bouton démarrer -->
+      <button (click)="addRefToSession(ref)"
+              class="shrink-0 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg group-hover:scale-105">
+        ▶ Démarrer
+      </button>
+    </div>
+  </div>
+</div>
 
     <!-- Grille des cartes références -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

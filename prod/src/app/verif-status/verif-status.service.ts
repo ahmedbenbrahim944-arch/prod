@@ -1,4 +1,4 @@
-// src/app/features/verif-status/verif-status.service.ts
+﻿// src/app/features/verif-status/verif-status.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -44,3 +44,4 @@ export class VerifStatusService {
     return this.http.get<StatutOuvrierResponse>(this.apiUrl, { params });
   }
 }
+

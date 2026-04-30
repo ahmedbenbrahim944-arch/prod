@@ -1,4 +1,4 @@
-// src/app/product/product.service.ts
+﻿// src/app/product/product.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -130,7 +130,7 @@ export class ProductService {
   }
 
   /**
-   * Ajouter des références à une ligne existante
+   * Ajouter des références Ã  une ligne existante
    */
   addReferences(ligne: string, references: string[]): Observable<AddReferencesResponse> {
     const body = { ligne, references };
@@ -142,7 +142,7 @@ export class ProductService {
   }
 
   /**
-   * Ajouter une image à une ligne existante
+   * Ajouter une image Ã  une ligne existante
    */
   // Dans product.service.ts - Méthode addImageToLine()
 addImageToLine(ligne: string, imageFile: File): Observable<any> {
@@ -199,7 +199,7 @@ getImageUrl(imagePath: string | null): string {
     return 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&fit=crop&auto=format';
   }
   
-  // Si c'est déjà une URL complète
+  // Si c'est déjÃ  une URL complète
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     console.log('URL complète détectée:', imagePath);
     return imagePath;
@@ -255,7 +255,7 @@ getImageUrl(imagePath: string | null): string {
       return [];
     }
     
-    // Séparer par virgules, points-virgules ou retours à la ligne
+    // Séparer par virgules, points-virgules ou retours Ã  la ligne
     return referencesString
       .split(/[,;\n]/)
       .map(ref => ref.trim())
@@ -269,3 +269,4 @@ getImageUrl(imagePath: string | null): string {
     return references.join(', ');
   }
 }
+

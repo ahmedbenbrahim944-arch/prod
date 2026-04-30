@@ -1,4 +1,4 @@
-// stats.service.ts (Angular)
+﻿// stats.service.ts (Angular)
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -60,7 +60,7 @@ export interface OuvrierSaisie {
   jour?: string;
 }
 
-// ✅ NOUVELLES INTERFACES - Productivité des Ouvriers
+// âœ… NOUVELLES INTERFACES - Productivité des Ouvriers
 
 
 export interface ProductiviteOuvriersResponse {
@@ -70,13 +70,13 @@ export interface ProductiviteOuvriersResponse {
     dateFin: string;
     dateCalcul: string;
   };
-  statistiques?: StatistiquesProductivite;  // ✅ AJOUTÉ
-  tableau?: LigneProductivite[];  // ✅ AJOUTÉ
-  donneesFormatees?: {  // ✅ AJOUTÉ
+  statistiques?: StatistiquesProductivite;  // âœ… AJOUTÉ
+  tableau?: LigneProductivite[];  // âœ… AJOUTÉ
+  donneesFormatees?: {  // âœ… AJOUTÉ
     entetes: string[];
     lignes: LigneProductivite[];
   };
-  // ✅ Propriétés optionnelles pour compatibilité
+  // âœ… Propriétés optionnelles pour compatibilité
   resume?: {
     nombreOuvriers: number;
     totalHeures: number;
@@ -157,7 +157,7 @@ export interface LigneProductivite {
   JOURS: string;
   MAT: number;
   "NOM ET PRENOM": string;
-  "N°HEURS": number;
+  "NÂ°HEURS": number;
   LIGNES: string;
   PRODUCTIVITE: number;
   M1: number;  // Matière Première
@@ -446,7 +446,7 @@ export class StatsService1 {
   constructor(private http: HttpClient) {}
 
   /**
-   * ✅ NOUVELLE MÉTHODE - Récupérer la productivité des ouvriers
+   * âœ… NOUVELLE MÉTHODE - Récupérer la productivité des ouvriers
    */
   getProductiviteOuvriers(dateDebut: string, dateFin: string): Observable<ProductiviteOuvriersResponse> {
     const headers = new HttpHeaders({
@@ -464,7 +464,7 @@ export class StatsService1 {
   }
 
   /**
-   * ✅ ALTERNATIVE POST - Productivité des ouvriers
+   * âœ… ALTERNATIVE POST - Productivité des ouvriers
    */
   getProductiviteOuvriersPost(dateDebut: string, dateFin: string): Observable<ProductiviteOuvriersResponse> {
     const headers = new HttpHeaders({
@@ -740,3 +740,4 @@ export class StatsService1 {
     });
   }
 }
+

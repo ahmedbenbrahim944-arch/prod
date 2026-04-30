@@ -687,7 +687,112 @@
   min-width: 160px;
 }
 
+/* ── Bus filter select ── */
+.aff-bus-filter .sel {
+  min-width: 130px;
+}
+
 /* ── Table responsive wrapper ── */
 .table-responsive {
   overflow-x: auto;
+}
+/* ── Bus : champ de saisie dans le formulaire d'édition ────────────────────── */
+.bus-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.bus-input-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.inp-bus {
+  width: 120px;
+  padding: 0.3rem 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text);
+  background: var(--surface);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.inp-bus:focus {
+  border-color: #0891b2;
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+.inp-bus::placeholder {
+  color: #b0bec5;
+  font-style: italic;
+}
+
+/* ── Bus : badge affiché en mode lecture (vue tableau) ─────────────────────── */
+.bus-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  background: #ecfeff;
+  color: #0e7490;
+  border: 1px solid #a5f3fc;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* ── Bus : badge compact dans la vue groupée par ligne ─────────────────────── */
+.bus-badge-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  background: #ecfeff;
+  color: #0e7490;
+  border: 1px solid #a5f3fc;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.bus-stats-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: 0.75rem;
+}
+
+.bus-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.bus-stat-chip strong { font-weight: 700; }
+
+/* Jour — teinte orange/ambre */
+.bus-stat-jour {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+/* Nuit — teinte violet */
+.bus-stat-nuit {
+  background: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
 }

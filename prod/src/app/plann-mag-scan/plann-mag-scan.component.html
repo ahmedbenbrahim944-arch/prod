@@ -4,9 +4,9 @@
   <!-- ─── En-tête ─────────────────────────────────────────────────── -->
   <div class="mb-6 text-center">
     <h1 class="text-3xl md:text-4xl font-bold text-white mb-1 tracking-wide">
-      📦 Scan Livraison Magasin
+      Scan Livraison Magasin
     </h1>
-    <p class="text-gray-400 text-sm">Scannez un code barre pour marquer le planning comme servi</p>
+    <p class="text-gray-400 text-sm">Scannez un code barre pour marquer le planning </p>
   </div>
 
   <!-- ─── Zone de scan ─────────────────────────────────────────────── -->
@@ -85,7 +85,7 @@
       <!-- Bandeau vert -->
       <div class="bg-green-500 px-6 py-4 flex justify-between items-center">
         <div>
-          <p class="text-white font-black text-2xl tracking-wide">✅ SERVI AVEC SUCCÈS</p>
+          <p class="text-white font-black text-2xl tracking-wide"> SUCCÈS</p>
           <p class="text-green-100 text-sm font-mono">{{ lastResult.codeDocument }}</p>
         </div>
         <button (click)="clearResult()"
@@ -152,7 +152,7 @@
          class="bg-orange-50 border-2 border-orange-400 rounded-2xl shadow-xl">
       <div class="bg-orange-500 px-6 py-4 flex justify-between items-center">
         <div>
-          <p class="text-white font-black text-2xl">⚠️ DÉJÀ SERVI</p>
+          <p class="text-white font-black text-2xl">⚠️SERVI</p>
           <p class="text-orange-100 text-sm font-mono">{{ lastError.codeDocument }}</p>
         </div>
         <button (click)="clearResult()" class="text-white hover:text-orange-200 transition">

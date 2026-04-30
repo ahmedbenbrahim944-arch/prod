@@ -1,9 +1,9 @@
-// stats.service.ts (Angular)
+﻿// stats.service.ts (Angular)
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-// ── Interfaces existantes ─────────────────────────────────────────
+// â”€â”€ Interfaces existantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface LigneStats {
   ligne: string;
@@ -46,7 +46,7 @@ export interface Pourcentage5MCause {
   pourcentageDansTotal5MNumber: number;
 }
 
-// ── Interface OuvrierSaisie — utilisée dans statistiques1 ET stats ─
+// â”€â”€ Interface OuvrierSaisie "” utilisée dans statistiques1 ET stats â”€
 
 export interface OuvrierSaisie {
   matricule: string;
@@ -64,7 +64,7 @@ export interface OuvrierSaisie {
   jour?: string;
 }
 
-// ── Interface réponse getStatutsByDate ────────────────────────────
+// â”€â”€ Interface réponse getStatutsByDate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Même structure retournée par GET /statut/par-date?date=YYYY-MM-DD
 // utilisée dans statistiques1 ET stats pour la modale personnel
 
@@ -86,7 +86,7 @@ export interface StatutsParDateResponse {
   };
 }
 
-// ── Interface réponse getOuvriersNonSaisisAvecStatuts ─────────────
+// â”€â”€ Interface réponse getOuvriersNonSaisisAvecStatuts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface OuvriersNonSaisisResponse {
   message?: string;
@@ -95,7 +95,7 @@ export interface OuvriersNonSaisisResponse {
   total?: number;
 }
 
-// ── Interfaces productivité ouvriers ─────────────────────────────
+// â”€â”€ Interfaces productivité ouvriers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export interface ProductiviteOuvriersResponse {
   message: string;
@@ -175,7 +175,7 @@ export interface LigneProductivite {
   JOURS: string;
   MAT: number;
   "NOM ET PRENOM": string;
-  "N°HEURS": number;
+  "NÂ°HEURS": number;
   LIGNES: string;
   PRODUCTIVITE: number;
   M1: number;
@@ -452,7 +452,7 @@ export interface Stats5M {
   environnement: number;
 }
 
-// ── Service ───────────────────────────────────────────────────────
+// â”€â”€ Service â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Injectable({
   providedIn: 'root'
@@ -462,7 +462,7 @@ export class StatsService1 {
 
   constructor(private http: HttpClient) {}
 
-  // ── Token JWT ──────────────────────────────────────────────────
+  // â”€â”€ Token JWT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private getToken(): string {
     return localStorage.getItem('access_token') || '';
@@ -475,7 +475,7 @@ export class StatsService1 {
     });
   }
 
-  // ── Productivité ouvriers ─────────────────────────────────────
+  // â”€â”€ Productivité ouvriers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getProductiviteOuvriers(dateDebut: string, dateFin: string): Observable<ProductiviteOuvriersResponse> {
     return this.http.get<ProductiviteOuvriersResponse>(
@@ -492,7 +492,7 @@ export class StatsService1 {
     );
   }
 
-  // ── Stats par semaine ─────────────────────────────────────────
+  // â”€â”€ Stats par semaine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getPcsProdTotalParLigne(semaine: string): Observable<StatsResponse> {
     return this.http.get<StatsResponse>(`${this.apiUrl}/lignes`, {
@@ -515,7 +515,7 @@ export class StatsService1 {
     );
   }
 
-  // ── 5M par semaine ────────────────────────────────────────────
+  // â”€â”€ 5M par semaine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getPourcentage5MParSemaine(semaine: string): Observable<Pourcentage5MResponse> {
     return this.http.get<Pourcentage5MResponse>(`${this.apiUrl}/pourcentage-5m`, {
@@ -545,7 +545,7 @@ export class StatsService1 {
     );
   }
 
-  // ── Stats par date ────────────────────────────────────────────
+  // â”€â”€ Stats par date â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getStatsParDate(date: string): Observable<StatsParDateResponse> {
     return this.http.get<StatsParDateResponse>(`${this.apiUrl}/par-date`, {
@@ -568,7 +568,7 @@ export class StatsService1 {
     });
   }
 
-  // ── 5M par date ───────────────────────────────────────────────
+  // â”€â”€ 5M par date â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getStats5MParDate(date: string): Observable<Stats5MParDateResponse> {
     return this.http.get<Stats5MParDateResponse>(`${this.apiUrl}/5m-par-date`, {
@@ -584,7 +584,7 @@ export class StatsService1 {
     );
   }
 
-  // ── Affectation personnel ─────────────────────────────────────
+  // â”€â”€ Affectation personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getAffectationPersonnel(semaine: string): Observable<AffectationPersonnelResponse> {
     return this.http.get<AffectationPersonnelResponse>(
@@ -593,7 +593,7 @@ export class StatsService1 {
     );
   }
 
-  // ── NON-CONFORMITÉS ───────────────────────────────────────────
+  // â”€â”€ NON-CONFORMITÉS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getNonConfDetailsByDateLigne(date: string, ligne: string): Observable<any> {
     return this.http.post<any>(
@@ -603,7 +603,7 @@ export class StatsService1 {
     );
   }
 
-  // ── Statuts personnel ─────────────────────────────────────────
+  // â”€â”€ Statuts personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Ces deux méthodes sont utilisées dans statistiques1 ET stats
   // pour la modale "Voir la liste des présents / absents / congés"
 
@@ -612,8 +612,8 @@ export class StatsService1 {
    * Utilisé pour remplir la modale personnel dans les deux composants
    *
    * Réponse : StatutsParDateResponse
-   *   → response.statistiques.repartitionStatuts : { P, AB, C, S }
-   *   → response.statistiques.ouvriers[]          : liste filtrée par statut
+   *   â†’ response.statistiques.repartitionStatuts : { P, AB, C, S }
+   *   â†’ response.statistiques.ouvriers[]          : liste filtrée par statut
    */
   getStatutsByDate(date: string): Observable<StatutsParDateResponse> {
     return this.http.get<StatutsParDateResponse>('http://102.207.250.53:3000/statut/par-date', {
@@ -632,7 +632,7 @@ export class StatsService1 {
     });
   }
 
-  // ── Méthodes utilitaires 5M ───────────────────────────────────
+  // â”€â”€ Méthodes utilitaires 5M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getStats5MFormatSimple(stats: Pourcentage5MResponse): Stats5M {
     return {
@@ -658,3 +658,4 @@ export class StatsService1 {
     };
   }
 }
+

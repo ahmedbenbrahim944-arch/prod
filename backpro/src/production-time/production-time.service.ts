@@ -1592,6 +1592,58 @@ async getAdminDashboardOverview(filters?: {
     throw new InternalServerErrorException('Erreur lors de la récupération des références planifiées');
   }
 }
+// production-time.service.ts - AJOUTEZ cette méthode dans la classe
+
+/**
+ * 🔑 Récupérer la session active d'un utilisateur (par userId)
+ * Utilisé pour la reconnexion automatique
+ */
+async getUserActiveSession(userId: number) {
+  try {
+    const session = await this.productionSessionRepo.findOne({
+      where: { 
+        startedBy: { id: userId },
+        status: In(['active', 'paused'])  // Seulement sessions actives ou en pause
+      },
+      relations: ['pauses', 'planifications', 'pauses.planifications', 'startedBy'],
+      order: { startTime: 'DESC' }  // La plus récente d'abord
+    });
+
+    if (!session) {
+      return { 
+        hasActiveSession: false,
+        message: 'Aucune session active trouvée' 
+      };
+    }
+
+    // Calculer les informations temps réel
+    const realtimeData = await this.getRealTimeProduction(session.id);
+
+    return {
+      hasActiveSession: true,
+      session: {
+        id: session.id,
+        ligne: session.ligne,
+        status: session.status,
+        startTime: session.startTime,
+        productType: session.productType,
+        planifications: (session.planifications || []).map(p => ({
+          id: p.id,
+          reference: p.reference,
+          of: p.of,
+          jour: p.jour,
+          semaine: p.semaine,
+          qtePlanifiee: p.qtePlanifiee,
+          qteModifiee: p.qteModifiee,
+        })),
+        realtime: realtimeData  // Données temps réel complètes
+      }
+    };
+  } catch (error) {
+    console.error('Erreur getUserActiveSession:', error);
+    throw new InternalServerErrorException('Erreur lors de la récupération de votre session');
+  }
+}
 
 
 }

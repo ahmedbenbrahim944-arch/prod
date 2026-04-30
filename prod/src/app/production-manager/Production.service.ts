@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+﻿import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -117,6 +117,8 @@ export interface RealTimeProduction {
   } | null;
   // ✅ Compteurs par référence planifiée
   refsCompteurs?: RefCompteur[];
+  productionSeconds?: number;
+  pauseSeconds?: number;
 }
 
 export interface AvailableReferences {
@@ -391,5 +393,28 @@ loadLastSession(): any {
     console.error('Erreur chargement session:', error);
     return null;
   }
+}
+// Production.service.ts - AJOUTEZ cette méthode
+
+/**
+ * 🔑 Récupérer la session active de l'utilisateur connecté
+ */
+getMyActiveSession(): Observable<{
+  hasActiveSession: boolean;
+  message?: string;
+  session?: {
+    id: number;
+    ligne: string;
+    status: string;
+    startTime: string;
+    productType: string;
+    planifications: PlannedReference[];
+    realtime: any;
+  };
+}> {
+  return this.http.get<any>(
+    `${this.API_URL}/production/my-active-session`,
+    { headers: this.getHeaders() }
+  );
 }
 }

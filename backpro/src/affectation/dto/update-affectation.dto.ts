@@ -27,6 +27,10 @@ export class UpdateAffectationDto {
   @IsIn(['1ere poste', '2eme poste'], { message: 'Le poste doit être "1ere poste" ou "2eme poste"' })
   poste?: string;
 
+  @IsString()
+  @IsOptional()
+  bus?: string | null;  // ← nouveau : numéro de bus
+
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

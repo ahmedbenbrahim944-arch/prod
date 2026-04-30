@@ -21,10 +21,25 @@ interface OuvrierRow extends Ouvrier {
   formLigne: string;
   formPhases: PhaseRow[];
   formEstCapitaine: boolean;
-  formPoste: '1ere poste' | '2eme poste'; // ← modifié
+  formPoste: '1ere poste' | '2eme poste';
+  formBus: string;
   availablePhases: string[];
   loadingPhases: boolean;
   liveTotal: number;
+}
+
+// ── Nouveau : stat par bus ──────────────────────────────────────────────────
+interface BusStat {
+  bus: string;
+  count: number;
+}
+
+interface PosteGroup {
+  poste: '1ere poste' | '2eme poste';
+  ouvriers: OuvrierRow[];
+  totalHeures: number;
+  totalOuvriers: number;
+  busStats: BusStat[];   // ← ajouté
 }
 
 interface LigneGroup {
@@ -36,13 +51,6 @@ interface LigneGroup {
   capitaine?: OuvrierRow;
   totalOuvriers: number;
   totalHeures: number;
-}
-
-interface PosteGroup {
-  poste: '1ere poste' | '2eme poste';
-  ouvriers: OuvrierRow[];
-  totalHeures: number;
-  totalOuvriers: number;
 }
 
 @Component({
@@ -61,6 +69,7 @@ export class AffectationComponent implements OnInit {
   filterStatus: 'all' | 'assigned' | 'unassigned' = 'all';
   viewMode: 'table' | 'grouped' = 'table';
   selectedLigne: string = '';
+  selectedBus: string = '';
 
   constructor(
     private svc: AffectationService,
@@ -82,6 +91,12 @@ export class AffectationComponent implements OnInit {
       lignesResp:   this.svc.getAllLignes(),
     }).subscribe({
       next: ({ ouvriers, affectations, lignesResp }) => {
+        console.log('Affectations reçues:', affectations);
+
+        affectations.data.forEach(a => {
+          console.log(`Matricule ${a.matricule}: bus = ${a.bus}, poste = ${a.poste}`);
+        });
+
         this.lignes = lignesResp.lignes;
         const affMap = new Map(affectations.data.map((a) => [a.matricule, a]));
 
@@ -98,7 +113,8 @@ export class AffectationComponent implements OnInit {
             formLigne: '',
             formPhases: [{ phase: '', heures: 0 }],
             formEstCapitaine: false,
-            formPoste: '1ere poste', // ← modifié: valeur par défaut "1ere poste"
+            formPoste: '1ere poste',
+            formBus: '',
             availablePhases: [],
             loadingPhases: false,
             liveTotal: 0,
@@ -115,6 +131,13 @@ export class AffectationComponent implements OnInit {
     });
   }
 
+  onLigneSelected(ligne: string): void {
+    this.filterStatus = 'all';
+    if (ligne) {
+      this.viewMode = 'grouped';
+    }
+  }
+
   // ── Édition inline ─────────────────────────────────────────────────────────
 
   startEdit(row: OuvrierRow): void {
@@ -124,7 +147,8 @@ export class AffectationComponent implements OnInit {
     row.error            = null;
     row.formLigne        = row.affectation?.ligne ?? '';
     row.formEstCapitaine = row.affectation?.estCapitaine ?? false;
-    row.formPoste        = row.affectation?.poste ?? '1ere poste'; // ← modifié: "1ere poste" par défaut
+    row.formPoste        = row.affectation?.poste ?? '1ere poste';
+    row.formBus          = row.affectation?.bus ?? '';
     row.formPhases       = row.affectation
       ? row.affectation.phases.map((p) => ({ phase: p.phase, heures: p.heures }))
       : [{ phase: '', heures: 0 }];
@@ -207,10 +231,11 @@ export class AffectationComponent implements OnInit {
 
     row.saving = true;
     const dto = {
-      ligne:          row.formLigne,
-      phases:         row.formPhases,
-      estCapitaine:   row.formEstCapitaine,
-      poste:          row.formPoste, // ← modifié: "1ere poste" ou "2eme poste"
+      ligne:        row.formLigne,
+      phases:       row.formPhases,
+      estCapitaine: row.formEstCapitaine,
+      poste:        row.formPoste,
+      bus:          row.formBus || null,
     };
 
     const obs$ = row.affectation
@@ -296,61 +321,87 @@ export class AffectationComponent implements OnInit {
 
   // ── Vue groupée ─────────────────────────────────────────────────────────────
 
-get groupedRows(): LigneGroup[] {
-  const groupes = new Map<string, LigneGroup>();
-  
-  const dataSource = this.rows;
-  
-  dataSource.forEach((row) => {
-    if (!row.affectation) return;
-    
-    // 🔧 Ignorer les affectations avec poste invalide
-    const poste = row.affectation.poste;
-    if (poste !== '1ere poste' && poste !== '2eme poste') {
-      console.warn(`Affectation ignorée pour ${row.matricule}: poste invalide = ${poste}`);
-      return;
-    }
-    
-    const ligne = row.affectation.ligne;
-    
-    if (!groupes.has(ligne)) {
-      groupes.set(ligne, {
-        ligne,
-        posteGroups: {
-          '1ere poste': {
-            poste: '1ere poste',
-            ouvriers: [],
-            totalHeures: 0,
-            totalOuvriers: 0
-          },
-          '2eme poste': {
-            poste: '2eme poste',
-            ouvriers: [],
-            totalHeures: 0,
-            totalOuvriers: 0
-          }
-        },
-        totalOuvriers: 0,
-        totalHeures: 0
-      });
-    }
-    
-    const group = groupes.get(ligne)!;
-    const posteGroup = group.posteGroups[poste];
-    
-    posteGroup.ouvriers.push(row);
-    posteGroup.totalOuvriers++;
-    posteGroup.totalHeures += (row.affectation.totalHeures || 0);
-    group.totalOuvriers++;
-    group.totalHeures += (row.affectation.totalHeures || 0);
-    
-    if (row.affectation.estCapitaine) {
-      group.capitaine = row;
-    }
-  });
+  get groupedRows(): LigneGroup[] {
+    const groupes = new Map<string, LigneGroup>();
 
-  return Array.from(groupes.values()).sort((a, b) => a.ligne.localeCompare(b.ligne));
-}
+    this.rows.forEach((row) => {
+      if (!row.affectation) return;
+
+      // Respecter le filtre selectedLigne
+      if (this.selectedLigne && row.affectation.ligne !== this.selectedLigne) return;
+
+      // Fallback sur '1ere poste' si valeur invalide
+      const rawPoste = row.affectation.poste;
+      const poste: '1ere poste' | '2eme poste' =
+        rawPoste === '1ere poste' || rawPoste === '2eme poste'
+          ? rawPoste
+          : '1ere poste';
+
+      const ligne = row.affectation.ligne;
+
+      if (!groupes.has(ligne)) {
+        groupes.set(ligne, {
+          ligne,
+          posteGroups: {
+            '1ere poste': { poste: '1ere poste', ouvriers: [], totalHeures: 0, totalOuvriers: 0, busStats: [] },
+            '2eme poste': { poste: '2eme poste', ouvriers: [], totalHeures: 0, totalOuvriers: 0, busStats: [] },
+          },
+          totalOuvriers: 0,
+          totalHeures: 0,
+        });
+      }
+
+      const group     = groupes.get(ligne)!;
+      const posteGroup = group.posteGroups[poste];
+
+      // ── Ouvrier ──────────────────────────────────────────────────────────
+      posteGroup.ouvriers.push(row);
+      posteGroup.totalOuvriers++;
+      posteGroup.totalHeures += row.affectation.totalHeures || 0;
+      group.totalOuvriers++;
+      group.totalHeures += row.affectation.totalHeures || 0;
+
+      // ── Stats par bus (identique pour les deux postes) ───────────────────
+      const busLabel = row.affectation.bus?.trim() || 'Sans bus';
+      const existingBus = posteGroup.busStats.find(b => b.bus === busLabel);
+      if (existingBus) {
+        existingBus.count++;
+      } else {
+        posteGroup.busStats.push({ bus: busLabel, count: 1 });
+      }
+
+      // ── Capitaine ─────────────────────────────────────────────────────────
+      if (row.affectation.estCapitaine) {
+        group.capitaine = row;
+      }
+    });
+
+    // Trier les bus par numéro dans chaque groupe de poste
+    groupes.forEach(group => {
+      (['1ere poste', '2eme poste'] as const).forEach(poste => {
+        group.posteGroups[poste].busStats.sort((a, b) => {
+          // "Sans bus" toujours en dernier
+          if (a.bus === 'Sans bus') return 1;
+          if (b.bus === 'Sans bus') return -1;
+          // Tri numérique si possible, sinon alphabétique
+          const numA = Number(a.bus);
+          const numB = Number(b.bus);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return a.bus.localeCompare(b.bus);
+        });
+      });
+    });
+
+    return Array.from(groupes.values()).sort((a, b) => a.ligne.localeCompare(b.ligne));
+  }
+
+  get availableBuses(): string[] {
+    const buses = this.rows
+      .map((r) => r.affectation?.bus)
+      .filter((b): b is string => !!b);
+    return [...new Set(buses)].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+  }
+
   // ── Filtres ─────────────────────────────────────────────────────────────────
 
   get filteredRows(): OuvrierRow[] {
@@ -369,6 +420,10 @@ get groupedRows(): LigneGroup[] {
 
     if (this.selectedLigne) {
       filtered = filtered.filter((r) => r.affectation?.ligne === this.selectedLigne);
+    }
+
+    if (this.selectedBus) {
+      filtered = filtered.filter((r) => r.affectation?.bus === this.selectedBus);
     }
 
     return filtered;

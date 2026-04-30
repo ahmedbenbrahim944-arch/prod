@@ -1,4 +1,4 @@
-<div class="stats-container">
+﻿<div class="stats-container">
 
   <!-- PAGE DE SÉLECTION DE DATES -->
   <div *ngIf="!productiviteOuvriers || !productiviteOuvriers.tableau || productiviteOuvriers.tableau.length === 0" class="filter-page">
@@ -174,7 +174,7 @@
               <td class="col-date">{{ ligne.JOURS | date:'dd/MM/yy' }}</td>
               <td class="col-mat">{{ ligne.MAT }}</td>
               <td class="col-nom nom-cell">{{ ligne["NOM ET PRENOM"] }}</td>
-              <td class="col-h">{{ ligne["N°HEURS"] }}</td>
+              <td class="col-h">{{ ligne["NÂ°HEURS"] }}</td>
               <td class="col-ligne">{{ ligne.LIGNES }}</td>
               <td class="col-prod">
                 <div class="prod-cell">
@@ -213,7 +213,7 @@
               <td class="col-date">{{ ligne.JOURS | date:'dd/MM/yy' }}</td>
               <td class="col-mat">{{ ligne.MAT }}</td>
               <td class="col-nom nom-cell">{{ ligne["NOM ET PRENOM"] }}</td>
-              <td class="col-h">{{ ligne["N°HEURS"] }}</td>
+              <td class="col-h">{{ ligne["NÂ°HEURS"] }}</td>
               <td class="col-ligne">{{ ligne.LIGNES }}</td>
               <td class="col-prod">
                 <div class="prod-cell">

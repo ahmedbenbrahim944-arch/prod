@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -145,7 +145,7 @@ export class TrackingDashboardComponent implements OnInit {
   }
 
  getUserTypeClass(type: string): string {
-  const classes: { [key: string]: string } = {  // ✅ Ajout de l'index signature
+  const classes: { [key: string]: string } = {  // âœ… Ajout de l'index signature
     'admin': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
     'user': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
   };
@@ -190,7 +190,7 @@ export class TrackingDashboardComponent implements OnInit {
     if (statusCode >= 200 && statusCode < 300) return '';
     if (statusCode >= 400 && statusCode < 500) return '';
     if (statusCode >= 500) return '';
-    return 'ℹ';
+    return 'â„¹';
   }
 
   getActionIcon(actionType: string): string {
@@ -204,3 +204,4 @@ export class TrackingDashboardComponent implements OnInit {
     return icons[actionType] || '';
   }
 }
+

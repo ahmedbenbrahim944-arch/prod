@@ -1,4 +1,4 @@
-// src/app/affectation/affectation.service.ts
+﻿// src/app/affectation/affectation.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -20,7 +20,8 @@ export interface Affectation {
   nomPrenom: string;
   ligne: string;
   estCapitaine?: boolean;
-  poste: '1ere poste' | '2eme poste'; // ← modifié
+  poste: '1ere poste' | '2eme poste';
+  bus?: string | null;               // ← nouveau : numéro de bus
   phases: PhaseHeures[];
   totalHeures: number;
   createdAt?: string;
@@ -30,14 +31,16 @@ export interface CreateAffectationDto {
   matricule: number;
   ligne: string;
   estCapitaine?: boolean;
-  poste: '1ere poste' | '2eme poste'; // ← modifié
+  poste: '1ere poste' | '2eme poste';
+  bus?: string | null;               // ← nouveau
   phases: PhaseHeures[];
 }
 
 export interface UpdateAffectationDto {
   ligne?: string;
   estCapitaine?: boolean;
-  poste?: '1ere poste' | '2eme poste'; // ← modifié
+  poste?: '1ere poste' | '2eme poste';
+  bus?: string | null;               // ← nouveau
   phases?: PhaseHeures[];
 }
 

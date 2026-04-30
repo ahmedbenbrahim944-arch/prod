@@ -1,4 +1,4 @@
-// src/app/prod/matiere-premiere.service.ts
+﻿// src/app/prod/matiere-premiere.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -93,7 +93,7 @@ export class MatierePremiereService {
   }
 
   /**
-   * Vérifier si une matière première existe déjà
+   * Vérifier si une matière première existe déjÃ 
    */
   checkIfExists(ligne: string, refMatierePremier: string): Observable<boolean> {
     return this.http.get<MatierePremiere[]>(`${this.apiUrl}/ligne/${ligne}`).pipe(
@@ -114,3 +114,4 @@ export class MatierePremiereService {
     );
   }
 }
+

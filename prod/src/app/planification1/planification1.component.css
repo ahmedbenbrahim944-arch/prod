@@ -1083,6 +1083,12 @@ td.cursor-pointer {
   transition: all 0.3s ease;
 }
 
-.group:hover {
-  transform: translateY(-4px);
+
+/* ==================== IMPRESSION TICKETS ==================== */
+/* L'impression se fait dans une fenêtre dédiée — pas de styles @media print ici */
+/* On cache juste le modal si quelqu'un imprime la page principale par erreur */
+@media print {
+  .fixed, .modal, [class*="z-50"] {
+    display: none !important;
+  }
 }

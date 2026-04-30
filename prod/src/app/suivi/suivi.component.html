@@ -1,0 +1,504 @@
+<!-- src/app/suivi/suivi.component.html -->
+<div class="suivi-shell">
+
+  <!-- ░░░ SIDEBAR OVERLAY (mobile) ░░░ -->
+  <div class="sidebar-overlay"
+       [class.visible]="sidebarOpen"
+       (click)="sidebarOpen = false">
+  </div>
+
+  <!-- ░░░ SIDEBAR ░░░ -->
+  <aside class="sidebar" [class.open]="sidebarOpen">
+
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        <span class="brand-label">SUIVI ADMIN</span>
+      </div>
+      <button class="sidebar-close" (click)="sidebarOpen = false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    @if (loadingSemaines) {
+      <div class="sidebar-body">
+        @for (i of [1,2,3,4]; track i) {
+          <div class="semaine-skeleton">
+            <div class="skel skel-title"></div>
+            <div class="skel skel-sub"></div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (!loadingSemaines) {
+      <div class="sidebar-body" [@listStagger]="semaines.length">
+        @for (s of semaines; track s.id) {
+          <button
+            class="semaine-item"
+            [class.active]="selectedSemaine?.id === s.id"
+            (click)="selectSemaine(s)">
+            <div class="semaine-item-inner">
+              <span class="semaine-nom">{{ s.nom }}</span>
+              <span class="semaine-dates">
+                {{ formatDate(s.dateDebut) }} → {{ formatDate(s.dateFin) }}
+              </span>
+            </div>
+            <div class="semaine-arrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </div>
+          </button>
+        }
+
+        @if (semaines.length === 0) {
+          <div class="sidebar-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <p>Aucune semaine disponible</p>
+          </div>
+        }
+      </div>
+    }
+
+  </aside>
+
+  <!-- ░░░ MAIN CONTENT ░░░ -->
+  <div class="main-wrapper">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <button class="menu-btn" (click)="sidebarOpen = !sidebarOpen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18"/>
+        </svg>
+      </button>
+
+      <div class="topbar-info">
+        @if (selectedSemaine) {
+          <span class="topbar-semaine" @fadeSlide>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            {{ selectedSemaine.nom | uppercase }}
+            <span class="topbar-dates">
+              {{ formatDate(selectedSemaine.dateDebut) }} – {{ formatDate(selectedSemaine.dateFin) }}
+            </span>
+          </span>
+        } @else {
+          <span class="topbar-placeholder">Sélectionnez une semaine</span>
+        }
+      </div>
+
+      <div class="topbar-badges">
+        <!-- Quantité totale -->
+        <span class="count-badge qty-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+          </svg>
+          {{ totalQuantite | number }} unités
+        </span>
+
+        <!-- Nb enregistrements -->
+        <span class="count-badge prod-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+          {{ filteredRecords.length }} / {{ allProductionRecords.length }} enreg.
+        </span>
+
+        <!-- Filtres actifs -->
+        @if (activeFiltersCount > 0) {
+          <span class="count-badge filter-active-badge" @scaleIn>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+            </svg>
+            {{ activeFiltersCount }} filtre{{ activeFiltersCount > 1 ? 's' : '' }} actif{{ activeFiltersCount > 1 ? 's' : '' }}
+          </span>
+        }
+      </div>
+    </header>
+
+    <!-- Body -->
+    <div class="main-body">
+
+      <!-- ── Empty state ── -->
+      @if (!selectedSemaine) {
+        <div class="empty-state" @scaleIn>
+          <div class="empty-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+          </div>
+          <h2 class="empty-title">Suivi de production</h2>
+          <p class="empty-sub">Choisissez une semaine dans la barre latérale pour consulter les données</p>
+        </div>
+      }
+
+      <!-- ── Contenu principal ── -->
+      @if (selectedSemaine) {
+        <div class="content-area" @fadeSlide>
+
+          <!-- ═══════════════════════════════════════════════════════════
+               BARRE DE FILTRES
+          ═══════════════════════════════════════════════════════════════ -->
+          <div class="filter-bar-card">
+
+            <!-- En-tête filtres -->
+            <div class="filter-bar-header" (click)="toggleFilters()">
+              <div class="filter-bar-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                </svg>
+                Filtres
+                @if (activeFiltersCount > 0) {
+                  <span class="filter-count-pill">{{ activeFiltersCount }}</span>
+                }
+              </div>
+              <div class="filter-bar-actions">
+                @if (activeFiltersCount > 0) {
+                  <button class="btn-reset-filters" (click)="$event.stopPropagation(); resetFilters()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                      <path d="M3 3v5h5"/>
+                    </svg>
+                    Réinitialiser
+                  </button>
+                }
+                <span class="filter-toggle-icon" [class.rotated]="filtersVisible">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            <!-- Corps filtres -->
+            @if (filtersVisible) {
+              <div class="filter-body" @fadeSlide>
+
+                <!-- Ligne -->
+                <div class="filter-group">
+                  <label class="filter-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="8" y1="6" x2="21" y2="6"/>
+                      <line x1="8" y1="12" x2="21" y2="12"/>
+                      <line x1="8" y1="18" x2="21" y2="18"/>
+                      <line x1="3" y1="6" x2="3.01" y2="6"/>
+                      <line x1="3" y1="12" x2="3.01" y2="12"/>
+                      <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    Ligne
+                  </label>
+                  <div class="filter-select-wrap">
+                    <select class="filter-select" [(ngModel)]="filterLigne" (change)="applyFilters()">
+                      <option value="">Toutes les lignes</option>
+                      @for (l of ligneOptions; track l) {
+                        <option [value]="l">{{ l }}</option>
+                      }
+                    </select>
+                    @if (filterLigne) {
+                      <button class="filter-clear-btn" (click)="filterLigne = ''; applyFilters()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <!-- Date intervalle -->
+                <div class="filter-group">
+                  <label class="filter-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/>
+                      <path d="M16 2v4M8 2v4M3 10h18"/>
+                    </svg>
+                    Période
+                  </label>
+                  <div class="filter-date-range">
+                    <div class="filter-date-wrap">
+                      <span class="date-range-label">Du</span>
+                      <input
+                        type="date"
+                        class="filter-date"
+                        [(ngModel)]="filterDateDebut"
+                        (change)="applyFilters()">
+                      @if (filterDateDebut) {
+                        <button class="filter-clear-btn" (click)="filterDateDebut = ''; applyFilters()">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                    <span class="date-separator">→</span>
+                    <div class="filter-date-wrap">
+                      <span class="date-range-label">Au</span>
+                      <input
+                        type="date"
+                        class="filter-date"
+                        [(ngModel)]="filterDateFin"
+                        (change)="applyFilters()">
+                      @if (filterDateFin) {
+                        <button class="filter-clear-btn" (click)="filterDateFin = ''; applyFilters()">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M18 6 6 18M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Dernière partie -->
+                <div class="filter-group">
+                  <label class="filter-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="M12 8v4l3 3"/>
+                    </svg>
+                    Dernière partie
+                  </label>
+                  <div class="filter-select-wrap">
+                    <select class="filter-select" [(ngModel)]="filterDernierePartie" (change)="applyFilters()">
+                      <option value="">Toutes les parties</option>
+                      @for (p of dernierePartieOptions; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                    @if (filterDernierePartie) {
+                      <button class="filter-clear-btn" (click)="filterDernierePartie = ''; applyFilters()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                          <path d="M18 6 6 18M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                </div>
+                <!-- Référence -->
+<div class="filter-group">
+  <label class="filter-label">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+    Référence
+  </label>
+  <div class="filter-select-wrap">
+    <select class="filter-select" [(ngModel)]="filterReference" (change)="applyFilters()">
+      <option value="">Toutes les références</option>
+      @for (r of referenceOptions; track r) {
+        <option [value]="r">{{ r }}</option>
+      }
+    </select>
+    @if (filterReference) {
+      <button class="filter-clear-btn" (click)="filterReference = ''; applyFilters()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    }
+  </div>
+</div>
+
+              </div>
+            }
+
+            <!-- Chips résumé des filtres actifs -->
+            @if (activeFiltersCount > 0) {
+              <div class="active-filter-chips" @fadeSlide>
+                @if (filterLigne) {
+                  <span class="active-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                    </svg>
+                    Ligne : <strong>{{ filterLigne }}</strong>
+                    <button (click)="filterLigne = ''; applyFilters()">×</button>
+                  </span>
+                }
+                @if (filterDateDebut || filterDateFin) {
+                  <span class="active-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/>
+                      <path d="M16 2v4M8 2v4M3 10h18"/>
+                    </svg>
+                    @if (filterDateDebut && filterDateFin) {
+                      Du {{ filterDateDebut }} au {{ filterDateFin }}
+                    } @else if (filterDateDebut) {
+                      Depuis le {{ filterDateDebut }}
+                    } @else {
+                      Jusqu'au {{ filterDateFin }}
+                    }
+                    <button (click)="filterDateDebut = ''; filterDateFin = ''; applyFilters()">×</button>
+                  </span>
+                }
+                @if (filterDernierePartie) {
+                  <span class="active-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                    </svg>
+                    Partie : <strong>{{ filterDernierePartie }}</strong>
+                    <button (click)="filterDernierePartie = ''; applyFilters()">×</button>
+                  </span>
+                }
+              </div>
+            }
+            @if (filterReference) {
+  <span class="active-chip">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+      <line x1="7" y1="7" x2="7.01" y2="7"/>
+    </svg>
+    Référence : <strong>{{ filterReference }}</strong>
+    <button (click)="filterReference = ''; applyFilters()">×</button>
+  </span>
+}
+
+          </div>
+          <!-- /filter-bar-card -->
+
+          <!-- ═══════════════════════════════════════════════════════════
+               TABLEAU DE PRODUCTION
+          ═══════════════════════════════════════════════════════════════ -->
+          <div class="table-card">
+
+            <div class="table-card-header">
+              <div class="table-card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                  <line x1="12" y1="22.08" x2="12" y2="12"/>
+                </svg>
+                HISTORIQUE PRODUITS FINIS
+                <span class="table-semaine-label">{{ selectedSemaine.nom | uppercase }}</span>
+              </div>
+              <div class="table-card-meta">
+                <span class="table-count-badge">
+                  {{ filteredRecords.length }} résultat{{ filteredRecords.length !== 1 ? 's' : '' }}
+                </span>
+                @if (activeFiltersCount > 0) {
+                  <span class="filtered-notice">filtré{{ activeFiltersCount > 0 ? 's' : '' }}</span>
+                }
+              </div>
+            </div>
+
+            @if (loadingProductions) {
+              <div class="table-loading">
+                @for (i of [1,2,3,4]; track i) {
+                  <div class="row-skeleton">
+                    <div class="skel skel-ref"></div>
+                    <div class="skel skel-sm"></div>
+                    <div class="skel skel-sm"></div>
+                    <div class="skel skel-sm"></div>
+                    <div class="skel skel-sm"></div>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (!loadingProductions && filteredRecords.length === 0) {
+              <div class="scans-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                @if (activeFiltersCount > 0) {
+                  <p>Aucun résultat pour ces filtres</p>
+                  <button class="btn-reset-empty" (click)="resetFilters()">
+                    Réinitialiser les filtres
+                  </button>
+                } @else {
+                  <p>Aucun produit fini enregistré pour cette semaine</p>
+                }
+              </div>
+            }
+
+            @if (!loadingProductions && filteredRecords.length > 0) {
+              <div class="table-wrap">
+                <table class="suivi-table">
+                  <thead>
+                    <tr>
+                      <th>Référence</th>
+                      <th>Quantité</th>
+                      <th>Ligne</th>
+                      <th>Dernière partie</th>
+                      <th>Scanné le</th>
+                      <th class="th-actions"></th>
+                    </tr>
+                  </thead>
+                  <tbody [@listStagger]="filteredRecords.length">
+                    @for (rec of filteredRecords; track rec.id) {
+                      <tr @rowEnter class="scan-row">
+                        <td>
+                          <span class="ref-badge">{{ rec.reference }}</span>
+                        </td>
+                        <td>
+                          <span class="quantite-badge">× {{ rec.quantite | number }}</span>
+                        </td>
+                        <td>
+                          @if (rec.ligne) {
+                            <span class="ligne-tag">{{ rec.ligne }}</span>
+                          } @else {
+                            <span class="no-data">—</span>
+                          }
+                        </td>
+                        <td>
+                          @if (rec.dernierePartie) {
+                            <span class="partie-tag">{{ rec.dernierePartie }}</span>
+                          } @else {
+                            <span class="no-data">—</span>
+                          }
+                        </td>
+                        <td class="td-date">{{ formatDateTime(rec.dateScan) }}</td>
+                        <td class="td-actions">
+                          <button
+                            class="btn-delete"
+                            (click)="deleteProduction(rec)"
+                            title="Supprimer">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                              <path d="M10 11v6M14 11v6"/>
+                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Footer totaux -->
+              <div class="table-footer">
+                <span class="footer-total">
+                  <strong>Total quantité :</strong> {{ totalQuantite | number }} unités
+                </span>
+                <span class="footer-records">
+                  {{ filteredRecords.length }} enregistrement{{ filteredRecords.length !== 1 ? 's' : '' }}
+                </span>
+              </div>
+            }
+
+          </div>
+          <!-- /table-card -->
+
+        </div>
+      }
+
+    </div>
+  </div>
+
+</div>

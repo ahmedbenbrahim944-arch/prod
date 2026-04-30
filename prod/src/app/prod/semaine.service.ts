@@ -1,4 +1,4 @@
-// src/app/services/semaine.service.ts
+﻿// src/app/services/semaine.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -246,3 +246,4 @@ export class SemaineService {
     return this.http.patch(`${this.apiUrl}/planifications/magasin`, data);
   }
 }
+

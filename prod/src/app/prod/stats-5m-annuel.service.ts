@@ -1,4 +1,4 @@
-// src/app/prod/stats-5m-annuel.service.ts
+﻿// src/app/prod/stats-5m-annuel.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -144,3 +144,4 @@ export class Stats5MAnnuelService {
     return headers;
   }
 }
+

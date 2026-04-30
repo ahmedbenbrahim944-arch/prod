@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+﻿import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -6,7 +6,7 @@ import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
-// ── Interfaces ────────────────────────────────────────────────────
+// â”€â”€ Interfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface DetailNonConformite {
   reference: string;
@@ -144,7 +144,7 @@ interface StatsPeriode {
   detailsNonConformites?: DetailNonConformite[];
 }
 
-// Interface ouvrier — même structure que statistiques1 (OuvrierSaisie)
+// Interface ouvrier "” même structure que statistiques1 (OuvrierSaisie)
 interface OuvrierPersonnel {
   matricule: string | number;
   nomPrenom: string;
@@ -173,7 +173,7 @@ export class StatsComponent implements OnInit {
   private chart: Chart | null = null;
   selectedM: string | null = null;
 
-  // ── Modale 7M ─────────────────────────────────────────────────
+  // â”€â”€ Modale 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   showDetailsModal: boolean = false;
   detailsModalTitle: string = '';
   detailsModalData: DetailNonConformite[] = [];
@@ -188,21 +188,21 @@ export class StatsComponent implements OnInit {
     causesPrincipales: ''
   };
 
-  // ── Modale ligne ───────────────────────────────────────────────
+  // â”€â”€ Modale ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   showLigneModal: boolean = false;
   ligneModalTitle: string = '';
   ligneModalData: LigneDetail | null = null;
   ligneModalReferences: any[] = [];
   expandedCause7M: string | null = null;
 
-  // ── Filtre par ligne ───────────────────────────────────────────
+  // â”€â”€ Filtre par ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   selectedLignes: string[] = [];
   ligneSearchFilter: string = '';
 
-  // ── Modale Personnel ──────────────────────────────────────────
+  // â”€â”€ Modale Personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Même logique que statistiques1.component.ts :
   // endpoint GET http://102.207.250.53:3000/statut/par-date?date=YYYY-MM-DD
-  // response.statistiques.ouvriers[] → filtre par o.statut === code
+  // response.statistiques.ouvriers[] â†’ filtre par o.statut === code
   showPersonnelModal: boolean = false;
   personnelModalTitle: string = '';
   personnelModalStatut: string = '';
@@ -210,13 +210,13 @@ export class StatsComponent implements OnInit {
   isLoadingPersonnel: boolean = false;
 
   readonly statutOptions = [
-    { code: 'P',  libelle: 'Présent',   couleur: '#10b981', icon: '✅' },
-    { code: 'AB', libelle: 'Absent',    couleur: '#ef4444', icon: '🚫' },
-    { code: 'C',  libelle: 'Congé',     couleur: '#f59e0b', icon: '🏖️' },
-    { code: 'S',  libelle: 'Sélection', couleur: '#3b82f6', icon: '✔️'  }
+    { code: 'P',  libelle: 'Présent',   couleur: '#10b981', icon: 'âœ…' },
+    { code: 'AB', libelle: 'Absent',    couleur: '#ef4444', icon: 'ðŸš«' },
+    { code: 'C',  libelle: 'Congé',     couleur: '#f59e0b', icon: 'ðŸ–ï¸' },
+    { code: 'S',  libelle: 'Sélection', couleur: '#3b82f6', icon: 'âœ”ï¸'  }
   ];
 
-  // ── Config 7M ─────────────────────────────────────────────────
+  // â”€â”€ Config 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   mDetails: { [key: string]: any } = {
     matierePremiere: {
       label: 'M1:Matière Première',
@@ -250,7 +250,7 @@ export class StatsComponent implements OnInit {
       label: 'M4:Maintenance',
       icon: 'M5',
       color: '#f59e0b',
-      description: 'Écarts dus à la maintenance',
+      description: 'Écarts dus Ã  la maintenance',
       key: 'm5_maintenance'
     },
     qualite: {
@@ -270,7 +270,7 @@ export class StatsComponent implements OnInit {
   };
 
   private apiUrl = 'http://102.207.250.53:3000/stats';
-  // URL statut personnel — même que statistiques1
+  // URL statut personnel "” même que statistiques1
   private statutApiUrl = 'http://102.207.250.53:3000/statut/par-date';
 
   constructor(private http: HttpClient) {}
@@ -283,7 +283,7 @@ export class StatsComponent implements OnInit {
     this.dateFin = this.maxDate;
   }
 
-  // ── Utilitaires ───────────────────────────────────────────────
+  // â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -314,7 +314,7 @@ export class StatsComponent implements OnInit {
     });
   }
 
-  // ── Chargement stats période ──────────────────────────────────
+  // â”€â”€ Chargement stats période â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async chargerStatsPeriode(): Promise<void> {
     if (!this.dateDebut || !this.dateFin) {
@@ -357,7 +357,7 @@ export class StatsComponent implements OnInit {
     }
   }
 
-  // ── Graphique ─────────────────────────────────────────────────
+  // â”€â”€ Graphique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private creerGraphique(): void {
     if (!this.chartCanvas || !this.statsData) return;
@@ -467,7 +467,7 @@ export class StatsComponent implements OnInit {
     });
   }
 
-  // ── 7M ────────────────────────────────────────────────────────
+  // â”€â”€ 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getColorForM(mKey: string): string {
     return this.mDetails[mKey]?.color || '#999';
@@ -553,7 +553,7 @@ export class StatsComponent implements OnInit {
     this.detailsModalTitle = '';
   }
 
-  // ── Réinitialisation ──────────────────────────────────────────
+  // â”€â”€ Réinitialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   reinitialiser(): void {
     const today = new Date();
@@ -571,7 +571,7 @@ export class StatsComponent implements OnInit {
     }
   }
 
-  // ── Utilitaires affichage ─────────────────────────────────────
+  // â”€â”€ Utilitaires affichage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getCircleStyle(percentage: number): any {
     const circumference = 2 * Math.PI * 60;
@@ -615,7 +615,7 @@ export class StatsComponent implements OnInit {
     } catch { return ''; }
   }
 
-  // ── Filtre par ligne ──────────────────────────────────────────
+  // â”€â”€ Filtre par ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   get lignesDisponibles(): string[] {
     if (!this.statsData) return [];
@@ -709,7 +709,7 @@ export class StatsComponent implements OnInit {
     return `${valeur.toLocaleString()} / ${qteSource.toLocaleString()}`;
   }
 
-  // ── Modale ligne ──────────────────────────────────────────────
+  // â”€â”€ Modale ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   onBarClick(event: any): void {
     if (!this.chart || !this.statsData) return;
@@ -865,20 +865,20 @@ export class StatsComponent implements OnInit {
     return ref.commentaireTexte || '-';
   }
 
-  // ── Modale Personnel ──────────────────────────────────────────
+  // â”€â”€ Modale Personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Copié exactement de statistiques1.component.ts :
-  // getStatutsByDate → response.statistiques.repartitionStatuts + response.statistiques.ouvriers
+  // getStatutsByDate â†’ response.statistiques.repartitionStatuts + response.statistiques.ouvriers
 
   openPersonnelModal(statutCode: string): void {
     const labelMap: Record<string, string> = {
-      'P':  '✅ Présents',
-      'AB': '🚫 Absents',
-      'C':  '🏖️ En Congé',
-      'S':  '✔️ Sélections'
+      'P':  'âœ… Présents',
+      'AB': 'ðŸš« Absents',
+      'C':  'ðŸ–ï¸ En Congé',
+      'S':  'âœ”ï¸ Sélections'
     };
 
     this.personnelModalStatut = statutCode;
-    this.personnelModalTitle  = `Personnel — ${labelMap[statutCode] || statutCode}`;
+    this.personnelModalTitle  = `Personnel "” ${labelMap[statutCode] || statutCode}`;
     this.personnelModalList   = [];
     this.showPersonnelModal   = true;
     this.isLoadingPersonnel   = true;
@@ -890,15 +890,15 @@ export class StatsComponent implements OnInit {
       headers: this.getAuthHeaders()
     }).subscribe({
       next: (data: any) => {
-        // Structure identique à statistiques1 :
-        // data.statistiques.repartitionStatuts → compteurs { P, AB, C, S }
-        // data.statistiques.ouvriers           → liste complète des ouvriers
+        // Structure identique Ã  statistiques1 :
+        // data.statistiques.repartitionStatuts â†’ compteurs { P, AB, C, S }
+        // data.statistiques.ouvriers           â†’ liste complète des ouvriers
         const tousOuvriers: OuvrierPersonnel[] =
           data?.statistiques?.ouvriers ||
           data?.ouvriers               ||
           [];
 
-        // Filtrer par le statut cliqué — même logique que statistiques1
+        // Filtrer par le statut cliqué "” même logique que statistiques1
         this.personnelModalList = tousOuvriers.filter(
           (o: OuvrierPersonnel) => o.statut === statutCode
         );
@@ -930,3 +930,4 @@ export class StatsComponent implements OnInit {
     return this.statutOptions.find(s => s.code === code)?.libelle || 'Non défini';
   }
 }
+

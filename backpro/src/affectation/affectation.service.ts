@@ -31,20 +31,22 @@ export class AffectationService {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
- private format(a: Affectation) {
-  // Vérifier si ouvrier existe
+private format(a: Affectation) {
+  if (!a) return null;
+
   if (!a.ouvrier) {
     console.warn(`Affectation ${a.id} sans ouvrier associé`);
     return {
       id: a.id,
       matricule: null,
       nomPrenom: 'Ouvrier inconnu',
-      ligne: a.ligne,
-      estCapitaine: a.estCapitaine,
-      poste: a.poste,
+      ligne: a.ligne || '',
+      estCapitaine: a.estCapitaine || false,
+      poste: a.poste || '',
+      bus: a.bus ?? null,        // ✅ ajouté
       phases: [],
       totalHeures: 0,
-      createdAt: a.createdAt,
+      createdAt: a.createdAt || new Date(),
     };
   }
 
@@ -55,6 +57,7 @@ export class AffectationService {
     ligne: a.ligne,
     estCapitaine: a.estCapitaine,
     poste: a.poste,
+    bus: a.bus ?? null,          // ✅ ajouté
     phases: (a.phases ?? []).map((p) => ({
       id: p.id,
       phase: p.phase,
@@ -142,7 +145,8 @@ export class AffectationService {
       affectation.ouvrier = ouvrier;
       affectation.ligne = dto.ligne;
       affectation.estCapitaine = dto.estCapitaine || false;
-      affectation.poste = dto.poste; // ← ajouté
+      affectation.poste = dto.poste;
+      affectation.bus = dto.bus ?? null;   // ← nouveau
       affectation.phases = dto.phases.map((p) => {
         const ap = new AffectationPhase();
         ap.phase = p.phase;
@@ -160,13 +164,22 @@ export class AffectationService {
 
   // ─── Lire tout ────────────────────────────────────────────────────────────
 
-  async findAll(): Promise<any[]> {
-    const list = await this.affectationRepository.find({
-      relations: ['ouvrier', 'phases'],
-      order: { createdAt: 'DESC' },
-    });
-    return list.map((a) => this.format(a));
-  }
+ async findAll(): Promise<any[]> {
+  const list = await this.affectationRepository.find({
+    relations: ['ouvrier', 'phases'],
+    order: { createdAt: 'DESC' },
+  });
+  
+  // Ajoutez ce log pour voir les données brutes
+  console.log('Données brutes:', list.map(a => ({ 
+    id: a.id, 
+    matricule: a.ouvrier?.matricule, 
+    bus: a.bus,
+    poste: a.poste 
+  })));
+  
+  return list.map((a) => this.format(a));
+}
 
   // ─── Lire par matricule ───────────────────────────────────────────────────
 
@@ -216,6 +229,11 @@ export class AffectationService {
     // ← Gérer le changement de poste
     if (dto.poste !== undefined) {
       affectation.poste = dto.poste;
+    }
+
+    // ← Gérer le changement de bus
+    if (dto.bus !== undefined) {
+      affectation.bus = dto.bus ?? null;
     }
 
     if (dto.phases) {

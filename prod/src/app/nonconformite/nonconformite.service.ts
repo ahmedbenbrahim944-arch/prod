@@ -1,4 +1,4 @@
-// services/nonconformite.service.ts
+﻿// services/nonconformite.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
@@ -92,7 +92,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data || response),
       catchError(error => {
-        console.error('❌ Erreur récupération lignes:', error);
+        console.error('âŒ Erreur récupération lignes:', error);
         return of([]);
       })
     );
@@ -105,7 +105,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data || response),
       catchError(error => {
-        console.error('❌ Erreur récupération références par ligne:', error);
+        console.error('âŒ Erreur récupération références par ligne:', error);
         return of([]);
       })
     );
@@ -119,7 +119,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data || response),
       catchError(error => {
-        console.error('❌ Erreur création non-conformité:', error);
+        console.error('âŒ Erreur création non-conformité:', error);
         throw error;
       })
     );
@@ -132,7 +132,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data || response),
       catchError(error => {
-        console.error('❌ Erreur récupération saisies:', error);
+        console.error('âŒ Erreur récupération saisies:', error);
         return of([]);
       })
     );
@@ -145,7 +145,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data),
       catchError(error => {
-        console.error('❌ Erreur récupération saisie:', error);
+        console.error('âŒ Erreur récupération saisie:', error);
         throw error;
       })
     );
@@ -159,7 +159,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data),
       catchError(error => {
-        console.error('❌ Erreur mise à jour saisie:', error);
+        console.error('âŒ Erreur mise Ã  jour saisie:', error);
         throw error;
       })
     );
@@ -173,7 +173,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data || response),
       catchError(error => {
-        console.error('❌ Erreur mise à jour statut:', error);
+        console.error('âŒ Erreur mise Ã  jour statut:', error);
         throw error;
       })
     );
@@ -185,7 +185,7 @@ export class NonconformiteService {
       { headers: this.getAuthHeaders() }
     ).pipe(
       catchError(error => {
-        console.error('❌ Erreur suppression saisie:', error);
+        console.error('âŒ Erreur suppression saisie:', error);
         throw error;
       })
     );
@@ -198,7 +198,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data),
       catchError(error => {
-        console.error('❌ Erreur récupération références:', error);
+        console.error('âŒ Erreur récupération références:', error);
         return of([]);
       })
     );
@@ -213,7 +213,7 @@ export class NonconformiteService {
         return commentaires.map(c => c.commentaire);
       }),
       catchError(error => {
-        console.error('❌ Erreur récupération commentaires:', error);
+        console.error('âŒ Erreur récupération commentaires:', error);
         return of([]);
       })
     );
@@ -226,7 +226,7 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data),
       catchError(error => {
-        console.error('❌ Erreur recherche par période:', error);
+        console.error('âŒ Erreur recherche par période:', error);
         return of([]);
       })
     );
@@ -239,9 +239,10 @@ export class NonconformiteService {
     ).pipe(
       map(response => response.data),
       catchError(error => {
-        console.error('❌ Erreur récupération statistiques:', error);
+        console.error('âŒ Erreur récupération statistiques:', error);
         return of({ totalSaisies: 0, totalQteRebut: 0 });
       })
     );
   }
 }
+

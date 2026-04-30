@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+﻿import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -269,7 +269,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
         
         // Si pas de statistiques, créer des statistiques minimales
         if (!responseAvecTableau.statistiques && tableauData.length > 0) {
-          const totalHeures = tableauData.reduce((total, ligne) => total + (ligne["N°HEURS"] || 0), 0);
+          const totalHeures = tableauData.reduce((total, ligne) => total + (ligne["NÂ°HEURS"] || 0), 0);
           const productiviteMoyenne = tableauData.reduce((sum, ligne) => sum + (ligne.PRODUCTIVITE || 0), 0) / tableauData.length;
           const matriculesUniques = new Set(tableauData.map(l => l.MAT)).size;
           
@@ -362,7 +362,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
 
   //  Calculer le total des heures
   private calculerTotalHeures(tableau: LigneProductivite[]): number {
-    return tableau.reduce((total, ligne) => total + (ligne["N°HEURS"] || 0), 0);
+    return tableau.reduce((total, ligne) => total + (ligne["NÂ°HEURS"] || 0), 0);
   }
 
   //  Calculer la productivité moyenne
@@ -458,7 +458,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
           ligne.JOURS.toLowerCase().includes(valeurRecherche) ||
           ligne.MAT.toString().includes(valeurRecherche) ||
           ligne["NOM ET PRENOM"].toLowerCase().includes(valeurRecherche) ||
-          ligne["N°HEURS"].toString().includes(valeurRecherche) ||
+          ligne["NÂ°HEURS"].toString().includes(valeurRecherche) ||
           ligne.LIGNES.toLowerCase().includes(valeurRecherche) ||
           ligne.PRODUCTIVITE.toString().includes(valeurRecherche) ||
           ligne.M1.toString().includes(valeurRecherche) ||
@@ -483,7 +483,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
         case 'NOM_ET_PRENOM':
           return ligne["NOM ET PRENOM"].toLowerCase().includes(valeurRecherche);
         case 'N_HEURES':
-          return ligne["N°HEURS"].toString().includes(valeurRecherche);
+          return ligne["NÂ°HEURS"].toString().includes(valeurRecherche);
         case 'LIGNES':
           return ligne.LIGNES.toLowerCase().includes(valeurRecherche);
         case 'PRODUCTIVITE':
@@ -703,7 +703,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
       'Date': new Date(ligne.JOURS).toLocaleDateString('fr-FR'),
       'Matricule': ligne.MAT,
       'Nom et Prénom': ligne['NOM ET PRENOM'],
-      'N° Heures': ligne['N°HEURS'],
+      'N° Heures': ligne['NÂ°HEURS'],
       'Ligne': ligne.LIGNES,
       'Productivité (%)': ligne.PRODUCTIVITE.toFixed(1),
       'M1 - Matière (%)': ligne.M1 > 0 ? ligne.M1.toFixed(1) : '-',
@@ -776,7 +776,7 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
       new Date(ligne.JOURS).toLocaleDateString('fr-FR'),
       ligne.MAT,
       `"${ligne['NOM ET PRENOM']}"`, // Échapper les guillemets pour les noms avec virgules
-      ligne['N°HEURS'],
+      ligne['NÂ°HEURS'],
       ligne.LIGNES,
       ligne.PRODUCTIVITE.toFixed(1),
       ligne.M1 > 0 ? ligne.M1.toFixed(1) : '-',
@@ -953,3 +953,4 @@ export class ListeProductiviteComponent implements OnInit, OnDestroy {
     return '#ff8c42';                 // orange
   }
 }
+

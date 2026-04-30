@@ -1,4 +1,4 @@
-// src/app/prod/matiere-premiere-magasin.service.ts
+﻿// src/app/prod/matiere-premiere-magasin.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -57,14 +57,14 @@ export class MatierePremiereMagasinService {
     });
   }
 
-  /** GET /plann-mag/matieres — liste complète */
+  /** GET /plann-mag/matieres "” liste complète */
   findAll(): Observable<MatierePremiereMagasin[]> {
     return this.http.get<MatierePremiereMagasin[]>(this.BASE_URL, {
       headers: this.getHeaders(),
     });
   }
 
-  /** POST /plann-mag/matieres/search — recherche multicritères */
+  /** POST /plann-mag/matieres/search "” recherche multicritères */
   search(dto: SearchMatierePremiereMagasinDto): Observable<SearchResult> {
     return this.http.post<SearchResult>(`${this.BASE_URL}/search`, dto, {
       headers: this.getHeaders(),
@@ -78,24 +78,25 @@ export class MatierePremiereMagasinService {
     });
   }
 
-  /** POST /plann-mag/matieres — créer */
+  /** POST /plann-mag/matieres "” créer */
   create(dto: CreateMatierePremiereMagasinDto): Observable<MatierePremiereMagasin> {
     return this.http.post<MatierePremiereMagasin>(this.BASE_URL, dto, {
       headers: this.getHeaders(),
     });
   }
 
-  /** PATCH /plann-mag/matieres/:id — modifier */
+  /** PATCH /plann-mag/matieres/:id "” modifier */
   update(id: number, dto: UpdateMatierePremiereMagasinDto): Observable<MatierePremiereMagasin> {
     return this.http.patch<MatierePremiereMagasin>(`${this.BASE_URL}/${id}`, dto, {
       headers: this.getHeaders(),
     });
   }
 
-  /** DELETE /plann-mag/matieres/:id — supprimer */
+  /** DELETE /plann-mag/matieres/:id "” supprimer */
   remove(id: number): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.BASE_URL}/${id}`, {
       headers: this.getHeaders(),
     });
   }
 }
+

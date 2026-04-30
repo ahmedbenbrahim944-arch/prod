@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
@@ -6,6 +6,7 @@ import { ProductionService, ProductLine, MCategory, ProductionSession, SessionSt
 import { interval, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Router, ActivatedRoute } from '@angular/router';
+import { AuthService } from '../login/auth.service';
 
 interface ProductLineWithTime extends ProductLine { seconde?: number; }
 interface ProductLineWithStatus extends ProductLine {
@@ -62,6 +63,7 @@ export class ProductionManagerComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroy$ = new Subject<void>();
+  private authService = inject(AuthService);
 
   Math = Math;
 
@@ -115,31 +117,17 @@ ngOnInit(): void {
   this.loadMCategories();
   this.startTick();
   
-  // ✅ ÉTAPE 1 : Vérifier s'il y a une session sauvegardée
-  const savedSession: SavedSessionData | null = this.productionService.loadLastSession();
+  // ✅ Vérifier si une session existe et afficher la bannière
+  this.checkForExistingSession();
   
-  if (savedSession && !this.isAdmin()) {
-    console.log('Session sauvegardée trouvée:', savedSession);
-    // Restaurer directement la session
-    this.restoreFromLocalStorage(savedSession);
-  } else {
-    // Pas de session, charger normalement
-    this.loadLines(() => {
-      const queryLigne = this.route.snapshot.queryParamMap.get('ligne');
-      const adminAccess = this.route.snapshot.queryParamMap.get('adminAccess');
-      if (queryLigne && adminAccess === 'true' && this.isAdmin()) {
-        this.selectedLine.set(queryLigne);
-        this.adminAccessLine(queryLigne);
-      }
-    });
-  }
+  // ✅ Redirection automatique intelligente
+  this.autoRedirectToActiveSession();
   
-  // Sauvegarder périodiquement toutes les 30 secondes
+  // Sauvegarder périodiquement
   interval(30000).pipe(takeUntil(this.destroy$)).subscribe(() => {
     this.saveCurrentSession();
   });
 }
-
  ngOnDestroy(): void {
   this.saveCurrentSession(); // Sauvegarder avant de détruire
   this.destroy$.next();
@@ -370,11 +358,9 @@ startAllSessions(): void {
 }
 
 saveCurrentSession(): void {
-  if (this.isAdmin()) return; // Ne pas sauvegarder pour les admins
+  if (this.isAdmin()) return;
   
   const currentRefSessions: RefSession[] = this.refSessions();
-  
-  // Ne sauvegarder que si des sessions sont actives ou en pause
   const hasActive: boolean = currentRefSessions.some((s: RefSession) => 
     s.status === 'active' || s.status === 'paused'
   );
@@ -384,7 +370,6 @@ saveCurrentSession(): void {
   const sessionData: SavedSessionData = {
     ligne: this.selectedLine(),
     refSessions: currentRefSessions.map((s: RefSession) => ({
-      // Garder les données essentielles
       planificationId: s.planificationId,
       reference: s.reference,
       of: s.of,
@@ -402,7 +387,6 @@ saveCurrentSession(): void {
       pauseMCategory: s.pauseMCategory,
       pauseReason: s.pauseReason,
       startTime: s.startTime ? s.startTime.toISOString() : null,
-      // Ne pas sauvegarder les données UI
       showPauseForm: false,
       availableRefs: [],
       selectedRefs: [],
@@ -416,38 +400,74 @@ saveCurrentSession(): void {
     savedAt: new Date().toISOString()
   };
   
+  // Sauvegarder dans localStorage
   this.productionService.saveLastSession(sessionData);
+  
+  // ✅ NOUVEAU : Sauvegarder aussi le contexte dans AuthService
+  const sessionId = currentRefSessions.find(s => s.sessionId)?.sessionId;
+  if (this.selectedLine()) {
+    this.authService.saveProductionContext({
+      ligne: this.selectedLine()!,
+      sessionId: sessionId || 0
+    });
+  }
 }
 
-  private loadTempsParPiece(idx: number, sessionId: number): void {
-    this.productionService.getRealTimeProduction(sessionId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (data) => {
-          this.refSessions.update(list => {
-            const s = list[idx];
-            // ✅ Initialiser les compteurs depuis les vraies valeurs du backend
-            const productionSec = this.parseDurationToSeconds(data.tempsProduction);
-            const pauseSec = this.parseDurationToSeconds(data.tempsPause);
-            const totalSec = productionSec + pauseSec;
-            list[idx] = {
-              ...s,
-              secondesParPiece: data.tempsParPiece || 0,
-              elapsedSeconds: totalSec,
-              productionSeconds: productionSec,
-              pauseSeconds: s.status === 'paused' ? pauseSec : s.pauseSeconds,
-              piecesProduites: data.piecesProduites || 0,
-            };
-            return [...list];
-          });
-        },
-        error: () => {}
-      });
-  }
+ // REMPLACER dans production-manager.component.ts
 
-  // Parse "25m 21s" ou "1h 5m 3s" ou "0s" → secondes
+private loadTempsParPiece(idx: number, sessionId: number): void {
+  this.productionService.getRealTimeProduction(sessionId)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (data) => {
+        this.refSessions.update(list => {
+          if (idx >= list.length) return list;
+          const s = list[idx];
+
+          // ✅ Utiliser directement les secondes du backend (pas de parsing string)
+          const productionSec: number = data.productionSeconds ?? this.parseDurationToSeconds(data.tempsProduction);
+          const pauseSec: number = this.parseDurationToSeconds(data.tempsPause);
+          const totalSec: number = productionSec + pauseSec;
+
+          // ✅ Sync status depuis backend (critique pour l'admin)
+          const backendStatus = data.status as RefSession['status'];
+          const status = (backendStatus === 'active' || backendStatus === 'paused' || 
+                          backendStatus === 'completed' || backendStatus === 'cancelled')
+            ? backendStatus : s.status;
+
+          // ✅ piecesPerdues depuis la pause en cours
+          const piecesPerdues = data.pauseEnCours?.piecesPerdues ?? s.piecesPerdues;
+
+          list[idx] = {
+            ...s,
+            status,
+            secondesParPiece: data.tempsParPiece || 0,
+            elapsedSeconds: totalSec,
+            productionSeconds: productionSec,
+            pauseSeconds: pauseSec,
+            piecesProduites: data.piecesProduites || 0,
+            piecesPerdues,
+            pauseMCategory: data.pauseEnCours?.mCategory ?? s.pauseMCategory,
+          };
+          return [...list];
+        });
+      },
+      error: () => {}
+    });
+}
+
+  // Parse "25m 21s" ou "1h 5m 3s" ou "0s" or "HH:MM:SS" → secondes
   parseDurationToSeconds(duration: string): number {
     if (!duration || duration === '0s') return 0;
+    // Check if it's HH:MM:SS format
+    const timeMatch = duration.match(/^(\d+):(\d+):(\d+)$/);
+    if (timeMatch) {
+      const h = parseInt(timeMatch[1]);
+      const m = parseInt(timeMatch[2]);
+      const s = parseInt(timeMatch[3]);
+      return h * 3600 + m * 60 + s;
+    }
+    // Original parsing for "25m 21s" etc.
     let total = 0;
     const h = duration.match(/(\d+)h/);
     const m = duration.match(/(\d+)m/);
@@ -653,26 +673,33 @@ saveCurrentSession(): void {
   }
 
   // ── Admin ─────────────────────────────────────────────────────────────────
-  adminAccessLine(ligne: string): void {
-    const lineSessions = this.allActiveSessions().filter(s => s.ligne === ligne);
-    if (lineSessions.length === 0) {
-      this.showAlert('error', `Aucune session active sur ${ligne}`);
-      return;
-    }
+  // REMPLACER adminAccessLine dans production-manager.component.ts
 
-    // Reconstituer les RefSessions depuis les sessions actives
-    const refSessions: RefSession[] = lineSessions.map(sess => ({
-      planificationId: 0,
-      reference: sess.productType || sess.ligne,
-      of: (sess as any).planifications?.[0]?.of || '—',
-      jour: '',
-      semaine: '',
-      qtePlanifiee: 0,
+adminAccessLine(ligne: string): void {
+  const lineSessions = this.allActiveSessions().filter(s => s.ligne === ligne);
+  if (lineSessions.length === 0) {
+    this.showAlert('error', `Aucune session active sur ${ligne}`);
+    return;
+  }
+
+  // Reconstituer les RefSessions depuis les sessions actives
+  const refSessions: RefSession[] = lineSessions.map(sess => {
+    // ✅ Récupérer la PREMIÈRE planification de cette session (1 session = 1 ref)
+    const planif = (sess as any).planifications?.[0];
+    return {
+      planificationId: planif?.id ?? 0,
+      reference: planif?.reference ?? sess.productType ?? sess.ligne,
+      of: planif?.of ?? '—',
+      jour: planif?.jour ?? '',
+      semaine: planif?.semaine ?? '',
+      qtePlanifiee: planif?.qtePlanifiee ?? 0,
       sessionId: sess.id,
       status: sess.status as any,
-      elapsedSeconds: 0,
-      productionSeconds: 0,
-      pauseSeconds: 0,
+      // ✅ Initialiser avec le temps réel calculé depuis startTime
+      // Le backend va corriger avec les vraies valeurs dans loadTempsParPiece
+      elapsedSeconds: Math.floor((Date.now() - new Date(sess.startTime).getTime()) / 1000),
+      productionSeconds: 0, // sera corrigé par loadTempsParPiece
+      pauseSeconds: 0,      // sera corrigé par loadTempsParPiece
       piecesProduites: 0,
       piecesPerdues: 0,
       secondesParPiece: 0,
@@ -686,20 +713,21 @@ saveCurrentSession(): void {
       availableRefs: [],
       selectedRefs: [],
       loadingRefs: false,
-    }));
+    };
+  });
 
-    this.refSessions.set(refSessions);
-    this.selectedLine.set(ligne);
-    this.view.set('production');
+  this.refSessions.set(refSessions);
+  this.selectedLine.set(ligne);
+  this.view.set('production');
 
-    // Charger le temps réel pour chaque session
-    lineSessions.forEach((sess, i) => {
-      this.loadTempsParPiece(i, sess.id);
-      this.loadSessionStats(sess.id);
-    });
+  // ✅ Charger le temps réel pour CHAQUE session — corrige productionSeconds/pauseSeconds
+  lineSessions.forEach((sess, i) => {
+    this.loadTempsParPiece(i, sess.id);
+    this.loadSessionStats(sess.id);
+  });
 
-    this.showAlert('info', `Vue admin — ${ligne} (${lineSessions.length} session(s))`);
-  }
+  this.showAlert('info', `Vue admin — ${ligne} (${lineSessions.length} session(s))`);
+}
 
   loadSessionStats(sessionId: number): void {
     this.productionService.getSessionStats(sessionId)
@@ -752,4 +780,305 @@ saveCurrentSession(): void {
   }
 
   navigateToAdmin(): void { this.router.navigate(['/admin-dashboard']); }
+  // ── Nouveaux signals pour l'ajout de ref en cours ──────────────────────────
+showReconnectBannerSignal = signal<boolean>(false);
+showAddRefPanel = signal<boolean>(false);
+availableRefsToAdd = signal<PlannedReference[]>([]);
+loadingAddRefs = signal<boolean>(false);
+private reconnectBannerVisibleSignal = signal<boolean>(false);
+private reconnectLineNameValue = signal<string>('');
+// ── Computed : refs déjà démarrées (planificationIds actifs) ────────────────
+startedPlanificationIds = computed(() =>
+  this.refSessions()
+    .filter(s => s.status !== 'cancelled')
+    .map(s => s.planificationId)
+);
+
+// ── Refs disponibles à ajouter (planifiées aujourd'hui mais pas encore démarrées) ──
+availableToAddComputed = computed(() =>
+  this.availableRefsToAdd().filter(
+    r => !this.startedPlanificationIds().includes(r.id)
+  )
+);
+// ── Ouvrir/Fermer le panneau d'ajout de référence ──────────────────────────
+openAddRefPanel(): void {
+  const ligne = this.selectedLine();
+  if (!ligne) return;
+
+  this.showAddRefPanel.set(true);
+  this.loadingAddRefs.set(true);
+  this.availableRefsToAdd.set([]);
+
+  this.productionService.getPlannedReferences(ligne)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (res) => {
+        this.availableRefsToAdd.set(res.planifications || []);
+        this.loadingAddRefs.set(false);
+      },
+      error: () => {
+        this.availableRefsToAdd.set([]);
+        this.loadingAddRefs.set(false);
+      }
+    });
+}
+
+closeAddRefPanel(): void {
+  this.showAddRefPanel.set(false);
+  this.availableRefsToAdd.set([]);
+}
+
+// ── Démarrer une référence supplémentaire en cours de production ────────────
+addRefToSession(ref: PlannedReference): void {
+  const ligne = this.selectedLine()!;
+
+  // Vérifier que cette ref n'est pas déjà en cours
+  const alreadyRunning = this.refSessions().find(
+    s => s.planificationId === ref.id && s.status !== 'cancelled'
+  );
+  if (alreadyRunning) {
+    this.showAlert('error', `"${ref.reference}" est déjà en cours`);
+    return;
+  }
+
+  // Créer la session locale en état "idle"
+  const newSession: RefSession = {
+    planificationId: ref.id,
+    reference: ref.reference,
+    of: ref.of,
+    jour: ref.jour,
+    semaine: ref.semaine,
+    qtePlanifiee: ref.qtePlanifiee,
+    sessionId: null,
+    status: 'idle',
+    elapsedSeconds: 0,
+    productionSeconds: 0,
+    pauseSeconds: 0,
+    piecesProduites: 0,
+    piecesPerdues: 0,
+    secondesParPiece: 0,
+    pauseMCategory: null,
+    pauseReason: null,
+    showPauseForm: false,
+    selectedMCategory: null,
+    pauseReasonInput: '',
+    loading: true,
+    startTime: null,
+    availableRefs: [],
+    selectedRefs: [],
+    loadingRefs: false,
+  };
+
+  // Ajouter à la liste existante
+  this.refSessions.update(list => [...list, newSession]);
+  const newIndex = this.refSessions().length - 1;
+
+  // Fermer le panneau
+  this.closeAddRefPanel();
+
+  // Appel API pour démarrer
+  this.productionService.startProduction(ligne, ref.reference, undefined, [ref.id])
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (res) => {
+        this.refSessions.update(list => {
+          const idx = list.findIndex(s => s.planificationId === ref.id && s.status === 'idle');
+          if (idx !== -1) {
+            list[idx] = {
+              ...list[idx],
+              sessionId: res.session.id,
+              status: 'active',
+              startTime: new Date(),
+              loading: false
+            };
+          }
+          return [...list];
+        });
+
+        // Charger le temps par pièce
+        const idx = this.refSessions().findIndex(s => s.planificationId === ref.id);
+        if (idx !== -1) {
+          this.loadTempsParPiece(idx, res.session.id);
+        }
+
+        this.saveCurrentSession();
+        this.showAlert('success', `"${ref.reference}" ajoutée et démarrée ✅`);
+      },
+      error: (err) => {
+        // Marquer comme annulée en cas d'erreur
+        this.refSessions.update(list => {
+          const idx = list.findIndex(s => s.planificationId === ref.id && s.status === 'idle');
+          if (idx !== -1) {
+            list[idx] = { ...list[idx], status: 'cancelled', loading: false };
+          }
+          return [...list];
+        });
+        this.showAlert('error', err.error?.message || `Erreur lors du démarrage de "${ref.reference}"`);
+      }
+    });
+}
+autoRedirectToActiveSession(): void {
+  const queryLigne = this.route.snapshot.queryParamMap.get('ligne');
+  const adminAccess = this.route.snapshot.queryParamMap.get('adminAccess');
+
+  // ✅ Admin avec queryParams → charger les lignes puis accès direct
+  if (this.isAdmin()) {
+    if (queryLigne && adminAccess === 'true') {
+      this.loadLines(() => {
+        this.selectedLine.set(queryLigne);
+        this.adminAccessLine(queryLigne);
+      });
+    }
+    return; // Pas de restauration localStorage pour les admins
+  }
+
+  // 1. Vérifier d'abord le localStorage (rapide)
+  const savedSession = this.productionService.loadLastSession();
+  if (savedSession?.ligne) {
+    console.log('🔄 Session trouvée dans localStorage, restauration...');
+    this.restoreFromLocalStorage(savedSession);
+    return;
+  }
+
+  // 2. Vérifier le contexte utilisateur (2ème chance)
+  const context = this.authService.getProductionContext();
+  if (context?.ligne) {
+    console.log('🔄 Contexte utilisateur trouvé:', context);
+    this.selectedLine.set(context.ligne);
+
+    // Charger les planifications pour reconstruire l'état
+    this.loadingStartRefs.set(true);
+    this.productionService.getPlannedReferences(context.ligne)
+      .subscribe({
+        next: (refs) => {
+          this.startRefs.set(refs.planifications || []);
+
+          // Vérifier si la session existe toujours côté serveur
+          this.productionService.getMyActiveSession()
+            .subscribe({
+              next: (response) => {
+                this.loadingStartRefs.set(false);
+
+                if (response.hasActiveSession && response.session) {
+                  console.log('✅ Session active trouvée côté serveur');
+
+                  // Construire les RefSessions depuis les données serveur
+                  const serverSession = response.session;
+                  const refSessions: RefSession[] = [];
+
+                  if (serverSession.planifications) {
+                    serverSession.planifications.forEach((planif: PlannedReference) => {
+                      const refCompteur = serverSession.realtime?.refsCompteurs?.find(
+                        (rc: any) => rc.id === planif.id
+                      );
+
+                      refSessions.push({
+                        planificationId: planif.id,
+                        reference: planif.reference,
+                        of: planif.of,
+                        jour: planif.jour,
+                        semaine: planif.semaine,
+                        qtePlanifiee: planif.qtePlanifiee,
+                        sessionId: serverSession.id,
+                        status: serverSession.status as any,
+                        elapsedSeconds: refCompteur?.tempsProductionSeconds || 0,
+                        productionSeconds: refCompteur?.tempsProductionSeconds || 0,
+                        pauseSeconds: refCompteur?.estEnPause ? (refCompteur?.piecesPerdues * refCompteur?.secondesParPiece) || 0 : 0,
+                        piecesProduites: refCompteur?.piecesProduites || 0,
+                        piecesPerdues: refCompteur?.piecesPerdues || 0,
+                        secondesParPiece: refCompteur?.secondesParPiece || 0,
+                        pauseMCategory: null,
+                        pauseReason: null,
+                        showPauseForm: false,
+                        selectedMCategory: null,
+                        pauseReasonInput: '',
+                        loading: false,
+                        startTime: serverSession.startTime ? new Date(serverSession.startTime) : null,
+                        availableRefs: [],
+                        selectedRefs: [],
+                        loadingRefs: false,
+                      });
+                    });
+                  }
+
+                  this.refSessions.set(refSessions);
+                  this.view.set('production');
+                  this.showAlert('success', `Reconnexion automatique sur ${context.ligne}`);
+                } else {
+                  // Session terminée côté serveur, nettoyer
+                  console.log('⚠️ Session terminée, nettoyage du contexte');
+                  this.authService.clearProductionContext();
+                  this.loadLines();
+                }
+              },
+              error: () => {
+                this.loadingStartRefs.set(false);
+                this.loadLines();
+              }
+            });
+        },
+        error: () => {
+          this.loadingStartRefs.set(false);
+          this.loadLines();
+        }
+      });
+  } else {
+    // 3. Rien trouvé, chargement normal
+    this.loadLines();
+  }
+}
+@HostListener('window:beforeunload', ['$event'])
+handleBrowserClose(event: BeforeUnloadEvent): void {
+  // Sauvegarder l'état actuel avant fermeture
+  this.saveCurrentSession();
+  // Pas de message de confirmation, juste sauvegarde
+}
+
+showReconnectBanner(): boolean {
+  return this.showReconnectBannerSignal();
+}
+
+getReconnectLine(): string {
+  return this.authService.getProductionContext()?.ligne || '';
+}
+
+reconnectToSession(): void {
+  const context = this.authService.getProductionContext();
+  if (context?.ligne) {
+    this.selectedLine.set(context.ligne);
+    this.autoRedirectToActiveSession();
+  }
+  this.showReconnectBannerSignal.set(false);
+}
+readonly reconnectBannerVisible = computed(() => this.reconnectBannerVisibleSignal());
+readonly reconnectLineName = computed(() => this.reconnectLineNameValue());
+
+/**
+ * ✅ Vérifie si une session précédente existe et affiche la bannière
+ */
+private checkForExistingSession(): void {
+  if (this.isAdmin()) return; // Pas pour les admins
+  
+  const context = this.authService.getProductionContext();
+  if (context?.ligne) {
+    this.reconnectLineNameValue.set(context.ligne);
+    this.reconnectBannerVisibleSignal.set(true);
+  }
+}
+
+/**
+ * ✅ Action : Reconnecter à la session existante
+ */
+reconnectToExistingSession(): void {
+  this.reconnectBannerVisibleSignal.set(false);
+  this.autoRedirectToActiveSession();
+}
+
+/**
+ * ✅ Action : Ignorer la reconnexion
+ */
+dismissReconnectBanner(): void {
+  this.reconnectBannerVisibleSignal.set(false);
+  this.authService.clearProductionContext();
+}
 }

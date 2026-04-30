@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+﻿import { Component, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -6,7 +6,7 @@ import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
-// ── Interfaces ────────────────────────────────────────────────────
+// â”€â”€ Interfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface DetailNonConformite {
   reference: string;
@@ -140,7 +140,7 @@ interface StatsPeriode {
   detailsNonConformites?: DetailNonConformite[];
 }
 
-// Interface ouvrier — même structure que statistiques1 (OuvrierSaisie)
+// Interface ouvrier "” même structure que statistiques1 (OuvrierSaisie)
 interface OuvrierPersonnel {
   matricule: string | number;
   nomPrenom: string;
@@ -169,10 +169,10 @@ export class Stats2Component implements OnInit, OnDestroy {
   private chart: Chart | null = null;
   selectedM: string | null = null;
 
-  // ── Timer auto-rechargement (même logique que stats1) ─────────
+  // â”€â”€ Timer auto-rechargement (même logique que stats1) â”€â”€â”€â”€â”€â”€â”€â”€â”€
   private autoReloadTimer: any;
 
-  // ── Modale 7M ─────────────────────────────────────────────────
+  // â”€â”€ Modale 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   showDetailsModal: boolean = false;
   detailsModalTitle: string = '';
   detailsModalData: DetailNonConformite[] = [];
@@ -187,18 +187,18 @@ export class Stats2Component implements OnInit, OnDestroy {
     causesPrincipales: ''
   };
 
-  // ── Modale ligne ───────────────────────────────────────────────
+  // â”€â”€ Modale ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   showLigneModal: boolean = false;
   ligneModalTitle: string = '';
   ligneModalData: LigneDetail | null = null;
   ligneModalReferences: any[] = [];
   expandedCause7M: string | null = null;
 
-  // ── Filtre par ligne ───────────────────────────────────────────
+  // â”€â”€ Filtre par ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   selectedLignes: string[] = [];
   ligneSearchFilter: string = '';
 
-  // ── Modale Personnel ──────────────────────────────────────────
+  // â”€â”€ Modale Personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   showPersonnelModal: boolean = false;
   personnelModalTitle: string = '';
   personnelModalStatut: string = '';
@@ -206,13 +206,13 @@ export class Stats2Component implements OnInit, OnDestroy {
   isLoadingPersonnel: boolean = false;
 
   readonly statutOptions = [
-    { code: 'P',  libelle: 'Présent',   couleur: '#10b981', icon: '✅' },
-    { code: 'AB', libelle: 'Absent',    couleur: '#ef4444', icon: '🚫' },
-    { code: 'C',  libelle: 'Congé',     couleur: '#f59e0b', icon: '🏖️' },
-    { code: 'S',  libelle: 'Sélection', couleur: '#3b82f6', icon: '✔️'  }
+    { code: 'P',  libelle: 'Présent',   couleur: '#10b981', icon: 'âœ…' },
+    { code: 'AB', libelle: 'Absent',    couleur: '#ef4444', icon: 'ðŸš«' },
+    { code: 'C',  libelle: 'Congé',     couleur: '#f59e0b', icon: 'ðŸ–ï¸' },
+    { code: 'S',  libelle: 'Sélection', couleur: '#3b82f6', icon: 'âœ”ï¸'  }
   ];
 
-  // ── Config 7M ─────────────────────────────────────────────────
+  // â”€â”€ Config 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   mDetails: { [key: string]: any } = {
     matierePremiere: {
       label: 'M1:Matière Première',
@@ -246,7 +246,7 @@ export class Stats2Component implements OnInit, OnDestroy {
       label: 'M4:Maintenance',
       icon: 'M5',
       color: '#f59e0b',
-      description: 'Écarts dus à la maintenance',
+      description: 'Écarts dus Ã  la maintenance',
       key: 'm5_maintenance'
     },
     qualite: {
@@ -270,9 +270,9 @@ export class Stats2Component implements OnInit, OnDestroy {
 
   constructor(private http: HttpClient) {}
 
-  // ══════════════════════════════════════════════════════════════
-  // CYCLE DE VIE — même logique que stats1
-  // ══════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // CYCLE DE VIE "” même logique que stats1
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   ngOnInit(): void {
     // 1. Initialiser avec la date d'hier (comme stats1)
@@ -281,7 +281,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     // 2. Charger immédiatement les stats
     this.chargerStatsPeriode();
 
-    // 3. Programmer le rechargement automatique à 10h00 chaque jour
+    // 3. Programmer le rechargement automatique Ã  10h00 chaque jour
     this.programmerRechargement10h();
   }
 
@@ -291,7 +291,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     }
   }
 
-  // ── Initialisation des dates (même logique que stats1) ───────────
+  // â”€â”€ Initialisation des dates (même logique que stats1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
    * Initialise TOUJOURS avec la date d'hier (comme stats1)
@@ -314,10 +314,10 @@ export class Stats2Component implements OnInit, OnDestroy {
     this.maxDate = this.formatDate(today);
   }
 
-  // ── Auto-rechargement à 10h00 (copié de stats1) ───────────────
+  // â”€â”€ Auto-rechargement Ã  10h00 (copié de stats1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
-   * Programme le rechargement automatique à 10h00 pile chaque jour.
+   * Programme le rechargement automatique Ã  10h00 pile chaque jour.
    * Si le prochain 10h00 tombe un dimanche, décale au lundi.
    */
   private programmerRechargement10h(): void {
@@ -326,12 +326,12 @@ export class Stats2Component implements OnInit, OnDestroy {
     const prochain10h = new Date();
     prochain10h.setHours(10, 0, 0, 0);
 
-    // Si on est déjà après 10h aujourd'hui → programmer pour demain
+    // Si on est déjÃ  après 10h aujourd'hui â†’ programmer pour demain
     if (maintenant >= prochain10h) {
       prochain10h.setDate(prochain10h.getDate() + 1);
     }
 
-    // Si le jour tombe un dimanche (0) → décaler au lundi
+    // Si le jour tombe un dimanche (0) â†’ décaler au lundi
     if (prochain10h.getDay() === 0) {
       prochain10h.setDate(prochain10h.getDate() + 1);
     }
@@ -350,9 +350,9 @@ export class Stats2Component implements OnInit, OnDestroy {
   }
 
   /**
-   * Exécute le rechargement complet à 10h00 :
-   * 1. Retourne à l'écran filtre
-   * 2. Met à jour les dates (toujours hier)
+   * Exécute le rechargement complet Ã  10h00 :
+   * 1. Retourne Ã  l'écran filtre
+   * 2. Met Ã  jour les dates (toujours hier)
    * 3. Recharge automatiquement les statistiques
    */
   private executerRechargement10h(): void {
@@ -363,13 +363,13 @@ export class Stats2Component implements OnInit, OnDestroy {
       return;
     }
 
-    // 1. Retour à l'écran filtre
+    // 1. Retour Ã  l'écran filtre
     this.statsData = null;
 
-    // 2. Mise à jour des dates avec la logique anti-dimanche
+    // 2. Mise Ã  jour des dates avec la logique anti-dimanche
     this.initialiserDatesHier();
 
-    // 3. Petit délai pour que l'UI se mette à jour
+    // 3. Petit délai pour que l'UI se mette Ã  jour
     setTimeout(() => {
       this.chargerStatsPeriode();
     }, 100);
@@ -380,7 +380,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     return jours[date.getDay()];
   }
 
-  // ── Utilitaires ───────────────────────────────────────────────
+  // â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private formatDate(date: Date): string {
     const year  = date.getFullYear();
@@ -411,7 +411,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     });
   }
 
-  // ── Chargement stats période ──────────────────────────────────
+  // â”€â”€ Chargement stats période â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async chargerStatsPeriode(): Promise<void> {
     if (!this.dateDebut || !this.dateFin) {
@@ -454,7 +454,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     }
   }
 
-  // ── Graphique ─────────────────────────────────────────────────
+  // â”€â”€ Graphique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private creerGraphique(): void {
     if (!this.chartCanvas || !this.statsData) return;
@@ -564,7 +564,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     });
   }
 
-  // ── 7M ────────────────────────────────────────────────────────
+  // â”€â”€ 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getColorForM(mKey: string): string {
     return this.mDetails[mKey]?.color || '#999';
@@ -650,7 +650,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     this.detailsModalTitle = '';
   }
 
-  // ── Réinitialisation (même logique que stats1) ─────────────────
+  // â”€â”€ Réinitialisation (même logique que stats1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   reinitialiser(): void {
     // Réinitialiser avec la date d'hier (comme stats1)
@@ -668,7 +668,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     this.chargerStatsPeriode();
   }
 
-  // ── Utilitaires affichage ─────────────────────────────────────
+  // â”€â”€ Utilitaires affichage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   getCircleStyle(percentage: number): any {
     const circumference = 2 * Math.PI * 60;
@@ -712,7 +712,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     } catch { return ''; }
   }
 
-  // ── Filtre par ligne ──────────────────────────────────────────
+  // â”€â”€ Filtre par ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   get lignesDisponibles(): string[] {
     if (!this.statsData) return [];
@@ -806,7 +806,7 @@ export class Stats2Component implements OnInit, OnDestroy {
     return `${valeur.toLocaleString()} / ${qteSource.toLocaleString()}`;
   }
 
-  // ── Modale ligne ──────────────────────────────────────────────
+  // â”€â”€ Modale ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   onBarClick(event: any): void {
     if (!this.chart || !this.statsData) return;
@@ -916,18 +916,18 @@ export class Stats2Component implements OnInit, OnDestroy {
     return ref.refQualite || '-';
   }
 
-  // ── Modale Personnel ──────────────────────────────────────────
+  // â”€â”€ Modale Personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   openPersonnelModal(statutCode: string): void {
     const labelMap: Record<string, string> = {
-      'P':  '✅ Présents',
-      'AB': '🚫 Absents',
-      'C':  '🏖️ En Congé',
-      'S':  '✔️ Sélections'
+      'P':  'âœ… Présents',
+      'AB': 'ðŸš« Absents',
+      'C':  'ðŸ–ï¸ En Congé',
+      'S':  'âœ”ï¸ Sélections'
     };
 
     this.personnelModalStatut = statutCode;
-    this.personnelModalTitle  = `Personnel — ${labelMap[statutCode] || statutCode}`;
+    this.personnelModalTitle  = `Personnel "” ${labelMap[statutCode] || statutCode}`;
     this.personnelModalList   = [];
     this.showPersonnelModal   = true;
     this.isLoadingPersonnel   = true;
@@ -972,3 +972,4 @@ export class Stats2Component implements OnInit, OnDestroy {
     return this.statutOptions.find(s => s.code === code)?.libelle || 'Non défini';
   }
 }
+

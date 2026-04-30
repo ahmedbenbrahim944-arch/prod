@@ -337,4 +337,9 @@ async getAllRealTimeProduction() {
     // Pour l'instant, retournons le JSON
     return data;
   }
+  @Get('my-active-session')
+async getMyActiveSession(@Req() req) {
+  return this.productionTimeService.getUserActiveSession(req.user.id);
+}
+
 }

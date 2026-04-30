@@ -1,4 +1,4 @@
-// admin-dashboard.service.ts
+﻿// admin-dashboard.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -183,7 +183,7 @@ export class AdminDashboardService {
   }
 
   /**
-   * 📊 Obtenir la vue d'ensemble du dashboard admin
+   * ðŸ“Š Obtenir la vue d'ensemble du dashboard admin
    */
   getDashboardOverview(filters?: {
     startDate?: string;
@@ -205,7 +205,7 @@ export class AdminDashboardService {
   }
 
   /**
-   * 📈 Obtenir les statistiques de période
+   * ðŸ“ˆ Obtenir les statistiques de période
    */
   getPeriodStats(startDate?: string, endDate?: string): Observable<AdminPeriodStats> {
     let params = new HttpParams();
@@ -220,7 +220,7 @@ export class AdminDashboardService {
   }
 
   /**
-   * 📋 Obtenir l'historique des pauses
+   * ðŸ“‹ Obtenir l'historique des pauses
    */
   getPauseHistory(filters?: {
     startDate?: string;
@@ -246,7 +246,7 @@ export class AdminDashboardService {
   }
 
   /**
-   * 📊 Obtenir les statistiques par catégorie M
+   * ðŸ“Š Obtenir les statistiques par catégorie M
    */
   getMCategoryStats(startDate?: string, endDate?: string): Observable<MCategoryStats> {
     let params = new HttpParams();
@@ -261,7 +261,7 @@ export class AdminDashboardService {
   }
 
   /**
-   * 🔍 Obtenir les détails de la pause en cours pour une ligne
+   * ðŸ” Obtenir les détails de la pause en cours pour une ligne
    */
   getActivePauseDetails(ligne: string): Observable<ActivePauseDetails> {
     return this.http.get<ActivePauseDetails>(
@@ -271,7 +271,7 @@ export class AdminDashboardService {
   }
 
   /**
-   * 📥 Exporter les données
+   * ðŸ“¥ Exporter les données
    */
   exportData(startDate?: string, endDate?: string, format: 'json' | 'csv' = 'json'): Observable<any> {
     let params = new HttpParams().set('format', format);
@@ -285,3 +285,4 @@ export class AdminDashboardService {
     );
   }
 }
+

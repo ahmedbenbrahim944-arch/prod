@@ -1,4 +1,4 @@
-// stats.service.ts (Angular)
+﻿// stats.service.ts (Angular)
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -11,7 +11,7 @@ export interface LigneStats {
   totalDecProduction: number;
   pcsProdTotal: number;
   references: ReferenceStats[];
-  // ✅ AJOUTER CES PROPRIÉTÉS POUR LES STATS PAR DATE
+  // âœ… AJOUTER CES PROPRIÉTÉS POUR LES STATS PAR DATE
   actif?: boolean;
   totalQtePlanifiee?: number;
   total5M?: number;
@@ -29,7 +29,7 @@ export interface StatsResponse {
   dateCalcul: string;
   nombreLignes: number;
   lignes: LigneStats[];
-  // ✅ AJOUTER CES PROPRIÉTÉS
+  // âœ… AJOUTER CES PROPRIÉTÉS
   resumeGlobalSemaine?: {
     totalQteSource: number;
     totalDecProduction: number;
@@ -61,8 +61,8 @@ export interface NonConformiteDetail {
   rendement: { quantite: number; pourcentage: number };
   maintenance: { quantite: number; pourcentage: number };
   qualite: { quantite: number; pourcentage: number };
-  methode: { quantite: number; pourcentage: number }; // ✅ NOUVEAU
-  environnement: { quantite: number; pourcentage: number }; // ✅ NOUVEAU
+  methode: { quantite: number; pourcentage: number }; // âœ… NOUVEAU
+  environnement: { quantite: number; pourcentage: number }; // âœ… NOUVEAU
   total5M: { quantite: number; pourcentage: number };
   commentaire: string | null;
 }
@@ -111,8 +111,8 @@ export interface Ligne5MDate {
     rendement: DetailParCauseTotal;
     maintenance: DetailParCauseTotal;
     qualite: DetailParCauseTotal;
-    methode: DetailParCauseTotal; // ✅ NOUVEAU
-    environnement: DetailParCauseTotal; // ✅ NOUVEAU
+    methode: DetailParCauseTotal; // âœ… NOUVEAU
+    environnement: DetailParCauseTotal; // âœ… NOUVEAU
   };
   references: ReferenceDetail5M[];
 }
@@ -143,7 +143,7 @@ export interface Stats5MParDateResponse {
       maintenance: DetailParCauseTotal;
       qualite: DetailParCauseTotal;
       methode: DetailParCauseTotal;
-      environnement : DetailParCauseTotal; // ✅ NOUVEAU
+      environnement : DetailParCauseTotal; // âœ… NOUVEAU
     };
   };
   lignes: Ligne5MDate[];
@@ -244,7 +244,7 @@ export interface StatsParDateResponse {
     semaine: string;
     dateCalcul: string;
   };
-  // ✅ MODIFICATION : Remplacer productionParLigne par lignesActives et lignesNonActives
+  // âœ… MODIFICATION : Remplacer productionParLigne par lignesActives et lignesNonActives
   lignesActives: Array<{
     ligne: string;
     actif: boolean;
@@ -273,8 +273,8 @@ export interface StatsParDateResponse {
   }>;
   resumeProduction: {
     nombreLignes: number;
-    nombreLignesActives: number;  // ✅ NOUVEAU
-    nombreLignesNonActives: number;  // ✅ NOUVEAU
+    nombreLignesActives: number;  // âœ… NOUVEAU
+    nombreLignesNonActives: number;  // âœ… NOUVEAU
     totalQteSource: number;
     totalDecProduction: number;
     pcsProdMoyen: number;
@@ -305,8 +305,8 @@ export interface Pourcentage5MResponse {
     maintenance: Pourcentage5MCause;
     qualite: Pourcentage5MCause;
     methode: Pourcentage5MCause; 
-    // ✅ NOUVEAU
-    environnement: Pourcentage5MCause; // ✅ NOUVEAU
+    // âœ… NOUVEAU
+    environnement: Pourcentage5MCause; // âœ… NOUVEAU
   };
   resumeTableau: Array<{
     cause: string;
@@ -337,7 +337,7 @@ export interface Ligne5MStats {
     maintenance: DetailParCause;
     qualite: DetailParCause;
     methode: DetailParCause;
-    environnement : DetailParCause; // ✅ NOUVEAU
+    environnement : DetailParCause; // âœ… NOUVEAU
   };
 }
 
@@ -364,7 +364,7 @@ export interface Stats5M {
   rendement: number;
   maintenance: number;
   qualite: number;
-  methode: number; // ✅ NOUVEAU
+  methode: number; // âœ… NOUVEAU
   environnement: number;
 }
 
@@ -637,3 +637,4 @@ updateStatutsEnMasse(statutsData: UpdateStatutsEnMasseRequest): Observable<any> 
   );
 }
 }
+

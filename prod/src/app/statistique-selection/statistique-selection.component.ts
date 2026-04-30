@@ -1,4 +1,4 @@
-// statistique-selection.component.ts
+﻿// statistique-selection.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -119,3 +119,4 @@ export class StatistiqueSelectionComponent {
     return 'badge-red';
   }
 }
+

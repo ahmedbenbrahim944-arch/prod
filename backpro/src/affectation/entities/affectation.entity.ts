@@ -38,6 +38,9 @@ export class Affectation {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: 'varchar', length: 10 })  // 'jour' ou 'nuit'
+  @Column({ type: 'varchar', length: 20 })  // 'jour' ou 'nuit'
 poste: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true, default: null })
+  bus: string | null;  // ← nouveau : numéro de bus de transport
 }

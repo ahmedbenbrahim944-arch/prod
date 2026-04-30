@@ -1,4 +1,4 @@
-// src/app/affichage/overview/affichage-overview.component.ts
+﻿// src/app/affichage/overview/affichage-overview.component.ts
 import { Component, OnInit, OnDestroy, LOCALE_ID } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, registerLocaleData } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -34,9 +34,9 @@ export interface OverviewData {
   lignes: LigneOverview[];
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Interface Détail ligne (réponse /affichage)
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface AffichageData {
   date: string;
   jour: string;
@@ -76,9 +76,9 @@ export interface AffichageData {
   };
 }
 
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  Component
-// ─────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @Component({
   selector: 'app-affichage-overview',
   standalone: true,
@@ -107,13 +107,13 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
   theoriquePiecesMap: { [ligne: string]: number } = {};
 
   private clockInterval: any;
-  private autoRefreshInterval: any;          // ← NOUVEAU : Interval d'auto-refresh
-  private readonly REFRESH_INTERVAL_MS = 5000; // ← 5 secondes
+  private autoRefreshInterval: any;          // â† NOUVEAU : Interval d'auto-refresh
+  private readonly REFRESH_INTERVAL_MS = 5000; // â† 5 secondes
   private apiUrl = 'http://102.207.250.53:3000';
 
   constructor(private http: HttpClient, private router: Router) {}
 
-  // ── Lifecycle ──────────────────────────────────────────────
+  // â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ngOnInit(): void {
     // Horloge + recalcul théorique chaque seconde
     this.clockInterval = setInterval(() => {
@@ -132,21 +132,21 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.clockInterval) clearInterval(this.clockInterval);
-    this.stopAutoRefresh();                  // ← Nettoyer l'interval d'auto-refresh
+    this.stopAutoRefresh();                  // â† Nettoyer l'interval d'auto-refresh
   }
 
-  // ── Auto-Refresh ───────────────────────────────────────────
+  // â”€â”€ Auto-Refresh â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /**
    * Démarre le rafraîchissement automatique toutes les 5 secondes
    */
   private startAutoRefresh(): void {
     this.autoRefreshInterval = setInterval(() => {
-      // Ne pas rafraîchir si un chargement est déjà en cours
+      // Ne pas rafraîchir si un chargement est déjÃ  en cours
       if (!this.loading) {
-        console.log('🔄 Auto-refresh des données...');
+        console.log('ðŸ”„ Auto-refresh des données...');
         this.loadOverview();
       } else {
-        console.log('⏳ Auto-refresh ignoré (chargement en cours)');
+        console.log('â³ Auto-refresh ignoré (chargement en cours)');
       }
     }, this.REFRESH_INTERVAL_MS);
   }
@@ -165,11 +165,11 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
    * Force un rafraîchissement manuel (appelé par le bouton)
    */
   manualRefresh(): void {
-    console.log('🔄 Rafraîchissement manuel...');
+    console.log('ðŸ”„ Rafraîchissement manuel...');
     this.loadOverview();
   }
 
-  // ── Chargement vue globale ─────────────────────────────────
+  // â”€â”€ Chargement vue globale â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   loadOverview(): void {
     if (!this.selectedDate) return;
 
@@ -218,7 +218,7 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ── Chargement détail pour chaque ligne active ─────────────
+  // â”€â”€ Chargement détail pour chaque ligne active â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   loadLineDetails(): void {
     if (!this.data) return;
 
@@ -253,13 +253,13 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ── Getter : lignes actives uniquement ─────────────────────
+  // â”€â”€ Getter : lignes actives uniquement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   get activeLignes(): LigneOverview[] {
   // Afficher UNIQUEMENT les lignes avec productivité > 0 (en production)
   return this.data?.lignes.filter((l) => l.productivite > 0) ?? [];
 }
 
-  // ── Calcul pièces théoriques ───────────────────────────────
+  // â”€â”€ Calcul pièces théoriques â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   calculateTheorique(data: AffichageData): number {
     const objective = data?.kpis?.totalQtePlanifiee ?? 0;
     if (objective === 0) return 0;
@@ -287,3 +287,4 @@ export class AffichageOverviewComponent implements OnInit, OnDestroy {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
 }
+

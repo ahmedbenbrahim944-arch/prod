@@ -1,4 +1,4 @@
-// src/app/login/auth.service.ts
+﻿// src/app/login/auth.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
@@ -35,6 +35,7 @@ export class AuthService {
   
   private readonly SPECIAL_MATRICULE_DM = '2603';
   private readonly SPECIAL_MATRICULE_LISTP = '7777';
+  private readonly USER_CONTEXT_KEY = 'user_production_context';
 
   constructor(
     private http: HttpClient,
@@ -95,7 +96,7 @@ export class AuthService {
 
           const matricule = response.user.nom;
 
-          // ── Matricule 1234 → choix4 (/ch4) ──────────────────────────────
+          
           if (matricule === '1234') {
             this.router.navigate(['/ch4']);
           }
@@ -117,7 +118,12 @@ export class AuthService {
           else if (matricule === '1717') {
             this.router.navigate(['/dashboard']);
           }
-          // ── Matricule 9999 → stat2 ───────────────────────────────────────
+          else if (matricule === '1818') {
+            this.router.navigate(['/dashboard1']);
+          }
+          else if (matricule === '1919') {
+            this.router.navigate(['/dashboard1']);
+          }
           else if (matricule === '9999') {
             this.router.navigate(['/stat2']);
           }
@@ -244,12 +250,7 @@ export class AuthService {
   /**
    * Déconnexion
    */
-  logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    localStorage.removeItem('matricule');
-    this.router.navigate(['/login']);
-  }
+  
 
   /**
    * Obtenir les headers avec le token
@@ -261,4 +262,67 @@ export class AuthService {
       'Authorization': `Bearer ${token}`
     });
   }
+  saveProductionContext(context: { ligne: string; sessionId: number }): void {
+  const user = this.getCurrentUser();
+  if (!user) return;
+  
+  const key = `${this.USER_CONTEXT_KEY}_${user.nom}`;
+  localStorage.setItem(key, JSON.stringify({
+    ...context,
+    timestamp: Date.now()
+  }));
 }
+
+/**
+ * ✅ Récupérer le contexte de production au login
+ */
+getProductionContext(): { ligne: string; sessionId: number } | null {
+  const user = this.getCurrentUser();
+  if (!user) return null;
+  
+  const key = `${this.USER_CONTEXT_KEY}_${user.nom}`;
+  const data = localStorage.getItem(key);
+  
+  if (!data) return null;
+  
+  try {
+    const context = JSON.parse(data);
+    
+    // Vérifier que le contexte n'est pas trop vieux (moins de 8h)
+    const age = (Date.now() - context.timestamp) / (1000 * 60 * 60);
+    if (age > 8) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    
+    return context;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * ✅ Effacer le contexte de production
+ */
+clearProductionContext(): void {
+  const user = this.getCurrentUser();
+  if (!user) return;
+  
+  const key = `${this.USER_CONTEXT_KEY}_${user.nom}`;
+  localStorage.removeItem(key);
+}
+
+/**
+ * ✅ Déconnexion améliorée avec sauvegarde du contexte
+ */
+logout(): void {
+  // Sauvegarder le contexte avant de supprimer les données
+  // Note: le contexte est déjà sauvegardé par le composant production
+  
+  localStorage.removeItem(this.TOKEN_KEY);
+  localStorage.removeItem(this.USER_KEY);
+  localStorage.removeItem('matricule');
+  this.router.navigate(['/login']);
+}
+}
+

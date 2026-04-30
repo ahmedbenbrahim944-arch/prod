@@ -1,4 +1,4 @@
-// src/app/prod/stats-annuel.service.ts
+﻿// src/app/prod/stats-annuel.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -33,7 +33,7 @@ export interface StatsAnnuellesResponse {
 })
 export class StatsAnnuelService {
   private http = inject(HttpClient);
-  // ✅ URL CORRIGÉE : Sans environment.apiUrl pour éviter le double http://
+  // âœ… URL CORRIGÉE : Sans environment.apiUrl pour éviter le double http://
   private apiUrl = 'http://102.207.250.53:3000/stats';
 
   /**
@@ -45,7 +45,7 @@ export class StatsAnnuelService {
       'Content-Type': 'application/json'
     });
 
-    console.log('🔍 Appel API Stats Annuelles:', `${this.apiUrl}/pcs-par-mois`, { date });
+    console.log('ðŸ” Appel API Stats Annuelles:', `${this.apiUrl}/pcs-par-mois`, { date });
 
     return this.http.post<StatsAnnuellesResponse>(
       `${this.apiUrl}/pcs-par-mois`,
@@ -64,3 +64,4 @@ export class StatsAnnuelService {
     );
   }
 }
+

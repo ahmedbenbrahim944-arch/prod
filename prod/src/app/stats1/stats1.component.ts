@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+﻿import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -95,21 +95,21 @@ interface StatsPeriode {
   personnel: {
     totalOuvriers: number;
     totalPresences: number;
-    totalSelections: number; // ✅ NOUVEAU
+    totalSelections: number; // âœ… NOUVEAU
     totalConges: number;
     totalAbsences: number;
     moyennePresences: number;
-    moyenneSelections: number; // ✅ NOUVEAU
+    moyenneSelections: number; // âœ… NOUVEAU
     moyenneConges: number;
     moyenneAbsences: number;
-    moyenneAutres: number; // ✅ NOUVEAU
+    moyenneAutres: number; // âœ… NOUVEAU
     tauxPresence: number;
     joursDansPeriode: number;
     presents: number;
-    selections: number; // ✅ NOUVEAU
+    selections: number; // âœ… NOUVEAU
     conges: number;
     absents: number;
-    autresStatuts: number; // ✅ NOUVEAU
+    autresStatuts: number; // âœ… NOUVEAU
     details: {
       matriculesPresents: number[];
       matriculesConges: number[];
@@ -206,7 +206,7 @@ export class Stats1Component implements OnInit {
       label: 'M4:Maintenance', 
       icon: 'M5', 
       color: '#f59e0b',
-      description: 'Écarts dus à la maintenance',
+      description: 'Écarts dus Ã  la maintenance',
       key: 'm5_maintenance'
     },
     qualite: { 
@@ -314,7 +314,7 @@ export class Stats1Component implements OnInit {
 
   const lignesAvecProduction = this.statsData.statsParLigne
     .filter(stat => stat.production.totalQteSource > 0 || stat.production.totalDecProduction > 0)
-    .sort((a, b) => b.production.pcs - a.production.pcs); // 🔽 Meilleur PCS en haut
+    .sort((a, b) => b.production.pcs - a.production.pcs); // ðŸ”½ Meilleur PCS en haut
 
   const labels = lignesAvecProduction.map(stat => this.formaterNomLigne(stat.ligne));
   const data = lignesAvecProduction.map(stat => stat.production.pcs);
@@ -347,7 +347,7 @@ export class Stats1Component implements OnInit {
       }]
     },
     options: {
-      indexAxis: 'y', // ✅ Barres horizontales
+      indexAxis: 'y', // âœ… Barres horizontales
       responsive: true,
       maintainAspectRatio: false,
       onClick: (event, elements) => {
@@ -427,8 +427,8 @@ export class Stats1Component implements OnInit {
           },
           ticks: {
             font: { size: 12, weight: 500 },
-            autoSkip: false,      // ✅ Afficher toutes les étiquettes
-            maxRotation: 0,      // ✅ Pas de rotation
+            autoSkip: false,      // âœ… Afficher toutes les étiquettes
+            maxRotation: 0,      // âœ… Pas de rotation
             minRotation: 0
           }
         }
@@ -794,7 +794,7 @@ getReferencesMForLigne(mKey: string): string[] {
  */
 toggleCause7M(mKey: string): void {
   if (this.expandedCause7M === mKey) {
-    this.expandedCause7M = null; // Fermer si déjà ouvert
+    this.expandedCause7M = null; // Fermer si déjÃ  ouvert
   } else {
     this.expandedCause7M = mKey; // Ouvrir la nouvelle cause
   }
@@ -903,7 +903,7 @@ private programmerRechargementHoraire(): void {
   
   const tempsAttente = prochainRechargement.getTime() - maintenant.getTime();
   
-  console.log(`⏰ Prochain rechargement automatique à ${prochainRechargement.getHours()}:00 (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
+  console.log(`â° Prochain rechargement automatique Ã  ${prochainRechargement.getHours()}:00 (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
   
   // Programmer le premier rechargement
   setTimeout(() => {
@@ -921,26 +921,26 @@ private executerRechargementHoraire(): void {
   const maintenant = new Date();
   const heure = maintenant.getHours();
   
-  console.log(`🕙 ${heure}:00 - DÉCLENCHEMENT DU RECHARGEMENT HORAIRE`);
+  console.log(`ðŸ•™ ${heure}:00 - DÉCLENCHEMENT DU RECHARGEMENT HORAIRE`);
   
   // Vérifier si aujourd'hui est dimanche
   if (maintenant.getDay() === 0) {
-    console.log('⚠️ Aujourd\'hui est dimanche, pas de rechargement automatique');
+    console.log('âš ï¸ Aujourd\'hui est dimanche, pas de rechargement automatique');
     return;
   }
   
-  // 1. Retour à l'écran filtre
+  // 1. Retour Ã  l'écran filtre
   this.statsData = null;
   
-  // 2. Mise à jour des dates avec la logique anti-dimanche
+  // 2. Mise Ã  jour des dates avec la logique anti-dimanche
   this.initialiserDatesHier();
   
-  // 3. Petit délai pour que l'UI se mette à jour
+  // 3. Petit délai pour que l'UI se mette Ã  jour
   setTimeout(() => {
     // 4. Rechargement automatique des statistiques
     this.chargerStatsPeriode();
     
-    console.log(`📊 Statistiques rechargées automatiquement à ${heure}:00`);
+    console.log(`ðŸ“Š Statistiques rechargées automatiquement Ã  ${heure}:00`);
   }, 100);
 }
 
@@ -970,7 +970,7 @@ private initialiserDatesHier(): void {
 }
 
 /**
- * Programme le rechargement automatique à 10h00 pile
+ * Programme le rechargement automatique Ã  10h00 pile
  */
 private programmerRechargement10h(): void {
   const maintenant = new Date();
@@ -979,7 +979,7 @@ private programmerRechargement10h(): void {
   const prochain10h = new Date();
   prochain10h.setHours(10, 0, 0, 0); // 10:00:00.000
   
-  // Si on est déjà après 10h aujourd'hui, programmer pour demain
+  // Si on est déjÃ  après 10h aujourd'hui, programmer pour demain
   if (maintenant >= prochain10h) {
     prochain10h.setDate(prochain10h.getDate() + 1);
   }
@@ -993,13 +993,13 @@ private programmerRechargement10h(): void {
   
   const tempsAttente = prochain10h.getTime() - maintenant.getTime();
   
-  console.log(` Prochain rechargement automatique à 10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
+  console.log(` Prochain rechargement automatique Ã  10h00 le ${this.formatDate(prochain10h)} (dans ${Math.round(tempsAttente / 1000 / 60)} minutes)`);
   
   // Programmer le rechargement
   setTimeout(() => {
     this.executerRechargement10h();
     
-    // Puis re-programmer tous les jours à 10h00 (en évitant les dimanches)
+    // Puis re-programmer tous les jours Ã  10h00 (en évitant les dimanches)
     setInterval(() => {
       this.executerRechargement10h();
     }, 24 * 60 * 60 * 1000); // Toutes les 24h
@@ -1008,9 +1008,9 @@ private programmerRechargement10h(): void {
 }
 
 /**
- * Exécute le rechargement complet à 10h00
- * 1. Retourne à l'écran filtre
- * 2. Met à jour les dates (toujours hier)
+ * Exécute le rechargement complet Ã  10h00
+ * 1. Retourne Ã  l'écran filtre
+ * 2. Met Ã  jour les dates (toujours hier)
  * 3. Recharge automatiquement les statistiques
  */
 private executerRechargement10h(): void {
@@ -1023,18 +1023,18 @@ private executerRechargement10h(): void {
     return;
   }
   
-  // 1. Retour à l'écran filtre
+  // 1. Retour Ã  l'écran filtre
   this.statsData = null;
   
-  // 2. Mise à jour des dates avec la logique anti-dimanche
+  // 2. Mise Ã  jour des dates avec la logique anti-dimanche
   this.initialiserDatesHier();
   
-  // 3. Petit délai pour que l'UI se mette à jour
+  // 3. Petit délai pour que l'UI se mette Ã  jour
   setTimeout(() => {
     // 4. Rechargement automatique des statistiques
     this.chargerStatsPeriode();
     
-    console.log(' Statistiques rechargées automatiquement à 10h00');
+    console.log(' Statistiques rechargées automatiquement Ã  10h00');
   }, 100);
 }
 
@@ -1075,3 +1075,4 @@ ngOnDestroy(): void {
 }
 
 }
+

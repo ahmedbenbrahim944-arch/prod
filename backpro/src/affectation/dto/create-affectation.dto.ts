@@ -33,6 +33,10 @@ export class CreateAffectationDto {
   @IsIn(['1ere poste', '2eme poste'], { message: 'Le poste doit être "jour" ou "nuit"' })
   poste: string;
 
+  @IsString()
+  @IsOptional()
+  bus?: string | null;  // ← nouveau : numéro de bus
+
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

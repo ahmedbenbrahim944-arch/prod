@@ -1,4 +1,4 @@
-// src/app/services/non-conf.service.ts - Version avec FIX décalage DP/causes
+﻿// src/app/services/non-conf.service.ts - Version avec FIX décalage DP/causes
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -24,8 +24,8 @@ export interface CreateOrUpdateNonConfDto {
   commentaire?: string;
   commentaireId?: number;
 
-  // ✅ FIX : Champs ajoutés pour résoudre le décalage entre DP saisi et DP en base.
-  // Le modal causes s'ouvre AVANT la sauvegarde du DP → la DB contient encore
+  // âœ… FIX : Champs ajoutés pour résoudre le décalage entre DP saisi et DP en base.
+  // Le modal causes s'ouvre AVANT la sauvegarde du DP â†’ la DB contient encore
   // l'ancienne valeur. On transmet ici les valeurs fraîches saisies par l'utilisateur
   // afin que le backend calcule le delta correct sans lire la base.
   decProduction?: number;  // valeur DP actuellement saisie dans le frontend
@@ -160,7 +160,7 @@ export class NonConfService {
       delete cleanDto.referenceMatierePremiere;
     }
 
-    // ✅ FIX : Ne PAS supprimer decProduction/qteModifiee même si 0
+    // âœ… FIX : Ne PAS supprimer decProduction/qteModifiee même si 0
     // (une valeur 0 est significative : DP = 0 signifie que la production n'a pas été déclarée)
     console.log('Envoi non-conformité (avec DP/M pour calcul delta côté backend):', cleanDto);
 
@@ -268,3 +268,4 @@ export class NonConfService {
     );
   }
 }
+

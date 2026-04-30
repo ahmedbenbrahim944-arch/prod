@@ -221,7 +221,7 @@ export class ProdComponent implements OnInit {
   loading = signal(false);
   lines = signal<ProductLine[]>([]);
   searchQuery = signal('');
-  activeTab = signal('view');
+  activeTab = signal('home');
   selectedLine = signal<ProductLine | null>(null);
   showSuccess = signal(false);
   successMessage = signal('');
@@ -2884,7 +2884,34 @@ setActiveTab(tab: string) {
   }
 }
 
-// Ajouter dans le getTabTitle()
+
+
+// AJOUTEZ CES MÉTHODES ICI :
+openModuleModal(moduleName: string) {
+  this.activeModuleModal = moduleName;
+}
+
+closeModuleModal() {
+  this.activeModuleModal = null;
+}
+
+getModalTitle(): string {
+  const titles: { [key: string]: string } = {
+    'planning': 'Planning',
+    'operation': 'Opération',
+    'performance': 'Performance Production',
+    'monitoring': 'Monitoring Temps Réel',
+    'administration': 'Administration'
+  };
+  return titles[this.activeModuleModal || ''] || 'Module';
+}
+
+goTo(tabName: string) {
+  this.setActiveTab(tabName);
+  this.closeModuleModal();
+}
+
+
 getTabTitle(): string {
   const titles: { [key: string]: string } = {
     'view': 'Vue d\'ensemble des Lignes',
@@ -3696,6 +3723,8 @@ toggleSection(section: string) {
 isSectionOpen(section: string): boolean {
   return !this.collapsedSections[section];
 }
+activeModuleModal: string | null = null;
+
 
 
 }

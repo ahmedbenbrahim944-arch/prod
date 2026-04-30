@@ -1,9 +1,9 @@
-// src/app/plann-mag-search/plann-mag-search.service.ts
+﻿// src/app/plann-mag-search/plann-mag-search.service.ts
 import { Injectable }                    from '@angular/core';
 import { HttpClient, HttpHeaders }       from '@angular/common/http';
 import { Observable }                    from 'rxjs';
 
-// ─── Interfaces (ancien endpoint /search — conservé) ─────────────────────────
+// â”€â”€â”€ Interfaces (ancien endpoint /search "” conservé) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface MpSearchItem {
   semaine:       string;
   dateDebut:     string;
@@ -33,7 +33,7 @@ export interface SearchResponse {
   planning:     MpSearchItem[];
 }
 
-// ─── Interfaces (nouveau endpoint /search-by-date) ───────────────────────────
+// â”€â”€â”€ Interfaces (nouveau endpoint /search-by-date) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface MpRowItem {
   refMp:         string;
   descriptionMp: string;
@@ -73,7 +73,7 @@ export interface SearchByDateResponse {
   ligneGroups: LigneGroupItem[];
 }
 
-// ─── Interface OF par date ────────────────────────────────────────────────────
+// â”€â”€â”€ Interface OF par date â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export interface OfsByDateResponse {
   ofs:          string[];
   dateFormatee: string;
@@ -81,7 +81,7 @@ export interface OfsByDateResponse {
   semaine:      string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Injectable({ providedIn: 'root' })
 export class PlannMagSearchService {
@@ -105,7 +105,7 @@ export class PlannMagSearchService {
 
   /**
    * Nouveau endpoint principal : retourne TOUS les plannings d'une date
-   * groupés par ligne → référence.
+   * groupés par ligne â†’ référence.
    * Le paramètre `of` est optionnel (filtre).
    */
   searchByDate(annee: string, date: string, of?: string): Observable<SearchByDateResponse> {
@@ -127,3 +127,4 @@ export class PlannMagSearchService {
     );
   }
 }
+

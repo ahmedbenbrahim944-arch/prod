@@ -44,6 +44,8 @@ import { Choix6Component } from './choix6/choix6.component';
 import { ScreenSaverComponent } from './screen-saver/screen-saver.component';
 import { VideoComponent } from './video/video.component';
 import { AffichageOverviewComponent } from './affichage-overview/affichage-overview.component';
+import { ScreenSaver1Component } from './screen-saver1/screen-saver1.component';
+import { SuiviComponent } from './suivi/suivi.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -106,6 +108,8 @@ export const routes: Routes = [
   { path: 'dashboard', component: ScreenSaverComponent },
   { path: 'video', component: VideoComponent },
   { path: 'view', component: AffichageOverviewComponent },
+  { path: 'dashboard1', component: ScreenSaver1Component },
+  { path: 'suivi', component: SuiviComponent },
 
 
 ];

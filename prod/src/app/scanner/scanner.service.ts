@@ -1,4 +1,4 @@
-// src/app/scanner/scanner.service.ts
+﻿// src/app/scanner/scanner.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
@@ -178,8 +178,8 @@ export class ScannerService {
     return { valid: false, error: 'QR code vide' };
   }
 
-  // Normalise em-dash → slash
-  const normalized = trimmed.replace(/—/g, '/');
+  // Normalise em-dash â†’ slash
+  const normalized = trimmed.replace(/"”/g, '/');
 
   let parts: string[];
 
@@ -209,7 +209,7 @@ export class ScannerService {
   if (parts.length < 2) {
     return {
       valid: false,
-      error: 'Format invalide — attendu : REFERENCE/QUANTITE[/DERNIERE_PARTIE] ou REFERENCE-QUANTITE[-DERNIERE_PARTIE]',
+      error: 'Format invalide "” attendu : REFERENCE/QUANTITE[/DERNIERE_PARTIE] ou REFERENCE-QUANTITE[-DERNIERE_PARTIE]',
     };
   }
 
@@ -237,7 +237,7 @@ export class ScannerService {
   private handleError(error: HttpErrorResponse): Observable<never> {
     let message = 'Une erreur est survenue';
     if (error.status === 401) message = 'Non authentifié. Veuillez vous reconnecter.';
-    else if (error.status === 409) message = 'Ce ticket a déjà été scanné (doublon)';
+    else if (error.status === 409) message = 'Ce ticket a déjÃ  été scanné (doublon)';
     else if (error.status === 404) message = error.error?.message ?? 'Ressource introuvable';
     else if (error.status === 400) message = error.error?.message ?? 'Données invalides';
     else if (error.status === 0) message = 'Impossible de joindre le serveur';
@@ -261,3 +261,4 @@ scanProductionForSemaine(dto: { qrCode: string; semaineId: number; scanneParId: 
     .pipe(catchError(this.handleError));
 }
 }
+

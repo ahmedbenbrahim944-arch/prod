@@ -35,6 +35,7 @@ export class AffectationController {
   @Get()
   async findAll() {
     const data = await this.affectationService.findAll();
+    console.log('Réponse findAll:', JSON.stringify(data, null, 2));
     return { total: data.length, data };
   }
 

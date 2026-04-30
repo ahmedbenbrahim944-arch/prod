@@ -1,4 +1,4 @@
-// src/app/services/temps-sec.service.ts
+﻿// src/app/services/temps-sec.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -99,3 +99,4 @@ findByLigneAndReference(ligne: string, reference: string): Observable<TempsSec[]
   );
 }
 }
+

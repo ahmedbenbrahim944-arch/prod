@@ -167,9 +167,7 @@
 
                 @if (parseError && scanStatus === 'idle') {
                   <div class="parse-error">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="parse-error-icon">
-                      <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
-                    </svg>
+                   
                     {{ parseError }}
                   </div>
                 }
@@ -223,9 +221,7 @@
               <!-- Status error -->
               @if (scanStatus === 'error') {
                 <div class="status-row status-error" @fadeSlide>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
-                  </svg>
+                  
                   <div>
                     <span class="err-title">Erreur</span>
                     <span class="err-detail">{{ scanErrorMessage }}</span>

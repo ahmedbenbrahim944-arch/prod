@@ -1,4 +1,4 @@
-// src/app/services/commentaire.service.ts
+﻿// src/app/services/commentaire.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -31,7 +31,7 @@ export class CommentaireService {
     return this.http.post<Commentaire>(this.apiUrl, { commentaire });
   }
 
-  // Mettre à jour un commentaire
+  // Mettre Ã  jour un commentaire
   updateCommentaire(id: number, commentaire: string): Observable<Commentaire> {
     return this.http.put<Commentaire>(`${this.apiUrl}/${id}`, { commentaire });
   }
@@ -41,3 +41,4 @@ export class CommentaireService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }
+

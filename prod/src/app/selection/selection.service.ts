@@ -1,4 +1,4 @@
-// src/app/services/selection.service.ts
+﻿// src/app/services/selection.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of, forkJoin } from 'rxjs';
@@ -123,7 +123,7 @@ export class SelectionService {
       { headers: this.getAuthHeaders() }
     ).pipe(
       map(response => {
-        console.log('📦 Réponse API products/lines:', response);
+        console.log('ðŸ“¦ Réponse API products/lines:', response);
         
         if (response && response.lines) {
           const products: Product[] = [];
@@ -138,14 +138,14 @@ export class SelectionService {
               });
             }
           });
-          console.log('✅ Products transformés:', products.length, 'produits');
+          console.log('âœ… Products transformés:', products.length, 'produits');
           return products;
         }
-        console.warn('⚠️ Format de réponse inattendu:', response);
+        console.warn('âš ï¸ Format de réponse inattendu:', response);
         return [];
       }),
       catchError(error => {
-        console.error('❌ Erreur chargement produits:', error);
+        console.error('âŒ Erreur chargement produits:', error);
         return of([]);
       })
     );
@@ -158,7 +158,7 @@ export class SelectionService {
       { headers: this.getAuthHeaders() }
     ).pipe(
       catchError(error => {
-        console.error('❌ Erreur chargement matières premières:', error);
+        console.error('âŒ Erreur chargement matières premières:', error);
         return of([]);
       })
     );
@@ -193,11 +193,11 @@ export class SelectionService {
           });
         });
 
-        console.log('🔗 Références combinées:', references.length, 'au total');
+        console.log('ðŸ”— Références combinées:', references.length, 'au total');
         return references;
       }),
       catchError(error => {
-        console.error('❌ Erreur combinaison références:', error);
+        console.error('âŒ Erreur combinaison références:', error);
         return of([]);
       })
     );
@@ -233,7 +233,7 @@ export class SelectionService {
     );
   }
 
-  // Mettre à jour par matricule, référence et date
+  // Mettre Ã  jour par matricule, référence et date
   updatePlanningByInfo(
     matricule: number,
     reference: string,
@@ -247,7 +247,7 @@ export class SelectionService {
     );
   }
 
-  // 🆕 Mettre à jour par ID
+  // ðŸ†• Mettre Ã  jour par ID
   updatePlanningById(id: number, data: any): Observable<PlanningSelection> {
     return this.http.patch<PlanningSelection>(
       `${this.apiUrl}/planning-selection/${id}`,
@@ -256,7 +256,7 @@ export class SelectionService {
     );
   }
 
-  // 🆕 Récupérer les plannings incomplets (en attente)
+  // ðŸ†• Récupérer les plannings incomplets (en attente)
   getPlanningsIncomplets(): Observable<PlanningSelection[]> {
     return this.http.get<PlanningSelection[]>(
       `${this.apiUrl}/planning-selection/incomplets`,
@@ -309,3 +309,4 @@ export class SelectionService {
     );
   }
 }
+

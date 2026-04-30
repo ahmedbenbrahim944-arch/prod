@@ -1,4 +1,4 @@
-// src/app/plaquettes/plaquettes.service.ts
+﻿// src/app/plaquettes/plaquettes.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -120,7 +120,7 @@ export class PlaquettesService {
     return this.http.delete<any>(`${this.apiUrl}/plaquettes/${id}`, { headers: this.getAuthHeaders() });
   }
 
-  // ── Stats par plage de dates ──────────────────────────────────
+  // â”€â”€ Stats par plage de dates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   getStats(dateDebut: string, dateFin: string): Observable<StatsResult> {
     return this.http.post<StatsResult>(
       `${this.apiUrl}/plaquettes/stats`,
@@ -129,3 +129,4 @@ export class PlaquettesService {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-// src/app/affichage/affichage.component.ts
+﻿// src/app/affichage/affichage.component.ts
 import { Component, OnInit, OnDestroy, LOCALE_ID } from '@angular/core';
 import { CommonModule, DatePipe, registerLocaleData } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
@@ -76,7 +76,7 @@ export class AffichageComponent implements OnInit, OnDestroy {
 
 ngOnDestroy(): void {
   if (this.refreshInterval) clearInterval(this.refreshInterval);
-  if (this.dataRefreshInterval) clearInterval(this.dataRefreshInterval); // ✅ nettoyer
+  if (this.dataRefreshInterval) clearInterval(this.dataRefreshInterval); // âœ… nettoyer
 }
 
   // Formater une ligne au format L01, L02, etc.
@@ -84,7 +84,7 @@ ngOnDestroy(): void {
 
 loadLignes(): void {
   const token = localStorage.getItem('access_token') || '';
-  const matricule = this.authService.getUserMatricule(); // ✅ récupérer matricule
+  const matricule = this.authService.getUserMatricule(); // âœ… récupérer matricule
 
   this.http.get<string[]>(`${this.apiUrl}/affichage/lignes`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -96,7 +96,7 @@ loadLignes(): void {
         this.lignes = ['L04:RXT1', 'L04:RXT2', 'L09:XXX'];
       }
 
-      // ✅ Si matricule 1212 → forcer L24:RXT2
+      // âœ… Si matricule 1212 â†’ forcer L24:RXT2
       if (matricule === '1212') {
         this.selectedLigne = 'L24:RXT2';
        } else if(matricule === '1313') {
@@ -109,6 +109,10 @@ loadLignes(): void {
         this.selectedLigne = 'L34:POLO XT5';
        } else if(matricule === '1717') {
         this.selectedLigne = 'L33:COM XT5';
+       } else if(matricule === '1818') {
+        this.selectedLigne = 'L36:MXT5';
+       }else if(matricule === '1919') {
+        this.selectedLigne = 'L32:GBXT4';
       } else if (this.lignes.length > 0 && !this.selectedLigne) {
         this.selectedLigne = this.lignes[0];
       }
@@ -119,7 +123,7 @@ loadLignes(): void {
       console.error('Erreur chargement lignes:', err);
       this.lignes = ['L04:RXT1', 'L04:RXT2', 'L09:XXX'];
 
-      // ✅ Même logique en cas d'erreur
+      // âœ… Même logique en cas d'erreur
       if (matricule === '1212') {
         this.selectedLigne = 'L24:RXT2';
       } else if (!this.selectedLigne && this.lignes.length) {
@@ -190,12 +194,12 @@ loadLignes(): void {
   // Ajouter cette propriété
 theoriquePieces: number = 0;
 
-// Modifier ngOnInit : mettre à jour la valeur chaque seconde
+// Modifier ngOnInit : mettre Ã  jour la valeur chaque seconde
 ngOnInit(): void {
-  // ✅ Chaque seconde : mettre à jour l'heure ET le compteur théorique
+  // âœ… Chaque seconde : mettre Ã  jour l'heure ET le compteur théorique
   this.refreshInterval = setInterval(() => {
     this.today = new Date();
-    this.theoriquePieces = this.calculateTheorique(); // ← DOIT être ici
+    this.theoriquePieces = this.calculateTheorique(); // â† DOIT être ici
   }, 1000);
 
   // Auto-refresh données toutes les 10 secondes
@@ -224,10 +228,10 @@ calculateTheorique(): number {
 
   const elapsedSeconds = Math.max(0, (now.getTime() - start.getTime()) / 1000);
 
-  // ❌ Supprimer le cap — laisser monter librement
-  // const cappedSeconds = Math.min(elapsedSeconds, totalSeconds); ← SUPPRIMER
+  // âŒ Supprimer le cap "” laisser monter librement
+  // const cappedSeconds = Math.min(elapsedSeconds, totalSeconds); â† SUPPRIMER
 
-  return Math.round(elapsedSeconds * ratePerSecond); // ✅ sans plafond
+  return Math.round(elapsedSeconds * ratePerSecond); // âœ… sans plafond
 }
 currentLang: 'fr' | 'en' = 'fr';
 
@@ -259,3 +263,4 @@ setLang(lang: 'fr' | 'en'): void { this.currentLang = lang; }
 
 
 }
+

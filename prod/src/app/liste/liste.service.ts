@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap, map } from 'rxjs/operators';
@@ -7,7 +7,7 @@ export interface ProductiviteOuvrier {
   JOURS: string;
   MAT: number;
   'NOM ET PRENOM': string;
-  'N°HEURS': number;
+  'NÂ°HEURS': number;
   LIGNES: string;
   PRODUCTIVITE: number;
   M1: number;
@@ -32,52 +32,52 @@ export class ListeService {
       .set('dateDebut', dateDebut)
       .set('dateFin', dateFin);
 
-    console.log('🌐 Appel API:', this.apiUrl);
-    console.log('📅 Paramètres:', { dateDebut, dateFin });
+    console.log('ðŸŒ Appel API:', this.apiUrl);
+    console.log('ðŸ“… Paramètres:', { dateDebut, dateFin });
 
     return this.http.get<any>(this.apiUrl, { params }).pipe(
       tap(response => {
-        console.log('✅ Réponse API COMPLÈTE:', response);
-        console.log('📊 Type de réponse:', typeof response);
-        console.log('📊 Est un tableau?', Array.isArray(response));
+        console.log('âœ… Réponse API COMPLÈTE:', response);
+        console.log('ðŸ“Š Type de réponse:', typeof response);
+        console.log('ðŸ“Š Est un tableau?', Array.isArray(response));
         
         if (response && typeof response === 'object') {
-          console.log('🔍 Clés de l\'objet réponse:', Object.keys(response));
+          console.log('ðŸ” Clés de l\'objet réponse:', Object.keys(response));
           
           // Vérifiez la structure du tableau
           if (response.tableau) {
-            console.log('🔍 Structure tableau:', response.tableau);
-            console.log('🔍 tableau est un tableau?', Array.isArray(response.tableau));
-            console.log('🔍 Longueur du tableau:', Array.isArray(response.tableau) ? response.tableau.length : 'N/A');
+            console.log('ðŸ” Structure tableau:', response.tableau);
+            console.log('ðŸ” tableau est un tableau?', Array.isArray(response.tableau));
+            console.log('ðŸ” Longueur du tableau:', Array.isArray(response.tableau) ? response.tableau.length : 'N/A');
           }
         }
       }),
       map(response => {
         // 1. Si la réponse est directement un tableau
         if (Array.isArray(response)) {
-          console.log('✅ Extraction des données: tableau direct, longueur:', response.length);
+          console.log('âœ… Extraction des données: tableau direct, longueur:', response.length);
           return this.formatData(response);
         }
         
         // 2. Si la réponse a une propriété 'tableau' qui est un tableau
         if (response && response.tableau && Array.isArray(response.tableau)) {
-          console.log('✅ Extraction des données: via tableau, longueur:', response.tableau.length);
+          console.log('âœ… Extraction des données: via tableau, longueur:', response.tableau.length);
           return this.formatData(response.tableau);
         }
         
         // 3. Si la réponse a une propriété 'lignes' qui est un tableau
         if (response && response.lignes && Array.isArray(response.lignes)) {
-          console.log('✅ Extraction des données: via lignes, longueur:', response.lignes.length);
+          console.log('âœ… Extraction des données: via lignes, longueur:', response.lignes.length);
           return this.formatData(response.lignes);
         }
         
         // 4. Si la réponse a une propriété 'data' qui est un tableau
         if (response && response.data && Array.isArray(response.data)) {
-          console.log('✅ Extraction des données: via data, longueur:', response.data.length);
+          console.log('âœ… Extraction des données: via data, longueur:', response.data.length);
           return this.formatData(response.data);
         }
         
-        console.warn('⚠️ Structure non reconnue, réponse:', response);
+        console.warn('âš ï¸ Structure non reconnue, réponse:', response);
         return [];
       }),
       catchError(this.handleError)
@@ -85,14 +85,14 @@ export class ListeService {
   }
 
   /**
-   * Formate les données pour correspondre à l'interface ProductiviteOuvrier
+   * Formate les données pour correspondre Ã  l'interface ProductiviteOuvrier
    */
   private formatData(data: any[]): ProductiviteOuvrier[] {
     return data.map((item: any) => ({
       JOURS: item.JOURS || '',
       MAT: item.MAT || 0,
       'NOM ET PRENOM': item['NOM ET PRENOM'] || '',
-      'N°HEURS': item['N°HEURS'] || 0,
+      'NÂ°HEURS': item['NÂ°HEURS'] || 0,
       LIGNES: item.LIGNES || '',
       PRODUCTIVITE: item.PRODUCTIVITE || 0,
       M1: item.M1 || 0,
@@ -106,7 +106,7 @@ export class ListeService {
   }
 
   private handleError(error: HttpErrorResponse) {
-    console.error('❌ Erreur HTTP:', error);
+    console.error('âŒ Erreur HTTP:', error);
     
     if (error.error instanceof ErrorEvent) {
       console.error('Erreur client:', error.error.message);
@@ -117,3 +117,4 @@ export class ListeService {
     return throwError(() => error);
   }
 }
+

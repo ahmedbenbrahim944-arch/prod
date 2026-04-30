@@ -162,16 +162,20 @@ export class AffichageService {
       .where('a.ligne LIKE :ligne', { ligne: `${lignePrefix}%` })
       .getMany();
 
-    const nbOuvriers = affectations.length;
-    const ouvriersList = affectations.map((a) => ({
-      matricule: a.ouvrier.matricule,
-      nomPrenom: a.ouvrier.nomPrenom,
-      estCapitaine: a.estCapitaine,
-      phases: (a.phases ?? []).map((ph) => ({
-        phase: ph.phase,
-        heures: Number(ph.heures),
-      })),
-    }));
+   
+    const ouvriersList = affectations
+  .filter((a) => a.ouvrier != null)  // ← add this
+  .map((a) => ({
+    matricule: a.ouvrier.matricule,
+    nomPrenom: a.ouvrier.nomPrenom,
+    estCapitaine: a.estCapitaine,
+    phases: (a.phases ?? []).map((ph) => ({
+      phase: ph.phase,
+      heures: Number(ph.heures),
+    })),
+  }));
+
+const nbOuvriers = ouvriersList.length; // ← move this AFTER the filter
 
     // Records de production pour le détail
     const dateDebut = new Date(date);

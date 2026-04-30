@@ -1,4 +1,4 @@
-// src/app/magasin/magasin.service.ts
+﻿// src/app/magasin/magasin.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -92,7 +92,7 @@ export class MagasinService {
     );
   }
 
-  // Mettre à jour uniquement EXP (decMagasin est requis par le DTO, on passe la valeur existante)
+  // Mettre Ã  jour uniquement EXP (decMagasin est requis par le DTO, on passe la valeur existante)
   updateExp(
     semaine: string,
     jour: string,
@@ -109,3 +109,4 @@ export class MagasinService {
     );
   }
 }
+

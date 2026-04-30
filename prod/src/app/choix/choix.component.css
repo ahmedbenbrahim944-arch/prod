@@ -1,919 +1,281 @@
-/* Styles pour le conteneur principal */
-.choix-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ════════════════════════════════
+   CHOIX MODULES — MÊME STYLE QUE PROD
+════════════════════════════════ */
+
+.pdp-home {
   min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f4f8;          /* ← blanc cassé comme Prod */
+  padding-bottom: 2rem;
 }
 
-/* Titre */
-.titre {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
-  color: #2c3e50;
-  text-align: center;
-  margin-bottom: 10px;
-  font-weight: 700;
+/* ── Barre supérieure ── */
+.top-bar {
+   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 2rem;
+  background: linear-gradient(135deg, #15803d 0%, #16a34a 60%, #22c55e 100%);
+  border-bottom: none;
+  box-shadow: 0 4px 16px rgba(22,163,74,0.25);
 }
 
-/* Description */
-.description {
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  color: #5d6d7e;
-  text-align: center;
-  max-width: 600px;
-  margin-bottom: 40px;
-  line-height: 1.5;
+/* ← Même dégradé VERT/BLEU que Prod */
+.brand-title {
+ font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 4px;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: #ffffff;
+  background-clip: unset;
+  color: #ffffff;
 }
 
-/* Conteneur des boutons */
-.boutons-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 30px;
-  max-width: 1200px;
-  width: 100%;
-}
-
-/* Style de base pour tous les boutons (maintenant des liens) */
-.bouton-grand {
-  flex: 1;
-  min-width: 280px;
-  max-width: 500px;
-  height: auto;
-  min-height: 200px;
-  border: none;
-  border-radius: 20px;
-  padding: 30px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+.logout-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  background: rgba(220,38,38,0.9);
+  color: #ffffff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(220,38,38,0.25);
+}
+.logout-btn:hover {
+  background: rgb(220,38,38);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220,38,38,0.35);
+}
+
+/* ════════════════════════════════
+   STATS — MÊME STYLE VERT LIVE QUE PROD
+════════════════════════════════ */
+
+.home-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 1.5rem 2rem;
+}
+
+.home-stat {
+  background: #ffffff;
+  border: 1.5px solid #d1dce8;
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(4,33,158,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
-  text-decoration: none; /* Important pour les liens */
-  color: inherit; /* Hérite la couleur du texte */
 }
-
-/* Effet de survol pour tous les boutons */
-.bouton-grand:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-  text-decoration: none; /* Assure qu'il n'y a pas de soulignement au survol */
+.home-stat::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 40px; height: 3px;
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  border-radius: 0 0 4px 4px;
 }
-
-/* Effet de clic pour tous les boutons */
-.bouton-grand:active {
+.home-stat:hover {
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22,163,74,0.15);
+  border-color: rgba(22,163,74,0.35);
 }
 
-/* Style pour les liens actifs */
-.bouton-grand.active {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-}
-
-/* Contenu du bouton */
-.bouton-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  z-index: 2;
-}
-
-/* Icône du bouton */
-.bouton-icon {
-  width: 60px;
-  height: 60px;
-  stroke-width: 1.5;
-}
-
-/* Titre du bouton */
-.bouton-titre {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  margin: 0;
-}
-
-/* Description du bouton */
-.bouton-description {
-  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
-  line-height: 1.4;
-  max-width: 90%;
-  margin: 0;
-}
-
-/* Bouton Statistique */
-.bouton-grand.statistique {
-  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-  color: white;
-}
-
-.bouton-grand.statistique .bouton-icon {
-  stroke: #8eb1ff;
-}
-
-.bouton-grand.statistique:hover {
-  background: linear-gradient(135deg, #5a7ac7 0%, #2a3c68 100%);
-}
-
-/* Bouton Planning */
-.bouton-grand.planning {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  color: white;
-}
-
-.bouton-grand.planning .bouton-icon {
-  stroke: #a5ffd6;
-}
-
-.bouton-grand.planning:hover {
-  background: linear-gradient(135deg, #1aad9e 0%, #52ff99 100%);
-}
-
-/* Responsive Design */
-
-/* Pour les très grands écrans (desktop) */
-@media (min-width: 1200px) {
-  .boutons-container {
-    gap: 50px;
-  }
-  
-  .bouton-grand {
-    min-height: 250px;
-    padding: 40px;
-  }
-}
-
-/* Pour les tablettes et petits écrans desktop */
-@media (max-width: 992px) {
-  .boutons-container {
-    gap: 25px;
-  }
-  
-  .bouton-grand {
-    min-width: 240px;
-    min-height: 180px;
-    padding: 25px;
-  }
-}
-
-/* Pour les tablettes en mode portrait */
-@media (max-width: 768px) {
-  .choix-container {
-    padding: 15px;
-  }
-  
-  .boutons-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-  }
-  
-  .bouton-grand {
-    width: 100%;
-    max-width: 400px;
-    min-height: 170px;
-    padding: 20px;
-  }
-  
-  .bouton-icon {
-    width: 50px;
-    height: 50px;
-  }
-}
-
-/* Pour les téléphones en mode paysage */
-@media (max-width: 576px) and (orientation: landscape) {
-  .choix-container {
-    min-height: auto;
-    padding: 10px;
-  }
-  
-  .titre {
-    margin-bottom: 5px;
-  }
-  
-  .description {
-    margin-bottom: 20px;
-  }
-  
-  .bouton-grand {
-    min-height: 140px;
-    padding: 15px;
-  }
-  
-  .bouton-icon {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .bouton-content {
-    gap: 10px;
-  }
-}
-
-/* Pour les téléphones en mode portrait */
-@media (max-width: 576px) and (orientation: portrait) {
-  .choix-container {
-    justify-content: flex-start;
-    padding-top: 30px;
-  }
-  
-  .bouton-grand {
-    min-height: 160px;
-  }
-  
-  .bouton-icon {
-    width: 45px;
-    height: 45px;
-  }
-}
-
-/* Pour les très petits écrans */
-@media (max-width: 360px) {
-  .choix-container {
-    padding: 10px;
-  }
-  
-  .bouton-grand {
-    min-width: 100%;
-    min-height: 150px;
-    padding: 15px;
-  }
-  
-  .bouton-titre {
-    font-size: 1.3rem;
-  }
-  
-  .bouton-description {
-    font-size: 0.85rem;
-  }
-}
-
-/* Animation de chargement (optionnelle) */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.bouton-grand {
-  animation: fadeIn 0.5s ease forwards;
-}
-
-.bouton-grand:nth-child(2) {
-  animation-delay: 0.1s;
-}
-/* ... (tous les styles précédents restent) ... */
-
-.btn-retour-login {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+.home-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #16a34a;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
-  z-index: 100;
-  white-space: nowrap;
-}
-
-.btn-retour-login:hover {
-  background: linear-gradient(135deg, #ff5e6c 0%, #ff5252 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
-}
-
-.btn-retour-login:active {
-  transform: translateY(-1px);
-}
-
-.btn-retour-login svg {
-  width: 20px;
-  height: 20px;
-  stroke: white;
-  flex-shrink: 0;
-}
-
-/* Responsive pour le bouton retour */
-@media (max-width: 768px) {
-  .btn-retour-login {
-    top: 15px;
-    left: 15px;
-    padding: 10px 18px;
-    font-size: 14px;
-  }
-  
-  .btn-retour-login svg {
-    width: 18px;
-    height: 18px;
-  }
-}
-  
-  /* Stabiliser les boutons principaux sur tablette */
-  .bouton-grand {
-    min-width: 260px;
-    min-height: 180px;
-  }
-
-@media (max-width: 576px) {
-  .btn-retour-login {
-    top: 10px;
-    left: 10px;
-    padding: 8px 15px;
-    font-size: 13px;
-  }
-  
-  .btn-retour-login svg {
-    width: 16px;
-    height: 16px;
-  
-  /* Empêcher le chevauchement avec le bouton SERFA */
-  .choix-container {
-    padding-top: 60px;
-  }
-  }
-}
-/* Bouton Magasin */
-.bouton-grand.magasin {
-  background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
-  color: white;
-}
-
-.bouton-grand.magasin .bouton-icon {
-  stroke: #ffe4d6;
-}
-
-.bouton-grand.magasin:hover {
-  background: linear-gradient(135deg, #ff8f6f 0%, #ffc49b 100%);
-}
-/* ============================================ */
-/* STYLE POUR LE NOUVEAU BOUTON "SERFA 4.0"    */
-/* À ajouter dans choix.component.css           */
-/* ============================================ */
-
-/* Bouton SERFA 4.0 - Positionné à droite (symétrique au bouton retour) */
-.btn-serfa-40 {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  z-index: 1000;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
-
-.btn-serfa-40:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-}
-
-.btn-serfa-40:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
-}
-
-.btn-serfa-40 svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2.5;
-  transition: transform 0.3s ease;
-}
-
-.btn-serfa-40:hover svg {
-  transform: translateX(4px);
-}
-
-.btn-serfa-text {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-/* Version responsive pour mobile */
-@media (max-width: 768px) {
-  .btn-serfa-40 {
-    top: 10px;
-    right: 10px;
-    padding: 10px 16px;
-    font-size: 14px;
-    border-radius: 10px;
-  }
-  
-  .btn-serfa-40 svg {
-    width: 18px;
-    height: 18px;
-  }
-  
-  .btn-serfa-text {
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .btn-serfa-40 {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-  
-  .btn-serfa-40 svg {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .btn-serfa-text {
-    font-size: 11px;
-  }
-}
-
-/* Animation au chargement */
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.btn-serfa-40 {
-  animation: slideInRight 0.6s ease-out;
-}
-/* Responsive amélioré pour très petits écrans */
-@media (max-width: 480px) {
-  .btn-retour-login {
-    padding: 8px 12px;
-    font-size: 12px;
-    gap: 6px;
-  }
-  
-  .btn-retour-login svg {
-    width: 14px;
-    height: 14px;
-  }
-  
-  .btn-serfa-40 {
-    padding: 8px 10px;
-    font-size: 11px;
-  }
-  
-  .choix-container {
-    padding-top: 70px;
-  }
-}
-
-/* Ajout de stabilité pour orientation paysage sur mobile */
-@media (max-width: 768px) and (orientation: landscape) {
-  .choix-container {
-    padding: 10px;
-    padding-top: 60px;
-  }
-  
-  .bouton-grand {
-    min-height: 150px;
-    padding: 15px;
-  }
-  
-  .bouton-icon {
-    width: 40px;
-    height: 40px;
-  }
-}
-
-/* Garantir la visibilité des boutons sur tous les écrans */
-@media (max-width: 360px) {
-  .btn-retour-login,
-  .btn-serfa-40 {
-    position: fixed;
-    font-size: 11px;
-    padding: 6px 10px;
-  }
-  
-  .choix-container {
-    padding-top: 75px;
-  }
-}
-/* ══════════════════════════════════════════════════════════
-   MODAL OUVRIER — à ajouter dans choix.component.css
-   ══════════════════════════════════════════════════════════ */
-
-/* Overlay (fond sombre) */
-.ouvrier-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  animation: fadeIn 0.2s ease;
-}
-
-/* Conteneur principal de la modal */
-.ouvrier-modal-container {
-  background: #1a1f2e;
-  border: 1px solid rgba(236, 72, 153, 0.3);
-  border-radius: 20px;
-  width: 100%;
-  max-width: 860px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(236,72,153,0.1);
-  animation: slideUp 0.25s ease;
-}
-
-/* Header */
-.ouvrier-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 28px;
-  border-bottom: 1px solid rgba(236, 72, 153, 0.2);
+/* Point live pulsant */
+.home-stat-value::before {
+  content: '';
+  display: inline-block;
+  width: 9px; height: 9px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(34,197,94,0.5);
+  animation: pulse-live 2s infinite;
   flex-shrink: 0;
 }
-
-.ouvrier-modal-title {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #f472b6; /* pink-400 */
-  margin: 0;
+@keyframes pulse-live {
+  0%   { box-shadow: 0 0 0 0   rgba(34,197,94,0.55); }
+  60%  { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  100% { box-shadow: 0 0 0 0   rgba(34,197,94,0); }
 }
 
-.ouvrier-modal-close {
-  background: transparent;
-  border: none;
-  color: #9ca3af;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 8px;
-  transition: color 0.2s, background 0.2s;
-  display: flex;
-  align-items: center;
-}
-.ouvrier-modal-close:hover {
-  color: #f9fafb;
-  background: rgba(255,255,255,0.08);
-}
-.ouvrier-modal-close svg { width: 22px; height: 22px; }
-
-/* Corps scrollable */
-.ouvrier-modal-body {
-  overflow-y: auto;
-  padding: 24px 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* Carte (formulaire / liste) */
-.ouvrier-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 16px;
-  padding: 24px;
-}
-
-.ouvrier-section-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #f472b6;
-  margin: 0 0 20px 0;
-}
-
-/* ── Formulaire ── */
-.ouvrier-form-group {
-  margin-bottom: 20px;
-}
-
-.ouvrier-label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #d1d5db;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.ouvrier-input {
-  width: 100%;
-  padding: 12px 16px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  color: #f9fafb;
-  font-size: 0.95rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  box-sizing: border-box;
-}
-.ouvrier-input:focus {
-  outline: none;
-  border-color: #f472b6;
-  box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.15);
-}
-.ouvrier-input-error {
-  border-color: #ef4444 !important;
-}
-.ouvrier-input::placeholder { color: #6b7280; }
-
-/* Matricule row */
-.ouvrier-matricule-row {
-  display: flex;
-  gap: 10px;
-}
-.ouvrier-matricule-row .ouvrier-input { flex: 1; }
-
-.ouvrier-check-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 18px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  color: #d1d5db;
-  font-size: 0.9rem;
+.home-stat-label {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 6px;
   font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s;
-}
-.ouvrier-check-btn:hover { background: rgba(255,255,255,0.12); }
-.ouvrier-check-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.ouvrier-check-btn svg { width: 18px; height: 18px; }
-
-/* Résultat vérification */
-.ouvrier-check-result {
-  margin-top: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid;
-}
-.ouvrier-check-ok  { background: rgba(34,197,94,0.1);  border-color: rgba(34,197,94,0.4); }
-.ouvrier-check-ko  { background: rgba(239,68,68,0.1);   border-color: rgba(239,68,68,0.4); }
-
-.ouvrier-check-row { display: flex; align-items: center; gap: 8px; }
-.ouvrier-check-icon-ok { width: 20px; height: 20px; color: #4ade80; flex-shrink: 0; }
-.ouvrier-check-icon-ko { width: 20px; height: 20px; color: #f87171; flex-shrink: 0; }
-.ouvrier-text-ok { color: #4ade80; font-size: 0.9rem; }
-.ouvrier-text-ko { color: #f87171; font-size: 0.9rem; }
-
-.ouvrier-existing { margin-top: 8px; padding-left: 28px; }
-.ouvrier-existing-name { font-size: 0.85rem; color: #d1d5db; display: block; margin-bottom: 4px; }
-.ouvrier-suggest-btn {
-  background: none;
-  border: none;
-  color: #f472b6;
-  font-size: 0.8rem;
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
 }
 
-/* Erreur de champ */
-.ouvrier-field-error {
-  margin: 6px 0 0 0;
-  font-size: 0.82rem;
-  color: #f87171;
-}
+/* ════════════════════════════════
+   GRILLE MODULES
+════════════════════════════════ */
 
-/* Boutons du formulaire */
-.ouvrier-form-actions {
-  display: flex;
-  gap: 12px;
+.modules-row {
+  display: grid;
+  gap: 16px;
+  padding: 0 2rem;
+}
+.modules-row-2 {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 16px;
   margin-top: 8px;
 }
-
-.ouvrier-btn-cancel,
-.ouvrier-btn-submit {
-  flex: 1;
-  padding: 14px;
-  border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background 0.2s, transform 0.1s;
-}
-.ouvrier-btn-cancel {
-  background: rgba(107,114,128,0.3);
-  color: #d1d5db;
-}
-.ouvrier-btn-cancel:hover { background: rgba(107,114,128,0.5); }
-
-.ouvrier-btn-submit {
-  background: #db2777;
-  color: white;
-}
-.ouvrier-btn-submit:hover:not(:disabled) { background: #ec4899; transform: translateY(-1px); }
-.ouvrier-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-.ouvrier-btn-submit svg { width: 18px; height: 18px; }
-
-/* ── Liste ── */
-.ouvrier-list-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-.ouvrier-list-header .ouvrier-section-title { margin: 0; }
-
-.ouvrier-refresh-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  background: rgba(244,114,182,0.15);
-  border: 1px solid rgba(244,114,182,0.3);
-  border-radius: 10px;
-  color: #f472b6;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.ouvrier-refresh-btn:hover { background: rgba(244,114,182,0.25); }
-.ouvrier-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.ouvrier-refresh-btn svg { width: 16px; height: 16px; }
-
-.ouvrier-table-wrapper {
-  overflow-x: auto;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.07);
+.modules-row-3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
-.ouvrier-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.ouvrier-table thead tr {
-  background: rgba(255,255,255,0.05);
-}
-.ouvrier-table th {
-  padding: 12px 16px;
-  text-align: left;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.ouvrier-table tbody tr {
-  border-top: 1px solid rgba(255,255,255,0.04);
-  transition: background 0.15s;
-}
-.ouvrier-table tbody tr:hover { background: rgba(255,255,255,0.04); }
-.ouvrier-table td {
-  padding: 14px 16px;
-  color: #e5e7eb;
-  font-size: 0.9rem;
-  vertical-align: middle;
-}
+/* ════════════════════════════════
+   BOUTON MODULE — BARRE VERTE EN BAS
+════════════════════════════════ */
 
-/* Cellule matricule */
-.ouvrier-mat-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.ouvrier-mat-badge {
-  width: 38px;
-  height: 38px;
-  background: rgba(244,114,182,0.15);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #f472b6;
-}
-
-/* Boutons actions */
-.ouvrier-action-btns { display: flex; gap: 8px; }
-
-.ouvrier-btn-edit,
-.ouvrier-btn-delete {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.ouvrier-btn-edit  { background: rgba(59,130,246,0.15); color: #93c5fd; }
-.ouvrier-btn-edit:hover  { background: rgba(59,130,246,0.3); }
-.ouvrier-btn-delete { background: rgba(239,68,68,0.15);  color: #fca5a5; }
-.ouvrier-btn-delete:hover { background: rgba(239,68,68,0.3); }
-.ouvrier-btn-edit svg,
-.ouvrier-btn-delete svg { width: 14px; height: 14px; }
-
-/* Vide / chargement */
-.ouvrier-empty,
-.ouvrier-loading {
-  text-align: center;
-  padding: 40px 0;
-  color: #6b7280;
+.mod-btn {
+  background: #ffffff;
+  border: 2px solid #d1dce8;
+  border-radius: 18px;
+  padding: 2.5rem 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-}
-.ouvrier-empty svg { width: 48px; height: 48px; }
-.ouvrier-empty p,
-.ouvrier-loading p { font-size: 0.95rem; }
-
-/* ── Erreur boîte ── */
-.ouvrier-error-box {
-  background: rgba(127,29,29,0.3);
-  border: 1px solid #b91c1c;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-}
-.ouvrier-error-content { display: flex; align-items: flex-start; gap: 12px; }
-.ouvrier-error-icon { width: 22px; height: 22px; color: #f87171; flex-shrink: 0; margin-top: 2px; }
-.ouvrier-error-title { color: #fca5a5; font-weight: 600; font-size: 0.9rem; margin: 0 0 4px 0; }
-.ouvrier-error-sub   { color: #d1d5db; font-size: 0.82rem; margin: 0; }
-
-/* ── Spinner ── */
-.ouvrier-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  display: inline-block;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(4,33,158,0.08);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
 }
 
-/* ── Notification de succès ── */
-.ouvrier-success-notif {
-  position: fixed;
-  bottom: 28px;
-  right: 28px;
-  z-index: 2000;
-  background: linear-gradient(135deg, #166534, #15803d);
-  color: white;
-  padding: 14px 20px;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+/* Barre verte discrète en bas */
+.mod-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%; height: 4px;
+  background: linear-gradient(90deg, #16a34a, #22c55e, #0aaff0);
+  border-radius: 0 0 16px 16px;
+  transform: scaleX(0.35);
+  transform-origin: center;
+  opacity: 0.5;
+  transition: transform 0.35s ease, opacity 0.35s ease, height 0.35s ease;
+}
+.mod-btn:hover::after {
+  transform: scaleX(1);
+  opacity: 1;
+  height: 5px;
+}
+.mod-btn:hover {
+  background: #f6fff9;
+  border-color: rgba(22,163,74,0.45);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(22,163,74,0.14), 0 4px 12px rgba(4,33,158,0.08);
+}
+
+/* ── Icône module ── */
+.mod-icon {
+  width: 110px;
+  height: 110px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #04219e 0%, #0aaff0 100%);
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  animation: slideInRight 0.3s ease;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(4,33,158,0.30);
+  transition: box-shadow 0.3s, transform 0.3s;
 }
-.ouvrier-success-notif svg { width: 20px; height: 20px; color: #4ade80; flex-shrink: 0; }
+.mod-btn:hover .mod-icon {
+  box-shadow: 0 10px 28px rgba(4,33,158,0.38);
+  transform: scale(1.04);
+}
+.mod-icon svg {
+  width: 50px;
+  height: 50px;
+  stroke: #ffffff;
+  fill: none;
+}
 
-/* ── Animations ── */
-@keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
-@keyframes slideUp  { from { opacity: 0; transform: translateY(30px) } to { opacity: 1; transform: translateY(0) } }
-@keyframes slideInRight { from { opacity: 0; transform: translateX(40px) } to { opacity: 1; transform: translateX(0) } }
-@keyframes spin     { to { transform: rotate(360deg) } }
+/* ← Labels en bleu foncé comme Prod */
+.mod-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #04219e;
+  transition: color 0.2s;
+}
+.mod-btn:hover .mod-label {
+  color: #15803d;           /* ← passe au vert au hover */
+}
+
+.mod-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ════════════════════════════════
+   MODAL OUVRIER (inchangé)
+════════════════════════════════ */
+
+/* … garde tout le bloc .module-overlay,
+   .module-modal, .ouvrier-* de ton CSS actuel … */
+
+/* ════════════════════════════════
+   ANIMATIONS + SCROLLBAR
+════════════════════════════════ */
+
+.fade-in { animation: fadeIn 0.4s ease-in-out; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f0f5ff; border-radius: 4px; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #04219e, #0aaff0);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #16a34a, #0aaff0);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .home-stats      { grid-template-columns: repeat(2, 1fr); padding: 1rem; }
+  .modules-row-3   { grid-template-columns: 1fr; padding: 0 1rem; }
+  .modules-row-2   { grid-template-columns: 1fr; padding: 0 1rem; }
+  .top-bar         { padding: 1rem; }
+  .brand-title     { font-size: 1.6rem; }
+}
+@media (max-width: 1024px) and (min-width: 769px) {
+  .modules-row-3 { grid-template-columns: repeat(2, 1fr); }
+}
