@@ -62,7 +62,7 @@ export class AuthService {
             this.router.navigate(['/ecran']);
           }
           else if (matricule === '1922') {
-            this.router.navigate(['/video']);
+            this.router.navigate(['/lan']);
           }
           else if (matricule === this.SPECIAL_MATRICULE_LISTP) {
             this.router.navigate(['/listP']);

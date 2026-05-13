@@ -1,200 +1,142 @@
-/* landing-page.component.css */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* ── Page ── */
 .page-container {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  padding: 0.5rem;
   font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-.content-card {
-  max-width: 900px;
+.main-wrapper {
   width: 100%;
   background: white;
-  border-radius: 2rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   overflow: hidden;
-  transition: transform 0.3s ease;
 }
 
-.content-card:hover {
-  transform: translateY(-4px);
-}
-
-/* En-tête */
-.welcome-section {
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  padding: 2.5rem 2rem;
-  text-align: center;
-  color: white;
-}
-
-.greeting-icon {
-  font-size: 3rem;
-  margin-bottom: 0.75rem;
-}
-
-.greeting-title {
-  font-size: 2.5rem;
+/* ── Label de section ── */
+.section-label {
+  font-size: 0.72rem;
   font-weight: 700;
-  margin-bottom: 0.25rem;
-  letter-spacing: -0.02em;
+  padding: 0.35rem 0.75rem;
+  letter-spacing: 0.02em;
+}
+.operators-label {
+  background: #eef2ff;
+  color: #1e3c72;
+  border-left: 3px solid #1e3c72;
+  margin: 0.5rem 0.75rem 0;
+  border-radius: 0.3rem;
 }
 
-.greeting-subtitle {
-  font-size: 1rem;
-  opacity: 0.85;
-  font-weight: 500;
+/* ── Ligne de tableaux ── */
+.tables-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  flex-wrap: nowrap;
 }
 
-/* Bloc message arabe */
-.message-block {
-  padding: 1.75rem 2rem 1.25rem 2rem;
-  background: #fff8f8;
-  border-bottom: 1px solid #fde8e8;
+/* ── Bloc tableau ── */
+.table-block {
+  flex: 0 0 auto;
 }
 
-.message-title {
-  font-size: 1.2rem;
+/* ── Séparateur vertical ── */
+.v-divider {
+  width: 2px;
+  background: #e2e8f0;
+  align-self: stretch;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Titre tableau Q&M ── */
+.table-title {
+  font-size: 0.72rem;
   font-weight: 700;
-  color: #b91c1c;
-  margin-bottom: 0.6rem;
-  line-height: 1.7;
-  font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+.quality-title {
+  background: #f0fdf4;
+  color: #166534;
+  border-left: 3px solid #16a34a;
 }
 
-.message-note {
-  font-size: 0.95rem;
-  color: #6b2020;
-  line-height: 1.8;
-  font-family: 'Segoe UI', 'Tahoma', Arial, sans-serif;
-  opacity: 0.85;
-}
-
-/* Tableau */
-.table-wrapper {
-  padding: 1.75rem 2rem;
-  overflow-x: auto;
-}
-
-.employees-table {
-  width: 100%;
+/* ── Table ── */
+.data-table {
+  width: auto;
   border-collapse: collapse;
-  font-size: 0.95rem;
-  border-radius: 0.75rem;
+  font-size: 0.68rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  border-radius: 0.4rem;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
-.employees-table thead tr {
+.data-table thead tr {
   background: #1e3c72;
   color: white;
 }
 
-.employees-table th {
-  padding: 0.9rem 1.2rem;
+.data-table th {
+  padding: 0.3rem 0.55rem;
   text-align: left;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  font-size: 0.85rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
-.employees-table tbody tr {
-  border-bottom: 1px solid #eef2f6;
-  transition: background 0.2s ease;
-}
-
-.employees-table tbody tr:hover {
-  background: #f0f5ff;
-}
-
-.employees-table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.employees-table td {
-  padding: 0.85rem 1.2rem;
+.data-table td {
+  padding: 0.18rem 0.55rem;
   color: #1e293b;
-  font-weight: 500;
+  border-bottom: 1px solid #f1f5f9;
+  white-space: nowrap;
 }
 
-/* Ligne mise en évidence (rose/rouge) */
-.highlight-row {
-  background: #ffe4e4 !important;
+.data-table tbody tr:hover td {
+  background: #f8faff;
 }
 
-.highlight-row:hover {
-  background: #ffd1d1 !important;
+/* ── Séparateurs de ligne de production ── */
+.line-header-row td {
+  background: #1e3c72 !important;
+  color: #93c5fd !important;
+  font-weight: 700 !important;
+  font-size: 0.63rem !important;
+  padding: 0.2rem 0.55rem !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: none !important;
 }
 
-.highlight-row td {
-  color: #991b1b;
-  font-weight: 600;
-}
+/* ── Qualité / Maintenance ── */
+.row-qualite td    { background: #f0fdf4; }
+.row-maintenance td { background: #fff7ed; }
 
-/* Pied de page */
+.badge {
+  display: inline-block;
+  font-size: 0.63rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+}
+.badge-qualite     { background: #dcfce7; color: #166534; }
+.badge-maintenance { background: #ffedd5; color: #9a3412; }
+
+/* ── Pied de page ── */
 .footer-note {
-  padding: 1.25rem 2rem;
+  padding: 0.45rem 0.75rem;
   text-align: center;
-  border-top: 1px solid #eef2f6;
+  border-top: 1px solid #e2e8f0;
   background: #fafcff;
+  font-size: 0.72rem;
 }
-
-.footer-text {
-  color: #1e3c72;
-  font-size: 0.9rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.footer-sub {
-  color: #64748b;
-  font-size: 0.8rem;
-  font-weight: 400;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .page-container {
-    padding: 1rem;
-  }
-
-  .welcome-section {
-    padding: 1.75rem 1rem;
-  }
-
-  .greeting-title {
-    font-size: 1.75rem;
-  }
-
-  .message-block {
-    padding: 1.25rem 1rem;
-  }
-
-  .message-title {
-    font-size: 1rem;
-  }
-
-  .table-wrapper {
-    padding: 1rem;
-  }
-
-  .employees-table th,
-  .employees-table td {
-    padding: 0.65rem 0.75rem;
-    font-size: 0.85rem;
-  }
-
-  .footer-note {
-    padding: 1rem;
-  }
-}
+.footer-text { color: #1e3c72; font-weight: 700; }
+.footer-sep  { color: #94a3b8; margin: 0 0.4rem; }
+.footer-sub  { color: #64748b; }

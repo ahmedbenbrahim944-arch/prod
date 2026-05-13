@@ -196,6 +196,104 @@
          
         </div>
       </div>
+      <!-- ✅ BLOC D'ALERTE - Lignes non conformes -->
+<ng-container *ngIf="!dismissAlert">
+  <div *ngIf="lignesNonCorrectes.length > 0" class="alert-lignes-incorrectes">
+    
+    <!-- En-tête de l'alerte -->
+    <div class="alert-header">
+      <div class="alert-title-group">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span class="alert-title">
+          {{ lignesNonCorrectes.length }} ligne(s) nécessitent une vérification
+        </span>
+        <span class="alert-subtitle">
+          (Production% + Σ 6M% devrait être ≈ 100%)
+        </span>
+      </div>
+      <button class="alert-dismiss" (click)="toggleDismissAlert()" title="Masquer l'alerte">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tableau des lignes en erreur -->
+    <div class="alert-table-wrapper">
+      <table class="alert-table">
+        <thead>
+          <tr>
+            <th>Ligne</th>
+            <th>Production%</th>
+            <th>Σ 6M%</th>
+            <th>Total</th>
+            <th>Écart</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of lignesNonCorrectes" class="alert-row">
+            <td class="alert-ligne-name">
+              <button class="alert-ligne-btn" (click)="selectionnerLigneDate(l.ligne)">
+                {{ l.ligne }}
+              </button>
+            </td>
+            <td class="alert-cell-prod">{{ l.pcsProd }}%</td>
+            <td class="alert-cell-6m">{{ l.total6M }}%</td>
+            <td class="alert-cell-total" [ngClass]="{
+              'total-bas': l.total < 98,
+              'total-haut': l.total > 102
+            }">
+              {{ l.total }}%
+            </td>
+            <td class="alert-cell-ecart">± {{ l.ecart }}%</td>
+            <td>
+              <span class="alert-badge" [ngClass]="{
+                'badge-manque': l.total < 98,
+                'badge-surplus': l.total > 102
+              }">
+                {{ l.total < 98 ? '⬇ Données manquantes' : '⬆ Données en surplus' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer de l'alerte -->
+    <div class="alert-footer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      Cliquez sur le nom d'une ligne pour voir le détail de ses 6M — Les lignes sans planification sont exclues automatiquement.
+    </div>
+
+  </div>
+
+  <!-- ✅ Message si tout est OK -->
+  <div *ngIf="lignesNonCorrectes.length === 0 && statsLignesDate.length > 0" class="alert-all-ok">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    Toutes les lignes actives sont conformes (Production + 6M ≈ 100%)
+  </div>
+</ng-container>
+
+<!-- Bouton pour réafficher l'alerte si masquée -->
+<div *ngIf="dismissAlert && lignesNonCorrectes.length > 0" class="alert-dismissed-bar" (click)="toggleDismissAlert()">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+  </svg>
+  {{ lignesNonCorrectes.length }} ligne(s) à vérifier — Cliquez pour afficher
+</div>
       
       <!-- Histogramme -->
       <div class="chart-card">
@@ -393,6 +491,92 @@
           
         </div>
       </div>
+      <ng-container *ngIf="!dismissAlert">
+  <div *ngIf="lignesNonCorrectes.length > 0" class="alert-lignes-incorrectes">
+    <div class="alert-header">
+      <div class="alert-title-group">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span class="alert-title">
+          {{ lignesNonCorrectes.length }} ligne(s) nécessitent une vérification
+        </span>
+        <span class="alert-subtitle">(Production% + Σ 6M% devrait être ≈ 100%)</span>
+      </div>
+      <button class="alert-dismiss" (click)="toggleDismissAlert()" title="Masquer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="alert-table-wrapper">
+      <table class="alert-table">
+        <thead>
+          <tr>
+            <th>Ligne</th>
+            <th>Production%</th>
+            <th>Σ 6M%</th>
+            <th>Total</th>
+            <th>Écart</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of lignesNonCorrectes" class="alert-row">
+            <td class="alert-ligne-name">
+              <button class="alert-ligne-btn" (click)="selectionnerLigneDate(l.ligne)">
+                {{ l.ligne }}
+              </button>
+            </td>
+            <td class="alert-cell-prod">{{ l.pcsProd }}%</td>
+            <td class="alert-cell-6m">{{ l.total6M }}%</td>
+            <td class="alert-cell-total"
+              [ngClass]="{'total-bas': l.total < 98, 'total-haut': l.total > 102}">
+              {{ l.total }}%
+            </td>
+            <td class="alert-cell-ecart">± {{ l.ecart }}%</td>
+            <td>
+              <span class="alert-badge"
+                [ngClass]="{'badge-manque': l.total < 98, 'badge-surplus': l.total > 102}">
+                {{ l.total < 98 ? '⬇ Données manquantes' : '⬆ Données en surplus' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert-footer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      Cliquez sur une ligne pour voir le détail — Les lignes inactives (0 planification) sont exclues.
+    </div>
+  </div>
+
+  <div *ngIf="lignesNonCorrectes.length === 0 && statsLignesDate.length > 0" class="alert-all-ok">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    Toutes les lignes actives sont conformes (Production + 6M ≈ 100%)
+  </div>
+</ng-container>
+
+<div *ngIf="dismissAlert && lignesNonCorrectes.length > 0" 
+     class="alert-dismissed-bar" 
+     (click)="toggleDismissAlert()">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+  </svg>
+  {{ lignesNonCorrectes.length }} ligne(s) à vérifier — Cliquez pour afficher
+</div>
       
       <!-- Histogramme pour la date -->
       <div class="chart-card">

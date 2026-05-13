@@ -859,6 +859,10 @@ onLigneSelected(line: ProductionLine): void {
   // ==================== MODIFICATION PLANIFICATION ====================
 
 toggleEditMode(): void {
+  if (this.checkTimeRestriction()) {
+    this.showSuccessMessage('⛔ Saisie autorisée uniquement de 6h à 9h');
+    return;
+  }
   const currentEditingState = this.isEditing();
   
   if (!currentEditingState) {
@@ -1302,6 +1306,10 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
   // ==================== RAPPORTS DE PRODUCTION ====================
 
   onPersonIconClick(day: string): void {
+    if (this.checkTimeRestriction()) {
+    this.showSuccessMessage('⛔ Saisie autorisée uniquement de 6h à 9h');
+    return;
+  }
   
   const currentLine = this.selectedLigne();
   if (!currentLine) {
@@ -1693,6 +1701,10 @@ initializeOperatorFormData(matricule: string): void {
  // Dans la méthode saveAllProductionRecords(), modifier la création du DTO:
 // Modifiez la création du DTO dans saveAllProductionRecords()
 saveAllProductionRecords(): void {
+  if (this.checkTimeRestriction()) {
+    this.showSuccessMessage('⛔ Saisie autorisée uniquement de 6h à 9h');
+    return;
+  }
   const selectedMatricules = this.selectedMatricules();
   if (selectedMatricules.length === 0) {
     alert('Veuillez sélectionner au moins un opérateur');
@@ -4702,6 +4714,55 @@ private async getNonConfForRefAndLigne(
   }));
 
   return Object.keys(byDay).length > 0 ? byDay : null;
+}
+// ==================== CONTRÔLE HORAIRE ====================
+isTimeBlocked = signal<boolean>(false);
+isUnlocked = signal<boolean>(false);
+showUnlockModal = signal<boolean>(false);
+unlockPassword = signal<string>('');
+unlockError = signal<string>('');
+
+private UNLOCK_PASSWORD = 'Hella3012*';
+private ALLOWED_START_HOUR = 6;
+private ALLOWED_END_HOUR = 9;
+
+checkTimeRestriction(): boolean {
+  if (this.isUnlocked()) return false; // Débloqué manuellement
+  
+  const now = new Date();
+  const hour = now.getHours();
+  
+  const blocked = hour < this.ALLOWED_START_HOUR || hour >= this.ALLOWED_END_HOUR;
+  this.isTimeBlocked.set(blocked);
+  return blocked;
+}
+
+openUnlockModal(): void {
+  this.unlockPassword.set('');
+  this.unlockError.set('');
+  this.showUnlockModal.set(true);
+}
+
+closeUnlockModal(): void {
+  this.showUnlockModal.set(false);
+  this.unlockPassword.set('');
+  this.unlockError.set('');
+}
+
+tryUnlock(): void {
+  if (this.unlockPassword() === this.UNLOCK_PASSWORD) {
+    this.isUnlocked.set(true);
+    this.isTimeBlocked.set(false);
+    this.showUnlockModal.set(false);
+    this.showSuccessMessage('✅ Saisie débloquée avec succès');
+  } else {
+    this.unlockError.set('❌ Mot de passe incorrect');
+  }
+}
+
+canEnterData(): boolean {
+  this.checkTimeRestriction();
+  return !this.isTimeBlocked();
 }
 
 }

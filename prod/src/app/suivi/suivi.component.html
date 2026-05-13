@@ -202,7 +202,7 @@
                     Ligne
                   </label>
                   <div class="filter-select-wrap">
-                    <select class="filter-select" [(ngModel)]="filterLigne" (change)="applyFilters()">
+                    <select class="filter-select" [(ngModel)]="filterLigne" (change)="onLigneChange()">
                       <option value="">Toutes les lignes</option>
                       @for (l of ligneOptions; track l) {
                         <option [value]="l">{{ l }}</option>

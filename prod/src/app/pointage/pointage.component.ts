@@ -319,4 +319,7 @@ export class PointageComponent implements OnInit, OnDestroy {
     this.hasError = false;
     this.errorMessage = '';
   }
+  goBack(): void {
+  history.back();
+}
 }

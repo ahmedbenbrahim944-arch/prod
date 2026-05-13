@@ -12,6 +12,7 @@ import { MatierePremier } from '../matiere-premier/entities/matiere-premier.enti
 import { Phase } from '../phase/entities/phase.entity';
 import { Planification } from '../semaine/entities/planification.entity'; // ✅ NOUVEAU
 import { Semaine } from '../semaine/entities/semaine.entity'; // ✅ NOUVEAU
+import { SmsModule } from 'src/sms/sms.module';
 
 @Module({
   imports: [
@@ -25,7 +26,8 @@ import { Semaine } from '../semaine/entities/semaine.entity'; // ✅ NOUVEAU
       Phase,
       Planification, // ✅ NOUVEAU : pour récupérer les refs avec OF non null
       Semaine,       // ✅ NOUVEAU : pour trouver la semaine courante par date
-    ])
+    ]),
+    SmsModule,
   ],
   controllers: [ProductionTimeController],
   providers: [ProductionTimeService],

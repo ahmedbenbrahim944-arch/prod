@@ -590,17 +590,17 @@ export class Planification1Component implements OnInit {
     const ofByRef = new Map<string, string>();
     const noteByRef = new Map<string, string>();
 
-    planifications.forEach(p => {
-      if (p.of && p.of.trim() !== '' && !ofByRef.has(`${p.ligne}|${p.reference}`)) {
-        ofByRef.set(`${p.ligne}|${p.reference}`, p.of);
-      }
-      const key = `${p.ligne}|${p.reference}`;
-      if (p.note !== undefined && p.note !== null && p.note.trim() !== '') {
-        if (!noteByRef.has(key) || noteByRef.get(key) === '') noteByRef.set(key, p.note);
-      } else if (!noteByRef.has(key)) {
-        noteByRef.set(key, '');
-      }
-    });
+   planifications.forEach(p => {
+  const key = `${p.ligne}|${p.reference}`;
+  // Toujours initialiser
+  if (!noteByRef.has(key)) {
+    noteByRef.set(key, '');
+  }
+  // Mettre à jour si on trouve une note non vide
+  if (p.note && p.note.trim() !== '') {
+    noteByRef.set(key, p.note.trim());
+  }
+});
 
     const result: LigneData[] = lines
       .sort((a, b) => this.extractLineNumber(a.ligne) - this.extractLineNumber(b.ligne))
@@ -820,38 +820,50 @@ export class Planification1Component implements OnInit {
     this.activeRowRef = ref.reference;
   }
 
-  saveNote(ref: ReferenceRow): void {
-    if (this.editingNoteKey !== this.noteRefKey(ref)) return;
-    const newNote = (this.editNoteValue || '').trim();
-    this.savingNoteKey = this.noteRefKey(ref);
-    this.editingNoteKey = null;
-    ref.note = newNote;
+ saveNote(ref: ReferenceRow): void {
+  if (this.editingNoteKey !== this.noteRefKey(ref)) return;
+  const newNote = (this.editNoteValue || '').trim();
+  this.savingNoteKey = this.noteRefKey(ref);
+  this.editingNoteKey = null;
+  ref.note = newNote;
 
-    let dayToSave = 'lundi';
-    for (const day of this.weekDays) {
-      const e = ref[day] as DayEntry | undefined;
-      if (e && e.c > 0) { dayToSave = day; break; }
-    }
-
-    const entry = ref[dayToSave] as DayEntry;
-    const payload = {
-      semaine: this.selectedSemaine, jour: dayToSave, ligne: ref.ligne, reference: ref.reference,
-      nbOperateurs: entry?.nbOperateurs || 0, of: entry?.of || '', qtePlanifiee: entry?.c || 0,
-      qteModifiee: entry?.m || 0, decProduction: entry?.dp || 0, decMagasin: entry?.dm || 0,
-      note: newNote
-    };
-
-    this.semaineService.updatePlanificationByCriteria(payload).subscribe({
-      next: () => {
-        this.savingNoteKey = null;
-        this.showSuccess('Note sauvegardée ✓');
-        if (this.selectedLigneForView && this.selectedSemaine) {
-          setTimeout(() => this.loadDataForLigne(this.selectedLigneForView!.ligne), 500);
-        }
-      },
-      error: () => { this.errorMessage = 'Erreur lors de la sauvegarde de la note'; this.savingNoteKey = null; }
-    });
+  // ✅ Trouver un jour avec quantité, sinon prendre le premier jour disponible
+  let dayToSave = this.weekDays[0]; // fallback garanti
+  for (const day of this.weekDays) {
+    const e = ref[day] as DayEntry | undefined;
+    if (e && e.c > 0) { dayToSave = day; break; }
   }
+
+  const entry = ref[dayToSave] as DayEntry;
+  
+  // ✅ Passer directement l'objet (pas par formatWeekForAPI qui pourrait ignorer note)
+  const payload = {
+    semaine: this.selectedSemaine,
+    jour: dayToSave,
+    ligne: ref.ligne,
+    reference: ref.reference,
+    nbOperateurs: entry?.nbOperateurs || 0,
+    of: entry?.of || '',
+    qtePlanifiee: entry?.c || 0,
+    qteModifiee: entry?.m || 0,
+    decProduction: entry?.dp || 0,
+    decMagasin: entry?.dm || 0,
+    note: newNote  // ✅ explicitement inclus
+  };
+
+  this.semaineService.updatePlanificationByCriteria(payload).subscribe({
+    next: () => {
+      this.savingNoteKey = null;
+      this.showSuccess('Note sauvegardée ✓');
+      // ✅ Supprimer le rechargement complet qui écrase la note localement
+      // Le rechargement après 500ms causait l'écrasement visible dans les images
+    },
+    error: () => {
+      this.errorMessage = 'Erreur lors de la sauvegarde de la note';
+      this.savingNoteKey = null;
+    }
+  });
+}
 
   goBack(): void { this.router.navigate(['/prod']); }
 

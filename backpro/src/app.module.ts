@@ -30,10 +30,15 @@ import { AutosaisieModule } from './autosaisie/autosaisie.module';
 import { PlannMagModule } from './plann-mag/plann-mag.module';
 import { AffichageModule } from './affichage/affichage.module';
 import { ProductionModule } from './production/production.module';
+import { ConfigModule } from '@nestjs/config';
 
 
 @Module({
   imports: [
+     ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     // Configuration TypeORM directement ici
     TypeOrmModule.forRoot({
       type: 'mysql',

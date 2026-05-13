@@ -210,21 +210,21 @@ export class SemaineService {
 async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Promise<any> {
   const { semaine, jour, ligne, reference, ...fieldsToUpdate } = dto;
 
-  // 1. OF → propagé à TOUS les jours
+  // OF → tous les jours
   if (fieldsToUpdate.of !== undefined) {
     await this.planificationRepository.update(
-      { semaine, ligne, reference },  // ← pas de "jour"
+      { semaine, ligne, reference },
       { of: fieldsToUpdate.of }
     );
   }
 
-  // 2. Tout le reste → seulement le jour concerné
+  // Tout le reste (dont note) → seulement le jour concerné
   const { of: _, ...perDayFields } = fieldsToUpdate;
   
   if (Object.keys(perDayFields).length > 0) {
     await this.planificationRepository.update(
-      { semaine, jour, ligne, reference },  // ← avec "jour"
-      perDayFields
+      { semaine, jour, ligne, reference },
+      perDayFields  // ✅ note est incluse ici
     );
   }
 

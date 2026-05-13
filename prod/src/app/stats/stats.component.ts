@@ -6,7 +6,6 @@ import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
-// â”€â”€ Interfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface DetailNonConformite {
   reference: string;
@@ -172,8 +171,10 @@ export class StatsComponent implements OnInit {
   errorMessage: string = '';
   private chart: Chart | null = null;
   selectedM: string | null = null;
+  // Ajouter après les autres propriétés
+private personnelParDate: any[] = [];
+personnelComptesReels = { presents: 0, absents: 0, conges: 0, selections: 0 };
 
-  // â”€â”€ Modale 7M â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   showDetailsModal: boolean = false;
   detailsModalTitle: string = '';
   detailsModalData: DetailNonConformite[] = [];
@@ -283,6 +284,36 @@ export class StatsComponent implements OnInit {
     this.dateFin = this.maxDate;
   }
 
+  private async chargerPersonnelParDate(): Promise<void> {
+  if (!this.dateFin) return;
+  try {
+    const data: any = await this.http.get<any>(
+      this.statutApiUrl,
+      { params: { date: this.dateFin }, headers: this.getAuthHeaders() }
+    ).toPromise();
+
+    const tousOuvriers: OuvrierPersonnel[] =
+      data?.statistiques?.ouvriers || data?.ouvriers || [];
+
+    // Nettoyer les espaces parasites
+    this.personnelParDate = tousOuvriers.map((o: OuvrierPersonnel) => ({
+      ...o,
+      statut: (o.statut ?? '').toString().trim() as any,
+      matricule: o.matricule?.toString().trim()
+    }));
+
+    // Calculer les vrais comptages
+    this.personnelComptesReels = {
+      presents:   this.personnelParDate.filter(o => o.statut === 'P').length,
+      absents:    this.personnelParDate.filter(o => o.statut === 'AB').length,
+      conges:     this.personnelParDate.filter(o => o.statut === 'C').length,
+      selections: this.personnelParDate.filter(o => o.statut === 'S').length,
+    };
+  } catch (err) {
+    console.error('Erreur chargement personnel par-date:', err);
+  }
+}
+
   // â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private formatDate(date: Date): string {
@@ -346,6 +377,9 @@ export class StatsComponent implements OnInit {
 
       if (response) {
         this.statsData = response;
+         await this.chargerPersonnelParDate();
+         this.dismissAlert = false;
+  this.calculerLignesNonCorrectes();
         setTimeout(() => {
           this.creerGraphique();
         }, 100);
@@ -865,51 +899,48 @@ export class StatsComponent implements OnInit {
     return ref.commentaireTexte || '-';
   }
 
-  // â”€â”€ Modale Personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Copié exactement de statistiques1.component.ts :
-  // getStatutsByDate â†’ response.statistiques.repartitionStatuts + response.statistiques.ouvriers
+  
 
-  openPersonnelModal(statutCode: string): void {
-    const labelMap: Record<string, string> = {
-      'P':  'âœ… Présents',
-      'AB': 'ðŸš« Absents',
-      'C':  'ðŸ–ï¸ En Congé',
-      'S':  'âœ”ï¸ Sélections'
-    };
+ openPersonnelModal(statutCode: string): void {
+  const labelMap: Record<string, string> = {
+    'P':  ' Présents',
+    'AB': ' Absents',
+    'C':  ' En Congé',
+    'S':  ' Sélections'
+  };
 
-    this.personnelModalStatut = statutCode;
-    this.personnelModalTitle  = `Personnel "” ${labelMap[statutCode] || statutCode}`;
-    this.personnelModalList   = [];
-    this.showPersonnelModal   = true;
-    this.isLoadingPersonnel   = true;
+  this.personnelModalStatut = statutCode;
+  this.personnelModalTitle  = `Personnel — ${labelMap[statutCode] || statutCode}`;
+  this.showPersonnelModal   = true;
+  this.isLoadingPersonnel   = false;
 
-    // Même endpoint que statistiques1 : GET /statut/par-date?date=YYYY-MM-DD
-    // On utilise la dateFin de la période sélectionnée comme référence
+  // ✅ Utiliser les données déjà chargées (pas de nouvel appel API)
+  if (this.personnelParDate.length > 0) {
+    this.personnelModalList = this.personnelParDate.filter(
+      (o: OuvrierPersonnel) => o.statut === statutCode
+    );
+  } else {
+    // Fallback : appel API si données pas encore chargées
+    this.isLoadingPersonnel = true;
     this.http.get<any>(this.statutApiUrl, {
       params: { date: this.dateFin },
       headers: this.getAuthHeaders()
     }).subscribe({
       next: (data: any) => {
-        // Structure identique Ã  statistiques1 :
-        // data.statistiques.repartitionStatuts â†’ compteurs { P, AB, C, S }
-        // data.statistiques.ouvriers           â†’ liste complète des ouvriers
-        const tousOuvriers: OuvrierPersonnel[] =
-          data?.statistiques?.ouvriers ||
-          data?.ouvriers               ||
-          [];
-
-        // Filtrer par le statut cliqué "” même logique que statistiques1
+        const tousOuvriers = (data?.statistiques?.ouvriers || data?.ouvriers || [])
+          .map((o: OuvrierPersonnel) => ({
+            ...o,
+            statut: (o.statut ?? '').toString().trim() as any
+          }));
         this.personnelModalList = tousOuvriers.filter(
           (o: OuvrierPersonnel) => o.statut === statutCode
         );
         this.isLoadingPersonnel = false;
       },
-      error: (err: any) => {
-        console.error('Erreur chargement personnel:', err);
-        this.isLoadingPersonnel = false;
-      }
+      error: () => { this.isLoadingPersonnel = false; }
     });
   }
+}
 
   closePersonnelModal(): void {
     this.showPersonnelModal   = false;
@@ -929,5 +960,61 @@ export class StatsComponent implements OnInit {
     if (!code) return 'Non défini';
     return this.statutOptions.find(s => s.code === code)?.libelle || 'Non défini';
   }
+  get totalOuvriersReel(): number {
+  return this.personnelComptesReels.presents 
+       + this.personnelComptesReels.absents 
+       + this.personnelComptesReels.conges 
+       + this.personnelComptesReels.selections;
+}
+// ✅ Alerte lignes non conformes
+lignesNonCorrectes: { ligne: string; pcsProd: number; total6M: number; total: number; ecart: number }[] = [];
+dismissAlert: boolean = false;
+
+toggleDismissAlert(): void {
+  this.dismissAlert = !this.dismissAlert;
+}
+calculerLignesNonCorrectes(): void {
+  const TOLERANCE = 2;
+  const resultats: { ligne: string; pcsProd: number; total6M: number; total: number; ecart: number }[] = [];
+
+  if (!this.statsData?.statsParLigne) {
+    this.lignesNonCorrectes = [];
+    return;
+  }
+
+  for (const ligne of this.statsData.statsParLigne) {
+    // ✅ Exclure les lignes sans production (inactives ce jour)
+    if (ligne.production.totalQteSource === 0 && ligne.production.totalDecProduction === 0) continue;
+    if (ligne.production.pcs === 0) continue;
+
+    const m = ligne.causes7M;
+    const total6M =
+      (m.matierePremiere?.pourcentage || 0) +
+      (m.absence?.pourcentage || 0) +
+      (m.rendement?.pourcentage || 0) +
+      (m.methode?.pourcentage || 0) +
+      (m.maintenance?.pourcentage || 0) +
+      (m.qualite?.pourcentage || 0) +
+      (m.environnement?.pourcentage || 0);
+
+    const total = ligne.production.pcs + total6M;
+    const ecart = Math.abs(total - 100);
+
+    if (ecart > TOLERANCE) {
+      resultats.push({
+        ligne: ligne.ligne,
+        pcsProd: Math.round(ligne.production.pcs * 10) / 10,
+        total6M: Math.round(total6M * 10) / 10,
+        total: Math.round(total * 10) / 10,
+        ecart: Math.round(ecart * 10) / 10
+      });
+    }
+  }
+
+  this.lignesNonCorrectes = resultats.sort((a, b) => b.ecart - a.ecart);
+}
+getLigneData(ligneName: string): any {
+  return this.statsData?.statsParLigne.find(l => l.ligne === ligneName) || null;
+}
 }
 

@@ -187,52 +187,65 @@ export class SuiviComponent implements OnInit, OnDestroy {
   // ─── FILTRES ────────────────────────────────────────────────────────────
   // ════════════════════════════════════════════════════════════════════════
 
-  private buildFilterOptions(): void {
-    const lignes = new Set<string>();
-    const parties = new Set<string>();
-    const refs = new Set<string>();
+private buildFilterOptions(): void {
+  const lignes = new Set<string>();
+  const parties = new Set<string>();
 
-    this.allProductionRecords.forEach(r => {
-      if (r.ligne) lignes.add(r.ligne);
-      if (r.dernierePartie) parties.add(r.dernierePartie);
-      if (r.reference) refs.add(r.reference);
-    });
+  this.allProductionRecords.forEach(r => {
+    if (r.ligne) lignes.add(r.ligne);
+    if (r.dernierePartie) parties.add(r.dernierePartie);
+  });
 
-    this.ligneOptions = Array.from(lignes).sort();
-    this.dernierePartieOptions = Array.from(parties).sort();
-    this.referenceOptions = Array.from(refs).sort();
+  this.ligneOptions = Array.from(lignes).sort();
+  this.dernierePartieOptions = Array.from(parties).sort();
+
+  // ✅ Set SÉPARÉ pour les références, calculé APRÈS le forEach global
+  const refs = new Set<string>();
+  const sourceForRefs = this.filterLigne
+    ? this.allProductionRecords.filter(r => r.ligne === this.filterLigne)
+    : this.allProductionRecords;
+
+  sourceForRefs.forEach(r => {
+    if (r.reference) refs.add(r.reference);
+  });
+
+  this.referenceOptions = Array.from(refs).sort();
+}
+
+ applyFilters(): void {
+  let records = [...this.allProductionRecords];
+
+  if (this.filterLigne) {
+    records = records.filter(r => r.ligne === this.filterLigne);
   }
 
-  applyFilters(): void {
-    let records = [...this.allProductionRecords];
-
-    if (this.filterLigne) {
-      records = records.filter(r => r.ligne === this.filterLigne);
-    }
-
-    if (this.filterReference) {
-      records = records.filter(r => r.reference === this.filterReference);
-    }
-
-    if (this.filterDateDebut) {
-      const debut = new Date(this.filterDateDebut);
-      debut.setHours(0, 0, 0, 0);
-      records = records.filter(r => new Date(r.dateScan) >= debut);
-    }
-
-    if (this.filterDateFin) {
-      const fin = new Date(this.filterDateFin);
-      fin.setHours(23, 59, 59, 999);
-      records = records.filter(r => new Date(r.dateScan) <= fin);
-    }
-
-    if (this.filterDernierePartie) {
-      records = records.filter(r => r.dernierePartie === this.filterDernierePartie);
-    }
-
-    this.filteredRecords = records;
-    this.cdr.markForCheck();
+  if (this.filterReference) {
+    records = records.filter(r => r.reference === this.filterReference);
   }
+
+  if (this.filterDateDebut) {
+    const debut = new Date(this.filterDateDebut);
+    debut.setHours(0, 0, 0, 0);
+    records = records.filter(r => new Date(r.dateScan) >= debut);
+  }
+
+  if (this.filterDateFin) {
+    const fin = new Date(this.filterDateFin);
+    fin.setHours(23, 59, 59, 999);
+    records = records.filter(r => new Date(r.dateScan) <= fin);
+  }
+
+  if (this.filterDernierePartie) {
+    records = records.filter(r => r.dernierePartie === this.filterDernierePartie);
+  }
+
+  this.filteredRecords = records;
+
+  // ✅ Recalcule les options de référence selon la ligne active
+  this.buildFilterOptions();
+
+  this.cdr.markForCheck();
+}
 
   resetFilters(): void {
     this.filterLigne = '';
@@ -278,4 +291,11 @@ export class SuiviComponent implements OnInit, OnDestroy {
   toggleFilters(): void {
     this.filtersVisible = !this.filtersVisible;
   }
+  onLigneChange(): void {
+  // Si la référence sélectionnée n'existe plus dans la nouvelle ligne → on la reset
+  if (this.filterReference && !this.referenceOptions.includes(this.filterReference)) {
+    this.filterReference = '';
+  }
+  this.applyFilters();
+}
 }

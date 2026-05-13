@@ -157,6 +157,11 @@ export class Stats1Component implements OnInit {
   errorMessage: string = '';
   private chart: Chart | null = null;
   selectedM: string | null = null;
+  // Après les autres propriétés (après selectedM)
+private personnelParDate: any[] = [];
+personnelComptesReels = { 
+  total: 0, presents: 0, absents: 0, conges: 0, selections: 0 
+};
   
   // Modale de détails
   showDetailsModal: boolean = false;
@@ -283,7 +288,8 @@ export class Stats1Component implements OnInit {
 
       if (response) {
         this.statsData = response;
-       
+       await this.chargerPersonnelParDate();
+
         setTimeout(() => {
           this.creerGraphique();
         }, 100);
@@ -295,6 +301,48 @@ export class Stats1Component implements OnInit {
       this.isLoading = false;
     }
   }
+
+ private async chargerPersonnelParDate(): Promise<void> {
+  if (!this.dateFin) return;
+  try {
+    const data: any = await this.http.get<any>(
+      'http://102.207.250.53:3000/statut/par-date',
+      { params: { date: this.dateFin } }
+    ).toPromise();
+
+    const tousOuvriers: any[] = data?.statistiques?.ouvriers || data?.ouvriers || [];
+
+    // Nettoyer + EXCLURE les matricules commençant par "S "
+    const propres = tousOuvriers
+      .map(o => ({
+        ...o,
+        statut: (o.statut ?? '').toString().trim(),
+        matricule: o.matricule?.toString().trim()
+      }))
+      .filter(o => !o.matricule?.toUpperCase().startsWith('S ')); // ✅ Exclure "S xxx"
+
+    this.personnelComptesReels = {
+      total:      propres.length,
+      presents:   propres.filter(o => o.statut === 'P').length,
+      absents:    propres.filter(o => o.statut === 'AB').length,
+      conges:     propres.filter(o => o.statut === 'C').length,
+      selections: propres.filter(o => o.statut === 'S').length,
+    };
+
+  } catch (err) {
+    console.error('Erreur chargement personnel par-date:', err);
+    if (this.statsData?.personnel) {
+      const p = this.statsData.personnel;
+      this.personnelComptesReels = {
+        total:      p.totalOuvriers,
+        presents:   p.presents,
+        absents:    p.absents,
+        conges:     p.conges,
+        selections: p.selections,
+      };
+    }
+  }
+}
 
  private creerGraphique(): void {
   if (!this.chartCanvas || !this.statsData) {

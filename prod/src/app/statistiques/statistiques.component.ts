@@ -72,6 +72,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
   showSaisieDetails: boolean = false;
   showResultatsSemaine: boolean = false;
   showResultatsDate: boolean = false;
+  
 
   // Propriétés pour les 5M par ligne (semaine uniquement)
   stats5MParLigneData: Ligne5MStats[] = [];
@@ -357,6 +358,8 @@ chargerStatsParDate(): void {
       this.showSaisieDetails = false;
       this.showSaisieRapports = false;
       this.showStatutsPanel = false;
+      this.dismissAlert = false;
+      this.calculerLignesNonCorrectes();
       
       setTimeout(() => {
         this.creerGraphiquesDate();
@@ -1173,4 +1176,89 @@ filtrerEtTrierOuvriers(ouvriers: any[]): any[] {
     return matriculeA - matriculeB;
   });
 }
+getLignesNonCorrectes(): { ligne: string; pcsProd: number; total6M: number; total: number; ecart: number }[] {
+  const lignesNonCorrectes: { ligne: string; pcsProd: number; total6M: number; total: number; ecart: number }[] = [];
+  const TOLERANCE = 2; // ±2% de tolérance
+
+  for (const ligne of this.statsLignesDate) {
+    // ✅ Exclure les lignes inactives ou sans planification (ligne ne travaille pas ce jour)
+    if (!ligne.actif || ligne.nombrePlanifications === 0 || ligne.pcsProdTotal === 0) continue;
+
+    // Trouver les données 5M correspondantes pour cette ligne
+    const ligne5M = this.stats5MParLigneDate.find(l => l.ligne === ligne.ligne);
+    if (!ligne5M) continue;
+
+    const total6M =
+      (ligne5M.detailTotalParCause.matierePremiere?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.absence?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.rendement?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.maintenance?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.qualite?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.methode?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.environnement?.pourcentageSource || 0);
+
+    const total = ligne.pcsProdTotal + total6M;
+    const ecart = Math.abs(total - 100);
+
+    if (ecart > TOLERANCE) {
+      lignesNonCorrectes.push({
+        ligne: ligne.ligne,
+        pcsProd: Math.round(ligne.pcsProdTotal * 10) / 10,
+        total6M: Math.round(total6M * 10) / 10,
+        total: Math.round(total * 10) / 10,
+        ecart: Math.round(ecart * 10) / 10
+      });
+    }
+  }
+
+  // Trier par écart décroissant (les plus problématiques en premier)
+  return lignesNonCorrectes.sort((a, b) => b.ecart - a.ecart);
+}
+
+// Méthode helper pour fermer l'alerte
+dismissAlert: boolean = false;
+
+toggleDismissAlert(): void {
+  this.dismissAlert = !this.dismissAlert;
+}
+// ✅ PROPRIÉTÉ - calculée une fois, pas en boucle
+lignesNonCorrectes: { ligne: string; pcsProd: number; total6M: number; total: number; ecart: number }[] = [];
+
+// ✅ MÉTHODE - appelée uniquement au chargement des données
+calculerLignesNonCorrectes(): void {
+  const TOLERANCE = 2;
+  const resultats: { ligne: string; pcsProd: number; total6M: number; total: number; ecart: number }[] = [];
+
+  for (const ligne of this.statsLignesDate) {
+    if (!ligne.actif || ligne.nombrePlanifications === 0 || ligne.pcsProdTotal === 0) continue;
+
+    const ligne5M = this.stats5MParLigneDate.find(l => l.ligne === ligne.ligne);
+    if (!ligne5M) continue;
+
+    const total6M =
+      (ligne5M.detailTotalParCause.matierePremiere?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.absence?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.rendement?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.maintenance?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.qualite?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.methode?.pourcentageSource || 0) +
+      (ligne5M.detailTotalParCause.environnement?.pourcentageSource || 0);
+
+    const total = ligne.pcsProdTotal + total6M;
+    const ecart = Math.abs(total - 100);
+
+    if (ecart > TOLERANCE) {
+      resultats.push({
+        ligne: ligne.ligne,
+        pcsProd: Math.round(ligne.pcsProdTotal * 10) / 10,
+        total6M: Math.round(total6M * 10) / 10,
+        total: Math.round(total * 10) / 10,
+        ecart: Math.round(ecart * 10) / 10
+      });
+    }
+  }
+
+  this.lignesNonCorrectes = resultats.sort((a, b) => b.ecart - a.ecart);
+}
+
 }

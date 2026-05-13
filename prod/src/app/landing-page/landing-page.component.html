@@ -1,80 +1,88 @@
-<!-- landing-page.component.html -->
 <div class="page-container">
-  <div class="content-card">
+  <div class="main-wrapper">
 
-    <!-- En-tête -->
+    <!-- Titre global opérateurs -->
     
 
-    <!-- Message principal en arabe -->
-    <div class="message-block" dir="rtl">
-      <p class="message-title">نحيطكم علمًا بأنّ العمّال المذكورين أسفله مُعنيّون بالعمل خلال الفترة الصباحية، وذلك من الساعة السادسة صباحًا إلى الساعة الثانية بعد الزوال، وذلك لمدّة محدّدة</p>
-      <p class="message-note">ابتداء من الخميس 2 افريل 2026 </p>
-    </div>
+    <!-- 3 tableaux opérateurs + 1 tableau Q&M côte à côte -->
+    <div class="tables-row">
 
-    <!-- Tableau des employés -->
-    <div class="table-wrapper">
-      <table class="employees-table">
-        <thead>
-          <tr>
-            <th>Mat</th>
-            <th>NOM</th>
-            <th>PRÉNOM</th>
-            <th>F.</th>
-            <th>S.</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>1490</td>
-            <td>BOUZIDI</td>
-            <td>Hamida</td>
-            <td>OUV</td>
-            <td>PRD</td>
-          </tr>
-          <tr>
-            <td>1491</td>
-            <td>ABID</td>
-            <td>Nihed</td>
-            <td>OUV</td>
-            <td>PRD</td>
-          </tr>
-          <tr>
-            <td>1495</td>
-            <td>BENKHLIFA</td>
-            <td>Farah</td>
-            <td>OUV</td>
-            <td>PRD</td>
-          </tr>
-          <tr>
-            <td>1497</td>
-            <td>CHHIBA</td>
-            <td>Imen</td>
-            <td>OUV</td>
-            <td>PRD</td>
-          </tr>
-          <tr>
-            <td>1499</td>
-            <td>MONCER</td>
-            <td>Rania</td>
-            <td>OUV</td>
-            <td>PRD</td>
-          </tr>
-          <tr>
-            <td>1502</td>
-            <td>Hamed</td>
-            <td>Fedia</td>
-            <td>OUV</td>
-            <td>PRD</td>
-          </tr>
-         
-        </tbody>
-      </table>
+      <!-- TABLEAUX OPÉRATEURS (x3) -->
+      <div class="table-block" *ngFor="let col of tableColumns">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mat.</th>
+              <th>Nom</th>
+              <th>Prénom</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let row of col">
+              <tr *ngIf="row.isHeader" class="line-header-row">
+                
+              </tr>
+              <tr *ngIf="!row.isHeader">
+                <td>{{ row.matricule }}</td>
+                <td>{{ row.nom }}</td>
+                <td>{{ row.prenom }}</td>
+              </tr>
+            </ng-container>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SÉPARATEUR VERTICAL -->
+      <div class="v-divider"></div>
+
+      <!-- TABLEAU QUALITÉ & MAINTENANCE -->
+      <div class="table-block">
+        <div class="table-title quality-title">🔍 Qualité &amp; Maintenance</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Mat.</th>
+              <th>Nom</th>
+              <th>Prénom</th>
+              <th>Service</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of qualiteMaintenanceEmployees"
+                [class.row-qualite]="emp.service === 'Qualité'"
+                [class.row-maintenance]="emp.service === 'Maintenance'">
+              <td>{{ emp.matricule }}</td>
+              <td>{{ emp.nom }}</td>
+              <td>{{ emp.prenom }}</td>
+              <td>
+                <span class="badge"
+                      [class.badge-qualite]="emp.service === 'Qualité'"
+                      [class.badge-maintenance]="emp.service === 'Maintenance'">
+                  {{ emp.service }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="section-label operators-label">
+      Liste des opérateurs — Samedi 06H00 à 11H00
+       Les Lignes:
+          -COM XT5
+          -RXT2
+          -GB XT2
+          -POLO XT5
+          -COM ST7
+    </div>
+      </div>
+      
+
     </div>
 
     <!-- Pied de page -->
     <div class="footer-note">
-      <p class="footer-text"> Ressources Humaines</p>
-      <p class="footer-sub"></p>
+      <span class="footer-text">Ressources Humaines</span>
+      <span class="footer-sep">·</span>
+      <span class="footer-sub">Seraf — Gestion du Personnel</span>
     </div>
 
   </div>

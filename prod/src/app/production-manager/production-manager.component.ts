@@ -1081,4 +1081,7 @@ dismissReconnectBanner(): void {
   this.reconnectBannerVisibleSignal.set(false);
   this.authService.clearProductionContext();
 }
+goBack(): void {
+  history.back();
+}
 }

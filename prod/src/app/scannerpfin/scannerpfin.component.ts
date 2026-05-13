@@ -331,4 +331,7 @@ export class ScannerpfinComponent implements OnInit, OnDestroy {
       hour: '2-digit', minute: '2-digit',
     });
   }
+    goBack(): void {
+  history.back();
+}
 }

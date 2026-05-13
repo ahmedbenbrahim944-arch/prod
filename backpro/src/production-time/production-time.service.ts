@@ -24,6 +24,7 @@ import { Between,MoreThanOrEqual } from 'typeorm';
 import { Planification ,  } from '../semaine/entities/planification.entity'; 
 import { Not } from 'typeorm';
 import { Semaine } from '../semaine/entities/semaine.entity';
+import { SmsService } from 'src/sms/sms.service';
 
 
 
@@ -53,7 +54,8 @@ export class ProductionTimeService {
     @InjectRepository(Planification)
     private planificationRepo: Repository<Planification>,
     @InjectRepository(Semaine)
-    private semaineRepo: Repository<Semaine>
+    private semaineRepo: Repository<Semaine>,
+     private readonly smsService: SmsService,
   ) {}
 
   /**
@@ -198,7 +200,7 @@ export class ProductionTimeService {
   /**
    * ✅ MODIFIÉ - Mettre en pause la production avec références M1/M4/M5
    */
- async pauseProduction(pauseDto: PauseProductionDto, user: User) {
+async pauseProduction(pauseDto: PauseProductionDto, user: User) {
   try {
     const session = await this.productionSessionRepo.findOne({
       where: { 
@@ -206,11 +208,11 @@ export class ProductionTimeService {
         status: 'active'
       }
     });
- 
+
     if (!session) {
       throw new NotFoundException('Session active non trouvée');
     }
- 
+
     // Vérifier s'il y a déjà une pause non terminée
     const existingPause = await this.pauseSessionRepo.findOne({
       where: { 
@@ -218,11 +220,11 @@ export class ProductionTimeService {
         endTime: IsNull()
       }
     });
- 
+
     if (existingPause) {
       throw new ConflictException('Une pause est déjà en cours pour cette session');
     }
- 
+
     // ✅ Validation des références métier selon la catégorie M
     if (pauseDto.mCategory === 'M1' && (!pauseDto.matierePremierRefs || pauseDto.matierePremierRefs.length === 0)) {
       throw new BadRequestException('Les références matières premières sont obligatoires pour M1');
@@ -233,35 +235,31 @@ export class ProductionTimeService {
     if (pauseDto.mCategory === 'M5' && (!pauseDto.productRefs || pauseDto.productRefs.length === 0)) {
       throw new BadRequestException('Les références produits sont obligatoires pour M5');
     }
- 
-    // ✅ NOUVEAU : Validation et récupération des planifications sélectionnées
+
+    // ✅ Validation et récupération des planifications sélectionnées
     let planifications: Planification[] = [];
     if (pauseDto.planificationIds && pauseDto.planificationIds.length > 0) {
-      // Récupérer les planifications depuis la BDD
       planifications = await this.planificationRepo.findByIds(pauseDto.planificationIds);
- 
-      // Vérifier que toutes les planifications trouvées appartiennent bien à cette ligne
+
       const wrongLine = planifications.find(p => p.ligne !== session.ligne);
       if (wrongLine) {
         throw new BadRequestException(
           `La planification (ref: ${wrongLine.reference}) n'appartient pas à la ligne ${session.ligne}`
         );
       }
- 
-      // Vérifier que toutes ont bien un OF non vide (= planifiées)
+
       const notPlanned = planifications.find(p => !p.of || p.of.trim() === '');
       if (notPlanned) {
         throw new BadRequestException(
           `La référence "${notPlanned.reference}" n'a pas de planning (OF vide)`
         );
       }
- 
-      // Vérifier que le nombre trouvé correspond aux IDs demandés
+
       if (planifications.length !== pauseDto.planificationIds.length) {
         throw new BadRequestException('Une ou plusieurs planifications demandées sont introuvables');
       }
     }
- 
+
     // Créer la pause
     const pause = new PauseSession();
     pause.productionSession = session;
@@ -270,21 +268,34 @@ export class ProductionTimeService {
     pause.reason = pauseDto.reason || '';
     pause.recordedBy = user;
     pause.userName = `${user.prenom} ${user.nom}`.trim();
- 
+
     // ✅ Références métier selon catégorie
     pause.matierePremierRefs = pauseDto.mCategory === 'M1' ? pauseDto.matierePremierRefs || [] : [];
-    pause.phasesEnPanne = pauseDto.mCategory === 'M4' ? pauseDto.phasesEnPanne || [] : [];
-    pause.productRefs = pauseDto.mCategory === 'M5' ? pauseDto.productRefs || [] : [];
- 
-    // ✅ NOUVEAU : Attacher les planifications sélectionnées
+    pause.phasesEnPanne     = pauseDto.mCategory === 'M4' ? pauseDto.phasesEnPanne || []     : [];
+    pause.productRefs       = pauseDto.mCategory === 'M5' ? pauseDto.productRefs || []        : [];
+
+    // ✅ Attacher les planifications sélectionnées
     pause.planifications = planifications;
- 
+
     await this.pauseSessionRepo.save(pause);
- 
+
     // Mettre à jour le statut de la session
     session.status = 'paused';
     await this.productionSessionRepo.save(session);
- 
+
+    // ✅ NOUVEAU : Envoi SMS alerte magasinier (fire-and-forget, non bloquant)
+    const refs =
+      pauseDto.mCategory === 'M1' ? (pauseDto.matierePremierRefs || []) :
+      pauseDto.mCategory === 'M4' ? (pauseDto.phasesEnPanne || [])      :
+      pauseDto.mCategory === 'M5' ? (pauseDto.productRefs || [])         : [];
+
+    this.smsService.sendPauseAlert(
+      session.ligne,
+      pauseDto.mCategory,
+      refs,
+      pauseDto.subCategory,
+    ).catch(err => console.error('❌ SMS non bloquant:', err));
+
     return {
       message: `Production mise en pause (${pauseDto.mCategory})`,
       pause: {
@@ -295,7 +306,6 @@ export class ProductionTimeService {
         matierePremierRefs: pause.matierePremierRefs,
         phasesEnPanne: pause.phasesEnPanne,
         productRefs: pause.productRefs,
-        // ✅ NOUVEAU : Retourner les infos des planifications liées
         planifications: planifications.map(p => ({
           id: p.id,
           reference: p.reference,
@@ -310,6 +320,7 @@ export class ProductionTimeService {
         status: session.status
       }
     };
+
   } catch (error) {
     if (
       error instanceof NotFoundException ||
@@ -1123,7 +1134,9 @@ async resumeProduction(resumeDto: ResumeProductionDto, user: User) {
       tempsParPiece: tempsSec.seconde,
       tempsTotal: this.formatDuration(totalElapsedSeconds),
       tempsProduction: this.formatDuration(productionSeconds),
-      tempsPause: this.formatDuration(totalPauseSeconds),
+     
+       productionSeconds,          // nombre brut pour le frontend
+  totalPauseSeconds,  
       piecesProduites,
       piecesProduitesPrevisionnelles: Math.floor(totalElapsedSeconds / tempsSec.seconde),
       tauxProduction: `${tauxProduction.toFixed(2)} pièces/heure`,
