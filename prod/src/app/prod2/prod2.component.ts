@@ -1137,10 +1137,7 @@ updateDayEntry(reference: ReferenceProduction, day: string, field: string, value
     return;
   }
   
-  if (field === 'dm' && !this.canEditDM()) {
-    this.showSuccessMessage('️ Seul le matricule 2603 peut modifier DM');
-    return;
-  }
+ 
   if (field === 'dp' || field === 'c') {
     // Vérifier les incohérences après modification
     setTimeout(() => {
@@ -1306,10 +1303,7 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
   // ==================== RAPPORTS DE PRODUCTION ====================
 
   onPersonIconClick(day: string): void {
-    if (this.checkTimeRestriction()) {
-    this.showSuccessMessage('⛔ Saisie autorisée uniquement de 6h à 9h');
-    return;
-  }
+   
   
   const currentLine = this.selectedLigne();
   if (!currentLine) {
@@ -1701,10 +1695,7 @@ initializeOperatorFormData(matricule: string): void {
  // Dans la méthode saveAllProductionRecords(), modifier la création du DTO:
 // Modifiez la création du DTO dans saveAllProductionRecords()
 saveAllProductionRecords(): void {
-  if (this.checkTimeRestriction()) {
-    this.showSuccessMessage('⛔ Saisie autorisée uniquement de 6h à 9h');
-    return;
-  }
+ 
   const selectedMatricules = this.selectedMatricules();
   if (selectedMatricules.length === 0) {
     alert('Veuillez sélectionner au moins un opérateur');

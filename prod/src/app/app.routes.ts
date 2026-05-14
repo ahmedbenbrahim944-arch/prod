@@ -46,6 +46,7 @@ import { VideoComponent } from './video/video.component';
 import { AffichageOverviewComponent } from './affichage-overview/affichage-overview.component';
 import { ScreenSaver1Component } from './screen-saver1/screen-saver1.component';
 import { SuiviComponent } from './suivi/suivi.component';
+import { PlanificationmodComponent } from './planificationmod/planificationmod.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -110,6 +111,7 @@ export const routes: Routes = [
   { path: 'view', component: AffichageOverviewComponent },
   { path: 'dashboard1', component: ScreenSaver1Component },
   { path: 'suivi', component: SuiviComponent },
+  { path: 'M', component: PlanificationmodComponent },
 
 
 ];
