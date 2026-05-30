@@ -100,54 +100,52 @@ export class MagasinComponent implements OnInit {
     });
   }
   
-  organizeDataForLigne(ligneName: string, planifications: PlanificationMagasin[]): LigneData {
-    const horizontalTableData: any[] = [];
-    const daysWithData: string[] = [];
-    const refMap = new Map<string, any>();
-    const daysSet = new Set<string>();
-    
-    planifications.forEach((item: PlanificationMagasin) => {
-      if (item.quantiteSource > 0) {
-        if (!refMap.has(item.reference)) {
-          refMap.set(item.reference, {
-            reference: item.reference,
-            lundi: { quantiteSource: 0, of: '' },
-            mardi: { quantiteSource: 0, of: '' },
-            mercredi: { quantiteSource: 0, of: '' },
-            jeudi: { quantiteSource: 0, of: '' },
-            vendredi: { quantiteSource: 0, of: '' },
-            samedi: { quantiteSource: 0, of: '' }
-          });
-        }
-        
-        const refData = refMap.get(item.reference);
-        const day = item.jour.toLowerCase();
-        
-        if (refData[day]) {
-          refData[day] = {
-            quantiteSource: item.quantiteSource,
-            of: item.of || ''
-          };
-          
-          if (item.quantiteSource > 0) {
-            daysSet.add(day);
-          }
-        }
+ organizeDataForLigne(ligneName: string, planifications: PlanificationMagasin[]): LigneData {
+  const refMap = new Map<string, any>();
+  const daysSet = new Set<string>();
+
+  planifications.forEach((item: PlanificationMagasin) => {
+    if (item.quantiteSource > 0) {
+      if (!refMap.has(item.reference)) {
+        refMap.set(item.reference, {
+          reference: item.reference,
+          lundi:    { quantiteSource: 0, decMagasin: 0, of: '', poste1C: 0, poste2C: 0 },
+          mardi:    { quantiteSource: 0, decMagasin: 0, of: '', poste1C: 0, poste2C: 0 },
+          mercredi: { quantiteSource: 0, decMagasin: 0, of: '', poste1C: 0, poste2C: 0 },
+          jeudi:    { quantiteSource: 0, decMagasin: 0, of: '', poste1C: 0, poste2C: 0 },
+          vendredi: { quantiteSource: 0, decMagasin: 0, of: '', poste1C: 0, poste2C: 0 },
+          samedi:   { quantiteSource: 0, decMagasin: 0, of: '', poste1C: 0, poste2C: 0 }
+        });
       }
-    });
-    
-    const sortedData = Array.from(refMap.values()).sort((a, b) => 
-      a.reference.localeCompare(b.reference)
-    );
-    
-    const filteredDays = this.weekDays.filter(day => daysSet.has(day));
-    
-    return {
-      ligne: ligneName,
-      horizontalTableData: sortedData,
-      daysWithData: filteredDays
-    };
-  }
+
+      const refData = refMap.get(item.reference);
+      const day = item.jour.toLowerCase();
+
+      if (refData[day] !== undefined) {
+        // ✅ Additionner poste1 + poste2
+        refData[day].quantiteSource += item.quantiteSource;
+        refData[day].decMagasin     += item.decMagasin ?? 0;
+        refData[day].of              = item.of || refData[day].of;
+
+        // ✅ Stocker chaque poste séparément
+        if (item.poste === 'poste2') {
+          refData[day].poste2C += item.quantiteSource;
+        } else {
+          refData[day].poste1C += item.quantiteSource;
+        }
+
+        daysSet.add(day);
+      }
+    }
+  });
+
+  const sortedData = Array.from(refMap.values())
+    .sort((a, b) => a.reference.localeCompare(b.reference));
+
+  const filteredDays = this.weekDays.filter(day => daysSet.has(day));
+
+  return { ligne: ligneName, horizontalTableData: sortedData, daysWithData: filteredDays };
+}
   
   get allLignesArray(): LigneData[] {
     return Array.from(this.lignesData.values()).sort((a, b) => 

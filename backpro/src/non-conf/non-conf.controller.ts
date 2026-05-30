@@ -60,13 +60,13 @@ export class NonConfController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async getNonConformiteByCriteria(@Body() getNonConfDto: GetNonConfDto) {
-    const { semaine, jour, ligne, reference } = getNonConfDto;
+    const { semaine, jour, ligne, reference, poste } = getNonConfDto;
     
     if (!semaine || !jour || !ligne || !reference) {
       throw new BadRequestException('Tous les champs (semaine, jour, ligne, référence) sont requis');
     }
     
-    return this.nonConfService.getNonConformiteByCriteria(semaine, jour, ligne, reference);
+    return this.nonConfService.getNonConformiteByCriteria(semaine, jour, ligne, reference, poste);
   }
 
   // ==================== STATISTIQUES ====================
@@ -88,13 +88,13 @@ export class NonConfController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async deleteNonConformiteByCriteria(@Body() getNonConfDto: GetNonConfDto) {
-    const { semaine, jour, ligne, reference } = getNonConfDto;
+    const { semaine, jour, ligne, reference , poste } = getNonConfDto;
     
     if (!semaine || !jour || !ligne || !reference) {
       throw new BadRequestException('Tous les critères (semaine, jour, ligne, référence) sont requis pour la suppression');
     }
     
-    return this.nonConfService.deleteNonConformiteByCriteria(semaine, jour, ligne, reference);
+    return this.nonConfService.deleteNonConformiteByCriteria(semaine, jour, ligne, reference , poste );
   }
 
   // ==================== VÉRIFIER L'EXISTENCE ====================
@@ -102,13 +102,13 @@ export class NonConfController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async checkNonConformiteExists(@Body() getNonConfDto: GetNonConfDto) {
-    const { semaine, jour, ligne, reference } = getNonConfDto;
+    const { semaine, jour, ligne, reference, poste } = getNonConfDto;
     
     if (!semaine || !jour || !ligne || !reference) {
       throw new BadRequestException('Tous les champs (semaine, jour, ligne, référence) sont requis');
     }
     
-    const result = await this.nonConfService.getNonConformiteByCriteria(semaine, jour, ligne, reference);
+    const result = await this.nonConfService.getNonConformiteByCriteria(semaine, jour, ligne, reference, poste );
     
     return {
       exists: result.exists,

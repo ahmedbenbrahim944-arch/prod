@@ -60,7 +60,7 @@ export interface OuvrierSaisie {
   jour?: string;
 }
 
-// âœ… NOUVELLES INTERFACES - Productivité des Ouvriers
+// ✅ NOUVELLES INTERFACES - Productivité des Ouvriers
 
 
 export interface ProductiviteOuvriersResponse {
@@ -70,13 +70,14 @@ export interface ProductiviteOuvriersResponse {
     dateFin: string;
     dateCalcul: string;
   };
-  statistiques?: StatistiquesProductivite;  // âœ… AJOUTÉ
-  tableau?: LigneProductivite[];  // âœ… AJOUTÉ
-  donneesFormatees?: {  // âœ… AJOUTÉ
+  statistiques?: StatistiquesProductivite;  // ✅ AJOUTÉ
+  tableau?: LigneProductivite[];  // ✅ AJOUTÉ
+  donneesFormatees?: {  // ✅ AJOUTÉ
     entetes: string[];
     lignes: LigneProductivite[];
   };
-  // âœ… Propriétés optionnelles pour compatibilité
+   lignes?: LigneProductivite[];
+  // ✅ Propriétés optionnelles pour compatibilité
   resume?: {
     nombreOuvriers: number;
     totalHeures: number;
@@ -157,7 +158,7 @@ export interface LigneProductivite {
   JOURS: string;
   MAT: number;
   "NOM ET PRENOM": string;
-  "NÂ°HEURS": number;
+  "N°HEURS": number;
   LIGNES: string;
   PRODUCTIVITE: number;
   M1: number;  // Matière Première
@@ -445,26 +446,10 @@ export class StatsService1 {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * âœ… NOUVELLE MÉTHODE - Récupérer la productivité des ouvriers
-   */
-  getProductiviteOuvriers(dateDebut: string, dateFin: string): Observable<ProductiviteOuvriersResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<ProductiviteOuvriersResponse>(
-      `${this.apiUrl}/productivite-ouvriers`,
-      {
-        params: { dateDebut, dateFin },
-        headers
-      }
-    );
-  }
+ 
 
   /**
-   * âœ… ALTERNATIVE POST - Productivité des ouvriers
+   * ✅ ALTERNATIVE POST - Productivité des ouvriers
    */
   getProductiviteOuvriersPost(dateDebut: string, dateFin: string): Observable<ProductiviteOuvriersResponse> {
     const headers = new HttpHeaders({
@@ -482,17 +467,7 @@ export class StatsService1 {
   /**
    * Récupère le PCS Prod Total par ligne pour une semaine donnée
    */
-  getPcsProdTotalParLigne(semaine: string): Observable<StatsResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<StatsResponse>(`${this.apiUrl}/lignes`, {
-      params: { semaine },
-      headers
-    });
-  }
+ 
 
   /**
    * Alternative: Utilisation de la route POST
@@ -524,20 +499,7 @@ export class StatsService1 {
     );
   }
 
-  /**
-   * Récupère les pourcentages des 5M pour une semaine donnée
-   */
-  getPourcentage5MParSemaine(semaine: string): Observable<Pourcentage5MResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
 
-    return this.http.get<Pourcentage5MResponse>(`${this.apiUrl}/pourcentage-5m`, {
-      params: { semaine },
-      headers
-    });
-  }
 
   /**
    * Alternative: Utilisation de la route POST pour les pourcentages 5M
@@ -554,20 +516,7 @@ export class StatsService1 {
     );
   }
 
-  /**
-   * NOUVELLE MÉTHODE: Récupère les pourcentages des 5M par ligne pour une semaine donnée
-   */
-  getPourcentage5MParLigne(semaine: string): Observable<Pourcentage5MParLigneResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<Pourcentage5MParLigneResponse>(`${this.apiUrl}/pourcentage-5m-ligne`, {
-      params: { semaine },
-      headers
-    });
-  }
+  
 
   /**
    * Alternative: Utilisation de la route POST pour les pourcentages 5M par ligne
@@ -591,17 +540,7 @@ export class StatsService1 {
     return localStorage.getItem('access_token') || '';
   }
 
-  getStatsParDate(date: string): Observable<StatsParDateResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
 
-    return this.http.get<StatsParDateResponse>(`${this.apiUrl}/par-date`, {
-      params: { date },
-      headers
-    });
-  }
 
   getStatsParDatePost(date: string): Observable<StatsParDateResponse> {
     const headers = new HttpHeaders({
@@ -627,32 +566,9 @@ export class StatsService1 {
     });
   }
 
-  getAffectationPersonnel(semaine: string): Observable<AffectationPersonnelResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
+  
 
-    return this.http.get<AffectationPersonnelResponse>(
-      `${this.apiUrl}/affectation-personnel`,
-      {
-        params: { semaine },
-        headers
-      }
-    );
-  }
 
-  getStats5MParDate(date: string): Observable<Stats5MParDateResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<Stats5MParDateResponse>(`${this.apiUrl}/5m-par-date`, {
-      params: { date },
-      headers
-    });
-  }
 
   /**
    * Alternative: Utilisation de la route POST pour les 5M par date
@@ -739,5 +655,132 @@ export class StatsService1 {
       headers
     });
   }
+  getPcsProdTotalParLigne(semaine: string, poste?: string): Observable<StatsResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<StatsResponse>(`${this.apiUrl}/lignes`, {
+    params,
+    headers
+  });
 }
 
+/**
+ * Récupère les pourcentages des 5M pour une semaine donnée
+ */
+getPourcentage5MParSemaine(semaine: string, poste?: string): Observable<Pourcentage5MResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<Pourcentage5MResponse>(`${this.apiUrl}/pourcentage-5m`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère les pourcentages des 5M par ligne
+ */
+getPourcentage5MParLigne(semaine: string, poste?: string): Observable<Pourcentage5MParLigneResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<Pourcentage5MParLigneResponse>(`${this.apiUrl}/pourcentage-5m-ligne`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère les statistiques par date
+ */
+getStatsParDate(date: string, poste?: string): Observable<StatsParDateResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { date };
+  if (poste) params.poste = poste;
+
+  return this.http.get<StatsParDateResponse>(`${this.apiUrl}/par-date`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère les statistiques 5M par date
+ */
+getStats5MParDate(date: string, poste?: string): Observable<Stats5MParDateResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { date };
+  if (poste) params.poste = poste;
+
+  return this.http.get<Stats5MParDateResponse>(`${this.apiUrl}/5m-par-date`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère l'affectation du personnel
+ */
+getAffectationPersonnel(semaine: string, poste?: string): Observable<AffectationPersonnelResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<AffectationPersonnelResponse>(
+    `${this.apiUrl}/affectation-personnel`,
+    {
+      params,
+      headers
+    }
+  );
+}
+
+/**
+ * Récupère la productivité des ouvriers
+ */
+getProductiviteOuvriers(dateDebut: string, dateFin: string, poste?: string): Observable<ProductiviteOuvriersResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { dateDebut, dateFin };
+  if (poste) params.poste = poste;
+
+  return this.http.get<ProductiviteOuvriersResponse>(
+    `${this.apiUrl}/productivite-ouvriers`,
+    {
+      params,
+      headers
+    }
+  );
+}
+}

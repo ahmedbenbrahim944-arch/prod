@@ -3,9 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { SemaineService, WeekInfo } from '../prod/semaine.service';
 import { ProductService, ProductLine } from '../prod/product.service';
-// ✅ AJOUT : Importer votre AuthService (adaptez le chemin selon votre projet)
 import { AuthService } from '../login/auth.service';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
@@ -62,9 +62,8 @@ interface TicketData {
   lineName: string;
   ticketIndex: number;
   totalTickets: number;
-  // ✅ NOUVEAUX CHAMPS
-  refName: string;      // Nom depuis la base Excel
-  operateur: string;    // Matricule de l'opérateur connecté
+  refName: string;
+  operateur: string;
 }
 
 interface PrintRefRow {
@@ -85,10 +84,17 @@ interface PrintHistory {
   nEtqTo: number;
 }
 
+// ✅ Interface pour un document servi retourné par l'API
+interface DocumentServiItem {
+  of:           string;
+  dateDoc:      string; // DDMM ex: "1805"
+  ligne:        string;
+  semaine:      string;
+  codeDocument: string;
+}
+
 // ─── BASE DE DONNÉES RÉFÉRENCES (depuis BASE_DE_DONNER_SERAF.xlsx) ────────────
-// Structure : référence → { name: "Nom complet", qty: quantité par défaut }
 const REFERENCE_DATABASE: { [key: string]: { name: string; qty: number } } = {
-  
   '162222801': { name: 'L10:RS3 V:L28226', qty: 1000 },
   '162218801': { name: 'L10:RS3 V:L0241', qty: 250 },
   '162218802': { name: 'L10:RS3 V:L0241', qty: 250 },
@@ -319,7 +325,6 @@ const REFERENCE_DATABASE: { [key: string]: { name: string; qty: number } } = {
   'RB1180805_2': { name: 'L21:N0 V:ECN000266490', qty: 144 }
 };
 
-// ─── Méthode utilitaire pour lookup ──────────────────────────────────────────
 function getRefInfo(reference: string): { name: string; qty: number } {
   const ref = reference.trim();
   return REFERENCE_DATABASE[ref] || { name: reference, qty: 100 };
@@ -350,6 +355,9 @@ export class Planification1Component implements OnInit {
   selectedLigneForView: ProductionLine | null = null;
   searchLineQuery: string = '';
 
+  // ── Poste sélectionné ──
+  selectedPoste: string = 'poste1';
+
   // ── Tableau ──
   lignesData: LigneData[] = [];
   weekDays = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -364,7 +372,7 @@ export class Planification1Component implements OnInit {
   editOfValue: string = '';
   savingOfKey: string | null = null;
 
-  // ── Ligne active (mise en surbrillance) ──
+  // ── Ligne active ──
   activeRowRef: string | null = null;
 
   // ── Inline editing NOTE ──
@@ -372,24 +380,36 @@ export class Planification1Component implements OnInit {
   editNoteValue: string = '';
   savingNoteKey: string | null = null;
 
-  // ✅ Matricule de l'opérateur connecté
+  // ── Opérateur connecté ──
   private operateurMatricule: string = '';
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ✅ POINT VERT — État
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Set de clés "of|dateDoc" pour identifier les cellules déjà servies.
+   * Ex : "070348|1805" → jeudi 18 mai, OF 070348 = servi ✅
+   */
+  private servisSet: Set<string> = new Set();
+
+  /**
+   * Map semaine → dates ISO de chaque jour.
+   * Calculée une fois par semaine sélectionnée.
+   * Structure : { lundi: "1905", mardi: "2005", ... }  (format DDMM)
+   */
+  private weekDaysDateMap: { [day: string]: string } = {};
 
   constructor(
     private router: Router,
     private semaineService: SemaineService,
     private productService: ProductService,
-    // ✅ AJOUT AuthService — adaptez le nom si différent dans votre projet
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient,
   ) {}
 
   ngOnInit(): void {
-    // ✅ Récupérer le matricule de l'utilisateur connecté
-    // Adaptez selon la structure de votre AuthService :
-    // Option A : authService.currentUser?.matricule
-    // Option B : authService.getUser()?.matricule
-    // Option C : authService.user?.id
-   const user = this.authService.getCurrentUser()
+    const user = this.authService.getCurrentUser();
     this.operateurMatricule = user?.matricule || user?.username || user?.nom || 'N/A';
 
     this.loadAvailableWeeks();
@@ -435,6 +455,7 @@ export class Planification1Component implements OnInit {
         this.availableWeeks = weeks;
         if (weeks.length > 0) {
           this.selectedSemaine = weeks[0].display;
+          this.buildWeekDaysDateMap(); // ✅ Calculer les dates DDMM au chargement
         }
       },
       error: () => {
@@ -539,7 +560,8 @@ export class Planification1Component implements OnInit {
 
   // ─── Clic sur une carte ligne ─────────────────────────────────────────────
 
-  onLineSelected(line: ProductionLine): void {
+  onLineSelected(line: ProductionLine, poste: string = 'poste1'): void {
+    this.selectedPoste = poste;
     this.selectedLigneForView = line;
     this.lignesData = [];
     this.errorMessage = '';
@@ -565,6 +587,8 @@ export class Planification1Component implements OnInit {
           next: (planifResponse) => {
             const planifications: any[] = planifResponse?.planifications || [];
             this.buildLignesData(lines, planifications);
+            // ✅ Charger les documents servis APRÈS la construction du tableau
+            this.loadServis();
             this.isLoading = false;
           },
           error: () => {
@@ -580,59 +604,75 @@ export class Planification1Component implements OnInit {
     });
   }
 
-  private buildLignesData(lines: ProductLine[], planifications: any[]): void {
-    const planifIndex = new Map<string, any>();
-    planifications.forEach(p => {
-      const key = `${p.ligne}|${p.reference}|${p.jour?.toLowerCase()}`;
-      planifIndex.set(key, p);
-    });
+ private buildLignesData(lines: ProductLine[], planifications: any[]): void {
+  const planifIndex = new Map<string, any>();
+  const ofByRef    = new Map<string, string>();
+  const noteByRef  = new Map<string, string>();
 
-    const ofByRef = new Map<string, string>();
-    const noteByRef = new Map<string, string>();
+  // ✅ CORRECTION : inclure le poste dans la clé de note
+  planifications.forEach(p => {
+    const poste  = p.poste || 'poste1';
+    const refKey = `${p.ligne}|${p.reference}|${poste}`; // ← poste ajouté
 
-   planifications.forEach(p => {
-  const key = `${p.ligne}|${p.reference}`;
-  // Toujours initialiser
-  if (!noteByRef.has(key)) {
-    noteByRef.set(key, '');
-  }
-  // Mettre à jour si on trouve une note non vide
-  if (p.note && p.note.trim() !== '') {
-    noteByRef.set(key, p.note.trim());
-  }
-});
+    if (!noteByRef.has(refKey)) noteByRef.set(refKey, '');
+    if (p.note?.trim()) noteByRef.set(refKey, p.note.trim());
 
-    const result: LigneData[] = lines
-      .sort((a, b) => this.extractLineNumber(a.ligne) - this.extractLineNumber(b.ligne))
-      .map(line => {
-        const sortedRefs = this.sortReferencesByLast3(line.references || []);
-        const refs: ReferenceRow[] = sortedRefs.map(reference => {
-          const row: ReferenceRow = {
-            reference,
-            ligne: line.ligne,
-            note: noteByRef.get(`${line.ligne}|${reference}`) || ''
+    if (p.of?.trim() && !ofByRef.has(`${p.ligne}|${p.reference}`)) {
+      ofByRef.set(`${p.ligne}|${p.reference}`, p.of.trim());
+    }
+  });
+
+  // Le reste du filtre par poste (inchangé)
+  planifications.forEach(p => {
+    const poste = p.poste || 'poste1';
+    if (poste !== this.selectedPoste) return;
+    const key = `${p.ligne}|${p.reference}|${p.jour?.toLowerCase()}`;
+    planifIndex.set(key, p);
+  });
+
+  const result: LigneData[] = lines
+    .sort((a, b) => this.extractLineNumber(a.ligne) - this.extractLineNumber(b.ligne))
+    .map(line => {
+      const sortedRefs = this.sortReferencesByLast3(line.references || []);
+
+      const refs: ReferenceRow[] = sortedRefs.map(reference => {
+        const refKey    = `${line.ligne}|${reference}`;
+        // ✅ CORRECTION : lire la note avec la clé poste-aware
+        const noteKey   = `${line.ligne}|${reference}|${this.selectedPoste}`;
+
+        const row: ReferenceRow = {
+          reference,
+          ligne: line.ligne,
+          note: noteByRef.get(noteKey) || '' // ← noteKey au lieu de refKey
+        };
+
+        this.weekDays.forEach(day => {
+          const key  = `${line.ligne}|${reference}|${day}`;
+          const plan = planifIndex.get(key);
+
+          const of = plan?.of?.trim()
+            ? plan.of.trim()
+            : (ofByRef.get(refKey) || '');
+
+          row[day] = {
+            of,
+            nbOperateurs: plan?.nbOperateurs  || 0,
+            c:            plan?.qtePlanifiee  || 0,
+            m:            plan?.qteModifiee   || 0,
+            dp:           plan?.decProduction || 0,
+            dm:           plan?.decMagasin    || 0,
+            delta:        plan?.pcsProd       || 0
           };
-          this.weekDays.forEach(day => {
-            const key = `${line.ligne}|${reference}|${day}`;
-            const plan = planifIndex.get(key);
-            const of = ofByRef.get(`${line.ligne}|${reference}`) || '';
-            row[day] = {
-              of: plan?.of || of,
-              nbOperateurs: plan?.nbOperateurs || 0,
-              c: plan?.qtePlanifiee || 0,
-              m: plan?.qteModifiee || 0,
-              dp: plan?.decProduction || 0,
-              dm: plan?.decMagasin || 0,
-              delta: plan?.pcsProd || 0
-            };
-          });
-          return row;
         });
-        return { ligne: line.ligne, references: refs };
+
+        return row;
       });
 
-    this.lignesData = result;
-  }
+      return { ligne: line.ligne, references: refs };
+    });
+
+  this.lignesData = result;
+}
 
   private sortReferencesByLast3(refs: string[]): string[] {
     return [...refs].sort((a, b) => {
@@ -645,6 +685,105 @@ export class Planification1Component implements OnInit {
   private extractLineNumber(ligne: string): number {
     const match = ligne.match(/^L(\d+)/);
     return match ? parseInt(match[1], 10) : 0;
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ✅ POINT VERT — Méthodes
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Calcule la map jour → dateDoc (DDMM) pour la semaine sélectionnée.
+   *
+   * Algorithme :
+   *   1. Extraire le numéro de semaine depuis "semaine21"
+   *   2. Trouver le lundi ISO de cette semaine
+   *   3. Dériver chaque jour (lundi+0, mardi+1, ..., samedi+5)
+   *   4. Formater en DDMM (ex: "1905")
+   */
+  private buildWeekDaysDateMap(): void {
+    this.weekDaysDateMap = {};
+    if (!this.selectedSemaine) return;
+
+    const match = this.selectedSemaine.match(/semaine(\d+)/i);
+    if (!match) return;
+    const weekNum = parseInt(match[1], 10);
+
+    // Trouver l'année depuis les données de semaine disponibles
+    const weekInfo = this.availableWeeks.find(w => w.display === this.selectedSemaine);
+    const year = weekInfo?.startDate
+      ? new Date(weekInfo.startDate).getFullYear()
+      : new Date().getFullYear();
+
+    // Calculer le lundi ISO de la semaine
+    // Jan 4 est toujours dans la semaine ISO 1
+    const jan4 = new Date(year, 0, 4);
+    const dow  = jan4.getDay(); // 0=dim
+    const mondayW1 = new Date(jan4);
+    mondayW1.setDate(jan4.getDate() - (dow === 0 ? 6 : dow - 1));
+
+    const mondayOfWeek = new Date(mondayW1);
+    mondayOfWeek.setDate(mondayW1.getDate() + (weekNum - 1) * 7);
+
+    const offsets: { [day: string]: number } = {
+      lundi: 0, mardi: 1, mercredi: 2, jeudi: 3, vendredi: 4, samedi: 5
+    };
+
+    for (const [day, offset] of Object.entries(offsets)) {
+      const d = new Date(mondayOfWeek);
+      d.setDate(mondayOfWeek.getDate() + offset);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      this.weekDaysDateMap[day] = `${dd}${mm}`;
+    }
+  }
+
+  /**
+   * Appelle GET /plann-mag/servis?semaine=xxx
+   * et remplit servisSet avec les clés "of|dateDoc".
+   */
+  loadServis(): void {
+    if (!this.selectedSemaine) return;
+
+    const token = localStorage.getItem('token');
+    const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+
+    this.http
+      .get<{ semaine: string; total: number; servis: DocumentServiItem[] }>(
+        `http://localhost:3000/plann-mag/servis?semaine=${this.selectedSemaine}`,
+        { headers }
+      )
+      .subscribe({
+        next: (response) => {
+          this.servisSet.clear();
+          response.servis.forEach(item => {
+            // Clé : "of|dateDoc"  ex: "070348|1805"
+            this.servisSet.add(`${item.of}|${item.dateDoc}`);
+          });
+        },
+        error: () => {
+          // Silencieux : si l'appel échoue, aucun point vert — pas bloquant
+          this.servisSet.clear();
+        }
+      });
+  }
+
+  /**
+   * Retourne true si la cellule (ref × jour) a été servie.
+   *
+   * Logique :
+   *   1. Récupérer l'OF de la cellule
+   *   2. Récupérer la date DDMM du jour (depuis weekDaysDateMap)
+   *   3. Chercher la clé "of|dateDoc" dans servisSet
+   */
+  isServi(ref: ReferenceRow, day: string): boolean {
+    const entry = this.getDayEntry(ref, day);
+    if (!entry?.of || !entry.of.trim()) return false;
+    if (!entry.c || entry.c === 0) return false; // pas de quantité planifiée
+
+    const dateDoc = this.weekDaysDateMap[day];
+    if (!dateDoc) return false;
+
+    return this.servisSet.has(`${entry.of.trim()}|${dateDoc}`);
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -728,11 +867,14 @@ export class Planification1Component implements OnInit {
       this.ofMissingWarnings.delete(this.ofRefKey(ref));
     }
 
-    const payload = this.semaineService.formatWeekForAPI({
-      semaine: this.selectedSemaine, jour: day, ligne: ref.ligne, reference: ref.reference,
-      nbOperateurs: entry.nbOperateurs, of: entry.of, qtePlanifiee: newC,
-      qteModifiee: entry.m, decProduction: entry.dp, decMagasin: entry.dm
-    });
+    const payload = {
+      ...this.semaineService.formatWeekForAPI({
+        semaine: this.selectedSemaine, jour: day, ligne: ref.ligne, reference: ref.reference,
+        nbOperateurs: entry.nbOperateurs, of: entry.of, qtePlanifiee: newC,
+        qteModifiee: entry.m, decProduction: entry.dp, decMagasin: entry.dm
+      }),
+      poste: this.selectedPoste
+    };
 
     this.semaineService.updatePlanificationByCriteria(payload).subscribe({
       next: () => {
@@ -785,11 +927,14 @@ export class Planification1Component implements OnInit {
     }) || 'lundi';
 
     const entry = ref[dayToSave] as DayEntry;
-    const payload = this.semaineService.formatWeekForAPI({
-      semaine: this.selectedSemaine, jour: dayToSave, ligne: ref.ligne, reference: ref.reference,
-      nbOperateurs: entry?.nbOperateurs || 0, of: newOf, qtePlanifiee: entry?.c || 0,
-      qteModifiee: entry?.m || 0, decProduction: entry?.dp || 0, decMagasin: entry?.dm || 0
-    });
+    const payload = {
+      ...this.semaineService.formatWeekForAPI({
+        semaine: this.selectedSemaine, jour: dayToSave, ligne: ref.ligne, reference: ref.reference,
+        nbOperateurs: entry?.nbOperateurs || 0, of: newOf, qtePlanifiee: entry?.c || 0,
+        qteModifiee: entry?.m || 0, decProduction: entry?.dp || 0, decMagasin: entry?.dm || 0
+      }),
+      poste: this.selectedPoste
+    };
 
     this.semaineService.updatePlanificationByCriteria(payload).subscribe({
       next: () => {
@@ -820,50 +965,47 @@ export class Planification1Component implements OnInit {
     this.activeRowRef = ref.reference;
   }
 
- saveNote(ref: ReferenceRow): void {
-  if (this.editingNoteKey !== this.noteRefKey(ref)) return;
-  const newNote = (this.editNoteValue || '').trim();
-  this.savingNoteKey = this.noteRefKey(ref);
-  this.editingNoteKey = null;
-  ref.note = newNote;
+  saveNote(ref: ReferenceRow): void {
+    if (this.editingNoteKey !== this.noteRefKey(ref)) return;
+    const newNote = (this.editNoteValue || '').trim();
+    this.savingNoteKey = this.noteRefKey(ref);
+    this.editingNoteKey = null;
+    ref.note = newNote;
 
-  // ✅ Trouver un jour avec quantité, sinon prendre le premier jour disponible
-  let dayToSave = this.weekDays[0]; // fallback garanti
-  for (const day of this.weekDays) {
-    const e = ref[day] as DayEntry | undefined;
-    if (e && e.c > 0) { dayToSave = day; break; }
-  }
-
-  const entry = ref[dayToSave] as DayEntry;
-  
-  // ✅ Passer directement l'objet (pas par formatWeekForAPI qui pourrait ignorer note)
-  const payload = {
-    semaine: this.selectedSemaine,
-    jour: dayToSave,
-    ligne: ref.ligne,
-    reference: ref.reference,
-    nbOperateurs: entry?.nbOperateurs || 0,
-    of: entry?.of || '',
-    qtePlanifiee: entry?.c || 0,
-    qteModifiee: entry?.m || 0,
-    decProduction: entry?.dp || 0,
-    decMagasin: entry?.dm || 0,
-    note: newNote  // ✅ explicitement inclus
-  };
-
-  this.semaineService.updatePlanificationByCriteria(payload).subscribe({
-    next: () => {
-      this.savingNoteKey = null;
-      this.showSuccess('Note sauvegardée ✓');
-      // ✅ Supprimer le rechargement complet qui écrase la note localement
-      // Le rechargement après 500ms causait l'écrasement visible dans les images
-    },
-    error: () => {
-      this.errorMessage = 'Erreur lors de la sauvegarde de la note';
-      this.savingNoteKey = null;
+    let dayToSave = this.weekDays[0];
+    for (const day of this.weekDays) {
+      const e = ref[day] as DayEntry | undefined;
+      if (e && e.c > 0) { dayToSave = day; break; }
     }
-  });
-}
+
+    const entry = ref[dayToSave] as DayEntry;
+
+    const payload = {
+      semaine: this.selectedSemaine,
+      jour: dayToSave,
+      ligne: ref.ligne,
+      reference: ref.reference,
+      nbOperateurs: entry?.nbOperateurs || 0,
+      of: entry?.of || '',
+      qtePlanifiee: entry?.c || 0,
+      qteModifiee: entry?.m || 0,
+      decProduction: entry?.dp || 0,
+      decMagasin: entry?.dm || 0,
+      note: newNote,
+      poste: this.selectedPoste
+    };
+
+    this.semaineService.updatePlanificationByCriteria(payload).subscribe({
+      next: () => {
+        this.savingNoteKey = null;
+        this.showSuccess('Note sauvegardée ✓');
+      },
+      error: () => {
+        this.errorMessage = 'Erreur lors de la sauvegarde de la note';
+        this.savingNoteKey = null;
+      }
+    });
+  }
 
   goBack(): void { this.router.navigate(['/prod']); }
 
@@ -896,8 +1038,10 @@ export class Planification1Component implements OnInit {
 
   backToLines(): void {
     this.selectedLigneForView = null;
+    this.selectedPoste = 'poste1';
     this.lignesData = [];
     this.ofMissingWarnings.clear();
+    this.servisSet.clear(); // ✅ Vider le set au retour
     if (this.selectedSemaine) this.checkMissingOfForAllLines();
     this.errorMessage = '';
     this.editingKey = null;
@@ -910,6 +1054,8 @@ export class Planification1Component implements OnInit {
     this.editingKey = null;
     this.ofMissingWarnings.clear();
     this.missingOfStatus.clear();
+    this.servisSet.clear(); // ✅ Vider le set au changement de semaine
+    this.buildWeekDaysDateMap(); // ✅ Recalculer les dates DDMM
     this.checkMissingOfForAllLines();
     if (this.selectedLigneForView && this.selectedSemaine) {
       this.loadDataForLigne(this.selectedLigneForView.ligne);
@@ -1016,21 +1162,18 @@ export class Planification1Component implements OnInit {
     this.buildPrintRefRows();
   }
 
-  // ✅ MODIFIÉ : buildPrintRefRows utilise maintenant REFERENCE_DATABASE pour la QTY par défaut
   buildPrintRefRows(): void {
     if (!this.printLigneData) { this.printRefRows = []; return; }
     this.printRefRows = this.printLigneData.references
       .map(ref => {
         const entry = ref[this.printSelectedDay] as DayEntry | undefined;
         const qty = entry?.c || 0;
-        // ✅ Récupérer la quantité par défaut depuis la base Excel
         const refInfo = getRefInfo(ref.reference);
         const defaultQty = refInfo.qty;
         return {
           reference: ref.reference,
           of: entry?.of || this.getOfForRef(ref),
           qteJour: qty,
-          // ✅ Utiliser la QTY de l'Excel comme valeur par défaut (si <= qteJour)
           qtyParTicket: qty > 0 ? Math.min(defaultQty, qty) : 0
         } as PrintRefRow;
       })
@@ -1050,35 +1193,31 @@ export class Planification1Component implements OnInit {
     if (!this.printLigneData || this.printRefRows.length === 0) return;
 
     const today = new Date();
-    // Calculer la date du jour sélectionné selon la semaine
-const dayOffsets: { [key: string]: number } = {
-  lundi: 0, mardi: 1, mercredi: 2, jeudi: 3, vendredi: 4, samedi: 5
-};
-const weekMatch = this.selectedSemaine.match(/semaine(\d+)/i);
-const weekNum = weekMatch ? parseInt(weekMatch[1], 10) : null;
+    const dayOffsets: { [key: string]: number } = {
+      lundi: 0, mardi: 1, mercredi: 2, jeudi: 3, vendredi: 4, samedi: 5
+    };
+    const weekMatch = this.selectedSemaine.match(/semaine(\d+)/i);
+    const weekNum = weekMatch ? parseInt(weekMatch[1], 10) : null;
 
-let dateFab = today.toISOString().split('T')[0]; // fallback
+    let dateFab = today.toISOString().split('T')[0];
 
-// NOUVEAU CODE (correct)
-if (weekNum !== null) {
-  // Trouver le jeudi de la semaine ISO weekNum
-  // Formule fiable : Jan 4 est toujours dans la semaine 1
-  const year = today.getFullYear();
-  const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
-  const dow = simple.getDay(); // 0=dim, 1=lun...
-  const isoMonday = new Date(simple);
-  isoMonday.setDate(simple.getDate() - (dow === 0 ? 6 : dow - 1));
+    if (weekNum !== null) {
+      const year = today.getFullYear();
+      const simple = new Date(year, 0, 1 + (weekNum - 1) * 7);
+      const dow = simple.getDay();
+      const isoMonday = new Date(simple);
+      isoMonday.setDate(simple.getDate() - (dow === 0 ? 6 : dow - 1));
 
-  const offset = dayOffsets[this.printSelectedDay] ?? 0;
-  const targetDate = new Date(isoMonday);
-  targetDate.setDate(isoMonday.getDate() + offset);
+      const offset = dayOffsets[this.printSelectedDay] ?? 0;
+      const targetDate = new Date(isoMonday);
+      targetDate.setDate(isoMonday.getDate() + offset);
 
-  // Forcer timezone locale pour éviter le décalage UTC
-  const y = targetDate.getFullYear();
-  const m = String(targetDate.getMonth() + 1).padStart(2, '0');
-  const d = String(targetDate.getDate()).padStart(2, '0');
-  dateFab = `${y}-${m}-${d}`;
-}
+      const y = targetDate.getFullYear();
+      const m = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const d = String(targetDate.getDate()).padStart(2, '0');
+      dateFab = `${y}-${m}-${d}`;
+    }
+
     const dateImp = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
     const timeImp = `${String(today.getHours()).padStart(2,'0')}:${String(today.getMinutes()).padStart(2,'0')}:${String(today.getSeconds()).padStart(2,'0')}`;
     const ligneName = this.printLigneData.ligne;
@@ -1089,7 +1228,6 @@ if (weekNum !== null) {
     for (const row of this.printRefRows) {
       if (!row.qtyParTicket || row.qtyParTicket <= 0) continue;
       const nb = Math.ceil(row.qteJour / row.qtyParTicket);
-      // ✅ Récupérer le nom de la référence depuis la base Excel
       const refInfo = getRefInfo(row.reference);
 
       for (let i = 0; i < nb; i++) {
@@ -1109,9 +1247,8 @@ if (weekNum !== null) {
           lineName: ligneName,
           ticketIndex: i + 1,
           totalTickets: nb,
-          // ✅ NOUVEAUX CHAMPS
-          refName: refInfo.name,                        // Nom depuis Excel (ex: L04:RXT1 V:L1639)
-          operateur: this.operateurMatricule             // Matricule opérateur connecté
+          refName: refInfo.name,
+          operateur: this.operateurMatricule
         });
       }
     }
@@ -1124,24 +1261,18 @@ if (weekNum !== null) {
     this.closePrintModal();
   }
 
-  // ✅ MODIFIÉ v3 : Matricule dans header, format exact 104×90mm TSC TE210, flex-grow pour remplir l'espace
   private openPrintWindow(tickets: TicketData[]): void {
     const win = window.open('', '_blank', 'width=900,height=700');
     if (!win) { alert('Veuillez autoriser les popups pour imprimer.'); return; }
 
     const ticketsHtml = tickets.map(t => {
-      // QR 110×110 pour remplir mieux l'espace disponible
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(t.qrContent)}`;
       return `
         <div class="ticket">
-
-          <!-- ══ HEADER : IDENTIFICATION SHEET + MATRICULE à droite ══ -->
           <div class="t-header">
             <span class="t-header-title">IDENTIFICATION SHEET</span>
             <span class="t-header-op">${t.operateur}</span>
           </div>
-
-          <!-- ══ PART.N + QTY ══ -->
           <div class="t-row" style="flex:0 0 auto;">
             <div class="t-cell" style="flex:1; border-right:1.5px solid #000;">
               <div class="t-label">PART.N:</div>
@@ -1152,8 +1283,6 @@ if (weekNum !== null) {
               <div class="t-big">${t.qty}</div>
             </div>
           </div>
-
-          <!-- ══ LOG + QUALITY — flex-grow pour occuper l'espace disponible ══ -->
           <div class="t-row" style="flex:1 1 auto;">
             <div class="t-cell" style="flex:1; border-right:1px solid #000;">
               <div class="t-label">LOG</div>
@@ -1162,49 +1291,34 @@ if (weekNum !== null) {
               <div class="t-label">QUALITY</div>
             </div>
           </div>
-
-          <!-- ══ D.FAB ══ -->
           <div class="t-row" style="flex:0 0 auto;">
             <div class="t-cell" style="flex:1;">
               <div class="t-label">D.FAB:</div>
               <div class="t-med">${t.dateFab}</div>
             </div>
           </div>
-
-          <!-- ══ ORDER + OP | D.IMP + N.ETQ | QR CODE ══ -->
           <div class="t-row" style="flex:0 0 auto; min-height:68px;">
-
-            <!-- ORDER + OP -->
             <div style="flex:0 0 28%; border-right:1px solid #000; display:flex; flex-direction:column;">
               <div style="padding:3px 5px; border-bottom:1px solid #000; flex:1; display:flex; flex-direction:column; justify-content:center;">
                 <div class="t-label">ORDER</div>
                 <div class="t-big" style="font-size:16pt;">${t.order || '—'}</div>
               </div>
-              <!-- OP : agrandi, affiché sous ORDER -->
               <div style="padding:4px 5px; display:flex; flex-direction:column; justify-content:center; min-height:26px;">
                 <div class="t-label">OP:</div>
               </div>
             </div>
-
-            <!-- D.IMP + N.ETQ -->
             <div style="flex:1; display:flex; flex-direction:column; border-right:1px solid #000; padding:4px 6px; justify-content:center;">
               <div class="t-label">D.IMP:</div>
               <div class="t-small">${t.dateImp}</div>
               <div class="t-small">${t.timeImp}</div>
               <div class="t-small" style="font-weight:900; margin-top:2px;">N.ETQ: ${t.nEtq}</div>
             </div>
-
-            <!-- QR CODE — agrandi pour remplir la cellule -->
-           <div style="flex:0 0 90px; display:flex; align-items:center; justify-content:center; padding:3px;">
-  <img src="${qrUrl}" width="84" height="84" alt="${t.qrContent}"
-       style="display:block; max-width:100%; max-height:100%; transform:translateX(-18px);"/>
-</div>
-
+            <div style="flex:0 0 90px; display:flex; align-items:center; justify-content:center; padding:3px;">
+              <img src="${qrUrl}" width="84" height="84" alt="${t.qrContent}"
+                   style="display:block; max-width:100%; max-height:100%; transform:translateX(-18px);"/>
+            </div>
           </div>
-
-          <!-- ══ FOOTER : NOM DEPUIS EXCEL ══ -->
           <div class="t-footer">${t.refName}</div>
-
         </div>`;
     }).join('');
 
@@ -1213,127 +1327,32 @@ if (weekNum !== null) {
   <meta charset="UTF-8"/>
   <title>Tickets — ${this.printLigneData?.ligne} — ${this.getFrenchDayFull(this.printSelectedDay)}</title>
   <style>
-    /* ── Reset ── */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* ── Corps : pas de marges, fond blanc ── */
-    body {
-      font-family: 'Courier New', monospace;
-      background: #fff;
-      margin: 0;
-      padding: 0;
-    }
-
-    /* ══════════════════════════════════════════════
-       TICKET : exactement 104mm × 90mm (TSC TE210)
-       Orientation : Portrait
-       ══════════════════════════════════════════════ */
-    .ticket {
-      width: 100mm;
-      height: 90mm;
-      border: 1.5px solid #000;
-      margin: 0 auto;
-      page-break-after: always;
-      background: #fff;
-      overflow: hidden;
-      /* Flex colonne pour distribuer l'espace verticalement */
-      display: flex;
-      flex-direction: column;
-    }
+    body { font-family: 'Courier New', monospace; background: #fff; margin: 0; padding: 0; }
+    .ticket { width: 100mm; height: 90mm; border: 1.5px solid #000; margin: 0 auto; page-break-after: always; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
     .ticket:last-child { page-break-after: avoid; }
-
-    /* ══ HEADER : fond noir, titre centré + matricule à droite ══ */
-    .t-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 8px 3px 8px;
-      border-bottom: 2px solid #000;
-      background: #000 !important;
-      color: #fff !important;
-      flex-shrink: 0;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .t-header-title {
-      font-weight: 900;
-      font-size: 10pt;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #fff;
-      flex: 1;
-      text-align: center;
-    }
-    /* ✅ Matricule dans le header : petite taille, blanc, à droite */
-    .t-header-op {
-      font-size: 7pt;
-      font-weight: 700;
-      color: rgba(255,255,255,0.85);
-      letter-spacing: 0.5px;
-      white-space: nowrap;
-      margin-left: 8px;
-      text-transform: uppercase;
-      flex-shrink: 0;
-    }
-
-    /* ══ Lignes du tableau ══ */
-    .t-row {
-      display: flex;
-      border-bottom: 1.5px solid #000;
-    }
+    .t-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 3px 8px; border-bottom: 2px solid #000; background: #000 !important; color: #fff !important; flex-shrink: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .t-header-title { font-weight: 900; font-size: 10pt; letter-spacing: 2px; text-transform: uppercase; color: #fff; flex: 1; text-align: center; }
+    .t-header-op { font-size: 7pt; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 0.5px; white-space: nowrap; margin-left: 8px; text-transform: uppercase; flex-shrink: 0; }
+    .t-row { display: flex; border-bottom: 1.5px solid #000; }
     .t-row:last-of-type { border-bottom: none; }
-
     .t-cell { padding: 2px 5px; }
-
-    /* ══ Typographie ══ */
     .t-label  { font-size: 6.5pt; font-weight: 700; color: #444; text-transform: uppercase; letter-spacing: 0.8px; line-height: 1.3; }
     .t-partno { font-size: 22pt; font-weight: 900; letter-spacing: 0.5px; line-height: 1.15; }
     .t-big    { font-size: 20pt; font-weight: 900; line-height: 1.05; }
     .t-med    { font-size: 12pt; font-weight: 700; line-height: 1.2; }
     .t-small  { font-size: 7.5pt; font-weight: 600; line-height: 1.45; }
-    /* ✅ Zone OP agrandie sous ORDER */
-    .t-op     { font-size: 10pt; font-weight: 900; color: #000; letter-spacing: 0.5px; line-height: 1.2; }
-
-    /* ══ FOOTER : fond noir, nom depuis Excel ══ */
-    .t-footer {
-      background: #000 !important;
-      color: #fff !important;
-      padding: 4px 8px;
-      font-size: 8.5pt;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      border-top: 2px solid #000;
-      flex-shrink: 0;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-
-    /* ══ IMPRESSION ══ */
+    .t-footer { background: #000 !important; color: #fff !important; padding: 4px 8px; font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; border-top: 2px solid #000; flex-shrink: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @media print {
-      /* Format exact TSC TE210 : 104mm × 90mm, portrait, 0 marge */
-      @page {
-        size: 104mm 90mm;
-        margin: 0mm;
-      }
+      @page { size: 104mm 90mm; margin: 0mm; }
       html, body { margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
-      .ticket {
-        width: 104mm !important;
-        height: 90mm !important;
-        border: none !important;
-        margin: 0 !important;
-        page-break-after: always;
-      }
+      .ticket { width: 104mm !important; height: 90mm !important; border: none !important; margin: 0 !important; page-break-after: always; }
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
   </style>
 </head><body>
-
-  <!-- Barre d'info écran (cachée à l'impression) -->
-  <div class="no-print" style="padding:10px 16px; background:#1e3a8a; color:#fff;
-       font-family:sans-serif; font-size:13px; display:flex; align-items:center;
-       gap:10px; flex-wrap:wrap; margin-bottom:8px;">
+  <div class="no-print" style="padding:10px 16px; background:#1e3a8a; color:#fff; font-family:sans-serif; font-size:13px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;">
     <span style="font-weight:700;">${tickets.length} ticket(s)</span>
     <span style="opacity:0.6;">·</span>
     <span>${this.printLigneData?.ligne}</span>
@@ -1344,21 +1363,11 @@ if (weekNum !== null) {
     <span style="opacity:0.6;">·</span>
     <span style="font-weight:700;">OP: ${this.operateurMatricule}</span>
     <div style="margin-left:auto; display:flex; gap:8px;">
-      <button onclick="window.print()"
-        style="background:#16a34a;color:#fff;border:none;padding:7px 18px;
-               border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">
-        🖨️ Imprimer
-      </button>
-      <button onclick="window.close()"
-        style="background:#4b5563;color:#fff;border:none;padding:7px 14px;
-               border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">
-        ✕ Fermer
-      </button>
+      <button onclick="window.print()" style="background:#16a34a;color:#fff;border:none;padding:7px 18px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">🖨️ Imprimer</button>
+      <button onclick="window.close()" style="background:#4b5563;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;">✕ Fermer</button>
     </div>
   </div>
-
   ${ticketsHtml}
-
 </body></html>`);
     win.document.close();
   }
@@ -1375,5 +1384,16 @@ if (weekNum !== null) {
       jeudi: 'Jeudi', vendredi: 'Vendredi', samedi: 'Samedi'
     };
     return map[day] || day;
+  }
+
+  switchPoste(poste: string): void {
+    if (this.selectedPoste === poste) return;
+    this.selectedPoste = poste;
+    this.editingKey = null;
+    this.editingOfKey = null;
+    this.editingNoteKey = null;
+    if (this.selectedLigneForView) {
+      this.loadDataForLigne(this.selectedLigneForView.ligne);
+    }
   }
 }

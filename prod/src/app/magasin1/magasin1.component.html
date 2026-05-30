@@ -167,15 +167,30 @@
                   {{ getFirstOfValue(item, ligneEntry.daysWithData) }}
                 </td>
                 <!-- Valeurs C par jour -->
-                <td
-                  *ngFor="let day of ligneEntry.daysWithData"
-                  class="border border-gray-300 px-4 py-2 text-center"
-                >
-                  <span *ngIf="item[day]?.quantiteSource > 0" class="font-bold text-gray-800">
-                    {{ item[day].quantiteSource }}
-                  </span>
-                  <span *ngIf="!item[day]?.quantiteSource || item[day].quantiteSource === 0" class="text-gray-400">-</span>
-                </td>
+                <td *ngFor="let day of ligneEntry.daysWithData"
+    class="border border-gray-300 px-4 py-2 text-center">
+  <ng-container *ngIf="item[day]?.quantiteSource > 0">
+    <!-- Total -->
+    <div class="font-bold text-gray-800 text-sm">
+      {{ item[day].quantiteSource }}
+    </div>
+    <!-- Détail P1 / P2 -->
+    <div class="flex justify-center gap-1 mt-1">
+      <span *ngIf="item[day].poste1C > 0"
+            class="text-xs px-1.5 py-0.5 rounded font-semibold text-white"
+            style="background:#1d4ed8;">
+        P1: {{ item[day].poste1C }}
+      </span>
+      <span *ngIf="item[day].poste2C > 0"
+            class="text-xs px-1.5 py-0.5 rounded font-semibold text-white"
+            style="background:#b45309;">
+        P2: {{ item[day].poste2C }}
+      </span>
+    </div>
+  </ng-container>
+  <span *ngIf="!item[day]?.quantiteSource || item[day].quantiteSource === 0"
+        class="text-gray-400">-</span>
+</td>
               </tr>
 
               <!-- ── Ligne DM ── -->

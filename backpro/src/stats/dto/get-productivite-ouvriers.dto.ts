@@ -1,5 +1,5 @@
 // src/stats/dto/get-productivite-ouvriers.dto.ts
-import { IsString, IsNotEmpty, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, Matches, IsOptional, IsIn } from 'class-validator';
 
 export class GetProductiviteOuvriersDto {
   @IsString()
@@ -15,4 +15,9 @@ export class GetProductiviteOuvriersDto {
     message: 'Le format de date doit être YYYY-MM-DD (ex: 2026-01-20)'
   })
   dateFin: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['poste1', 'poste2'], { message: 'Le poste doit être "poste1" ou "poste2"' })
+  poste?: string;
 }

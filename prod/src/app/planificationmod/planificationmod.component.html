@@ -1,6 +1,6 @@
 <div class="min-h-screen" style="background:#f8fafc;">
 
-  <!-- ══════════════════════ HEADER ══════════════════════ -->
+  <!-- HEADER -->
   <header style="background:rgba(255,255,255,0.98); border-bottom:1px solid #e2e8f0;
                  box-shadow:0 1px 3px rgba(0,0,0,0.06);"
           class="px-5 py-3 flex items-center justify-between sticky top-0 z-20">
@@ -21,14 +21,14 @@
     <div class="w-32"></div>
   </header>
 
-  <!-- ══════════════════════ TOAST SUCCÈS ══════════════════════ -->
+  <!-- TOAST SUCCÈS -->
   <div *ngIf="successMessage"
        class="fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold text-white"
        style="background:#22c55e;">
     ✓ {{ successMessage }}
   </div>
 
-  <!-- ══════════════════════ ERREUR ══════════════════════ -->
+  <!-- ERREUR -->
   <div *ngIf="errorMessage" class="px-6 mt-4">
     <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
       <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,49 +39,32 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       VUE 1 : GRILLE DE CARTES LIGNES
-       ══════════════════════════════════════════════════════════ -->
+  <!-- VUE 1 : GRILLE DE CARTES LIGNES -->
   <div *ngIf="!selectedLigneForView" class="p-4 md:p-6">
 
-    <!-- Sélecteur de semaine -->
     <div class="flex justify-center mb-5">
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3
-                  flex items-center gap-3">
-        <svg class="w-5 h-5 flex-shrink-0" style="color:#57E809;"
-             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3 flex items-center gap-3">
+        <svg class="w-5 h-5 flex-shrink-0" style="color:#57E809;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         <label class="text-sm font-semibold text-gray-700 whitespace-nowrap">Semaine :</label>
-        <select [(ngModel)]="selectedSemaine"
-          class="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg bg-white font-medium
-                 focus:outline-none focus:border-green-400 transition-colors min-w-[180px]">
+        <select [(ngModel)]="selectedSemaine" class="px-3 py-2 text-sm border-2 border-gray-200 rounded-lg bg-white font-medium focus:outline-none focus:border-green-400 min-w-[180px]">
           <option value="" disabled>Sélectionnez une semaine…</option>
           <option *ngFor="let week of getWeeksList()" [value]="week">{{ week }}</option>
         </select>
-        <span *ngIf="selectedSemaine"
-              class="px-3 py-1 rounded-full text-xs font-bold text-white whitespace-nowrap"
-              style="background:#57E809;">
+        <span *ngIf="selectedSemaine" class="px-3 py-1 rounded-full text-xs font-bold text-white" style="background:#57E809;">
           {{ selectedSemaine }}
         </span>
       </div>
     </div>
 
-    <!-- Barre de recherche -->
     <div class="flex justify-center mb-6">
       <div class="relative w-full max-w-md">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
-             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
-        <input type="text" [(ngModel)]="searchLineQuery"
-          placeholder="Rechercher une ligne..."
-          class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm bg-white
-                 focus:outline-none focus:ring-2 focus:ring-green-400"/>
-        <button *ngIf="searchLineQuery" (click)="clearSearch()"
-          class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+        <input type="text" [(ngModel)]="searchLineQuery" placeholder="Rechercher une ligne..." class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-green-400"/>
+        <button *ngIf="searchLineQuery" (click)="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
@@ -89,96 +72,46 @@
       </div>
     </div>
 
-    <!-- Grille de cartes -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-0">
-
-      <div *ngFor="let line of filteredLines"
-           (click)="onLineSelected(line)"
-           class="relative overflow-hidden cursor-pointer group"
-           style="aspect-ratio: 1/1; border: 1px solid #e2e8f0;">
-
-        <!-- Image pleine carte -->
-        <img [src]="line.imageUrl" [alt]="line.ligne"
-             class="absolute inset-0 w-full h-full object-cover
-                    transition-transform duration-500 group-hover:scale-110"
-             (error)="$any($event.target).src='assets/images/default-line.jpg'"/>
-
-        <!-- Gradient overlay -->
-        <div class="absolute inset-0"
-             style="background: linear-gradient(to top,
-               rgba(0,0,0,0.75) 0%,
-               rgba(0,0,0,0.25) 45%,
-               transparent 70%);"></div>
-
-        <!-- Infos bas de carte -->
+      <div *ngFor="let line of filteredLines" (click)="onLineSelected(line)" class="relative overflow-hidden cursor-pointer group" style="aspect-ratio: 1/1; border: 1px solid #e2e8f0;">
+        <img [src]="line.imageUrl" [alt]="line.ligne" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" (error)="$any($event.target).src='assets/images/default-line.jpg'"/>
+        <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.25) 45%, transparent 70%);"></div>
         <div class="absolute bottom-0 left-0 right-0 p-3">
           <div class="font-bold text-white text-sm leading-tight drop-shadow">{{ line.ligne }}</div>
-          <div class="text-xs mt-0.5 font-medium drop-shadow" style="color:#57E809;">
-            {{ line.referenceCount }} références
-          </div>
+          <div class="text-xs mt-0.5 font-medium drop-shadow" style="color:#57E809;">{{ line.referenceCount }} références</div>
         </div>
-
-        <!-- Badge ACTIVE haut droite -->
-        <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold text-white"
-             style="background:#10b981; box-shadow:0 1px 4px rgba(0,0,0,0.3);">
-          ACTIVE
-        </div>
-
-        <!-- Hover overlay -->
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-             style="background:rgba(0,0,0,0.18);"></div>
+        <div class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style="background:#10b981;">ACTIVE</div>
+        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style="background:rgba(0,0,0,0.18);"></div>
       </div>
-
-      <!-- Aucun résultat -->
-      <div *ngIf="filteredLines.length === 0 && availableLines.length > 0"
-           class="col-span-4 text-center py-16 text-gray-400">
-        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
+      <div *ngIf="filteredLines.length === 0 && availableLines.length > 0" class="col-span-4 text-center py-16 text-gray-400">
         <p>Aucune ligne trouvée pour "{{ searchLineQuery }}"</p>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-       VUE 2 : TABLEAU C + M
-       ══════════════════════════════════════════════════════════ -->
+  <!-- VUE 2 : TABLEAU AVEC POSTES -->
   <div *ngIf="selectedLigneForView">
 
-    <!-- Barre info ligne + sélecteur semaine -->
-    <div style="background:#fff; border-bottom:1px solid #e2e8f0;"
-         class="px-6 py-3 flex flex-wrap items-center gap-4">
-
-      <!-- Miniature + nom ligne -->
+    <div style="background:#fff; border-bottom:1px solid #e2e8f0;" class="px-6 py-3 flex flex-wrap items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-          <img [src]="selectedLigneForView.imageUrl" [alt]="selectedLigneForView.ligne"
-               class="w-full h-full object-cover"/>
+          <img [src]="selectedLigneForView.imageUrl" [alt]="selectedLigneForView.ligne" class="w-full h-full object-cover"/>
         </div>
         <div>
           <div class="font-bold text-gray-800 text-base">{{ selectedLigneForView.ligne }}</div>
           <div class="text-xs text-gray-500">{{ selectedLigneForView.referenceCount }} références</div>
         </div>
       </div>
-
       <div class="w-px h-10 bg-gray-200 hidden sm:block"></div>
-
-      <!-- Sélecteur semaine inline -->
       <div class="flex items-center gap-2">
-        <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
         </svg>
         <span class="text-sm font-medium text-gray-600">Semaine :</span>
-        <select [(ngModel)]="selectedSemaine" (ngModelChange)="onSemaineChange()"
-          class="px-3 py-1.5 text-sm border-2 border-gray-200 rounded-lg bg-white font-medium
-                 focus:outline-none focus:border-green-400 transition-colors min-w-[160px]">
+        <select [(ngModel)]="selectedSemaine" (ngModelChange)="onSemaineChange()" class="px-3 py-1.5 text-sm border-2 border-gray-200 rounded-lg bg-white font-medium focus:outline-none focus:border-green-400 min-w-[160px]">
           <option *ngFor="let week of getWeeksList()" [value]="week">{{ week }}</option>
         </select>
       </div>
-
-      <!-- Loader -->
       <div *ngIf="isLoading" class="flex items-center gap-2 text-sm text-gray-500 ml-auto">
         <svg class="animate-spin h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -188,14 +121,31 @@
       </div>
     </div>
 
-    <!-- ── TABLEAU ── -->
-    <div *ngIf="!isLoading">
+    <!-- SÉLECTEUR DE POSTE -->
+    <div class="px-6 py-2 flex gap-4 bg-gray-100 border-b border-gray-200">
+      <button 
+        [class.bg-green-600]="selectedPoste === 'poste1'"
+        [class.bg-gray-300]="selectedPoste !== 'poste1'"
+        (click)="selectedPoste = 'poste1'"
+        class="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+        [style.color]="selectedPoste === 'poste1' ? 'white' : '#374151'">
+        🕕 POSTE 1 (6h - 14h)
+      </button>
+      <button 
+        [class.bg-green-600]="selectedPoste === 'poste2'"
+        [class.bg-gray-300]="selectedPoste !== 'poste2'"
+        (click)="selectedPoste = 'poste2'"
+        class="px-4 py-2 rounded-lg font-semibold text-sm transition-colors"
+        [style.color]="selectedPoste === 'poste2' ? 'white' : '#374151'">
+        🕑 POSTE 2 (14h - 22h)
+      </button>
+    </div>
 
+    <!-- TABLEAU -->
+    <div *ngIf="!isLoading">
       <div *ngFor="let ligneEntry of lignesData" class="w-full overflow-x-auto">
 
-        <!-- Légende -->
-        <div class="px-6 py-2 flex items-center gap-4 text-xs text-gray-500"
-             style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+        <div class="px-6 py-2 flex items-center gap-4 text-xs text-gray-500" style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
           <span class="flex items-center gap-1.5">
             <span class="inline-flex items-center px-2 py-0.5 rounded-full font-bold bg-orange-100 text-orange-700">C</span>
             Quantité planifiée (lecture seule)
@@ -206,209 +156,132 @@
           </span>
         </div>
 
-        <!-- Table -->
         <table class="w-full border-collapse" style="min-width:1000px;">
           <thead>
             <tr>
-              <!-- Colonne RÉFÉRENCE -->
-              <th class="px-4 py-3 text-left font-semibold text-sm border border-gray-200"
-                  style="background:#f1f5f9; color:#374151; position:sticky; left:0; z-index:10; min-width:160px;">
-                RÉFÉRENCE
-              </th>
-              <!-- Colonne OF -->
-              <th class="px-3 py-3 text-center font-semibold text-sm border border-gray-200"
-                  style="background:#f1f5f9; color:#1d4ed8; min-width:90px;">
-                OF
-              </th>
-              <!-- Colonnes jours : chaque jour = 2 sous-colonnes C et M -->
-              <th *ngFor="let day of weekDays" colspan="2"
-                  class="text-center font-semibold text-sm border border-gray-200"
-                  style="background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:white; min-width:180px; padding:6px 4px;">
-                {{ getFrenchDay(day) }}
-              </th>
-              <!-- TOTAL C + TOTAL M -->
-              <th class="px-3 py-3 text-center font-semibold text-sm border border-gray-200"
-                  style="background:#eff6ff; color:#1d4ed8; min-width:80px;">
-                TOT C
-              </th>
-              <th class="px-3 py-3 text-center font-semibold text-sm border border-gray-200"
-                  style="background:#f5f3ff; color:#7c3aed; min-width:80px;">
-                TOT M
-              </th>
+              <th class="px-4 py-3 text-left font-semibold text-sm border border-gray-200" style="background:#f1f5f9; min-width:160px;">RÉFÉRENCE</th>
+              <th class="px-3 py-3 text-center font-semibold text-sm border border-gray-200" style="background:#f1f5f9; min-width:90px;">OF</th>
+              <th *ngFor="let day of weekDays" colspan="2" class="text-center font-semibold text-sm border border-gray-200" style="background:#1d4ed8; color:white; min-width:180px;">{{ getFrenchDay(day) }}</th>
+              <th class="px-3 py-3 text-center font-semibold text-sm border border-gray-200" style="background:#eff6ff; min-width:80px;">TOT C</th>
+              <th class="px-3 py-3 text-center font-semibold text-sm border border-gray-200" style="background:#f5f3ff; min-width:80px;">TOT M</th>
             </tr>
-            <!-- Sous-ligne C / M pour chaque jour -->
             <tr>
-              <!-- Vide pour RÉFÉRENCE et OF -->
               <th colspan="2" style="background:#f1f5f9; border:1px solid #e2e8f0;"></th>
               <ng-container *ngFor="let day of weekDays">
-                <th class="text-center font-bold border border-gray-200"
-                    style="background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#fde68a;
-                           font-size:0.7rem; padding:4px 8px; min-width:90px;">
-                  C
-                </th>
-                <th class="text-center font-bold border border-gray-200"
-                    style="background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#d8b4fe;
-                           font-size:0.7rem; padding:4px 8px; min-width:90px;">
-                  M
-                </th>
+                <th class="text-center font-bold border border-gray-200" style="background:#2563eb; color:#fde68a; font-size:0.7rem;">C</th>
+                <th class="text-center font-bold border border-gray-200" style="background:#2563eb; color:#d8b4fe; font-size:0.7rem;">M</th>
               </ng-container>
-              <!-- Vide pour TOT C et TOT M -->
               <th colspan="2" style="background:#f1f5f9; border:1px solid #e2e8f0;"></th>
             </tr>
           </thead>
-
           <tbody>
-            <!-- Ligne total par jour -->
             <tr style="background:#eff6ff;">
-              <td class="px-4 py-2 font-semibold text-blue-700 text-sm border border-gray-200"
-                  colspan="2" style="position:sticky; left:0; background:#eff6ff; z-index:5;">
-                Total par jour
-              </td>
+              <td class="px-4 py-2 font-semibold text-blue-700 text-sm border border-gray-200" colspan="2" style="position:sticky; left:0; background:#eff6ff;">Total par jour</td>
               <ng-container *ngFor="let day of weekDays">
-                <!-- Total C du jour -->
-                <td class="px-3 py-2 text-center font-bold text-sm border border-gray-200"
-                    style="background:#eff6ff; color:#1d4ed8;">
-                  <span *ngIf="getTotalCForDay(ligneEntry, day) > 0">
-                    {{ getTotalCForDay(ligneEntry, day) | number }}
-                  </span>
-                  <span *ngIf="getTotalCForDay(ligneEntry, day) === 0" class="text-blue-300">—</span>
+                <td class="px-3 py-2 text-center font-bold text-sm border border-gray-200" style="background:#eff6ff; color:#1d4ed8;">
+                  {{ getTotalCForDay(ligneEntry, day, selectedPoste) > 0 ? (getTotalCForDay(ligneEntry, day, selectedPoste) | number) : '—' }}
                 </td>
-                <!-- Total M du jour -->
-                <td class="px-3 py-2 text-center font-bold text-sm border border-gray-200"
-                    style="background:#f5f3ff; color:#7c3aed;">
-                  <span *ngIf="getTotalMForDay(ligneEntry, day) > 0">
-                    {{ getTotalMForDay(ligneEntry, day) | number }}
-                  </span>
-                  <span *ngIf="getTotalMForDay(ligneEntry, day) === 0" class="text-purple-200">—</span>
+                <td class="px-3 py-2 text-center font-bold text-sm border border-gray-200" style="background:#f5f3ff; color:#7c3aed;">
+                  {{ getTotalMForDay(ligneEntry, day, selectedPoste) > 0 ? (getTotalMForDay(ligneEntry, day, selectedPoste) | number) : '—' }}
                 </td>
               </ng-container>
-              <!-- Total C semaine -->
-              <td class="px-3 py-2 text-center font-bold border border-gray-200"
-                  style="background:#eff6ff; color:#1d4ed8;">
-                {{ getTotalCForLigne(ligneEntry) | number }}
+              <td class="px-3 py-2 text-center font-bold border border-gray-200" style="background:#eff6ff; color:#1d4ed8;">
+                {{ getTotalCForLigne(ligneEntry, selectedPoste) > 0 ? (getTotalCForLigne(ligneEntry, selectedPoste) | number) : '—' }}
               </td>
-              <!-- Total M semaine -->
-              <td class="px-3 py-2 text-center font-bold border border-gray-200"
-                  style="background:#f5f3ff; color:#7c3aed;">
-                {{ getTotalMForLigne(ligneEntry) | number }}
+              <td class="px-3 py-2 text-center font-bold border border-gray-200" style="background:#f5f3ff; color:#7c3aed;">
+                {{ getTotalMForLigne(ligneEntry, selectedPoste) > 0 ? (getTotalMForLigne(ligneEntry, selectedPoste) | number) : '—' }}
               </td>
             </tr>
 
-            <!-- Références -->
-            <ng-container *ngFor="let ref of ligneEntry.references; let i = index">
-              <tr
-                [style.background]="activeRowRef === ref.reference ? '#f5f3ff' : (i % 2 === 0 ? '#ffffff' : '#fafafa')"
-                [style.box-shadow]="activeRowRef === ref.reference ? 'inset 0 0 0 2px #8b5cf6' : 'none'"
-                class="hover:bg-violet-50 transition-colors">
-
-                <!-- RÉFÉRENCE (sticky gauche) -->
-                <td class="px-4 py-2.5 font-semibold border border-gray-200"
-                    style="position:sticky; left:0; z-index:5; color:#1e40af;
-                           background:inherit; min-width:160px; font-size:1rem;">
-                  {{ ref.reference }}
-                </td>
-
-                <!-- OF (lecture seule dans cette vue) -->
+            <ng-container *ngFor="let ref of ligneEntry.references">
+              <tr [style.background]="activeRowRef === ref.reference ? '#f5f3ff' : ''" class="hover:bg-violet-50">
+                <td class="px-4 py-2.5 font-semibold border border-gray-200" style="position:sticky; left:0; background:inherit;">{{ ref.reference }}</td>
                 <td class="px-3 py-2 text-center border border-gray-200">
-                  <span *ngIf="getOfForRef(ref)"
-                        class="text-sm font-bold" style="color:#1d4ed8;">
-                    {{ getOfForRef(ref) }}
-                  </span>
-                  <span *ngIf="!getOfForRef(ref)" class="text-gray-300 text-xs">—</span>
+                  <span class="text-sm font-bold text-blue-600">{{ getOfForRef(ref, selectedPoste) || '—' }}</span>
                 </td>
 
-                <!-- Cellules C (lecture seule) + M (editable) par jour -->
                 <ng-container *ngFor="let day of weekDays">
-
-                  <!-- ── Colonne C : lecture seule ── -->
-                  <td class="px-2 py-1.5 text-center border border-gray-200"
-                      style="background:#fffbeb; min-width:90px;">
-                    <span *ngIf="(getDayEntry(ref, day)?.c ?? 0) > 0"
-                          class="text-sm font-semibold" style="color:#d97706;">
-                      {{ getDayEntry(ref, day)?.c | number }}
-                    </span>
-                    <span *ngIf="(getDayEntry(ref, day)?.c ?? 0) === 0"
-                          class="text-gray-300 text-xs">—</span>
+                  <td class="px-2 py-1.5 text-center border border-gray-200 bg-orange-50">
+                    {{ getCValue(ref, day, selectedPoste) > 0 ? (getCValue(ref, day, selectedPoste) | number) : '—' }}
                   </td>
-
-                  <!-- ── Colonne M : éditable ── -->
-                  <td class="px-2 py-1.5 text-center border border-gray-200 cursor-pointer"
-                      style="min-width:90px;"
-                      (click)="startEdit(ref, day)"
-                      title="Cliquer pour modifier M">
-
-                    <!-- Mode édition -->
-                    <ng-container *ngIf="isEditing(ref, day)">
-                      <input type="number" min="0"
-                        [(ngModel)]="editMValue"
-                        (blur)="saveCell(ref, day)"
-                        (keyup.enter)="saveCell(ref, day)"
-                        (keyup.escape)="cancelEdit()"
-                        class="w-20 text-center rounded px-1 py-0.5 text-sm font-semibold focus:outline-none"
-                        style="border:2px solid #8b5cf6; color:#7c3aed;"
-                        autofocus/>
+                  
+                  <td class="px-2 py-1.5 text-center border border-gray-200 cursor-pointer" 
+                      (click)="startEdit(ref, day, selectedPoste)">
+                    
+                    <ng-container *ngIf="isEditing(ref, day, selectedPoste)">
+                      <input type="number" 
+                             [(ngModel)]="editMValue"
+                             (blur)="saveCell(ref, day, selectedPoste)"
+                             (keyup.enter)="saveCell(ref, day, selectedPoste)"
+                             class="w-20 text-center border-2 border-purple-500 rounded">
                     </ng-container>
-
-                    <!-- Spinner sauvegarde -->
-                    <ng-container *ngIf="!isEditing(ref, day)">
-                      <svg *ngIf="savingKey === cellKey(ref, day)"
-                           class="animate-spin h-4 w-4 mx-auto text-violet-400"
-                           fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                      </svg>
-
-                      <!-- Valeur M affichée -->
-                      <ng-container *ngIf="savingKey !== cellKey(ref, day)">
-                        <span *ngIf="(getDayEntry(ref, day)?.m ?? 0) > 0"
-                              class="text-sm font-bold" style="color:#7c3aed;">
-                          {{ getDayEntry(ref, day)?.m | number }}
-                        </span>
-                        <!-- Pas de M : afficher un tiret cliquable discret -->
-                        <span *ngIf="(getDayEntry(ref, day)?.m ?? 0) === 0"
-                              class="text-violet-200 text-xs hover:text-violet-400 transition-colors">
-                          —
-                        </span>
-                      </ng-container>
+                    
+                    <ng-container *ngIf="!isEditing(ref, day, selectedPoste)">
+                      <span *ngIf="getMValue(ref, day, selectedPoste) > 0" class="font-bold text-purple-600">
+                        {{ getMValue(ref, day, selectedPoste) | number }}
+                      </span>
+                      <span *ngIf="getMValue(ref, day, selectedPoste) === 0" class="text-gray-300 text-xs">—</span>
                     </ng-container>
-
                   </td>
-
                 </ng-container>
 
-                <!-- Total C ref -->
-                <td class="px-3 py-2 text-center font-bold border border-gray-200"
-                    style="background:#eff6ff; color:#1d4ed8;">
-                  <span *ngIf="getTotalCForRef(ref) > 0">{{ getTotalCForRef(ref) | number }}</span>
-                  <span *ngIf="getTotalCForRef(ref) === 0" class="font-normal text-gray-300">—</span>
+                <td class="px-3 py-2 text-center font-bold border border-gray-200 bg-blue-50">
+                  {{ getTotalCForRef(ref, selectedPoste) > 0 ? (getTotalCForRef(ref, selectedPoste) | number) : '—' }}
                 </td>
-
-                <!-- Total M ref -->
-                <td class="px-3 py-2 text-center font-bold border border-gray-200"
-                    style="background:#f5f3ff; color:#7c3aed;">
-                  <span *ngIf="getTotalMForRef(ref) > 0">{{ getTotalMForRef(ref) | number }}</span>
-                  <span *ngIf="getTotalMForRef(ref) === 0" class="font-normal text-gray-300">—</span>
+                <td class="px-3 py-2 text-center font-bold border border-gray-200 bg-purple-50">
+                  {{ getTotalMForRef(ref, selectedPoste) > 0 ? (getTotalMForRef(ref, selectedPoste) | number) : '—' }}
                 </td>
-
               </tr>
             </ng-container>
           </tbody>
         </table>
-
       </div>
 
-      <!-- Aucune donnée -->
       <div *ngIf="lignesData.length === 0" class="flex items-center justify-center py-20">
         <div class="text-center">
-          <svg class="w-12 h-12 text-yellow-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
           <p class="text-gray-500 font-medium">Aucune donnée pour cette ligne / semaine</p>
         </div>
       </div>
-
     </div>
   </div>
+</div>
 
+<!-- MODALE : Saisie OF manquant -->
+<div *ngIf="showOfPrompt" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl p-6 w-96">
+    <div class="text-center mb-4">
+      <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-800">OF manquant</h3>
+      <p class="text-sm text-gray-600 mt-1">
+        La référence <span class="font-semibold text-gray-800">{{ pendingEdit?.ref?.reference }}</span> 
+        n'a pas d'<span class="font-semibold">Ordre de Fabrication (OF)</span> pour le poste sélectionné.
+      </p>
+      <p class="text-sm text-gray-500 mt-1">Veuillez saisir l'OF avant de modifier la quantité M.</p>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-1">Numéro OF</label>
+      <input type="text" 
+             [(ngModel)]="tempOfValue"
+             placeholder="Ex: OF12345"
+             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+             autofocus>
+    </div>
+
+    <div class="flex gap-3">
+      <button (click)="cancelOfPrompt()" 
+              class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+        Annuler
+      </button>
+      <button (click)="saveOfAndContinue()" 
+              [disabled]="!tempOfValue.trim()"
+              class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed">
+        Sauvegarder OF
+      </button>
+    </div>
+  </div>
 </div>

@@ -21,4 +21,9 @@ export class UpdateMagasinPlanificationDto {
   @IsNumber()
   @IsNotEmpty({ message: 'La déclaration magasin est obligatoire' })
   decMagasin: number;
+
+  
+  @IsString()
+@IsOptional()
+poste?: string;
 }

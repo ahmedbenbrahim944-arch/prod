@@ -1,10 +1,16 @@
+
+
 // src/semaine/entities/planification.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne } from 'typeorm';
+import {
+  Entity, PrimaryGeneratedColumn, Column,
+  CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany,
+  Unique
+} from 'typeorm';
 import { Semaine } from './semaine.entity';
-import { OneToMany } from 'typeorm';
 import { NonConformite } from '../../non-conf/entities/non-conf.entity';
 
 @Entity('planifications')
+@Unique(['semaine', 'jour', 'ligne', 'reference', 'poste'])
 export class Planification {
   @PrimaryGeneratedColumn()
   id: number;
@@ -20,6 +26,11 @@ export class Planification {
 
   @Column({ type: 'varchar', length: 100 })
   reference: string;
+
+  // ✅ NOUVEAU : Poste de travail (poste1 = 6h-14h | poste2 = 14h-22h)
+  // Par défaut 'poste1' pour ne pas casser les données existantes
+  @Column({ type: 'varchar', length: 10, default: 'poste1' })
+  poste: string;
 
   @Column({ type: 'varchar', length: 100, default: '' })
   of: string;
@@ -45,20 +56,18 @@ export class Planification {
   @Column({ type: 'int', default: 0 })
   decMagasin: number;
 
-  // NOUVEAU CHAMP : Expédition
   @Column({ type: 'int', default: 0 })
   exp: number;
 
-  // NOUVEAU CHAMP : Note (par référence, identique pour tous les jours)
   @Column({ type: 'text', nullable: true, default: null })
   note: string | null;
 
   // CHAMPS CALCULÉS
   @Column({ type: 'int', default: 0 })
-  deltaProd: number; // qteModifiee - decProduction
+  deltaProd: number;
 
   @Column({ type: 'float', default: 0 })
-  pcsProd: number; // (decProduction / qteModifiee) * 100
+  pcsProd: number;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -69,6 +78,6 @@ export class Planification {
   @ManyToOne(() => Semaine, (semaine) => semaine.planifications, { onDelete: 'CASCADE' })
   semaineEntity: Semaine;
 
-  @OneToMany(() => NonConformite, (nonConformite) => nonConformite.planification, { cascade: true })
+  @OneToMany(() => NonConformite, (nc) => nc.planification, { cascade: true })
   nonConformites: NonConformite[];
 }

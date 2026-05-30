@@ -1,5 +1,4 @@
 <div class="full-screen-layout text-white relative overflow-hidden">
-  
   <!-- Background avec particules -->
   <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
        style="background-image: url('https://www.tannerag.ch/Marketing/News%20and%20Social%20Media/38748/image-thumb__38748__contentImageLarge/production-process.e47f5cea.jpg')">
@@ -69,44 +68,6 @@
                 </button>
               </div>
             </div>
-            <button
-    (click)="openUnlockModal()"
-    [class.bg-orange-600]="isTimeBlocked() && !isUnlocked()"
-    [class.hover:bg-orange-500]="isTimeBlocked() && !isUnlocked()"
-    [class.bg-green-600]="isUnlocked()"
-    [class.hover:bg-green-500]="isUnlocked()"
-    [class.bg-gray-600]="!isTimeBlocked() && !isUnlocked()"
-    class="px-4 py-2 sm:py-3 rounded-lg font-semibold text-white text-sm 
-           flex items-center gap-2 transition-all duration-300 shadow-md">
-    
-    <!-- Icône cadenas fermé si bloqué -->
-    <svg *ngIf="isTimeBlocked() && !isUnlocked()" 
-         class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6
-           a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-    </svg>
-    
-    <!-- Icône cadenas ouvert si débloqué -->
-    <svg *ngIf="isUnlocked()" 
-         class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M8 11V7a4 4 0 018 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 
-           00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-    </svg>
-    
-    <!-- Icône horloge si dans les heures autorisées -->
-    <svg *ngIf="!isTimeBlocked() && !isUnlocked()" 
-         class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-    </svg>
-    
-    <span *ngIf="isTimeBlocked() && !isUnlocked()">Débloquer saisie</span>
-    <span *ngIf="isUnlocked()">Saisie débloquée ✓</span>
-    <span *ngIf="!isTimeBlocked() && !isUnlocked()">Saisie ouverte (6h–9h)</span>
-  </button>
-
           </div>
 
           <div *ngIf="filteredLines().length === 0" class="text-center text-gray-400 py-8">
@@ -187,6 +148,31 @@
               <p class="text-gray-300 text-xs sm:text-sm">{{ selectedLigne()!.referenceCount }} références disponibles</p>
             </div>
 
+            <!-- ✅ Sélecteur Poste -->
+            <div class="mb-4 sm:mb-5">
+              <h4 class="text-cyan-300 font-semibold mb-2 text-xs sm:text-sm uppercase tracking-wider">Poste de travail</h4>
+              <div class="grid grid-cols-2 gap-2">
+                <button (click)="selectPoste('poste1')"
+                  class="py-2.5 px-2 rounded-lg font-bold text-sm text-white transition-all duration-200
+                         hover:scale-105 active:scale-95 text-center"
+                  [style.background]="selectedPoste() === 'poste1' ? 'linear-gradient(135deg,#1d4ed8,#2563eb)' : '#374151'"
+                  [style.box-shadow]="selectedPoste() === 'poste1' ? '0 4px 12px rgba(29,78,216,0.4)' : 'none'"
+                  [style.border]="selectedPoste() === 'poste1' ? '2px solid #3b82f6' : '2px solid #4b5563'">
+                  🌅 Poste 1
+                  <span class="block font-normal text-xs opacity-80 mt-0.5">6h – 14h</span>
+                </button>
+                <button (click)="selectPoste('poste2')"
+                  class="py-2.5 px-2 rounded-lg font-bold text-sm text-white transition-all duration-200
+                         hover:scale-105 active:scale-95 text-center"
+                  [style.background]="selectedPoste() === 'poste2' ? 'linear-gradient(135deg,#b45309,#d97706)' : '#374151'"
+                  [style.box-shadow]="selectedPoste() === 'poste2' ? '0 4px 12px rgba(180,83,9,0.4)' : 'none'"
+                  [style.border]="selectedPoste() === 'poste2' ? '2px solid #f59e0b' : '2px solid #4b5563'">
+                  🌆 Poste 2
+                  <span class="block font-normal text-xs opacity-80 mt-0.5">14h – 22h</span>
+                </button>
+              </div>
+            </div>
+
             <h4 class="text-cyan-300 font-semibold mb-3 sm:mb-4 text-xs sm:text-sm uppercase tracking-wider">Semaines disponibles</h4>
            <!-- APRÈS -->
 <div class="space-y-2">
@@ -252,7 +238,14 @@
                 <h2 class="text-xl sm:text-2xl font-bold text-cyan-400 mb-2">
                   {{ selectedLigne()!.ligne }} - Semaine {{ selectedWeek() }}
                 </h2>
-                <p class="text-gray-400 text-sm sm:text-base">{{ filteredWeekPlanification()!.startDate | date:'dd/MM/yyyy' }} au {{ filteredWeekPlanification()!.endDate | date:'dd/MM/yyyy' }}</p>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <p class="text-gray-400 text-sm sm:text-base">{{ filteredWeekPlanification()!.startDate | date:'dd/MM/yyyy' }} au {{ filteredWeekPlanification()!.endDate | date:'dd/MM/yyyy' }}</p>
+                  <!-- ✅ Badge poste actif -->
+                  <span class="px-3 py-1 rounded-full text-xs font-bold text-white"
+                        [style.background]="selectedPoste() === 'poste1' ? '#1d4ed8' : '#b45309'">
+                    {{ selectedPoste() === 'poste1' ? '🌅 Poste 1 — 6h à 14h' : '🌆 Poste 2 — 14h à 22h' }}
+                  </span>
+                </div>
               </div>
               
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:space-x-4">
@@ -616,106 +609,6 @@
         </div>
       </div>
     </div>
-    <!-- Modal déblocage mot de passe -->
-<div *ngIf="showUnlockModal()" 
-     class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 
-            backdrop-blur-sm p-4">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
-    
-    <!-- Header -->
-    <div class="bg-orange-600 p-4 flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" 
-             viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 
-               2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
-        <h2 class="text-lg font-bold text-white">Débloquer la saisie</h2>
-      </div>
-      <button (click)="closeUnlockModal()" 
-              class="text-white hover:text-orange-200 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Body -->
-    <div class="p-6">
-      
-      <!-- Info heure -->
-      <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-4 
-                  flex items-start gap-2">
-        <svg class="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" 
-             fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 9v3.75m-9.303 3.376a12 12 0 1 0 20.817 0M12 15.75h.008v.008H12v-.008z"/>
-        </svg>
-        <div>
-          <p class="text-orange-700 font-semibold text-sm">Saisie hors plage horaire</p>
-          <p class="text-orange-600 text-xs mt-0.5">
-            La saisie est autorisée de <strong>6h00 à 9h00</strong>.<br>
-            Entrez le mot de passe pour débloquer.
-          </p>
-        </div>
-      </div>
-
-      <!-- Champ mot de passe -->
-      <div class="mb-4">
-        <label class="block text-gray-700 font-semibold text-sm mb-2">
-          Mot de passe
-        </label>
-        <input 
-          type="password"
-          [value]="unlockPassword()"
-          (input)="unlockPassword.set($any($event.target).value)"
-          (keyup.enter)="tryUnlock()"
-          placeholder="Entrez le mot de passe..."
-          class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 
-                 text-gray-800 focus:outline-none focus:border-orange-500 
-                 transition-colors text-sm">
-      </div>
-
-      <!-- Message d'erreur -->
-      <div *ngIf="unlockError()" 
-           class="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4
-                  flex items-center gap-2">
-        <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" 
-             viewBox="0 0 20 20">
-          <path fill-rule="evenodd" 
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 
-               1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" 
-            clip-rule="evenodd"/>
-        </svg>
-        <span class="text-red-600 text-sm font-medium">{{ unlockError() }}</span>
-      </div>
-
-      <!-- Boutons -->
-      <div class="flex gap-3">
-        <button 
-          (click)="closeUnlockModal()"
-          class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 
-                 rounded-lg font-semibold text-sm transition-colors">
-          Annuler
-        </button>
-        <button 
-          (click)="tryUnlock()"
-          class="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white 
-                 rounded-lg font-semibold text-sm transition-colors flex 
-                 items-center justify-center gap-2">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M8 11V7a4 4 0 018 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 
-                 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
-          </svg>
-          Débloquer
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
   </div>
 
   <!-- Formulaire de Saisie Rapport Production -->

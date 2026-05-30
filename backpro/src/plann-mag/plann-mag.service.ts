@@ -129,6 +129,43 @@ export class PlannMagService {
   }
 
   // ══════════════════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU ─── DOCUMENTS SERVIS PAR SEMAINE (Point Vert)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * GET /plann-mag/servis?semaine=semaine21
+   *
+   * Retourne tous les enregistrements document_servi d'une semaine donnée.
+   * Le frontend utilise ces données pour afficher le point vert dans la grille.
+   *
+   * Chaque item retourné contient :
+   *   - of       : ex "070348"
+   *   - dateDoc  : ex "1805"  (DDMM)
+   *   - ligne    : ex "L09:COMXT2"
+   *   - semaine  : ex "semaine21"
+   */
+  async getServisBySemaine(semaine: string): Promise<{
+    semaine: string;
+    total:   number;
+    servis:  { of: string; dateDoc: string; ligne: string; semaine: string; codeDocument: string }[];
+  }> {
+    const docs = await this.documentServiRepository.find({
+      where: { semaine },
+      order: { serviLe: 'DESC' },
+    });
+
+    const servis = docs.map(d => ({
+      of:           d.of,
+      dateDoc:      d.dateDoc,
+      ligne:        d.ligne,
+      semaine:      d.semaine,
+      codeDocument: d.codeDocument,
+    }));
+
+    return { semaine, total: servis.length, servis };
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // NOUVEAU ─── RECHERCHE PAR DATE (OF optionnel), groupé ligne → référence
   // ══════════════════════════════════════════════════════════════════════════
   async searchByDate(annee: string, date: string, of?: string) {
@@ -210,19 +247,10 @@ export class PlannMagService {
       }
 
       const entry = refMap.get(plan.reference)!;
-
-      // ── Sécurisation OF null/vide ──────────────────────────────────────
-      // Certaines planifications n'ont pas encore d'OF assigné en base.
-      // On normalise : null / undefined / '   ' → chaîne vide.
-      const ofValue = (plan.of ?? '').toString().trim();
-      const codeDoc = ofValue
-        ? `G${ofValue}${date}`   // OF présent  → ex: G0697390704
-        : `G${date}`;            // OF absent   → ex: G0704 (date seule)
-
       entry.ofs.push({
-        of:           ofValue,
+        of:           plan.of,
         qtePlanifiee: plan.qtePlanifiee,
-        codeDocument: codeDoc,
+        codeDocument: `G${plan.of}${date}`,
       });
       entry.totalQte += plan.qtePlanifiee;
     }

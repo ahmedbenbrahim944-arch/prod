@@ -119,18 +119,18 @@ export class Magasin1Component implements OnInit {
         }
 
         const refData = refMap.get(item.reference);
-        const day = item.jour.toLowerCase();
-
-        if (refData[day] !== undefined) {
-          refData[day] = {
-            quantiteSource: item.quantiteSource,
-            decMagasin: item.decMagasin ?? 0,   // ← FIX : était manquant
-            exp: item.exp ?? 0,                   // ← NOUVEAU
-            of: item.of || '',
-            _originalJour: item.jour               // ← conservé pour l'API
-          };
-          daysSet.add(day);
-        }
+const day = item.jour.toLowerCase();
+if (refData[day] !== undefined) {
+  refData[day].quantiteSource += item.quantiteSource;  // ← addition
+  refData[day].decMagasin     += item.decMagasin ?? 0; // ← addition
+  refData[day].exp             = item.exp ?? 0;         // ← garde la valeur
+  refData[day].of              = item.of || refData[day].of;
+  refData[day]._originalJour   = item.jour;
+  // ✅ stocker les deux postes séparément
+  refData[day].poste1C  = (item.poste === 'poste1') ? item.quantiteSource : (refData[day].poste1C || 0);
+  refData[day].poste2C  = (item.poste === 'poste2') ? item.quantiteSource : (refData[day].poste2C || 0);
+  daysSet.add(day);
+}
       }
     });
 
@@ -597,4 +597,6 @@ export class Magasin1Component implements OnInit {
     for (let i = 1; i <= 52; i++) weeks.push(`semaine${i}`);
     return weeks;
   }
+  // Dans le composant
+
 }

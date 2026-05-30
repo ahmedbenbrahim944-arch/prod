@@ -14,6 +14,7 @@ export interface PlanificationMagasin {
   semaine: string;
   jour: string;
   ligne: string;
+  poste: string;
   reference: string;
   qtePlanifiee: number;
   qteModifiee: number;

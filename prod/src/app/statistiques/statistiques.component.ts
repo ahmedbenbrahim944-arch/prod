@@ -48,6 +48,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
   ligneSelectionnee: string | null = null;
   isLoading: boolean = false;
   showStats: boolean = false;
+  posteSelectionne: string = '';
 
   stats5MDate: Stats5MParDateResponse | null = null;
   stats5MParLigneDate: Ligne5MDate[] = [];
@@ -130,7 +131,7 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
     this.isLoadingAffectation = true;
     this.showAffectation = false;
 
-    this.statsService.getAffectationPersonnel(this.semaineSelectionnee).subscribe({
+     this.statsService.getAffectationPersonnel(this.semaineSelectionnee, this.posteSelectionne).subscribe({
       next: (response) => {
         this.affectationPersonnel = response;
         this.isLoadingAffectation = false;
@@ -174,9 +175,9 @@ export class StatistiquesComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     
     forkJoin({
-      lignes: this.statsService.getPcsProdTotalParLigne(this.semaineSelectionnee),
-      pourcentage5M: this.statsService.getPourcentage5MParSemaine(this.semaineSelectionnee),
-      pourcentage5MParLigne: this.statsService.getPourcentage5MParLigne(this.semaineSelectionnee)
+      lignes: this.statsService.getPcsProdTotalParLigne(this.semaineSelectionnee, this.posteSelectionne),
+      pourcentage5M: this.statsService.getPourcentage5MParSemaine(this.semaineSelectionnee, this.posteSelectionne),
+      pourcentage5MParLigne: this.statsService.getPourcentage5MParLigne(this.semaineSelectionnee, this.posteSelectionne)
     }).subscribe({
       next: (response) => {
         this.statsLignes = response.lignes.lignes as any as LigneStats[];
@@ -253,9 +254,9 @@ chargerStatsParDate(): void {
   this.isLoadingDate = true;
   
   forkJoin({
-    statsProduction: this.statsService.getStatsParDate(this.dateSelectionnee),
-    stats5M: this.statsService.getStats5MParDate(this.dateSelectionnee),
-    ouvriersNonSaisis: this.statsService.getOuvriersNonSaisisParDate(this.dateSelectionnee)
+      statsProduction: this.statsService.getStatsParDate(this.dateSelectionnee, this.posteSelectionne),
+      stats5M: this.statsService.getStats5MParDate(this.dateSelectionnee, this.posteSelectionne),
+      ouvriersNonSaisis: this.statsService.getOuvriersNonSaisisParDate(this.dateSelectionnee)
   }).subscribe({
     next: (response) => {
       // Stats de production

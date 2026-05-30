@@ -7,6 +7,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   ParseIntPipe,
   UseGuards,
   UsePipes,
@@ -71,6 +72,21 @@ export class PlannMagController {
   @Delete('matieres/:id')
   async deleteMatiere(@Param('id', ParseIntPipe) id: number) {
     return this.plannMagService.deleteMatierePremiere(id);
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU ─── DOCUMENTS SERVIS (Point Vert)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * GET /plann-mag/servis?semaine=semaine21
+   *
+   * Retourne tous les documents déjà scannés pour une semaine.
+   * Utilisé par le composant Planification pour afficher le point vert.
+   */
+  @Get('servis')
+  async getServis(@Query('semaine') semaine: string) {
+    return this.plannMagService.getServisBySemaine(semaine);
   }
 
   // ══════════════════════════════════════════════════════════════════════════

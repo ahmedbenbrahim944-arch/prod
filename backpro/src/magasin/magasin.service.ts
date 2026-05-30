@@ -22,194 +22,108 @@ export class MagasinService {
   }
 
   // Récupérer les planifications pour le magasin
-  async getPlanificationsMagasin(getPlanificationDto: GetPlanificationMagasinDto) {
-    const { semaine } = getPlanificationDto;
+  // magasin.service.ts - méthode getPlanificationsMagasin
 
-    console.log(`=== MAGASIN - ${semaine} ===`);
+async getPlanificationsMagasin(dto: GetPlanificationMagasinDto) {
+  const { semaine } = dto;
 
-    // Vérifier si la semaine existe
-    const semaineEntity = await this.semaineRepository.findOne({
-      where: { nom: semaine }
-    });
+  const semaineEntity = await this.semaineRepository.findOne({
+    where: { nom: semaine }
+  });
 
-    if (!semaineEntity) {
-      throw new NotFoundException(`Semaine "${semaine}" non trouvée`);
-    }
-
-    // Récupérer toutes les planifications pour cette semaine (toutes lignes)
-    const planifications = await this.planificationRepository.find({
-      where: { 
-        semaine: semaine
-      },
-      order: { ligne: 'ASC', reference: 'ASC', jour: 'ASC' }
-    });
-
-    if (planifications.length === 0) {
-      return {
-        message: `Aucune planification trouvée pour la semaine ${semaine}`,
-        semaine: semaine,
-        lignes: [],
-        planifications: []
-      };
-    }
-
-    // FILTRER: ne garder que les planifications avec qtePlanifiee > 0 OU qteModifiee > 0
-    const planificationsFiltrees = planifications.filter(plan => 
-      plan.qtePlanifiee > 0 || plan.qteModifiee > 0
-    );
-
-    if (planificationsFiltrees.length === 0) {
-      return {
-        message: `Aucune planification avec quantité planifiée ou modifiée > 0 pour la semaine ${semaine}`,
-        semaine: semaine,
-        lignes: [],
-        references: []
-      };
-    }
-
-    // Grouper par ligne
-    const lignesMap = new Map<string, any>();
-
-    planificationsFiltrees.forEach(plan => {
-      const ligneKey = plan.ligne;
-      
-      if (!lignesMap.has(ligneKey)) {
-        lignesMap.set(ligneKey, {
-          ligne: plan.ligne,
-          references: new Map<string, any>(),
-          detailsParJour: [],
-          // Totaux par ligne
-          totalQtePlanifiee: 0,
-          totalQteModifiee: 0,
-          totalQuantiteSource: 0,
-          totalDecMagasin: 0
-        });
-      }
-
-      const ligneData = lignesMap.get(ligneKey);
-      
-      // Grouper par référence à l'intérieur de chaque ligne
-      const refKey = plan.reference;
-      const quantiteSource = this.getQuantitySource(plan);
-      
-      if (!ligneData.references.has(refKey)) {
-        ligneData.references.set(refKey, {
-          reference: plan.reference,
-          qtePlanifiee: 0,
-          qteModifiee: 0,
-          quantiteSource: 0,
-          decMagasin: 0,
-          detailsParJour: [],
-          // Nouveaux champs pour indiquer le type de quantité
-          aQtePlanifiee: false,
-          aQteModifiee: false
-        });
-      }
-
-      const refData = ligneData.references.get(refKey);
-      
-      // Ajouter aux totaux de la référence
-      refData.qtePlanifiee += plan.qtePlanifiee;
-      refData.qteModifiee += plan.qteModifiee;
-      refData.quantiteSource += quantiteSource;
-      refData.decMagasin += plan.decMagasin;
-
-      // Mettre à jour les indicateurs
-      if (plan.qtePlanifiee > 0) refData.aQtePlanifiee = true;
-      if (plan.qteModifiee > 0) refData.aQteModifiee = true;
-
-      // Détails par jour pour la référence
-      if (plan.qtePlanifiee > 0 || plan.qteModifiee > 0) {
-        refData.detailsParJour.push({
-          jour: plan.jour,
-          qtePlanifiee: plan.qtePlanifiee,
-          qteModifiee: plan.qteModifiee,
-          quantiteSource: quantiteSource,
-          decMagasin: plan.decMagasin,
-          of: plan.of,
-          emballage: plan.emballage,
-          typeQuantite: plan.qteModifiee > 0 ? 'MODIFIEE' : 'PLANIFIEE'
-        });
-      }
-
-      // Ajouter aux totaux de la ligne
-      ligneData.totalQtePlanifiee += plan.qtePlanifiee;
-      ligneData.totalQteModifiee += plan.qteModifiee;
-      ligneData.totalQuantiteSource += quantiteSource;
-      ligneData.totalDecMagasin += plan.decMagasin;
-
-      // Ajouter aux détails de la ligne
-      ligneData.detailsParJour.push({
-        id: plan.id,
-        jour: plan.jour,
-        reference: plan.reference,
-        qtePlanifiee: plan.qtePlanifiee,
-        qteModifiee: plan.qteModifiee,
-        quantiteSource: quantiteSource,
-        decMagasin: plan.decMagasin,
-        of: plan.of,
-        emballage: plan.emballage,
-        typeQuantite: plan.qteModifiee > 0 ? 'MODIFIEE' : 'PLANIFIEE'
-      });
-    });
-
-    // Convertir la Map des lignes en tableau
-    const lignes = Array.from(lignesMap.values())
-      .sort((a, b) => a.ligne.localeCompare(b.ligne));
-
-    // Convertir les références Map en tableau pour chaque ligne
-    lignes.forEach(ligne => {
-      ligne.references = Array.from(ligne.references.values())
-       .sort((a: any, b: any) => a.reference.localeCompare(b.reference));
-      
-      // Statistiques pour la ligne
-      ligne.statistiques = {
-        nombreReferences: ligne.references.length,
-        referencesAvecQtePlanifiee: ligne.references.filter(ref => ref.aQtePlanifiee).length,
-        referencesAvecQteModifiee: ligne.references.filter(ref => ref.aQteModifiee).length,
-        nombrePlanifications: ligne.detailsParJour.length
-      };
-    });
-
-    // Calculer les totaux globaux
-    const totals = {
-      totalQtePlanifiee: lignes.reduce((sum, ligne) => sum + ligne.totalQtePlanifiee, 0),
-      totalQteModifiee: lignes.reduce((sum, ligne) => sum + ligne.totalQteModifiee, 0),
-      totalQuantiteSource: lignes.reduce((sum, ligne) => sum + ligne.totalQuantiteSource, 0),
-      totalDecMagasin: lignes.reduce((sum, ligne) => sum + ligne.totalDecMagasin, 0),
-      nombreLignes: lignes.length,
-      nombrePlanifications: planificationsFiltrees.length
-    };
-
-    return {
-      message: `Planifications magasin pour la semaine ${semaine} (toutes lignes)`,
-      semaine: {
-        id: semaineEntity.id,
-        nom: semaineEntity.nom,
-        dateDebut: semaineEntity.dateDebut,
-        dateFin: semaineEntity.dateFin
-      },
-      filtre: "Seules les références avec qtePlanifiee > 0 OU qteModifiee > 0 sont affichées",
-      totals: totals,
-      lignes: lignes,
-      // Version détaillée par planification (filtrée)
-      details: planificationsFiltrees.map(plan => ({
-        id: plan.id,
-        semaine: plan.semaine,
-        jour: plan.jour,
-        ligne: plan.ligne,
-        reference: plan.reference,
-        of: plan.of,
-        qtePlanifiee: plan.qtePlanifiee,
-        qteModifiee: plan.qteModifiee,
-        quantiteSource: this.getQuantitySource(plan),
-        decMagasin: plan.decMagasin,
-        emballage: plan.emballage,
-        typeQuantite: plan.qteModifiee > 0 ? 'MODIFIEE' : (plan.qtePlanifiee > 0 ? 'PLANIFIEE' : 'VIDE'),
-        updatedAt: plan.updatedAt
-      }))
-    };
+  if (!semaineEntity) {
+    throw new NotFoundException(`Semaine "${semaine}" non trouvée`);
   }
+
+  // ✅ Récupérer TOUTES les planifications sans fusionner les postes
+  const planifications = await this.planificationRepository.find({
+    where: { semaine },
+    order: { 
+      reference: 'ASC', 
+      poste: 'ASC',   // ← poste1 avant poste2
+      jour: 'ASC' 
+    }
+  });
+
+  // ✅ Filtrer : garder seulement celles avec une quantité > 0
+  const avecQuantite = planifications.filter(
+    p => p.qtePlanifiee > 0 || p.qteModifiee > 0
+  );
+
+  // ✅ Construire les détails EN GARDANT poste séparé
+  const details = avecQuantite.map(plan => ({
+    id: plan.id,
+    semaine: plan.semaine,
+    jour: plan.jour,
+    ligne: plan.ligne,
+    reference: plan.reference,
+    poste: plan.poste || 'poste1',   // ← CHAMP CLÉ
+    of: plan.of,
+    qtePlanifiee: plan.qtePlanifiee,
+    qteModifiee: plan.qteModifiee,
+    quantiteSource: plan.qteModifiee > 0 ? plan.qteModifiee : plan.qtePlanifiee,
+    decMagasin: plan.decMagasin,
+    exp: plan.exp,
+    emballage: plan.emballage,
+    updatedAt: plan.updatedAt,
+    typeQuantite: plan.qteModifiee > 0 ? 'modifiée' : 'planifiée'
+  }));
+
+  // ✅ Regrouper par ligne pour la structure "lignes"
+  const lignesMap = new Map<string, any>();
+  details.forEach(d => {
+    if (!lignesMap.has(d.ligne)) {
+      lignesMap.set(d.ligne, {
+        ligne: d.ligne,
+        // total = somme poste1 + poste2
+        totalQtePlanifiee: 0,
+        totalDecMagasin: 0,
+        references: new Map()
+      });
+    }
+    const ligneEntry = lignesMap.get(d.ligne);
+    ligneEntry.totalQtePlanifiee += d.quantiteSource;
+    ligneEntry.totalDecMagasin += d.decMagasin;
+
+    const refKey = `${d.reference}|${d.jour}`;
+    if (!ligneEntry.references.has(refKey)) {
+      ligneEntry.references.set(refKey, {
+        reference: d.reference,
+        jour: d.jour,
+        postes: []
+      });
+    }
+    // ← Chaque référence/jour a maintenant un tableau de postes
+    ligneEntry.references.get(refKey).postes.push(d);
+  });
+
+  const lignes = Array.from(lignesMap.values()).map(l => ({
+    ...l,
+    references: Array.from(l.references.values())
+  }));
+
+  return {
+    message: `Planifications magasin`,
+    semaine: {
+      id: semaineEntity.id,
+      nom: semaineEntity.nom,
+      dateDebut: semaineEntity.dateDebut,
+      dateFin: semaineEntity.dateFin
+    },
+    filtre: semaine,
+    totals: {
+      totalQtePlanifiee: details.reduce((s, d) => s + d.quantiteSource, 0),
+      totalQteModifiee: details.reduce((s, d) => s + d.qteModifiee, 0),
+      totalQuantiteSource: details.reduce((s, d) => s + d.quantiteSource, 0),
+      totalDecMagasin: details.reduce((s, d) => s + d.decMagasin, 0),
+      totalExp: details.reduce((s, d) => s + (d.exp || 0), 0),
+      nombreLignes: lignesMap.size,
+      nombrePlanifications: details.length
+    },
+    lignes,
+    details  // ← liste plate avec poste1 ET poste2 séparés
+  };
+}
 
   // Mettre à jour la déclaration magasin (inchangé)
   async updateDeclarationMagasin(updateDto: UpdateDeclarationMagasinDto, username: string) {

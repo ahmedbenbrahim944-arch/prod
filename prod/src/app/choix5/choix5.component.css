@@ -1,376 +1,219 @@
-/* Styles pour le conteneur principal */
-.choix-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ════════════════════════════════
+   PAGE D'ACCUEIL
+════════════════════════════════ */
+
+.pdp-home {
   min-height: 100vh;
-  padding: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f4f8;
+  padding-bottom: 2rem;
 }
 
-/* Titre - optionnel si vous voulez ajouter un titre */
-.titre {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
-  color: #2c3e50;
-  text-align: center;
-  margin-bottom: 10px;
-  font-weight: 700;
-}
+/* ════════════════════════════════
+   ✅ STYLE 2 — TOP NAVIGATION BAR
+════════════════════════════════ */
 
-/* Description */
-.description {
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  color: #5d6d7e;
-  text-align: center;
-  max-width: 600px;
-  margin-bottom: 40px;
-  line-height: 1.5;
-}
-
-/* Conteneur des boutons */
-.boutons-container {
+.top-bar {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 30px;
-  max-width: 1200px;
-  width: 100%;
-}
-
-/* Style de base pour tous les boutons */
-.bouton-grand {
-  flex: 1;
-  min-width: 280px;
-  max-width: 500px;
-  height: auto;
-  min-height: 200px;
-  border: none;
-  border-radius: 20px;
-  padding: 30px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  text-decoration: none;
-  color: inherit;
-}
-
-/* Effet de survol pour tous les boutons */
-.bouton-grand:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
-  text-decoration: none;
-}
-
-/* Effet de clic pour tous les boutons */
-.bouton-grand:active {
-  transform: translateY(-2px);
-}
-
-/* Style pour les liens actifs */
-.bouton-grand.active {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
-  outline: 2px solid rgba(255, 255, 255, 0.8);
-}
-
-/* Contenu du bouton */
-.bouton-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-  z-index: 2;
-}
-
-/* Icône du bouton */
-.bouton-icon {
-  width: 60px;
+  padding: 0 2rem;
+  background: linear-gradient(135deg, #04219e 0%, #0a3bbf 100%);
+  box-shadow: 0 4px 16px rgba(4,33,158,0.25);
   height: 60px;
-  stroke-width: 1.5;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-/* Titre du bouton */
-.bouton-titre {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 700;
-  margin: 0;
+.brand-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #ffffff;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
 }
 
-/* Description du bouton */
-.bouton-description {
-  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
-  line-height: 1.4;
-  max-width: 90%;
-  margin: 0;
-}
+.brand-title .prod-part { color: #4ade80; }
+.brand-title .seraf-part { color: #ffffff; }
 
-/* Bouton Statistique */
-.bouton-grand.statistique {
-  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
-  color: white;
-}
-
-.bouton-grand.statistique .bouton-icon {
-  stroke: #8eb1ff;
-}
-
-.bouton-grand.statistique:hover {
-  background: linear-gradient(135deg, #5a7ac7 0%, #2a3c68 100%);
-}
-
-/* Bouton Ouvert */
-.bouton-grand.planning {
-  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-  color: white;
-}
-
-.bouton-grand.planning .bouton-icon {
-  stroke: #a5ffd6;
-}
-
-.bouton-grand.planning:hover {
-  background: linear-gradient(135deg, #1aad9e 0%, #52ff99 100%);
-}
-
-/* Bouton Vérifier Status */
-.bouton-grand.magasin {
-  background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
-  color: white;
-}
-
-.bouton-grand.magasin .bouton-icon {
-  stroke: #ffe4d6;
-}
-
-.bouton-grand.magasin:hover {
-  background: linear-gradient(135deg, #ff8f6f 0%, #ffc49b 100%);
-}
-
-/* Bouton de retour au login */
-.btn-retour-login {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
+.top-nav {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 16px;
+  gap: 4px;
+}
+
+.top-nav-pill {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.65);
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+.top-nav-pill:hover {
+  background: rgba(255,255,255,0.15);
+  color: #ffffff;
+}
+.top-nav-pill.active {
+  background: rgba(255,255,255,0.2);
+  color: #ffffff;
   font-weight: 600;
-  color: white;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
-  z-index: 100;
-  white-space: nowrap;
 }
 
-.btn-retour-login:hover {
-  background: linear-gradient(135deg, #ff5e6c 0%, #ff5252 100%);
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
-}
-
-.btn-retour-login:active {
-  transform: translateY(-1px);
-}
-
-.btn-retour-login svg {
-  width: 20px;
-  height: 20px;
-  stroke: white;
-  flex-shrink: 0;
-}
-
-/* Bouton SERFA 4.0 */
-.btn-serfa-40 {
-  position: fixed;
-  top: 20px;
-  right: 20px;
+.logout-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: rgba(220,38,38,0.85);
+  color: #ffffff;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-  z-index: 1000;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(220,38,38,0.30);
+}
+.logout-btn:hover {
+  background: rgb(220,38,38);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220,38,38,0.40);
 }
 
-.btn-serfa-40:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+/* ════════════════════════════════
+   ✅ MODULES — GRILLE STYLE 2
+════════════════════════════════ */
+
+.modules-row {
+  display: grid;
+  gap: 16px;
+  padding: 0 2rem;
+}
+.modules-row-2 {
+  grid-template-columns: repeat(2, 1fr);
+  margin-bottom: 16px;
+  margin-top: 8px;
+}
+.modules-row-3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
-.btn-serfa-40:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
+.mod-btn {
+  background: #ffffff;
+  border: 0.5px solid #d1dce8;
+  border-radius: 14px;
+  padding: 2.5rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(4,33,158,0.06);
+  position: relative;
+  overflow: hidden;
 }
 
-.btn-serfa-40 svg {
-  width: 20px;
-  height: 20px;
-  stroke-width: 2.5;
-  transition: transform 0.3s ease;
+.mod-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #04219e, #4ade80);
+  border-radius: 0 0 12px 12px;
+  transform: scaleX(0.3);
+  transform-origin: left;
+  opacity: 0.6;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+.mod-btn:hover::after {
+  transform: scaleX(1);
+  opacity: 1;
 }
 
-.btn-serfa-40:hover svg {
-  transform: translateX(4px);
+.mod-btn:hover {
+  background: #f8faff;
+  border-color: #04219e;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(4,33,158,0.13);
 }
 
-.btn-serfa-text {
-  font-size: 14px;
+.mod-icon {
+  width: 100px;
+  height: 100px;
+  border-radius: 20px;
+  background: #e6f1fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+}
+.mod-btn:hover .mod-icon {
+  background: linear-gradient(135deg, #04219e 0%, #0aaff0 100%);
+  box-shadow: 0 8px 20px rgba(4,33,158,0.25);
+  transform: scale(1.06);
+}
+.mod-icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: #04219e;
+  fill: none;
+  transition: stroke 0.3s;
+}
+.mod-btn:hover .mod-icon svg {
+  stroke: #ffffff;
+}
+
+.mod-label {
+  font-size: 1.15rem;
   font-weight: 700;
+  color: #04219e;
+  transition: color 0.2s;
+}
+.mod-btn:hover .mod-label {
+  color: #04219e;
 }
 
-/* Responsive Design */
-@media (min-width: 1200px) {
-  .boutons-container {
-    gap: 50px;
-  }
-  
-  .bouton-grand {
-    min-height: 250px;
-    padding: 40px;
-  }
+.mod-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 
-@media (max-width: 992px) {
-  .boutons-container {
-    gap: 25px;
-  }
-  
-  .bouton-grand {
-    min-width: 240px;
-    min-height: 180px;
-    padding: 25px;
-  }
-}
-
+/* ════════════════════════════════
+   RESPONSIVE
+════════════════════════════════ */
 @media (max-width: 768px) {
-  .choix-container {
-    padding: 15px;
-  }
-  
-  .boutons-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-  }
-  
-  .bouton-grand {
-    width: 100%;
-    max-width: 400px;
-    min-height: 170px;
-    padding: 20px;
-  }
-  
-  .bouton-icon {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .btn-retour-login {
-    top: 15px;
-    left: 15px;
-    padding: 10px 18px;
-    font-size: 14px;
-  }
-  
-  .btn-serfa-40 {
-    top: 10px;
-    right: 10px;
-    padding: 10px 16px;
-    font-size: 14px;
-  }
+  .modules-row-2    { grid-template-columns: 1fr; padding: 0 1rem; }
+  .modules-row-3    { grid-template-columns: 1fr; padding: 0 1rem; }
+  .top-bar          { padding: 0 1rem; flex-wrap: wrap; height: auto; padding: 10px 1rem; }
+  .top-nav          { display: none; }
+  .brand-title      { font-size: 1.3rem; }
 }
 
-@media (max-width: 576px) and (orientation: portrait) {
-  .choix-container {
-    justify-content: flex-start;
-    padding-top: 70px;
-  }
-  
-  .bouton-grand {
-    min-height: 160px;
-  }
-  
-  .bouton-icon {
-    width: 45px;
-    height: 45px;
-  }
+@media (max-width: 1024px) and (min-width: 769px) {
+  .modules-row-3 { grid-template-columns: repeat(2, 1fr); }
+  .top-nav-pill  { font-size: 0.75rem; padding: 5px 10px; }
 }
 
-@media (max-width: 360px) {
-  .bouton-grand {
-    min-height: 150px;
-    padding: 15px;
-  }
-  
-  .bouton-titre {
-    font-size: 1.3rem;
-  }
-  
-  .bouton-description {
-    font-size: 0.85rem;
-  }
-}
+.fade-in { animation: fadeIn 0.4s ease-in-out; }
 
-/* Animation de chargement */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.bouton-grand {
-  animation: fadeIn 0.5s ease forwards;
-}
-
-.bouton-grand:nth-child(1) {
-  animation-delay: 0s;
-}
-
-.bouton-grand:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.bouton-grand:nth-child(3) {
-  animation-delay: 0.2s;
-}
-
-.btn-serfa-40 {
-  animation: slideInRight 0.6s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(50px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

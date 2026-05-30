@@ -1,14 +1,27 @@
 <!-- ════════════════════════════════════════════════════════════
-     PDP — Navigation principale par grands boutons
-     Remplace totalement la sidebar
+     PDP — Style 2 : Top Navigation + Cartes Modernes
 ════════════════════════════════════════════════════════════ -->
 
 <!-- ── PAGE D'ACCUEIL ── -->
 <div *ngIf="activeTab() === 'home'" class="pdp-home fade-in">
 
-  <!-- Barre supérieure -->
+  <!-- Message d'information -->
+  
+  
+
+  <!-- ── TOP BAR ── -->
   <div class="top-bar">
-    <span class="brand-title">PROD SERAF</span>
+    <span class="brand-title">
+      <span class="prod-part">PROD</span>&nbsp;<span class="seraf-part">SERAF</span>
+    </span>
+    <nav class="top-nav">
+      <button class="top-nav-pill active">Accueil</button>
+      <button class="top-nav-pill" (click)="openModuleModal('planning')">Planning</button>
+      <button class="top-nav-pill" (click)="openModuleModal('operation')">Opération</button>
+      <button class="top-nav-pill" (click)="openModuleModal('performance')">Performance</button>
+      <button class="top-nav-pill" (click)="openModuleModal('monitoring')">Monitoring</button>
+      <button class="top-nav-pill" *ngIf="isAdmin()" (click)="openModuleModal('administration')">Admin</button>
+    </nav>
     <button class="logout-btn" (click)="goBackToLogin()">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -18,11 +31,11 @@
     </button>
   </div>
 
-  <!-- Statistiques -->
+  <!-- ── STATISTIQUES ── -->
   <div class="home-stats">
     <div class="home-stat">
       <div class="home-stat-value">{{ getTotalLines() }}</div>
-      <div class="home-stat-label">Lignes actives</div>
+      <div class="home-stat-label">Lignes </div>
     </div>
     <div class="home-stat">
       <div class="home-stat-value">{{ getTotalReferences() }}</div>
@@ -38,10 +51,8 @@
     </div>
   </div>
 
-  <!-- Rang 1 : 2 boutons -->
+  <!-- ── RANG 1 : 2 boutons ── -->
   <div class="modules-row modules-row-2">
-
-    <!-- Planning -->
     <button class="mod-btn" (click)="openModuleModal('planning')">
       <div class="mod-icon">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,8 +65,6 @@
       <div class="mod-label">Planning</div>
       <div class="mod-sub">Semaines · Planification · Extraction</div>
     </button>
-
-    <!-- Opération -->
     <button class="mod-btn" (click)="openModuleModal('operation')">
       <div class="mod-icon">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,13 +76,10 @@
       <div class="mod-label">Opération</div>
       <div class="mod-sub">Lignes · Références · Phases · Temps · MP</div>
     </button>
-
   </div>
 
-  <!-- Rang 2 : 3 boutons -->
+  <!-- ── RANG 2 : 3 boutons ── -->
   <div class="modules-row modules-row-3">
-
-    <!-- Performance Production -->
     <button class="mod-btn" (click)="openModuleModal('performance')">
       <div class="mod-icon">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +90,6 @@
       <div class="mod-label">Performance Production</div>
       <div class="mod-sub">KPI · Productivité · Statistiques</div>
     </button>
-
-    <!-- Monitoring -->
     <button class="mod-btn" (click)="openModuleModal('monitoring')">
       <div class="mod-icon">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,8 +102,6 @@
       <div class="mod-label">Monitoring Temps Réel</div>
       <div class="mod-sub">Rapports · View Global · Stats</div>
     </button>
-
-    <!-- Administration (admin seulement) -->
     <button *ngIf="isAdmin()" class="mod-btn" (click)="openModuleModal('administration')">
       <div class="mod-icon">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +112,6 @@
       <div class="mod-label">Administration</div>
       <div class="mod-sub">Utilisateurs · Ouvriers · Tracking</div>
     </button>
-
   </div>
 
 </div><!-- /home -->
@@ -144,7 +145,7 @@
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
             <span>Planification</span>
           </button>
-           <button class="sub-item" [routerLink]="['/planmag']" (click)="closeModuleModal()">
+          <button class="sub-item" [routerLink]="['/planmag']" (click)="closeModuleModal()">
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg></div>
             <span>Planification Magasin</span>
           </button>
@@ -152,7 +153,7 @@
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></div>
             <span>Extraction Données</span>
           </button>
-           <button class="sub-item" (click)="goTo('download-phase')">
+          <button class="sub-item" (click)="goTo('download-phase')">
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></div>
             <span>Télécharger Rapports Phase</span>
           </button>
@@ -218,7 +219,6 @@
       <!-- Monitoring -->
       <ng-container *ngIf="activeModuleModal === 'monitoring'">
         <div class="sub-grid">
-         
           <button class="sub-item" [routerLink]="['/scann']" (click)="closeModuleModal()">
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5a.5.5 0 11-1 0 .5.5 0 011 0zm-7-4a.5.5 0 11-1 0 .5.5 0 011 0zm-4 7.5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg></div>
             <span>Scanner</span>
@@ -257,8 +257,6 @@
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div>
             <span>Admin Tracking</span>
           </button>
-         
-          
         </div>
       </ng-container>
 
@@ -269,11 +267,10 @@
 
 
 <!-- ════════════════════════════════════════════════════════════
-     SOUS-PAGES (toutes les vues existantes)
-     Chacune avec barre de retour vers 'home'
+     SOUS-PAGES
 ════════════════════════════════════════════════════════════ -->
 
-<!-- Barre de retour commune (visible sur toutes les sous-pages) -->
+<!-- Barre de retour commune -->
 <div *ngIf="activeTab() !== 'home'" class="sub-page-topbar">
   <button class="back-btn" (click)="setActiveTab('home')">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1009,7 +1006,11 @@
 
 </div><!-- /sub-page-wrapper -->
 
-<!-- ── MODALES ── -->
+
+<!-- ════════════════════════════════════════════════════════════
+     MODALES
+════════════════════════════════════════════════════════════ -->
+
 <!-- Modal détail ligne -->
 <div *ngIf="selectedLine()" class="modal-overlay" (click)="closeModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">

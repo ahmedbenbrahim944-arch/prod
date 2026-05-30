@@ -1,7 +1,7 @@
 // src/app/plann-mag-search/plann-mag-search.component.ts
-import { Component }              from '@angular/core';
-import { CommonModule, TitleCasePipe } from '@angular/common';
-import { FormsModule }            from '@angular/forms';
+import { Component }                    from '@angular/core';
+import { CommonModule, TitleCasePipe }  from '@angular/common';
+import { FormsModule }                  from '@angular/forms';
 import {
   PlannMagSearchService,
   SearchByDateResponse,
@@ -12,7 +12,8 @@ import {
 } from './plann-mag-search.service';
 import { jsPDF } from 'jspdf';
 
-// ─── Interface interne d'affichage ───────────────────────────────────────────
+// ─── Interfaces internes d'affichage ─────────────────────────────────────────
+
 interface RefGroupDisplay extends RefDetail {
   dateFormatee: string;
   jour:         string;
@@ -24,10 +25,22 @@ interface LigneGroupDisplay {
   refs:  RefGroupDisplay[];
 }
 
+/** Ligne agrégée du tableau TOTAL par ligne */
+interface TotalMpRow {
+  refMp:         string;
+  descriptionMp: string;
+  totalQte:      number;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Nombre max de lignes MP sur une page avant de devoir couper (calculé sur A4) */
+/** Nombre max de lignes MP sur une page de référence (A4 portrait) */
 const PDF_MAX_ROWS_PER_PAGE = 13;
+
+/** Nombre max de lignes MP sur une page TOTAL (plus compact) */
+const PDF_MAX_TOTAL_ROWS_PER_PAGE = 22;
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Component({
   selector:    'app-plann-mag-search',
@@ -38,41 +51,47 @@ const PDF_MAX_ROWS_PER_PAGE = 13;
 })
 export class PlannMagSearchComponent {
 
-  // ─── Formulaire ──────────────────────────────────────────────────────────
+  // ─── Formulaire ────────────────────────────────────────────────────────────
   annee: string = new Date().getFullYear().toString();
   date:  string = '';
   of:    string = '';   // '' = tous les OFs
 
-  // ─── Liste des OF disponibles ────────────────────────────────────────────
+  // ─── Liste des OF disponibles ──────────────────────────────────────────────
   availableOfs:    string[]                  = [];
   ofsDateInfo:     OfsByDateResponse | null  = null;
   isLoadingOfs:    boolean                   = false;
   ofsErrorMessage: string                    = '';
 
-  // ─── Résultats ───────────────────────────────────────────────────────────
-  isLoading:    boolean                      = false;
-  errorMessage: string                       = '';
-  searchResult: SearchByDateResponse | null  = null;
-  ligneGroups:  LigneGroupDisplay[]          = [];
+  // ─── Résultats ─────────────────────────────────────────────────────────────
+  isLoading:     boolean                     = false;
+  errorMessage:  string                      = '';
+  searchResult:  SearchByDateResponse | null = null;
+  ligneGroups:   LigneGroupDisplay[]         = [];
   flatRefGroups: RefGroupDisplay[]           = [];   // pour le PDF
 
   constructor(private searchService: PlannMagSearchService) {}
 
-  // ─── Années disponibles ──────────────────────────────────────────────────
+  // ─── Années disponibles ────────────────────────────────────────────────────
   getYears(): string[] {
     const y = new Date().getFullYear();
     return [y - 1, y, y + 1].map(n => n.toString());
   }
 
-  /** Nombre de pages PDF estimé */
+  // ─── Nombre de pages PDF estimé ───────────────────────────────────────────
   get estimatedPdfPages(): number {
-    return this.flatRefGroups.reduce((sum, ref) => {
-      const pages = Math.ceil(ref.mpRows.length / PDF_MAX_ROWS_PER_PAGE);
-      return sum + Math.max(pages, 1);
+    return this.ligneGroups.reduce((sum, ligneGroup) => {
+      // Pages des références
+      const refPages = ligneGroup.refs.reduce((s, ref) => {
+        return s + Math.max(Math.ceil(ref.mpRows.length / PDF_MAX_ROWS_PER_PAGE), 1);
+      }, 0);
+      // Page(s) TOTAL par ligne
+      const totalRows  = this.getTotalMpForLigne(ligneGroup);
+      const totalPages = Math.max(Math.ceil(totalRows.length / PDF_MAX_TOTAL_ROWS_PER_PAGE), 1);
+      return sum + refPages + totalPages;
     }, 0);
   }
 
-  // ─── Changement de date ──────────────────────────────────────────────────
+  // ─── Changement de date ────────────────────────────────────────────────────
   onDateChange(): void {
     this.resetResults();
     this.availableOfs    = [];
@@ -85,7 +104,7 @@ export class PlannMagSearchComponent {
     }
   }
 
-  // ─── Changement d'année ──────────────────────────────────────────────────
+  // ─── Changement d'année ────────────────────────────────────────────────────
   onAnneeChange(): void {
     this.resetResults();
     this.availableOfs    = [];
@@ -98,7 +117,7 @@ export class PlannMagSearchComponent {
     }
   }
 
-  // ─── Charger les OF disponibles ──────────────────────────────────────────
+  // ─── Charger les OF disponibles ────────────────────────────────────────────
   private loadOfsByDate(): void {
     this.isLoadingOfs    = true;
     this.ofsErrorMessage = '';
@@ -117,7 +136,7 @@ export class PlannMagSearchComponent {
     });
   }
 
-  // ─── Recherche principale ─────────────────────────────────────────────────
+  // ─── Recherche principale ──────────────────────────────────────────────────
   search(): void {
     if (!this.annee || !this.date) {
       this.errorMessage = 'Veuillez remplir l\'année et la date';
@@ -132,7 +151,6 @@ export class PlannMagSearchComponent {
     this.errorMessage = '';
     this.resetResults();
 
-    // of facultatif : '' → undefined (tous les OFs)
     const ofFilter = this.of || undefined;
 
     this.searchService.searchByDate(this.annee, this.date, ofFilter).subscribe({
@@ -148,9 +166,9 @@ export class PlannMagSearchComponent {
     });
   }
 
-  // ─── Construire les groupes d'affichage ──────────────────────────────────
+  // ─── Construire les groupes d'affichage ───────────────────────────────────
   private buildDisplayGroups(res: SearchByDateResponse): void {
-    this.ligneGroups  = [];
+    this.ligneGroups   = [];
     this.flatRefGroups = [];
 
     for (const ligneGroup of res.ligneGroups) {
@@ -173,7 +191,32 @@ export class PlannMagSearchComponent {
     this.errorMessage  = '';
   }
 
-  // ─── Export PDF ───────────────────────────────────────────────────────────
+  // ─── Agrégation MP par ligne ───────────────────────────────────────────────
+  /**
+   * Additionne les qteNecessaire de toutes les références d'une ligne
+   * pour chaque refMp unique → tableau trié alphabétiquement.
+   */
+  getTotalMpForLigne(ligneGroup: LigneGroupDisplay): TotalMpRow[] {
+    const map = new Map<string, TotalMpRow>();
+
+    for (const ref of ligneGroup.refs) {
+      for (const mp of ref.mpRows) {
+        if (map.has(mp.refMp)) {
+          map.get(mp.refMp)!.totalQte += mp.qteNecessaire;
+        } else {
+          map.set(mp.refMp, {
+            refMp:         mp.refMp,
+            descriptionMp: mp.descriptionMp,
+            totalQte:      mp.qteNecessaire,
+          });
+        }
+      }
+    }
+
+    return Array.from(map.values()).sort((a, b) => a.refMp.localeCompare(b.refMp));
+  }
+
+  // ─── Export PDF ────────────────────────────────────────────────────────────
   downloadPDF(): void {
     if (!this.flatRefGroups.length) {
       this.errorMessage = 'Aucune donnée à exporter';
@@ -187,22 +230,42 @@ export class PlannMagSearchComponent {
       const mg    = 15;
       let   first = true;
 
-      for (const ref of this.flatRefGroups) {
-        const rows    = ref.mpRows;
-        const nbPages = Math.ceil(rows.length / PDF_MAX_ROWS_PER_PAGE);
+      for (const ligneGroup of this.ligneGroups) {
 
-        for (let p = 0; p < nbPages; p++) {
-          const chunk = rows.slice(p * PDF_MAX_ROWS_PER_PAGE, (p + 1) * PDF_MAX_ROWS_PER_PAGE);
-          const part: 'single' | 'first' | 'second' =
-            nbPages === 1  ? 'single' :
-            p === 0        ? 'first'  :
-            p < nbPages - 1 ? 'middle' as any : 'second';
+        // ── Pages des références ────────────────────────────────────────
+        for (const ref of ligneGroup.refs) {
+          const rows    = ref.mpRows;
+          const nbPages = Math.ceil(rows.length / PDF_MAX_ROWS_PER_PAGE) || 1;
 
-          const partPage = { ...ref, mpRows: chunk };
+          for (let p = 0; p < nbPages; p++) {
+            const chunk = rows.slice(
+              p * PDF_MAX_ROWS_PER_PAGE,
+              (p + 1) * PDF_MAX_ROWS_PER_PAGE,
+            );
+            const part: 'single' | 'first' | 'second' | 'middle' =
+              nbPages === 1  ? 'single' :
+              p === 0        ? 'first'  :
+              p < nbPages - 1 ? 'middle' : 'second';
 
-          if (!first) doc.addPage();
-          first = false;
-          this.renderRefPage(doc, partPage, pw, ph, mg, part);
+            if (!first) doc.addPage();
+            first = false;
+            this.renderRefPage(doc, { ...ref, mpRows: chunk }, pw, ph, mg, part);
+          }
+        }
+
+        // ── Page(s) TOTAL de la ligne ───────────────────────────────────
+        const totalRows = this.getTotalMpForLigne(ligneGroup);
+        if (totalRows.length > 0) {
+          doc.addPage();
+          this.renderTotalPage(
+            doc,
+            ligneGroup.ligne,
+            totalRows,
+            pw, ph, mg,
+            this.searchResult!.semaine,
+            this.searchResult!.dateFormatee,
+            this.searchResult!.jour,
+          );
         }
       }
 
@@ -216,24 +279,20 @@ export class PlannMagSearchComponent {
         doc.text(`Page ${i} / ${total}`, pw / 2, ph - 8, { align: 'center' });
       }
 
-      const res = this.searchResult!;
+      const res      = this.searchResult!;
       const filename = res.ofFilter
         ? `PlannMag-G${res.ofFilter}${res.date}.pdf`
         : `PlannMag-${res.date}-${res.annee}.pdf`;
 
       doc.save(filename);
+
     } catch (err) {
       console.error(err);
       this.errorMessage = 'Erreur lors de la génération du PDF';
     }
   }
 
-  // ─── Rendu d'une page de référence ───────────────────────────────────────
-  /**
-   * @param part 'single' = page normale
-   *             'first'  = 1ère moitié (pas de signature, note "suite")
-   *             'second' = 2ème moitié (suite, signature en bas)
-   */
+  // ─── Rendu d'une page de référence ────────────────────────────────────────
   private renderRefPage(
     doc:  any,
     ref:  RefGroupDisplay,
@@ -244,7 +303,7 @@ export class PlannMagSearchComponent {
   ): void {
     const cw = pw - 2 * mg;
 
-    // ── En-tête noir ──────────────────────────────────────────────────────
+    // ── En-tête noir ────────────────────────────────────────────────────────
     doc.setFillColor(0, 0, 0);
     doc.rect(mg, 10, cw, 11, 'F');
     doc.setFont('helvetica', 'bold');
@@ -255,15 +314,13 @@ export class PlannMagSearchComponent {
       : 'PLANNING MAGASIN – MATIÈRES PREMIÈRES';
     doc.text(headerTitle, pw / 2, 18, { align: 'center' });
 
-    // ── Infos date / OF / ligne ───────────────────────────────────────────
+    // ── Infos date / OF / ligne ──────────────────────────────────────────────
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-
     doc.text(`Semaine : ${ref.semaine}`, mg, 28);
     doc.text(`Date : ${ref.dateFormatee}  (${this.capitalizeFirst(ref.jour)})`, mg, 34);
 
-    // Affichage OF(s) à droite — robuste même si plusieurs OFs
     let ofsLabel = 'OF : —';
     if (ref.ofs && ref.ofs.length === 1) {
       ofsLabel = `OF : ${ref.ofs[0].of || '—'}`;
@@ -273,14 +330,14 @@ export class PlannMagSearchComponent {
       ofsLabel = `OFs : ${ofNums}${extra}`;
     }
 
-    doc.text(ofsLabel,             pw - mg, 28, { align: 'right' });
+    doc.text(ofsLabel,               pw - mg, 28, { align: 'right' });
     doc.text(`Ligne : ${ref.ligne}`, pw - mg, 34, { align: 'right' });
 
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
     doc.line(mg, 37, pw - mg, 37);
 
-    // ── Numéro de planification (centré dans l'en-tête) ───────────────────
+    // ── Numéro de planification ──────────────────────────────────────────────
     const numeroPlan = this.buildNumeroPlanification(ref);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
@@ -291,13 +348,12 @@ export class PlannMagSearchComponent {
     doc.setLineWidth(0.3);
     doc.line(mg, 49, pw - mg, 49);
 
-    // ── Référence produit ─────────────────────────────────────────────────
+    // ── Référence produit ────────────────────────────────────────────────────
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(38);
     doc.setTextColor(0, 0, 0);
     doc.text(ref.reference, pw / 2, 67, { align: 'center' });
 
-    // Quantité : totalQte (somme de tous les OFs)
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
     doc.setTextColor(80, 80, 80);
@@ -310,7 +366,7 @@ export class PlannMagSearchComponent {
     doc.setLineWidth(0.4);
     doc.line(mg, 80, pw - mg, 80);
 
-    // ── Tableau MP ────────────────────────────────────────────────────────
+    // ── Tableau MP ───────────────────────────────────────────────────────────
     let y = 86;
     const rowH    = 10;
     const colRef  = 40;
@@ -370,17 +426,16 @@ export class PlannMagSearchComponent {
       y += rowH;
     });
 
-    // ── Note "suite page suivante" (pages non-finales) ───────────────
+    // ── Note "suite page suivante" ───────────────────────────────────────────
     if (part === 'first' || part === 'middle') {
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(9);
       doc.setTextColor(100, 100, 100);
       doc.text('→ Suite page suivante', pw - mg, y + 6, { align: 'right' });
-      return; // pas de code-barres ni de signature sur les pages intermédiaires
+      return;
     }
 
-    // ── Code-barres (page unique ou 2ème moitié) ──────────────────────────
-    // Toujours utiliser le codeDocument du 1er OF disponible
+    // ── Code-barres ──────────────────────────────────────────────────────────
     const barcodeCode = (ref.ofs && ref.ofs.length > 0)
       ? ref.ofs[0].codeDocument
       : ref.codeDocument;
@@ -391,7 +446,7 @@ export class PlannMagSearchComponent {
       doc.addImage(barcodeImg, 'PNG', pw / 2 - barcodeW / 2, y + 10, barcodeW, barcodeH);
     }
 
-    // ── Cadre signatures ─────────────────────────────────────────────────
+    // ── Cadre signatures ─────────────────────────────────────────────────────
     const signY = ph - 48;
     doc.setDrawColor(0, 0, 0);
     doc.setLineWidth(0.5);
@@ -416,7 +471,133 @@ export class PlannMagSearchComponent {
     doc.text('Signature', mg + 3 * cw / 4, signY + 28, { align: 'center' });
   }
 
-  // ─── Code 128B ───────────────────────────────────────────────────────────
+  // ─── Rendu page TOTAL par ligne ────────────────────────────────────────────
+  private renderTotalPage(
+    doc:          any,
+    ligne:        string,
+    totalRows:    TotalMpRow[],
+    pw:           number,
+    ph:           number,
+    mg:           number,
+    semaine:      string,
+    dateFormatee: string,
+    jour:         string,
+  ): void {
+    const cw     = pw - 2 * mg;
+    const rowH   = 10;
+    const colRef = 45;
+    const colQte = 32;
+    const colDes = cw - colRef - colQte;
+
+    // ── Helpers locaux ───────────────────────────────────────────────────────
+
+    const drawPageHeader = (isContinuation: boolean): void => {
+      // Bandeau titre
+      doc.setFillColor(20, 20, 20);
+      doc.rect(mg, 10, cw, 11, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text(
+        isContinuation
+          ? 'TOTAL MATIÈRES PREMIÈRES — RÉCAPITULATIF LIGNE (suite)'
+          : 'TOTAL MATIÈRES PREMIÈRES — RÉCAPITULATIF LIGNE',
+        pw / 2, 18, { align: 'center' },
+      );
+
+      // Infos date
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.text(`Semaine : ${semaine}`, mg, 28);
+      doc.text(`Date : ${dateFormatee}  (${this.capitalizeFirst(jour)})`, mg, 34);
+      doc.text(`Ligne : ${ligne}`, pw - mg, 28, { align: 'right' });
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.5);
+      doc.line(mg, 37, pw - mg, 37);
+
+      // Titre ligne
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`TOTAL  ·  Ligne : ${ligne}`, pw / 2, 48, { align: 'center' });
+
+      if (!isContinuation) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(
+          `${totalRows.length} matière${totalRows.length > 1 ? 's' : ''} première${totalRows.length > 1 ? 's' : ''} — quantités agrégées sur toutes les références de la ligne`,
+          pw / 2, 55, { align: 'center' },
+        );
+      }
+
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.3);
+      doc.line(mg, 58, pw - mg, 58);
+    };
+
+    const drawTableHeader = (y: number): number => {
+      let x = mg;
+      const cols: [number, string][] = [
+        [colRef, 'REF MP'],
+        [colDes, 'DESCRIPTION'],
+        [colQte, 'QTE TOTALE'],
+      ];
+      cols.forEach(([w, label]) => {
+        doc.setFillColor(20, 20, 20);
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.4);
+        doc.rect(x, y, w, rowH, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(255, 255, 255);
+        doc.text(label, x + w / 2, y + 7, { align: 'center' });
+        x += w;
+      });
+      return y + rowH;
+    };
+
+    // ── Rendu ────────────────────────────────────────────────────────────────
+    drawPageHeader(false);
+    let y = drawTableHeader(64);
+
+    totalRows.forEach((mp, idx) => {
+      // Saut de page si dépassement
+      if (y + rowH > ph - 18) {
+        doc.addPage();
+        drawPageHeader(true);
+        y = drawTableHeader(64);
+      }
+
+      const bg = idx % 2 === 0 ? 245 : 255;
+      doc.setFillColor(bg, bg, bg);
+      doc.rect(mg, y, cw, rowH, 'F');
+
+      let x = mg;
+      const cells: [number, string, boolean][] = [
+        [colRef, mp.refMp, true],
+        [colDes, mp.descriptionMp.length > 45 ? mp.descriptionMp.substring(0, 42) + '…' : mp.descriptionMp, false],
+        [colQte, mp.totalQte.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '), true],
+      ];
+
+      cells.forEach(([w, text, bold]) => {
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.3);
+        doc.rect(x, y, w, rowH, 'D');
+        doc.setTextColor(0, 0, 0);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        doc.setFontSize(bold ? 11 : 10);
+        if (text) doc.text(text, x + w / 2, y + 7, { align: 'center' });
+        x += w;
+      });
+
+      y += rowH;
+    });
+  }
+
+  // ─── Code 128B ─────────────────────────────────────────────────────────────
   private generateBarcodeBase64(code: string): string {
     try {
       const C128: string[] = [
@@ -489,20 +670,12 @@ export class PlannMagSearchComponent {
     }
   }
 
+  // ─── Utilitaires ───────────────────────────────────────────────────────────
   private capitalizeFirst(str: string): string {
     return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
   }
 
-  // ─── Numéro de planification ──────────────────────────────────────────────
-  /**
-   * Construit le numéro de planification :
-   *   [LetAnnée][NumSemaine][NumJour][Ligne]
-   *   Exemple : G151L04
-   *     G   → 2026  (A=2020, B=2021 … G=2026)
-   *     15  → numéro de semaine ("semaine15" → "15")
-   *     1   → jour sans zéro (lundi=1 … dimanche=7)
-   *     L04 → ligne avec préfixe L ("L04:RXT1" → "L04")
-   */
+  // ─── Numéro de planification ───────────────────────────────────────────────
   buildNumeroPlanification(ref: RefGroupDisplay): string {
     const yearLetter = this.getYearLetter(this.annee);
     const semaineNum = this.getSemaineNum(ref.semaine);
@@ -512,19 +685,17 @@ export class PlannMagSearchComponent {
   }
 
   private getYearLetter(annee: string): string {
-    const base = 2020; // A = 2020
+    const base = 2020;
     const diff = parseInt(annee, 10) - base;
     return String.fromCharCode(65 + Math.max(0, diff));
   }
 
   private getSemaineNum(semaine: string): string {
-    // "semaine15" ou "semaine 15" → "15"
     const m = semaine.match(/\d+/);
     return m ? m[0] : '';
   }
 
   private getJourNum(jour: string): string {
-    // Sans zéro devant : lundi=1 … dimanche=7
     const map: Record<string, string> = {
       'lundi':    '1',
       'mardi':    '2',
@@ -538,12 +709,10 @@ export class PlannMagSearchComponent {
   }
 
   private getLigneCode(ligne: string): string {
-    // "L04:RXT1" → "L04" / "L36:RXT2" → "L36"
     const m = ligne.match(/(L\d{2,})/i);
     return m ? m[1].toUpperCase() : ligne;
   }
 
-  /** Helper appelé depuis le template — évite les arrow functions interdites dans Angular */
   getOfsLabel(ofs: OfsDetail[]): string {
     const visible = ofs
       .slice(0, 4)

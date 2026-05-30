@@ -83,6 +83,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   showSaisieDetails: boolean = false;
   showResultatsSemaine: boolean = false;
   showResultatsDate: boolean = false;
+  posteSelectionne: string = '';
 
   // Propriétés pour les 5M par ligne (semaine uniquement)
   stats5MParLigneData: Ligne5MStats[] = [];
@@ -177,7 +178,6 @@ export class Statistiques1Component implements OnInit, OnDestroy {
       return;
     }
 
-    // Vérifier que la date de début est avant la date de fin
     if (new Date(this.dateDebutProductivite) > new Date(this.dateFinProductivite)) {
       alert('La date de début doit être antérieure à la date de fin');
       return;
@@ -186,7 +186,11 @@ export class Statistiques1Component implements OnInit, OnDestroy {
     this.isLoadingProductivite = true;
     this.showProductiviteOuvriers = false;
 
-    this.statsService.getProductiviteOuvriers(this.dateDebutProductivite, this.dateFinProductivite).subscribe({
+    this.statsService.getProductiviteOuvriers(
+      this.dateDebutProductivite, 
+      this.dateFinProductivite,
+      this.posteSelectionne
+    ).subscribe({
       next: (response) => {
         this.productiviteOuvriers = response;
         this.isLoadingProductivite = false;
@@ -195,8 +199,9 @@ export class Statistiques1Component implements OnInit, OnDestroy {
         this.showResultatsDate = false;
         this.showAffectation = false;
         
-        if (response.resume) {
-        }
+        // Réinitialiser les filtres
+        this.productiviteFiltree = [];
+        this.productiviteSortDirection = null;
       },
       error: (error) => {
         this.isLoadingProductivite = false;
@@ -208,7 +213,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   /**
    * Charger l'affectation du personnel
    */
-  chargerAffectationPersonnel(): void {
+ chargerAffectationPersonnel(): void {
     if (!this.semaineSelectionnee) {
       alert('Veuillez sélectionner une semaine');
       return;
@@ -217,7 +222,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
     this.isLoadingAffectation = true;
     this.showAffectation = false;
 
-    this.statsService.getAffectationPersonnel(this.semaineSelectionnee).subscribe({
+    this.statsService.getAffectationPersonnel(this.semaineSelectionnee, this.posteSelectionne).subscribe({
       next: (response) => {
         this.affectationPersonnel = response;
         this.isLoadingAffectation = false;
@@ -254,7 +259,7 @@ export class Statistiques1Component implements OnInit, OnDestroy {
   /**
    * Charger les statistiques par semaine
    */
-  chargerStatistiques(): void {
+ chargerStatistiques(): void {
     if (!this.semaineSelectionnee) {
       alert('Veuillez sélectionner une semaine');
       return;
@@ -263,21 +268,22 @@ export class Statistiques1Component implements OnInit, OnDestroy {
     this.isLoading = true;
     
     forkJoin({
-      lignes: this.statsService.getPcsProdTotalParLigne(this.semaineSelectionnee),
-      pourcentage5M: this.statsService.getPourcentage5MParSemaine(this.semaineSelectionnee),
-      pourcentage5MParLigne: this.statsService.getPourcentage5MParLigne(this.semaineSelectionnee)
+      lignes: this.statsService.getPcsProdTotalParLigne(this.semaineSelectionnee, this.posteSelectionne),
+      pourcentage5M: this.statsService.getPourcentage5MParSemaine(this.semaineSelectionnee, this.posteSelectionne),
+      pourcentage5MParLigne: this.statsService.getPourcentage5MParLigne(this.semaineSelectionnee, this.posteSelectionne)
     }).subscribe({
       next: (response) => {
         this.statsLignes = response.lignes.lignes.map(ligne => ({
-        ligne: ligne.ligne,
-        pcsProdTotal: ligne.pcsProdTotal,
-        nombrePlanifications: ligne.nombrePlanifications,
-        nombreReferences: ligne.nombreReferences,
-        totalQteSource: ligne.totalQteSource,
-        totalDecProduction: ligne.totalDecProduction,
-        actif: false,
-        totalQtePlanifiee: 0
-      }));
+          ligne: ligne.ligne,
+          pcsProdTotal: ligne.pcsProdTotal,
+          nombrePlanifications: ligne.nombrePlanifications,
+          nombreReferences: ligne.nombreReferences,
+          totalQteSource: ligne.totalQteSource,
+          totalDecProduction: ligne.totalDecProduction,
+          actif: false,
+          totalQtePlanifiee: 0
+        }));
+        
         this.stats5MParLigneData = response.pourcentage5MParLigne.lignes;
         
         if (response.lignes.resumeGlobalSemaine) {
@@ -299,14 +305,13 @@ export class Statistiques1Component implements OnInit, OnDestroy {
           environnement: parseFloat(causes.environnement?.pourcentage) || 0
         };
 
-        this.titre5M = `Analyse des 5M - ${this.semaineSelectionnee}`;
+        this.titre5M = `Analyse des 5M - ${this.semaineSelectionnee}${this.getPosteLabel()}`;
 
         this.isLoading = false;
         this.showResultatsSemaine = true;
         this.showResultatsDate = false;
         this.showAffectation = false;
         this.showProductiviteOuvriers = false;
-        
         
         setTimeout(() => {
           this.creerGraphiques();
@@ -986,8 +991,8 @@ getColorForProductivite(productivite: number): string {
     this.isLoadingDate = true;
     
     forkJoin({
-      statsProduction: this.statsService.getStatsParDate(this.dateSelectionnee),
-      stats5M: this.statsService.getStats5MParDate(this.dateSelectionnee),
+      statsProduction: this.statsService.getStatsParDate(this.dateSelectionnee, this.posteSelectionne),
+      stats5M: this.statsService.getStats5MParDate(this.dateSelectionnee, this.posteSelectionne),
       ouvriersStatuts: this.statsService.getOuvriersNonSaisisAvecStatuts(this.dateSelectionnee),
       repartitionStatuts: this.statsService.getStatutsByDate(this.dateSelectionnee)
     }).subscribe({
@@ -1070,7 +1075,7 @@ getColorForProductivite(productivite: number): string {
           };
         }
         
-        this.titre5MDate = `Analyse des 5M - ${this.dateSelectionnee}`;
+        this.titre5MDate = `Analyse des 5M - ${this.dateSelectionnee}${this.getPosteLabel()}`;
         this.ligneSelectionneeDate = null;
         
         this.isLoadingDate = false;
@@ -2021,6 +2026,23 @@ async exporterResumeExcel(): Promise<void> {
     alert('Erreur lors de la génération du fichier Excel');
   }
 }
+getPosteLabel(): string {
+    if (this.posteSelectionne === 'poste1') return ' (Poste 1 - 6h-14h)';
+    if (this.posteSelectionne === 'poste2') return ' (Poste 2 - 14h-22h)';
+    return '';
+  }
 
-
+  /**
+   * ✅ NOUVEAU - Réinitialiser le filtre poste
+   */
+  resetFiltrePoste(): void {
+    this.posteSelectionne = '';
+    if (this.showResultatsSemaine) {
+      this.chargerStatistiques();
+    } else if (this.showResultatsDate) {
+      this.chargerStatsParDate();
+    }
+  }
 }
+
+

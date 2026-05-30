@@ -11,7 +11,7 @@ export interface LigneStats {
   totalDecProduction: number;
   pcsProdTotal: number;
   references: ReferenceStats[];
-  // âœ… AJOUTER CES PROPRIÉTÉS POUR LES STATS PAR DATE
+  // ✅ AJOUTER CES PROPRIÉTÉS POUR LES STATS PAR DATE
   actif?: boolean;
   totalQtePlanifiee?: number;
   total5M?: number;
@@ -29,7 +29,7 @@ export interface StatsResponse {
   dateCalcul: string;
   nombreLignes: number;
   lignes: LigneStats[];
-  // âœ… AJOUTER CES PROPRIÉTÉS
+  // ✅ AJOUTER CES PROPRIÉTÉS
   resumeGlobalSemaine?: {
     totalQteSource: number;
     totalDecProduction: number;
@@ -61,8 +61,8 @@ export interface NonConformiteDetail {
   rendement: { quantite: number; pourcentage: number };
   maintenance: { quantite: number; pourcentage: number };
   qualite: { quantite: number; pourcentage: number };
-  methode: { quantite: number; pourcentage: number }; // âœ… NOUVEAU
-  environnement: { quantite: number; pourcentage: number }; // âœ… NOUVEAU
+  methode: { quantite: number; pourcentage: number }; // ✅ NOUVEAU
+  environnement: { quantite: number; pourcentage: number }; // ✅ NOUVEAU
   total5M: { quantite: number; pourcentage: number };
   commentaire: string | null;
 }
@@ -111,8 +111,8 @@ export interface Ligne5MDate {
     rendement: DetailParCauseTotal;
     maintenance: DetailParCauseTotal;
     qualite: DetailParCauseTotal;
-    methode: DetailParCauseTotal; // âœ… NOUVEAU
-    environnement: DetailParCauseTotal; // âœ… NOUVEAU
+    methode: DetailParCauseTotal; // ✅ NOUVEAU
+    environnement: DetailParCauseTotal; // ✅ NOUVEAU
   };
   references: ReferenceDetail5M[];
 }
@@ -143,7 +143,7 @@ export interface Stats5MParDateResponse {
       maintenance: DetailParCauseTotal;
       qualite: DetailParCauseTotal;
       methode: DetailParCauseTotal;
-      environnement : DetailParCauseTotal; // âœ… NOUVEAU
+      environnement : DetailParCauseTotal; // ✅ NOUVEAU
     };
   };
   lignes: Ligne5MDate[];
@@ -244,7 +244,7 @@ export interface StatsParDateResponse {
     semaine: string;
     dateCalcul: string;
   };
-  // âœ… MODIFICATION : Remplacer productionParLigne par lignesActives et lignesNonActives
+  // ✅ MODIFICATION : Remplacer productionParLigne par lignesActives et lignesNonActives
   lignesActives: Array<{
     ligne: string;
     actif: boolean;
@@ -273,8 +273,8 @@ export interface StatsParDateResponse {
   }>;
   resumeProduction: {
     nombreLignes: number;
-    nombreLignesActives: number;  // âœ… NOUVEAU
-    nombreLignesNonActives: number;  // âœ… NOUVEAU
+    nombreLignesActives: number;  // ✅ NOUVEAU
+    nombreLignesNonActives: number;  // ✅ NOUVEAU
     totalQteSource: number;
     totalDecProduction: number;
     pcsProdMoyen: number;
@@ -305,8 +305,8 @@ export interface Pourcentage5MResponse {
     maintenance: Pourcentage5MCause;
     qualite: Pourcentage5MCause;
     methode: Pourcentage5MCause; 
-    // âœ… NOUVEAU
-    environnement: Pourcentage5MCause; // âœ… NOUVEAU
+    // ✅ NOUVEAU
+    environnement: Pourcentage5MCause; // ✅ NOUVEAU
   };
   resumeTableau: Array<{
     cause: string;
@@ -337,7 +337,7 @@ export interface Ligne5MStats {
     maintenance: DetailParCause;
     qualite: DetailParCause;
     methode: DetailParCause;
-    environnement : DetailParCause; // âœ… NOUVEAU
+    environnement : DetailParCause; // ✅ NOUVEAU
   };
 }
 
@@ -364,7 +364,7 @@ export interface Stats5M {
   rendement: number;
   maintenance: number;
   qualite: number;
-  methode: number; // âœ… NOUVEAU
+  methode: number; // ✅ NOUVEAU
   environnement: number;
 }
 
@@ -379,17 +379,7 @@ export class StatsService {
   /**
    * Récupère le PCS Prod Total par ligne pour une semaine donnée
    */
-  getPcsProdTotalParLigne(semaine: string): Observable<StatsResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<StatsResponse>(`${this.apiUrl}/lignes`, {
-      params: { semaine },
-      headers
-    });
-  }
+  
 
   /**
    * Alternative: Utilisation de la route POST
@@ -424,17 +414,7 @@ export class StatsService {
   /**
    * Récupère les pourcentages des 5M pour une semaine donnée
    */
-  getPourcentage5MParSemaine(semaine: string): Observable<Pourcentage5MResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<Pourcentage5MResponse>(`${this.apiUrl}/pourcentage-5m`, {
-      params: { semaine },
-      headers
-    });
-  }
+ 
 
   /**
    * Alternative: Utilisation de la route POST pour les pourcentages 5M
@@ -454,17 +434,7 @@ export class StatsService {
   /**
    * NOUVELLE MÉTHODE: Récupère les pourcentages des 5M par ligne pour une semaine donnée
    */
-  getPourcentage5MParLigne(semaine: string): Observable<Pourcentage5MParLigneResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<Pourcentage5MParLigneResponse>(`${this.apiUrl}/pourcentage-5m-ligne`, {
-      params: { semaine },
-      headers
-    });
-  }
+ 
 
   /**
    * Alternative: Utilisation de la route POST pour les pourcentages 5M par ligne
@@ -488,17 +458,7 @@ export class StatsService {
     return localStorage.getItem('access_token') || '';
   }
 
-  getStatsParDate(date: string): Observable<StatsParDateResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<StatsParDateResponse>(`${this.apiUrl}/par-date`, {
-      params: { date },
-      headers
-    });
-  }
+ 
 
   getStatsParDatePost(date: string): Observable<StatsParDateResponse> {
     const headers = new HttpHeaders({
@@ -524,32 +484,9 @@ export class StatsService {
     });
   }
 
-  getAffectationPersonnel(semaine: string): Observable<AffectationPersonnelResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
+ 
 
-    return this.http.get<AffectationPersonnelResponse>(
-      `${this.apiUrl}/affectation-personnel`,
-      {
-        params: { semaine },
-        headers
-      }
-    );
-  }
-
-  getStats5MParDate(date: string): Observable<Stats5MParDateResponse> {
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.getToken()}`
-    });
-
-    return this.http.get<Stats5MParDateResponse>(`${this.apiUrl}/5m-par-date`, {
-      params: { date },
-      headers
-    });
-  }
+ 
 
   /**
    * Alternative: Utilisation de la route POST pour les 5M par date
@@ -617,6 +554,8 @@ updateStatutOuvrier(statutData: UpdateStatutRequest): Observable<UpdateStatutRes
     'Authorization': `Bearer ${this.getToken()}`
   });
 
+  
+
   return this.http.post<UpdateStatutResponse>(
     `http://102.207.250.53:3000/statut`,
     statutData,
@@ -636,5 +575,113 @@ updateStatutsEnMasse(statutsData: UpdateStatutsEnMasseRequest): Observable<any> 
     { headers }
   );
 }
+getPcsProdTotalParLigne(semaine: string, poste?: string): Observable<StatsResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<StatsResponse>(`${this.apiUrl}/lignes`, {
+    params,
+    headers
+  });
 }
 
+/**
+ * Récupère les pourcentages des 5M pour une semaine donnée
+ */
+getPourcentage5MParSemaine(semaine: string, poste?: string): Observable<Pourcentage5MResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<Pourcentage5MResponse>(`${this.apiUrl}/pourcentage-5m`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère les pourcentages des 5M par ligne pour une semaine donnée
+ */
+getPourcentage5MParLigne(semaine: string, poste?: string): Observable<Pourcentage5MParLigneResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<Pourcentage5MParLigneResponse>(`${this.apiUrl}/pourcentage-5m-ligne`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère les statistiques par date
+ */
+getStatsParDate(date: string, poste?: string): Observable<StatsParDateResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { date };
+  if (poste) params.poste = poste;
+
+  return this.http.get<StatsParDateResponse>(`${this.apiUrl}/par-date`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère les statistiques 5M par date
+ */
+getStats5MParDate(date: string, poste?: string): Observable<Stats5MParDateResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { date };
+  if (poste) params.poste = poste;
+
+  return this.http.get<Stats5MParDateResponse>(`${this.apiUrl}/5m-par-date`, {
+    params,
+    headers
+  });
+}
+
+/**
+ * Récupère l'affectation du personnel
+ */
+getAffectationPersonnel(semaine: string, poste?: string): Observable<AffectationPersonnelResponse> {
+  const headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${this.getToken()}`
+  });
+
+  let params: any = { semaine };
+  if (poste) params.poste = poste;
+
+  return this.http.get<AffectationPersonnelResponse>(
+    `${this.apiUrl}/affectation-personnel`,
+    {
+      params,
+      headers
+    }
+  );
+}
+
+
+}

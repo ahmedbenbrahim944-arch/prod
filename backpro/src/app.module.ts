@@ -31,6 +31,7 @@ import { PlannMagModule } from './plann-mag/plann-mag.module';
 import { AffichageModule } from './affichage/affichage.module';
 import { ProductionModule } from './production/production.module';
 import { ConfigModule } from '@nestjs/config';
+import { DailyReportModule } from './daily-report/daily-report.module';
 
 
 @Module({
@@ -79,7 +80,8 @@ import { ConfigModule } from '@nestjs/config';
     AutosaisieModule,
     PlannMagModule,
     AffichageModule,
-    ProductionModule
+    ProductionModule,
+    DailyReportModule
 
   ],
   controllers: [],

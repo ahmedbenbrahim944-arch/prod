@@ -1,22 +1,23 @@
 // src/semaine/dto/update-planification-by-criteria.dto.ts
-import { IsString, IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class UpdatePlanificationByCriteriaDto {
   @IsString()
-  @IsNotEmpty({ message: 'Le nom de la semaine est obligatoire' })
   semaine: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Le jour est obligatoire' })
-  jour: string;
+  @IsOptional()
+  jour?: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Le nom de la ligne est obligatoire' })
   ligne: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'La référence est obligatoire' })
   reference: string;
+
+  @IsString()
+  @IsOptional()
+  poste?: string; // ✅ DOIT ÊTRE PRÉSENT
 
   @IsString()
   @IsOptional()
@@ -30,9 +31,9 @@ export class UpdatePlanificationByCriteriaDto {
   @IsOptional()
   qteModifiee?: number;
 
-  @IsString()
+  @IsNumber()
   @IsOptional()
-  emballage?: string;
+  nbOperateurs?: number;
 
   @IsNumber()
   @IsOptional()
@@ -42,7 +43,6 @@ export class UpdatePlanificationByCriteriaDto {
   @IsOptional()
   decMagasin?: number;
 
-  // NOUVEAU : Note de la référence
   @IsString()
   @IsOptional()
   note?: string;

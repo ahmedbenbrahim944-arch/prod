@@ -17,4 +17,9 @@ export class GetNonConfDto {
   @IsString()
   @IsOptional()
   reference?: string;
+
+  // ✅ AJOUT
+  @IsString()
+  @IsOptional()
+  poste?: string;
 }

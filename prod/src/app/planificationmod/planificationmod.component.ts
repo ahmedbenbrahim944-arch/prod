@@ -7,37 +7,35 @@ import { SemaineService, WeekInfo } from '../prod/semaine.service';
 import { ProductService, ProductLine } from '../prod/product.service';
 import { AuthService } from '../login/auth.service';
 
-// ─── Interfaces (identiques à planification1) ────────────────────────────────
-
-interface ProductionLine {
-  ligne: string;
-  referenceCount: number;
-  imageUrl: string;
-  references: string[];
-  isActive: boolean;
-}
+// ─── Interfaces mise à jour avec POSTE ──────────────────────────────────────
 
 interface DayEntry {
   of: string;
   nbOperateurs: number;
-  c: number;   // qtePlanifiee  — lecture seule ici
-  m: number;   // qteModifiee   — saisie par l'utilisateur
+  c: number;   // qtePlanifiee
+  m: number;   // qteModifiee
   dp: number;
   dm: number;
   delta: number;
+  poste: string; // 'poste1' ou 'poste2'
 }
 
-interface ReferenceRow {
-  reference: string;
-  ligne: string;
-  note?: string;
+// Interface pour les données d'un poste spécifique
+interface PosteData {
   lundi?: DayEntry;
   mardi?: DayEntry;
   mercredi?: DayEntry;
   jeudi?: DayEntry;
   vendredi?: DayEntry;
   samedi?: DayEntry;
-  [key: string]: string | DayEntry | undefined;
+}
+
+interface ReferenceRow {
+  reference: string;
+  ligne: string;
+  note?: string;
+  poste1: PosteData;  // POSTE 1 (6h-14h)
+  poste2: PosteData;  // POSTE 2 (14h-22h)
 }
 
 interface LigneData {
@@ -58,6 +56,7 @@ export class PlanificationmodComponent implements OnInit {
 
   // ── État général ──
   selectedSemaine: string = '';
+  selectedPoste: string = 'poste1';
   isLoading: boolean = false;
   errorMessage: string = '';
   successMessage: string = '';
@@ -72,12 +71,17 @@ export class PlanificationmodComponent implements OnInit {
 
   // ── Tableau ──
   lignesData: LigneData[] = [];
-  weekDays = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  weekDays: (keyof PosteData)[] = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
   // ── Inline editing M ──
   editingKey: string | null = null;
   editMValue: number | null = null;
   savingKey: string | null = null;
+
+  // ── Gestion OF manquant ──
+  showOfPrompt: boolean = false;
+  pendingEdit: { ref: ReferenceRow, day: string, poste: string } | null = null;
+  tempOfValue: string = '';
 
   // ── Ligne active ──
   activeRowRef: string | null = null;
@@ -90,7 +94,6 @@ export class PlanificationmodComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Guard : tout utilisateur authentifié
     if (!this.authService.isLoggedIn()) {
       this.router.navigate(['/login']);
       return;
@@ -195,6 +198,9 @@ export class PlanificationmodComponent implements OnInit {
     this.lignesData = [];
     this.editingKey = null;
     this.activeRowRef = null;
+    this.selectedPoste = 'poste1';
+    this.showOfPrompt = false;
+    this.pendingEdit = null;
   }
 
   onLineSelected(line: ProductionLine): void {
@@ -202,6 +208,7 @@ export class PlanificationmodComponent implements OnInit {
     this.lignesData = [];
     this.errorMessage = '';
     this.editingKey = null;
+    this.selectedPoste = 'poste1';
     if (this.selectedSemaine) this.loadDataForLigne(line.ligne);
   }
 
@@ -245,7 +252,8 @@ export class PlanificationmodComponent implements OnInit {
   private buildLignesData(lines: ProductLine[], planifications: any[]): void {
     const planifIndex = new Map<string, any>();
     planifications.forEach(p => {
-      const key = `${p.ligne}|${p.reference}|${p.jour?.toLowerCase()}`;
+      const posteValue = p.poste || 'poste1';
+      const key = `${p.ligne}|${p.reference}|${p.jour?.toLowerCase()}|${posteValue}`;
       planifIndex.set(key, p);
     });
 
@@ -254,20 +262,43 @@ export class PlanificationmodComponent implements OnInit {
       .map(line => {
         const sortedRefs = this.sortReferencesByLast3(line.references || []);
         const refs: ReferenceRow[] = sortedRefs.map(reference => {
-          const row: ReferenceRow = { reference, ligne: line.ligne };
+          const row: ReferenceRow = { 
+            reference, 
+            ligne: line.ligne,
+            poste1: {},
+            poste2: {}
+          };
+          
           this.weekDays.forEach(day => {
-            const key = `${line.ligne}|${reference}|${day}`;
-            const plan = planifIndex.get(key);
-            row[day] = {
-              of: plan?.of || '',
-              nbOperateurs: plan?.nbOperateurs || 0,
-              c: plan?.qtePlanifiee || 0,
-              m: plan?.qteModifiee || 0,
-              dp: plan?.decProduction || 0,
-              dm: plan?.decMagasin || 0,
-              delta: plan?.pcsProd || 0
+            // POSTE 1
+            const key1 = `${line.ligne}|${reference}|${day}|poste1`;
+            const plan1 = planifIndex.get(key1);
+            row.poste1[day] = {
+              of: plan1?.of || '',
+              nbOperateurs: plan1?.nbOperateurs || 0,
+              c: plan1?.qtePlanifiee || 0,
+              m: plan1?.qteModifiee || 0,
+              dp: plan1?.decProduction || 0,
+              dm: plan1?.decMagasin || 0,
+              delta: plan1?.pcsProd || 0,
+              poste: 'poste1'
+            };
+
+            // POSTE 2
+            const key2 = `${line.ligne}|${reference}|${day}|poste2`;
+            const plan2 = planifIndex.get(key2);
+            row.poste2[day] = {
+              of: plan2?.of || '',
+              nbOperateurs: plan2?.nbOperateurs || 0,
+              c: plan2?.qtePlanifiee || 0,
+              m: plan2?.qteModifiee || 0,
+              dp: plan2?.decProduction || 0,
+              dm: plan2?.decMagasin || 0,
+              delta: plan2?.pcsProd || 0,
+              poste: 'poste2'
             };
           });
+          
           return row;
         });
         return { ligne: line.ligne, references: refs };
@@ -291,56 +322,70 @@ export class PlanificationmodComponent implements OnInit {
     return match ? parseInt(match[1], 10) : 0;
   }
 
-  getDayEntry(ref: ReferenceRow, day: string): DayEntry | undefined {
-    return ref[day] as DayEntry | undefined;
+  getDayEntry(ref: ReferenceRow, day: string, poste: string = 'poste1'): DayEntry | undefined {
+    if (poste === 'poste1') {
+      return ref.poste1[day as keyof PosteData];
+    } else {
+      return ref.poste2[day as keyof PosteData];
+    }
   }
 
-  getOfForRef(ref: ReferenceRow): string {
+  getOfForRef(ref: ReferenceRow, poste: string = 'poste1'): string {
     for (const day of this.weekDays) {
-      const e = ref[day] as DayEntry;
+      const e = this.getDayEntry(ref, day, poste);
       if (e?.of) return e.of;
     }
     return '';
   }
 
+  getCValue(ref: ReferenceRow, day: string, poste: string): number {
+    const entry = this.getDayEntry(ref, day, poste);
+    return entry?.c || 0;
+  }
+
+  getMValue(ref: ReferenceRow, day: string, poste: string): number {
+    const entry = this.getDayEntry(ref, day, poste);
+    return entry?.m || 0;
+  }
+
   // ── Totaux C (planifié) ────────────────────────────────────────────────────
 
-  getTotalCForRef(ref: ReferenceRow): number {
+  getTotalCForRef(ref: ReferenceRow, poste: string = 'poste1'): number {
     return this.weekDays.reduce((sum, day) => {
-      const e = ref[day] as DayEntry;
-      return sum + (e?.c || 0);
+      const entry = this.getDayEntry(ref, day, poste);
+      return sum + (entry?.c || 0);
     }, 0);
   }
 
-  getTotalCForDay(ligneData: LigneData, day: string): number {
+  getTotalCForDay(ligneData: LigneData, day: string, poste: string = 'poste1'): number {
     return ligneData.references.reduce((sum, ref) => {
-      const e = ref[day] as DayEntry;
-      return sum + (e?.c || 0);
+      const entry = this.getDayEntry(ref, day, poste);
+      return sum + (entry?.c || 0);
     }, 0);
   }
 
-  getTotalCForLigne(ligneData: LigneData): number {
-    return this.weekDays.reduce((sum, day) => sum + this.getTotalCForDay(ligneData, day), 0);
+  getTotalCForLigne(ligneData: LigneData, poste: string = 'poste1'): number {
+    return this.weekDays.reduce((sum, day) => sum + this.getTotalCForDay(ligneData, day, poste), 0);
   }
 
   // ── Totaux M (modifié) ─────────────────────────────────────────────────────
 
-  getTotalMForRef(ref: ReferenceRow): number {
+  getTotalMForRef(ref: ReferenceRow, poste: string = 'poste1'): number {
     return this.weekDays.reduce((sum, day) => {
-      const e = ref[day] as DayEntry;
-      return sum + (e?.m || 0);
+      const entry = this.getDayEntry(ref, day, poste);
+      return sum + (entry?.m || 0);
     }, 0);
   }
 
-  getTotalMForDay(ligneData: LigneData, day: string): number {
+  getTotalMForDay(ligneData: LigneData, day: string, poste: string = 'poste1'): number {
     return ligneData.references.reduce((sum, ref) => {
-      const e = ref[day] as DayEntry;
-      return sum + (e?.m || 0);
+      const entry = this.getDayEntry(ref, day, poste);
+      return sum + (entry?.m || 0);
     }, 0);
   }
 
-  getTotalMForLigne(ligneData: LigneData): number {
-    return this.weekDays.reduce((sum, day) => sum + this.getTotalMForDay(ligneData, day), 0);
+  getTotalMForLigne(ligneData: LigneData, poste: string = 'poste1'): number {
+    return this.weekDays.reduce((sum, day) => sum + this.getTotalMForDay(ligneData, day, poste), 0);
   }
 
   // ─── Utilitaires affichage ────────────────────────────────────────────────
@@ -358,19 +403,36 @@ export class PlanificationmodComponent implements OnInit {
     return Array.from({ length: 52 }, (_, i) => `semaine${i + 1}`);
   }
 
-  // ─── Inline editing M ────────────────────────────────────────────────────
+  // ─── Inline editing M AVEC VÉRIFICATION OF ─────────────────────────────────
 
-  cellKey(ref: ReferenceRow, day: string): string {
-    return `${ref.reference}|${ref.ligne}|${day}`;
+  cellKey(ref: ReferenceRow, day: string, poste: string): string {
+    return `${ref.reference}|${ref.ligne}|${day}|${poste}`;
   }
 
-  isEditing(ref: ReferenceRow, day: string): boolean {
-    return this.editingKey === this.cellKey(ref, day);
+  isEditing(ref: ReferenceRow, day: string, poste: string): boolean {
+    return this.editingKey === this.cellKey(ref, day, poste);
   }
 
-  startEdit(ref: ReferenceRow, day: string): void {
-    const entry = this.getDayEntry(ref, day);
-    this.editingKey = this.cellKey(ref, day);
+  // ✅ Méthode startEdit modifiée : vérifie si OF existe
+  startEdit(ref: ReferenceRow, day: string, poste: string): void {
+    const ofValue = this.getOfForRef(ref, poste);
+    
+    // Vérifier si OF existe et n'est pas vide
+    if (!ofValue || ofValue.trim() === '') {
+      // OF manquant → demander de le saisir d'abord
+      this.pendingEdit = { ref, day, poste };
+      this.tempOfValue = '';
+      this.showOfPrompt = true;
+    } else {
+      // OF existe → éditer M directement
+      this.doStartEdit(ref, day, poste);
+    }
+  }
+
+  // Édition directe de M
+  private doStartEdit(ref: ReferenceRow, day: string, poste: string): void {
+    const entry = this.getDayEntry(ref, day, poste);
+    this.editingKey = this.cellKey(ref, day, poste);
     this.editMValue = (entry?.m && entry.m > 0) ? entry.m : null;
     this.activeRowRef = ref.reference;
   }
@@ -380,31 +442,94 @@ export class PlanificationmodComponent implements OnInit {
     this.editMValue = null;
   }
 
-  saveCell(ref: ReferenceRow, day: string): void {
-    const key = this.cellKey(ref, day);
+  // Sauvegarder OF puis ouvrir l'édition de M
+  saveOfAndContinue(): void {
+    if (!this.pendingEdit) return;
+    
+    const { ref, day, poste } = this.pendingEdit;
+    const newOf = this.tempOfValue;
+    
+    if (!newOf || newOf.trim() === '') {
+      this.errorMessage = 'Veuillez saisir un OF valide';
+      setTimeout(() => this.errorMessage = '', 3000);
+      return;
+    }
+    
+    // Mise à jour locale immédiate
+    for (const d of this.weekDays) {
+      const entry = this.getDayEntry(ref, d, poste);
+      if (entry) {
+        entry.of = newOf;
+      }
+    }
+    
+    const payload = {
+      semaine: this.selectedSemaine,
+      ligne: ref.ligne,
+      reference: ref.reference,
+      poste: poste,
+      of: newOf
+    };
+    
+    this.savingKey = `${ref.reference}|${ref.ligne}|${poste}`;
+    
+    this.semaineService.updatePlanificationByCriteria(payload).subscribe({
+      next: () => {
+        this.savingKey = null;
+        this.showOfPrompt = false;
+        this.pendingEdit = null;
+        this.tempOfValue = '';
+        // Après sauvegarde OF, ouvrir l'édition de M
+        this.doStartEdit(ref, day, poste);
+        this.showSuccess('OF sauvegardé ✓');
+      },
+      error: (err) => {
+        console.error('Erreur sauvegarde OF:', err);
+        this.errorMessage = 'Erreur lors de la saisie du OF';
+        this.savingKey = null;
+        setTimeout(() => this.errorMessage = '', 3000);
+      }
+    });
+  }
+
+  cancelOfPrompt(): void {
+    this.showOfPrompt = false;
+    this.pendingEdit = null;
+    this.tempOfValue = '';
+  }
+
+  // Sauvegarde de M
+  saveCell(ref: ReferenceRow, day: string, poste: string): void {
+    const key = this.cellKey(ref, day, poste);
     if (this.editingKey !== key) return;
-    const entry = this.getDayEntry(ref, day);
-    if (!entry) { this.editingKey = null; return; }
+    
+    const entry = this.getDayEntry(ref, day, poste);
+    if (!entry) { 
+      this.editingKey = null; 
+      return; 
+    }
 
     const newM = this.editMValue ?? 0;
     this.savingKey = key;
     this.editingKey = null;
+    
     // Mise à jour locale immédiate
     entry.m = newM;
 
-    const payload = this.semaineService.formatWeekForAPI({
+    const payload = {
       semaine: this.selectedSemaine,
       jour: day,
       ligne: ref.ligne,
       reference: ref.reference,
-      nbOperateurs: entry.nbOperateurs,
+      poste: poste,
+      qteModifiee: newM,
       of: entry.of,
-      qtePlanifiee: entry.c,     // On préserve C
-      qteModifiee: newM,          // On sauvegarde M
+      nbOperateurs: entry.nbOperateurs,
+      qtePlanifiee: entry.c,
       decProduction: entry.dp,
       decMagasin: entry.dm,
       note: ref.note ?? null
-    });
+    };
 
     this.semaineService.updatePlanificationByCriteria(payload).subscribe({
       next: () => {
@@ -413,10 +538,11 @@ export class PlanificationmodComponent implements OnInit {
       },
       error: (err) => {
         console.error('Erreur sauvegarde M:', err);
-        this.errorMessage = 'Erreur lors de la sauvegarde de M';
+        this.errorMessage = 'Erreur lors de la sauvegarde';
         this.savingKey = null;
         // Rollback local
         entry.m = 0;
+        setTimeout(() => this.errorMessage = '', 3000);
       }
     });
   }
@@ -427,4 +553,12 @@ export class PlanificationmodComponent implements OnInit {
     this.successMessage = msg;
     setTimeout(() => this.successMessage = '', 2500);
   }
+}
+
+interface ProductionLine {
+  ligne: string;
+  referenceCount: number;
+  imageUrl: string;
+  references: string[];
+  isActive: boolean;
 }

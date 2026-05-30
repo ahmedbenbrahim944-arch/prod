@@ -23,9 +23,10 @@ export interface CreateOrUpdateNonConfDto {
   referenceQualite?: string;
   commentaire?: string;
   commentaireId?: number;
+  poste?: string;
 
-  // âœ… FIX : Champs ajoutés pour résoudre le décalage entre DP saisi et DP en base.
-  // Le modal causes s'ouvre AVANT la sauvegarde du DP â†’ la DB contient encore
+  // ✅ FIX : Champs ajoutés pour résoudre le décalage entre DP saisi et DP en base.
+  // Le modal causes s'ouvre AVANT la sauvegarde du DP → la DB contient encore
   // l'ancienne valeur. On transmet ici les valeurs fraîches saisies par l'utilisateur
   // afin que le backend calcule le delta correct sans lire la base.
   decProduction?: number;  // valeur DP actuellement saisie dans le frontend
@@ -37,6 +38,7 @@ export interface GetNonConfDto {
   jour?: string;
   ligne?: string;
   reference?: string;
+  poste?: string;
 }
 
 export interface NonConformiteResponse {
@@ -50,13 +52,17 @@ export interface NonConformiteResponse {
     matierePremiere: number;
     referenceMatierePremiere: string | null;
     absence: number;
+    matriculesAbsence: string | null;       // ✅ AJOUTÉ
     rendement: number;
+    matriculesRendement: string | null;     // ✅ AJOUTÉ
     methode: number;
     maintenance: number;
     phasesMaintenance: string[];
     qualite: number;
     environnement: number;
     referenceQualite: string | null;
+    commentaireTexte: string | null;        // ✅ AJOUTÉ
+    commentaire: string | null;             // ✅ AJOUTÉ
   };
   commentaire: string | null;
   declarePar: string;
@@ -160,7 +166,7 @@ export class NonConfService {
       delete cleanDto.referenceMatierePremiere;
     }
 
-    // âœ… FIX : Ne PAS supprimer decProduction/qteModifiee même si 0
+    // ✅ FIX : Ne PAS supprimer decProduction/qteModifiee même si 0
     // (une valeur 0 est significative : DP = 0 signifie que la production n'a pas été déclarée)
     console.log('Envoi non-conformité (avec DP/M pour calcul delta côté backend):', cleanDto);
 
@@ -268,4 +274,3 @@ export class NonConfService {
     );
   }
 }
-

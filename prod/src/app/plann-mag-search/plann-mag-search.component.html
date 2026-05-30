@@ -64,7 +64,7 @@
         Chargement des OF disponibles…
       </div>
 
-      <!-- Erreur -->
+      <!-- Erreur OF -->
       <div *ngIf="!isLoadingOfs && ofsErrorMessage && date.length === 4"
            class="w-full px-3 py-2.5 border border-orange-200 rounded-xl bg-orange-50
                   flex items-center gap-2 text-orange-600 text-sm">
@@ -82,7 +82,6 @@
         class="w-full px-3 py-2.5 border border-green-300 rounded-xl bg-green-50
                focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition font-mono"
       >
-        <!-- Option "Tous les OFs" toujours en premier -->
         <option value="">— Tous les OFs ({{ availableOfs.length }}) —</option>
         <option *ngFor="let o of availableOfs" [value]="o">{{ o }}</option>
       </select>
@@ -110,7 +109,7 @@
       </span>
     </div>
 
-    <!-- Code document prévisualisation (OF sélectionné) -->
+    <!-- Filtre OF actif -->
     <div *ngIf="of && date && date.length === 4"
          class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3">
       <svg class="w-5 h-5 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,10 +210,13 @@
       </button>
     </div>
 
-    <!-- ─── Groupes par Ligne ──────────────────────────────────────── -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         ─── Groupes par Ligne — BOUCLE PRINCIPALE
+         Chaque ligneGroup contient : ses références + son tableau TOTAL
+         ═══════════════════════════════════════════════════════════════ -->
     <div *ngFor="let ligneGroup of ligneGroups" class="space-y-4">
 
-      <!-- Séparateur de ligne de production -->
+      <!-- ── Séparateur de ligne de production ──────────────────────── -->
       <div class="flex items-center gap-3">
         <div class="flex-1 h-px bg-gray-300"></div>
         <div class="flex items-center gap-2 px-4 py-1.5 bg-gray-800 text-white rounded-full text-sm font-bold tracking-wide">
@@ -227,7 +229,7 @@
         <div class="flex-1 h-px bg-gray-300"></div>
       </div>
 
-      <!-- Références de cette ligne -->
+      <!-- ── Références de cette ligne ──────────────────────────────── -->
       <div *ngFor="let ref of ligneGroup.refs" class="bg-white rounded-2xl shadow-md overflow-hidden">
 
         <!-- En-tête référence -->
@@ -259,7 +261,7 @@
               </ng-container>
             </div>
           </div>
-          <!-- ── Numéro de planification ── -->
+          <!-- Numéro de planification -->
           <div class="mt-3 pt-3 border-t border-gray-700 text-center">
             <span class="inline-block bg-white text-black font-mono font-bold text-base tracking-widest
                          px-4 py-1 rounded-lg shadow">
@@ -268,7 +270,7 @@
           </div>
         </div>
 
-        <!-- ✅ CORRECTION : Avertissement si aucune MP associée à cette référence -->
+        <!-- Avertissement aucune MP -->
         <div *ngIf="ref.mpRows.length === 0"
              class="mx-5 mt-4 mb-2 p-3 bg-amber-50 border border-amber-300 rounded-xl
                     flex items-center gap-3 text-amber-700">
@@ -284,8 +286,7 @@
         </div>
 
         <!-- Badge split si > 13 MP -->
-        <div *ngIf="ref.mpRows.length > 13"
-             class="px-5 pt-3">
+        <div *ngIf="ref.mpRows.length > 13" class="px-5 pt-3">
           <span class="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1
                        bg-amber-50 border border-amber-200 text-amber-700 rounded-full">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,7 +297,7 @@
           </span>
         </div>
 
-        <!-- Tableau MP — affiché seulement si mpRows non vide -->
+        <!-- Tableau MP -->
         <div *ngIf="ref.mpRows.length > 0" class="overflow-x-auto p-5">
           <table class="w-full text-sm border-collapse">
             <thead>
@@ -349,7 +350,75 @@
         </div>
 
       </div><!-- fin ref -->
-    </div><!-- fin ligneGroup -->
+
+      <!-- ══════════════════════════════════════════════════════════════
+           ─── TOTAL DE LA LIGNE  ← DANS le *ngFor de ligneGroup ✅
+           ══════════════════════════════════════════════════════════════ -->
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-gray-800 mt-2">
+
+        <!-- En-tête TOTAL -->
+        <div class="bg-gray-900 px-6 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6 text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01
+                   M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            <div>
+              <h3 class="text-white font-bold text-lg tracking-wide">
+                TOTAL — Ligne : {{ ligneGroup.ligne }}
+              </h3>
+              <p class="text-gray-400 text-xs mt-0.5">
+                {{ getTotalMpForLigne(ligneGroup).length }}
+                MP · quantités agrégées sur toutes les références
+              </p>
+            </div>
+          </div>
+          <!-- Badge nombre de MP -->
+          <span class="px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
+            {{ getTotalMpForLigne(ligneGroup).length }} MP
+          </span>
+        </div>
+
+        <!-- Tableau TOTAL : REF MP | DESCRIPTION | QTE TOTALE -->
+        <div class="overflow-x-auto p-5">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="bg-gray-900 text-white">
+                <th class="px-4 py-3 text-center font-bold border border-gray-700 w-40">
+                  REF MP
+                </th>
+                <th class="px-4 py-3 text-center font-bold border border-gray-700">
+                  DESCRIPTION
+                </th>
+                <th class="px-4 py-3 text-center font-bold border border-gray-700 text-yellow-400 w-36">
+                  QTE TOTALE
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let row of getTotalMpForLigne(ligneGroup); let i = index"
+                [class]="i % 2 === 0 ? 'bg-white' : 'bg-gray-50'"
+                class="border-b border-gray-200 hover:bg-yellow-50 transition-colors"
+              >
+                <td class="px-4 py-3 text-center font-mono font-bold text-gray-800 border border-gray-200">
+                  {{ row.refMp }}
+                </td>
+                <td class="px-4 py-3 text-center text-gray-600 border border-gray-200">
+                  {{ row.descriptionMp }}
+                </td>
+                <td class="px-4 py-3 text-center font-bold text-black text-base border border-gray-200 bg-yellow-50">
+                  {{ row.totalQte | number:'1.0-0' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div><!-- fin total ligne -->
+
+    </div><!-- fin ligneGroup — *ngFor -->
 
   </div><!-- fin résultats -->
 </div>

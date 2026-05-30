@@ -109,6 +109,29 @@
             </button>
           </div>
         </div>
+        <div class="filter-group">
+  <div class="filter-header">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+    <span>Filtrer par poste</span>
+  </div>
+  
+  <div class="filter-inputs">
+    <div class="input-group">
+      <label for="posteFilter">Poste :</label>
+      <select 
+        id="posteFilter" 
+        [(ngModel)]="posteSelectionne" 
+        class="filter-select">
+        <option value="">Tous les postes</option>
+        <option value="poste1">Poste 1 (6h-14h)</option>
+        <option value="poste2">Poste 2 (14h-22h)</option>
+      </select>
+    </div>
+  </div>
+</div>
 
       </div>
     </div>

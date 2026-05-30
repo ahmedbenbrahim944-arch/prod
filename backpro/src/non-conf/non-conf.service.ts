@@ -101,10 +101,11 @@ async createOrUpdateNonConformite(createOrUpdateNonConfDto: CreateOrUpdateNonCon
 
   try {
     // 1. Trouver la planification
-    const planification = await this.planificationRepository.findOne({
-      where: { semaine, jour, ligne, reference },
-      relations: ['semaineEntity']
-    });
+   const poste = createOrUpdateNonConfDto.poste ;
+const planification = await this.planificationRepository.findOne({
+  where: { semaine, jour, ligne, reference, poste },
+  relations: ['semaineEntity']
+});
 
     if (!planification) {
       console.error('Planification non trouvée:', { semaine, jour, ligne, reference });
@@ -792,9 +793,12 @@ async getNonConformites(getNonConfDto: GetNonConfDto) {
   };
 }
 
- async getNonConformiteByCriteria(semaine: string, jour: string, ligne: string, reference: string) {
+ async getNonConformiteByCriteria(
+  semaine: string, jour: string, ligne: string, 
+  reference: string, poste?: string 
+) {
   const planification = await this.planificationRepository.findOne({
-    where: { semaine, jour, ligne, reference }
+    where: { semaine, jour, ligne, reference, poste }
   });
 
   if (!planification) {
@@ -906,10 +910,13 @@ async getNonConformites(getNonConfDto: GetNonConfDto) {
     };
   }
 
-  async deleteNonConformiteByCriteria(semaine: string, jour: string, ligne: string, reference: string) {
-    const planification = await this.planificationRepository.findOne({
-      where: { semaine, jour, ligne, reference }
-    });
+  async deleteNonConformiteByCriteria(
+  semaine: string, jour: string, ligne: string, 
+  reference: string, poste?: string 
+) {
+  const planification = await this.planificationRepository.findOne({
+    where: { semaine, jour, ligne, reference, poste }
+  });
 
     if (!planification) {
       throw new NotFoundException('Planification non trouvée');

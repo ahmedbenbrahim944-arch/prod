@@ -48,7 +48,6 @@ export class SemaineService {
     }
 
     try {
-      // 1. Créer la semaine
       const semaine = new Semaine();
       semaine.nom = createSemaineDto.nom;
       semaine.dateDebut = new Date(createSemaineDto.dateDebut);
@@ -57,41 +56,43 @@ export class SemaineService {
 
       const savedSemaine = await this.semaineRepository.save(semaine);
 
-      // 2. Récupérer TOUTES les combinaisons Ligne×Référence
       const products = await this.productRepository.find({
         select: ['ligne', 'reference'],
       });
 
-      // 3. Créer des planifications vides pour chaque combinaison × jour
       const jours = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+      const postes = ['poste1', 'poste2']; // ✅ AJOUT : Créer pour les 2 postes
       const planificationsToCreate: Planification[] = [];
       let totalPlanificationsCrees = 0;
 
       for (const product of products) {
         for (const jour of jours) {
-          const planification = new Planification();
-          planification.semaine = savedSemaine.nom;
-          planification.jour = jour;
-          planification.ligne = product.ligne;
-          planification.reference = product.reference;
-          planification.of = '';
-          planification.qtePlanifiee = 0;
-          planification.qteModifiee = 0;
-          planification.emballage = '200';
-          planification.nbOperateurs = 0;
-          planification.nbHeuresPlanifiees = 0;
-          planification.decProduction = 0;
-          planification.decMagasin = 0;
-          planification.deltaProd = 0;
-          planification.pcsProd = 0;
-          planification.semaineEntity = savedSemaine;
+          // ✅ MODIFICATION : Créer pour chaque poste
+          for (const poste of postes) {
+            const planification = new Planification();
+            planification.semaine = savedSemaine.nom;
+            planification.jour = jour;
+            planification.ligne = product.ligne;
+            planification.reference = product.reference;
+            planification.poste = poste; // ✅ AJOUT : Définir le poste
+            planification.of = '';
+            planification.qtePlanifiee = 0;
+            planification.qteModifiee = 0;
+            planification.emballage = '200';
+            planification.nbOperateurs = 0;
+            planification.nbHeuresPlanifiees = 0;
+            planification.decProduction = 0;
+            planification.decMagasin = 0;
+            planification.deltaProd = 0;
+            planification.pcsProd = 0;
+            planification.semaineEntity = savedSemaine;
 
-          planificationsToCreate.push(planification);
-          totalPlanificationsCrees++;
+            planificationsToCreate.push(planification);
+            totalPlanificationsCrees++;
+          }
         }
       }
 
-      // 4. Sauvegarder toutes les planifications
       if (planificationsToCreate.length > 0) {
         await this.planificationRepository.save(planificationsToCreate);
       }
@@ -208,23 +209,73 @@ export class SemaineService {
 
   // ==================== MISE À JOUR PLANIFICATION (Admin) ====================
 async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Promise<any> {
-  const { semaine, jour, ligne, reference, ...fieldsToUpdate } = dto;
+  const { semaine, jour, ligne, reference, poste, ...fieldsToUpdate } = dto;
 
-  // OF → tous les jours
+  // ✅ poste OBLIGATOIRE — défaut 'poste1' si absent
+  const posteActif = poste || 'poste1';
+
+  // ── 1. Mise à jour OF → tous les jours du MÊME poste uniquement ──
   if (fieldsToUpdate.of !== undefined) {
     await this.planificationRepository.update(
-      { semaine, ligne, reference },
+      {
+        semaine,
+        ligne,
+        reference,
+        poste: posteActif   // ← isolé par poste
+      },
       { of: fieldsToUpdate.of }
     );
   }
 
-  // Tout le reste (dont note) → seulement le jour concerné
-  const { of: _, ...perDayFields } = fieldsToUpdate;
-  
-  if (Object.keys(perDayFields).length > 0) {
+  // ── 2. Mise à jour NOTE → tous les jours du MÊME poste uniquement ──
+  if (fieldsToUpdate.note !== undefined) {
     await this.planificationRepository.update(
-      { semaine, jour, ligne, reference },
-      perDayFields  // ✅ note est incluse ici
+      {
+        semaine,
+        ligne,
+        reference,
+        poste: posteActif   // ← isolé par poste
+      },
+      { note: fieldsToUpdate.note }
+    );
+  }
+
+  // ── 3. Reste des champs (qtePlanifiee, nbOperateurs...) 
+  //       → UNIQUEMENT le jour + poste concerné ──
+  const { of: _of, note: _note, ...perDayFields } = fieldsToUpdate;
+
+  if (Object.keys(perDayFields).length > 0) {
+    if (!jour) {
+      // Sécurité : sans jour on refuse la mise à jour des champs par jour
+      console.warn('updatePlanificationByCriteria: jour manquant pour perDayFields', perDayFields);
+      return { success: true, warning: 'jour manquant, perDayFields ignorés' };
+    }
+
+    // Calculer nbHeuresPlanifiees et nbOperateurs si qtePlanifiee change
+    let extraFields: any = {};
+    if (perDayFields.qtePlanifiee !== undefined) {
+      const tempsSec = await this.tempsSecRepository.findOne({
+        where: { ligne, reference }
+      });
+      if (tempsSec && tempsSec.seconde > 0) {
+        const qteModifiee = perDayFields.qteModifiee ?? 0;
+const qtePlanifiee = perDayFields.qtePlanifiee ?? 0;
+const qte = qteModifiee > 0 ? qteModifiee : qtePlanifiee;
+const nbHeuresBrut = (qte * tempsSec.seconde) / 3600;
+        extraFields.nbHeuresPlanifiees = Math.floor(nbHeuresBrut * 100) / 100;
+        extraFields.nbOperateurs = Math.floor((extraFields.nbHeuresPlanifiees / 8) * 100) / 100;
+      }
+    }
+
+    await this.planificationRepository.update(
+      {
+        semaine,
+        jour,            // ← jour obligatoire
+        ligne,
+        reference,
+        poste: posteActif // ← isolé par poste
+      },
+      { ...perDayFields, ...extraFields }
     );
   }
 
@@ -233,11 +284,16 @@ async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Prom
 
   // ==================== DÉCLARATION PRODUCTION (User) ====================
   async updateProductionPlanification(updateProductionDto: UpdateProductionPlanificationDto) {
-    const { semaine, jour, ligne, reference, qteModifiee, decProduction } = updateProductionDto;
+    const { semaine, jour, ligne, reference, qteModifiee, decProduction, poste } = updateProductionDto;
 
-    const planification = await this.planificationRepository.findOne({
-      where: { semaine, jour, ligne, reference }
-    });
+    const whereClause: any = { semaine, jour, ligne, reference };
+    if (poste) {
+      whereClause.poste = poste;
+    }
+
+  const planification = await this.planificationRepository.findOne({
+    where: whereClause  // ← au lieu de { semaine, jour, ligne, reference }
+  });
 
     if (!planification) {
       throw new NotFoundException('Planification non trouvée');
@@ -442,28 +498,31 @@ async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Prom
         pcsProdTotal: Math.round(pcsProdTotal * 100) / 100,
         detailsParJour: detailsParJour
       },
-      planifications: planificationsAffichees.map(plan => ({
-        id: plan.id,
-        jour: plan.jour,
-        reference: plan.reference,
-        of: plan.of,
-        qtePlanifiee: plan.qtePlanifiee,
-        qteModifiee: plan.qteModifiee,
-        quantiteSource: this.getQuantitySource(plan),
-        decProduction: plan.decProduction,
-        decMagasin: plan.decMagasin,
-        deltaProd: plan.deltaProd,
-        pcsProd: `${plan.pcsProd}%`,
-        nbOperateurs: plan.nbOperateurs,
-        nbHeuresPlanifiees: plan.nbHeuresPlanifiees,
-        emballage: plan.emballage,
-        note: plan.note
-      }))
+    planifications: planificationsAffichees.map(plan => ({
+  id: plan.id,
+  semaine: plan.semaine,
+  jour: plan.jour,
+  ligne: plan.ligne,
+  reference: plan.reference,
+  poste: plan.poste || 'poste1',  // ← AJOUTER cette ligne
+  of: plan.of,
+  qtePlanifiee: plan.qtePlanifiee,
+  qteModifiee: plan.qteModifiee,
+  quantiteSource: this.getQuantitySource(plan),
+  emballage: plan.emballage,
+  nbOperateurs: plan.nbOperateurs,
+  nbHeuresPlanifiees: plan.nbHeuresPlanifiees,
+  decProduction: plan.decProduction,
+  decMagasin: plan.decMagasin,
+  deltaProd: plan.deltaProd,
+  pcsProd: `${plan.pcsProd}%`,
+  note: plan.note
+}))
     };
   }
 
   // ==================== VUE UTILISATEUR (FILTRÉ) ====================
-  async getPlanificationsView(getPlanificationsViewDto: GetPlanificationsViewDto) {
+ async getPlanificationsView(getPlanificationsViewDto: GetPlanificationsViewDto) {
     const { semaine } = getPlanificationsViewDto;
 
     const semaineEntity = await this.semaineRepository.findOne({
@@ -477,7 +536,7 @@ async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Prom
     // Récupérer TOUTES les planifications
     const toutesLesPlanifications = await this.planificationRepository.find({
       where: { semaine },
-      order: { ligne: 'ASC', jour: 'ASC' }
+      order: { ligne: 'ASC', poste: 'ASC', jour: 'ASC' } // ✅ AJOUT : trier par poste
     });
 
     // Filtrer celles avec qtePlanifiee > 0 OU qteModifiee > 0
@@ -493,14 +552,15 @@ async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Prom
         dateDebut: semaineEntity.dateDebut,
         dateFin: semaineEntity.dateFin
       },
-      totalPlanifications: toutesLesPlanifications.length, // TOUTES
-      planificationsAffichees: planificationsAffichees.length, // FILTRÉES
+      totalPlanifications: toutesLesPlanifications.length,
+      planificationsAffichees: planificationsAffichees.length,
       planifications: planificationsAffichees.map(plan => ({
         id: plan.id,
         semaine: plan.semaine,
         jour: plan.jour,
         ligne: plan.ligne,
         reference: plan.reference,
+        poste: plan.poste || 'poste1', // ✅ AJOUT : Inclure le poste dans la réponse
         of: plan.of,
         qtePlanifiee: plan.qtePlanifiee,
         qteModifiee: plan.qteModifiee,
@@ -684,10 +744,13 @@ async updatePlanificationByCriteria(dto: UpdatePlanificationByCriteriaDto): Prom
   }
   // Dans semaine.service.ts, ajouter cette méthode
 async updateMagasinPlanification(updateMagasinDto: UpdateMagasinPlanificationDto) {
-  const { semaine, jour, ligne, reference, decMagasin } = updateMagasinDto;
+  const { semaine, jour, ligne, reference, decMagasin, poste } = updateMagasinDto;
+
+  const whereClause: any = { semaine, jour, ligne, reference };
+  if (poste) whereClause.poste = poste;
 
   const planification = await this.planificationRepository.findOne({
-    where: { semaine, jour, ligne, reference }
+    where: whereClause
   });
 
   if (!planification) {

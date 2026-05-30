@@ -18,6 +18,11 @@ export class CreateOrUpdateNonConfDto {
   @IsNotEmpty()
   reference: string;
 
+  // ✅ AJOUT : poste pour distinguer poste1 et poste2
+  @IsString()
+  @IsOptional()
+  poste?: string; // 'poste1' | 'poste2'
+
   @IsNumber()
   @IsOptional()
   matierePremiere?: number;
@@ -74,10 +79,6 @@ export class CreateOrUpdateNonConfDto {
   @IsOptional()
   commentaireId?: number;
 
-  // ✅ FIX : Valeurs fraîches du frontend pour calculer le delta correct.
-  // Le modal causes s'ouvre AVANT que le DP soit persisté en base de données.
-  // Ces deux champs permettent au service de calculer deltaProd = decProduction - quantiteSource
-  // sans dépendre des valeurs périmées lues depuis la table planifications.
   @IsNumber()
   @IsOptional()
   decProduction?: number;

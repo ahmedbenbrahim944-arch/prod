@@ -171,28 +171,46 @@
           <tbody>
             <ng-container *ngFor="let item of ligneEntry.horizontalTableData">
               <!-- Ligne C -->
-              <tr class="hover:bg-blue-50">
-                <td class="border border-gray-300 px-4 py-2 font-medium" rowspan="2">
-                  {{ item.reference }}
-                </td>
-                <td class="border border-gray-300 px-4 py-2 text-center">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                    C
-                  </span>
-                </td>
-                <td class="border border-gray-300 px-4 py-2 text-center text-sm" rowspan="2">
-                  {{ getFirstOfValue(item, ligneEntry.daysWithData) }}
-                </td>
-                <td *ngFor="let day of ligneEntry.daysWithData" 
-                    class="border border-gray-300 px-4 py-2 text-center">
-                  <span *ngIf="item[day]?.quantiteSource > 0" class="font-bold">
-                    {{ item[day].quantiteSource }}
-                  </span>
-                  <span *ngIf="!item[day]?.quantiteSource || item[day].quantiteSource === 0" class="text-gray-400">
-                    -
-                  </span>
-                </td>
-              </tr>
+             <!-- ── Ligne C ── -->
+<tr class="hover:bg-blue-50">
+  <td class="border border-gray-300 px-4 py-2 font-medium align-middle" rowspan="2">
+    {{ item.reference }}
+  </td>
+  <td class="border border-gray-300 px-4 py-2 text-center">
+    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+      C
+    </span>
+  </td>
+  <td class="border border-gray-300 px-4 py-2 text-center text-sm align-middle" rowspan="2">
+    {{ getFirstOfValue(item, ligneEntry.daysWithData) }}
+  </td>
+
+  <!-- ✅ Cellules C avec détail P1/P2 -->
+  <td *ngFor="let day of ligneEntry.daysWithData"
+      class="border border-gray-300 px-4 py-2 text-center">
+    <ng-container *ngIf="item[day]?.quantiteSource > 0">
+      <!-- Total -->
+      <div class="font-bold text-gray-800 text-sm">
+        {{ item[day].quantiteSource }}
+      </div>
+      <!-- Badges P1 / P2 -->
+      <div class="flex justify-center gap-1 mt-1">
+        <span *ngIf="item[day].poste1C > 0"
+              class="text-xs px-1.5 py-0.5 rounded font-semibold text-white"
+              style="background:#1d4ed8;">
+          P1: {{ item[day].poste1C }}
+        </span>
+        <span *ngIf="item[day].poste2C > 0"
+              class="text-xs px-1.5 py-0.5 rounded font-semibold text-white"
+              style="background:#b45309;">
+          P2: {{ item[day].poste2C }}
+        </span>
+      </div>
+    </ng-container>
+    <span *ngIf="!item[day]?.quantiteSource || item[day].quantiteSource === 0"
+          class="text-gray-400">-</span>
+  </td>
+</tr>
               
               <!-- Ligne DM -->
               <tr class="hover:bg-green-50 bg-gray-50">

@@ -164,6 +164,7 @@ export class Prod2Component implements AfterViewInit, OnInit {
   loading = signal(false);
   selectedLigne = signal<ProductionLine | null>(null);
   selectedWeek = signal<number | null>(null);
+  selectedPoste = signal<string>('poste1'); // ✅ NOUVEAU : poste1 (6h-14h) | poste2 (14h-22h)
   availableLines = signal<ProductionLine[]>([]);
   weekPlanification = signal<WeekPlanification | null>(null);
   showSuccess = signal(false);
@@ -681,6 +682,18 @@ closeMPSuggestions(): void {
   const newState = !this.sidebarVisible();
   this.sidebarVisible.set(newState);
 }
+  // ✅ NOUVEAU : sélection du poste — recharge les données si une semaine est déjà sélectionnée
+  selectPoste(poste: string): void {
+    this.selectedPoste.set(poste);
+    const line = this.selectedLigne();
+    const week = this.selectedWeek();
+    if (line && week) {
+      const selectedWeekData = this.getAvailableWeeks().find(w => w.number === week);
+      const semaineNom = selectedWeekData?.display || `semaine${week}`;
+      this.loadWeekPlanificationFromAPI(semaineNom, line);
+    }
+  }
+
 onLigneSelected(line: ProductionLine): void {
   
   // Réinitialiser les phases et données avant de charger la nouvelle ligne
@@ -726,6 +739,7 @@ onLigneSelected(line: ProductionLine): void {
     this.weekPlanification.set(null);
     this.isEditing.set(false);
     this.selectedReferenceDetails.set(null);
+    this.selectedPoste.set('poste1'); // ✅ reset poste
   }
 
   goBackToLogin(): void {
@@ -740,7 +754,7 @@ onLigneSelected(line: ProductionLine): void {
     this.semaineService.getPlanificationsForWeek(semaineNom).subscribe({
       next: (response) => {
         const planificationsLigne = response.planifications?.filter(
-          (p: any) => p.ligne === line.ligne
+          (p: any) => p.ligne === line.ligne && (p.poste || 'poste1') === this.selectedPoste()
         ) || [];
         
         const references: ReferenceProduction[] = [];
@@ -859,10 +873,6 @@ onLigneSelected(line: ProductionLine): void {
   // ==================== MODIFICATION PLANIFICATION ====================
 
 toggleEditMode(): void {
-  if (this.checkTimeRestriction()) {
-    this.showSuccessMessage('⛔ Saisie autorisée uniquement de 6h à 9h');
-    return;
-  }
   const currentEditingState = this.isEditing();
   
   if (!currentEditingState) {
@@ -997,6 +1007,7 @@ private sauvegarderPlanifications(): void {
           jour: day,
           ligne: ligne,
           reference: ref.reference,
+          poste: this.selectedPoste(),
           nbOperateurs: entry.nbOperateurs || 0,
           of: entry.of || '',
           qtePlanifiee: entry.c || 0,
@@ -1137,7 +1148,10 @@ updateDayEntry(reference: ReferenceProduction, day: string, field: string, value
     return;
   }
   
- 
+  if (field === 'dm' && !this.canEditDM()) {
+    this.showSuccessMessage('️ Seul le matricule 2603 peut modifier DM');
+    return;
+  }
   if (field === 'dp' || field === 'c') {
     // Vérifier les incohérences après modification
     setTimeout(() => {
@@ -1210,6 +1224,7 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
     jour: day,
     ligne: planif.ligne,
     reference: reference,
+    poste: this.selectedPoste(),
     decMagasin: entry.dm
   };
 
@@ -1303,7 +1318,6 @@ private saveSingleMagasinDeclaration(reference: string, day: string, entry: DayE
   // ==================== RAPPORTS DE PRODUCTION ====================
 
   onPersonIconClick(day: string): void {
-   
   
   const currentLine = this.selectedLigne();
   if (!currentLine) {
@@ -1695,7 +1709,6 @@ initializeOperatorFormData(matricule: string): void {
  // Dans la méthode saveAllProductionRecords(), modifier la création du DTO:
 // Modifiez la création du DTO dans saveAllProductionRecords()
 saveAllProductionRecords(): void {
- 
   const selectedMatricules = this.selectedMatricules();
   if (selectedMatricules.length === 0) {
     alert('Veuillez sélectionner au moins un opérateur');
@@ -2048,7 +2061,8 @@ openCausesModal(ref: ReferenceProduction, day: string): void {
     semaine: `semaine${planif.weekNumber}`,
     jour: day,
     ligne: ligne,
-    reference: ref.reference
+    reference: ref.reference,
+    poste: this.selectedPoste()
   };
 
   this.nonConfService.checkNonConformiteExists(dto).subscribe({
@@ -2509,6 +2523,7 @@ saveCauses(): void {
     jour: selected.day,
     ligne: this.selectedLigne()!.ligne,
     reference: selected.reference.reference,
+    poste: this.selectedPoste(),
   };
 
   // Récupérer les valeurs
@@ -4705,55 +4720,6 @@ private async getNonConfForRefAndLigne(
   }));
 
   return Object.keys(byDay).length > 0 ? byDay : null;
-}
-// ==================== CONTRÔLE HORAIRE ====================
-isTimeBlocked = signal<boolean>(false);
-isUnlocked = signal<boolean>(false);
-showUnlockModal = signal<boolean>(false);
-unlockPassword = signal<string>('');
-unlockError = signal<string>('');
-
-private UNLOCK_PASSWORD = 'Hella3012*';
-private ALLOWED_START_HOUR = 6;
-private ALLOWED_END_HOUR = 9;
-
-checkTimeRestriction(): boolean {
-  if (this.isUnlocked()) return false; // Débloqué manuellement
-  
-  const now = new Date();
-  const hour = now.getHours();
-  
-  const blocked = hour < this.ALLOWED_START_HOUR || hour >= this.ALLOWED_END_HOUR;
-  this.isTimeBlocked.set(blocked);
-  return blocked;
-}
-
-openUnlockModal(): void {
-  this.unlockPassword.set('');
-  this.unlockError.set('');
-  this.showUnlockModal.set(true);
-}
-
-closeUnlockModal(): void {
-  this.showUnlockModal.set(false);
-  this.unlockPassword.set('');
-  this.unlockError.set('');
-}
-
-tryUnlock(): void {
-  if (this.unlockPassword() === this.UNLOCK_PASSWORD) {
-    this.isUnlocked.set(true);
-    this.isTimeBlocked.set(false);
-    this.showUnlockModal.set(false);
-    this.showSuccessMessage('✅ Saisie débloquée avec succès');
-  } else {
-    this.unlockError.set('❌ Mot de passe incorrect');
-  }
-}
-
-canEnterData(): boolean {
-  this.checkTimeRestriction();
-  return !this.isTimeBlocked();
 }
 
 }

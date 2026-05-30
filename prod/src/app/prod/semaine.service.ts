@@ -27,6 +27,7 @@ export interface Planification {
   jour: string;
   ligne: string;
   reference: string;
+  poste?: string; // ✅ NOUVEAU : 'poste1' (6h-14h) | 'poste2' (14h-22h)
   of?: string;
   qtePlanifiee: number;
   qteModifiee: number;
@@ -37,7 +38,7 @@ export interface Planification {
   decMagasin: number;
   deltaProd: number;
   pcsProd: number;
-  note?: string; // NOUVEAU
+  note?: string;
 }
 
 export interface CreatePlanificationDto {
@@ -45,11 +46,12 @@ export interface CreatePlanificationDto {
   jour: string;
   ligne: string;
   reference: string;
+  poste?: string; // ✅ NOUVEAU : 'poste1' | 'poste2'
   of?: string;
   qtePlanifiee?: number;
   qteModifiee?: number;
   emballage?: string;
-  note?: string; // NOUVEAU
+  note?: string;
 }
 
 export interface WeekInfo {
@@ -116,6 +118,7 @@ export class SemaineService {
     return this.http.delete<any>(`${this.apiUrl}/semaines/${id}`, { headers: this.getAuthHeaders() });
   }
 
+  // ✅ createPlanification accepte maintenant le champ `poste` via CreatePlanificationDto
   createPlanification(planification: CreatePlanificationDto): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/planifications`, planification, { headers: this.getAuthHeaders() });
   }
@@ -155,26 +158,31 @@ export class SemaineService {
     return this.http.post<any>(`${this.apiUrl}/planifications/vuprod`, { semaine, ligne }, { headers: this.getAuthHeaders() });
   }
 
+  updateMagasinPlanification(data: any): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/planifications/magasin`, data, { headers: this.getAuthHeaders() });
+  }
+
   // ============ MÉTHODES UTILITAIRES ============
 
   /**
    * Formate les données d'une planification pour l'API.
-   * Inclut le champ `note` si présent.
+   * Inclut les champs `note` et `poste`.
    */
   formatWeekForAPI(weekData: any): any {
     return {
-      semaine: weekData.semaine,
-      jour: weekData.jour,
-      ligne: weekData.ligne,
-      reference: weekData.reference,
-      of: weekData.of || '',
+      semaine:      weekData.semaine,
+      jour:         weekData.jour,
+      ligne:        weekData.ligne,
+      reference:    weekData.reference,
+      poste:        weekData.poste , // ✅ NOUVEAU
+      of:           weekData.of || '',
       nbOperateurs: weekData.nbOperateurs || 0,
       qtePlanifiee: weekData.qtePlanifiee || 0,
-      qteModifiee: weekData.qteModifiee || 0,
-      emballage: weekData.emballage || '200',
+      qteModifiee:  weekData.qteModifiee || 0,
+      emballage:    weekData.emballage || '200',
       decProduction: weekData.decProduction || 0,
-      decMagasin: weekData.decMagasin || 0,
-      note: weekData.note ?? null  // NOUVEAU : inclure la note
+      decMagasin:   weekData.decMagasin || 0,
+      note:         weekData.note ?? null
     };
   }
 
@@ -223,9 +231,9 @@ export class SemaineService {
         weeks.push({
           number: weekNumber,
           startDate: semaine.dateDebut ? new Date(semaine.dateDebut) : new Date(),
-          endDate: semaine.dateFin ? new Date(semaine.dateFin) : new Date(),
-          display: semaine.nom || `semaine${weekNumber}`,
-          data: semaine
+          endDate:   semaine.dateFin   ? new Date(semaine.dateFin)   : new Date(),
+          display:   semaine.nom || `semaine${weekNumber}`,
+          data:      semaine
         });
       }
     });
@@ -241,9 +249,4 @@ export class SemaineService {
   isAuthenticated(): boolean {
     return this.authService.isLoggedIn();
   }
-
-  updateMagasinPlanification(data: any): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/planifications/magasin`, data);
-  }
 }
-

@@ -76,10 +76,11 @@
     </div>
   </div>
 
-    <!-- ✅ Sélecteur de semaine AU-DESSUS des cartes -->
+    <!-- ✅ Sélecteur de semaine + Boutons Poste AU-DESSUS des cartes -->
     <div class="flex justify-center mb-5">
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-3
-                  flex items-center gap-3">
+                  flex items-center gap-3 flex-wrap">
+        <!-- Icône calendrier -->
         <svg class="w-5 h-5 flex-shrink-0" style="color:#57E809;"
              fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -98,6 +99,37 @@
               style="background:#57E809;">
           {{ selectedSemaine }}
         </span>
+
+        <!-- Séparateur vertical -->
+        <div class="w-px h-8 bg-gray-200 mx-1"></div>
+
+        <!-- ✅ BOUTONS POSTE 1 & POSTE 2 -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-semibold text-gray-700 whitespace-nowrap">Poste :</span>
+
+          <button (click)="selectedPoste = 'poste1'"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-sm
+                   transition-all duration-200 hover:scale-105 active:scale-95 whitespace-nowrap"
+            [style.background]="selectedPoste === 'poste1' ? 'linear-gradient(135deg,#1d4ed8,#2563eb)' : '#f1f5f9'"
+            [style.color]="selectedPoste === 'poste1' ? 'white' : '#64748b'"
+            [style.border]="selectedPoste === 'poste1' ? '2px solid #1d4ed8' : '2px solid #e2e8f0'"
+            [style.box-shadow]="selectedPoste === 'poste1' ? '0 4px 12px rgba(29,78,216,0.35)' : 'none'">
+            🌅 Poste 1
+            <span class="font-normal" style="font-size:11px; opacity:0.85;">6h – 14h</span>
+          </button>
+
+          <button (click)="selectedPoste = 'poste2'"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-lg font-bold text-sm
+                   transition-all duration-200 hover:scale-105 active:scale-95 whitespace-nowrap"
+            [style.background]="selectedPoste === 'poste2' ? 'linear-gradient(135deg,#b45309,#d97706)' : '#f1f5f9'"
+            [style.color]="selectedPoste === 'poste2' ? 'white' : '#64748b'"
+            [style.border]="selectedPoste === 'poste2' ? '2px solid #b45309' : '2px solid #e2e8f0'"
+            [style.box-shadow]="selectedPoste === 'poste2' ? '0 4px 12px rgba(180,83,9,0.35)' : 'none'">
+            🌆 Poste 2
+            <span class="font-normal" style="font-size:11px; opacity:0.85;">14h – 22h</span>
+          </button>
+        </div>
+
       </div>
     </div>
 
@@ -126,7 +158,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-0">
 
       <div *ngFor="let line of filteredLines"
-           (click)="onLineSelected(line)"
+           (click)="onLineSelected(line, selectedPoste)"
            class="relative overflow-hidden cursor-pointer group"
            style="aspect-ratio: 1/1; border: 1px solid #e2e8f0;">
 
@@ -167,10 +199,10 @@
           <div class="text-xs mt-0.5 font-medium drop-shadow" style="color:#57E809;">
             {{ line.referenceCount }} références
           </div>
-           <div *ngIf="line.hasMissingOf" 
-             class="mt-1 text-xs text-red-300 font-medium bg-black/50 px-1.5 py-0.5 rounded inline-block">
-          ⚠️ {{ line.missingOfCount }} OF à compléter
-        </div>
+          <div *ngIf="line.hasMissingOf"
+               class="mt-1 text-xs text-red-300 font-medium bg-black/50 px-1.5 py-0.5 rounded inline-block">
+            ⚠️ {{ (line.missingOfCount ?? 0) }} OF à compléter
+          </div>
         </div>
 
         <!-- Badge ACTIVE haut droite -->
@@ -255,6 +287,25 @@
           <option *ngFor="let week of getWeeksList()" [value]="week">{{ week }}</option>
         </select>
       </div>
+
+      <!-- ✅ Badge poste actif -->
+     <!-- ✅ REMPLACER le badge statique par des boutons toggle -->
+<div class="flex items-center gap-2">
+  <button (click)="switchPoste('poste1')"
+    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all"
+    [style.background]="selectedPoste === 'poste1' ? '#1d4ed8' : '#f1f5f9'"
+    [style.color]="selectedPoste === 'poste1' ? 'white' : '#64748b'"
+    [style.border]="selectedPoste === 'poste1' ? '2px solid #1d4ed8' : '2px solid #e2e8f0'">
+    🌅 Poste 1 — 6h à 14h
+  </button>
+  <button (click)="switchPoste('poste2')"
+    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-xs transition-all"
+    [style.background]="selectedPoste === 'poste2' ? '#b45309' : '#f1f5f9'"
+    [style.color]="selectedPoste === 'poste2' ? 'white' : '#64748b'"
+    [style.border]="selectedPoste === 'poste2' ? '2px solid #b45309' : '2px solid #e2e8f0'">
+    🌆 Poste 2 — 14h à 22h
+  </button>
+</div>
 
       <!-- Loader -->
       <div *ngIf="isLoading" class="flex items-center gap-2 text-sm text-gray-500 ml-auto">
@@ -418,33 +469,36 @@
 </td>
 
                 <!-- Cellules C par jour -->
-                <td *ngFor="let day of weekDays"
-                    class="px-2 py-1.5 text-center border border-gray-200 cursor-pointer"
-                    (click)="startEdit(ref, day)" title="Cliquer pour modifier C">
-
-                  <ng-container *ngIf="isEditing(ref, day)">
-                    <input type="number" min="0" [(ngModel)]="editCValue"
-                      (blur)="saveCell(ref, day)" (keyup.enter)="saveCell(ref, day)" (keyup.escape)="cancelEdit()"
-                      class="w-24 text-center rounded px-1 py-0.5 text-sm font-semibold focus:outline-none"
-                      style="border:2px solid #f97316;"
-                      autofocus/>
-                  </ng-container>
-
-                  <ng-container *ngIf="!isEditing(ref, day)">
-                    <svg *ngIf="savingKey === cellKey(ref, day)"
-                         class="animate-spin h-4 w-4 mx-auto text-orange-400"
-                         fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                    </svg>
-                    <ng-container *ngIf="savingKey !== cellKey(ref, day)">
-                      <span *ngIf="(getDayEntry(ref, day)?.c ?? 0) > 0"
-                            class="text-sm font-semibold text-gray-800">
-                        {{ getDayEntry(ref, day)?.c | number }}
-                      </span>
-                    </ng-container>
-                  </ng-container>
-                </td>
+               <td *ngFor="let day of weekDays"
+    class="px-2 py-1.5 text-center border border-gray-200 cursor-pointer"
+    (click)="startEdit(ref, day)" title="Cliquer pour modifier C">
+ 
+  <ng-container *ngIf="isEditing(ref, day)">
+    <input type="number" min="0" [(ngModel)]="editCValue"
+      (blur)="saveCell(ref, day)" (keyup.enter)="saveCell(ref, day)" (keyup.escape)="cancelEdit()"
+      class="w-24 text-center rounded px-1 py-0.5 text-sm font-semibold focus:outline-none"
+      style="border:2px solid #f97316;"
+      autofocus/>
+  </ng-container>
+ 
+  <ng-container *ngIf="!isEditing(ref, day)">
+    <svg *ngIf="savingKey === cellKey(ref, day)"
+         class="animate-spin h-4 w-4 mx-auto text-orange-400"
+         fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+    <ng-container *ngIf="savingKey !== cellKey(ref, day)">
+      <!-- Quantité planifiée -->
+      <span *ngIf="(getDayEntry(ref, day)?.c ?? 0) > 0"
+            class="text-sm font-semibold text-gray-800">
+        {{ getDayEntry(ref, day)?.c | number }}
+      </span>
+      <!--  POINT VERT — affiché si le document a été scanné ce jour-là -->
+      <span *ngIf="isServi(ref, day)" class="point-vert" title="Matières premières servies ">✔</span>
+    </ng-container>
+  </ng-container>
+</td>
 
                 <!-- Total REF -->
                 <td class="px-4 py-2.5 text-center font-bold border border-gray-200"

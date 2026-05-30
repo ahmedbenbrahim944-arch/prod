@@ -199,6 +199,7 @@ personnelComptesReels = { presents: 0, absents: 0, conges: 0, selections: 0 };
   // â”€â”€ Filtre par ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   selectedLignes: string[] = [];
   ligneSearchFilter: string = '';
+  posteSelectionne: string = '';
 
   // â”€â”€ Modale Personnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Même logique que statistiques1.component.ts :
@@ -344,10 +345,17 @@ personnelComptesReels = { presents: 0, absents: 0, conges: 0, selections: 0 };
       'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
     });
   }
+   onPosteChange(): void {
+    // Recharger les données quand le poste change
+    if (this.dateDebut && this.dateFin) {
+      this.chargerStatsPeriode();
+    }
+  }
+
 
   // â”€â”€ Chargement stats période â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  async chargerStatsPeriode(): Promise<void> {
+ async chargerStatsPeriode(): Promise<void> {
     if (!this.dateDebut || !this.dateFin) {
       this.errorMessage = 'Veuillez sélectionner une date de début et une date de fin';
       return;
@@ -365,21 +373,26 @@ personnelComptesReels = { presents: 0, absents: 0, conges: 0, selections: 0 };
     this.errorMessage = '';
 
     try {
+      let params: any = {
+        dateDebut: this.dateDebut,
+        dateFin: this.dateFin
+      };
+      
+      // ✅ Ajouter le paramètre poste si sélectionné
+      if (this.posteSelectionne) {
+        params.poste = this.posteSelectionne;
+      }
+      
       const response = await this.http.get<StatsPeriode>(
         `${this.apiUrl}/stats-periode`,
-        {
-          params: {
-            dateDebut: this.dateDebut,
-            dateFin: this.dateFin
-          }
-        }
+        { params }
       ).toPromise();
 
       if (response) {
         this.statsData = response;
-         await this.chargerPersonnelParDate();
-         this.dismissAlert = false;
-  this.calculerLignesNonCorrectes();
+        await this.chargerPersonnelParDate();
+        this.dismissAlert = false;
+        this.calculerLignesNonCorrectes();
         setTimeout(() => {
           this.creerGraphique();
         }, 100);

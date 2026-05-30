@@ -1,28 +1,32 @@
-// src/semaine/dto/update-production-planification.dto.ts
 import { IsString, IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class UpdateProductionPlanificationDto {
   @IsString()
-  @IsNotEmpty({ message: 'Le nom de la semaine est obligatoire' })
+  @IsNotEmpty()
   semaine: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Le jour est obligatoire' })
+  @IsNotEmpty()
   jour: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'Le nom de la ligne est obligatoire' })
+  @IsNotEmpty()
   ligne: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'La référence est obligatoire' })
+  @IsNotEmpty()
   reference: string;
 
+  // ✅ AJOUT CRUCIAL
+  @IsString()
+  @IsOptional()
+  poste?: string;
+
   @IsNumber()
-  @IsOptional() // Rendre optionnel
+  @IsOptional()
   qteModifiee?: number;
 
   @IsNumber()
-  @IsNotEmpty({ message: 'La déclaration production est obligatoire' })
+  @IsNotEmpty()
   decProduction: number;
 }

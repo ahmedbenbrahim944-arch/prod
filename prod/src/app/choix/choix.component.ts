@@ -48,6 +48,11 @@ export class ChoixComponent implements OnInit {
 
   checkingMatricule: boolean = false;
 
+  // ── Stats ───────────────────────────────────────────────────
+  totalLines: number = 0;
+  totalReferences: number = 0;
+  totalUsers: number = 0;
+
   constructor(
     private authService: AuthService,
     private ouvrierService: OuvrierService
@@ -57,15 +62,44 @@ export class ChoixComponent implements OnInit {
     const matricule = this.authService.getUserMatricule();
     if (matricule) {
       this.matriculeUtilisateur = matricule;
+      // Afficher le bouton saisie pour certains matricules
       this.showSaisButton = (this.matriculeUtilisateur === '2603');
     }
+    this.loadStats();
   }
 
+  // ── Charger les stats ──────────────────────────────────────
+  private loadStats(): void {
+    // TODO: Appeler votre service pour charger les stats
+    this.totalLines = 27;
+    this.totalReferences = 196;
+    this.totalUsers = 9;
+  }
+
+  getTotalLines(): number {
+    return this.totalLines;
+  }
+
+  getTotalReferences(): number {
+    return this.totalReferences;
+  }
+
+  getTotalUsers(): number {
+    return this.totalUsers;
+  }
+
+  // ── Déconnexion ────────────────────────────────────────────
   retourLogin() {
     this.authService.logout();
   }
 
-  // ── Ouvrir / Fermer la modal ───────────────────────────────
+  // ── Ouverture modal par module ─────────────────────────────
+  openModuleModal(module: string) {
+    // TODO: Implémenter la logique pour chaque module
+    console.log('Module ouvert:', module);
+  }
+
+  // ── Ouvrier Modal ──────────────────────────────────────────
   openOuvrierModal() {
     this.showOuvrierModal = true;
     this.loadOuvriers();
@@ -79,7 +113,7 @@ export class ChoixComponent implements OnInit {
     this.showSuccess = false;
   }
 
-  // ── Chargement de la liste ─────────────────────────────────
+  // ── Chargement de la liste des ouvriers ────────────────────
   private loadOuvriers() {
     this.loading = true;
     this.ouvrierService.findAll()
