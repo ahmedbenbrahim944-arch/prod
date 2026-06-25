@@ -285,37 +285,59 @@ personnelComptesReels = { presents: 0, absents: 0, conges: 0, selections: 0 };
     this.dateFin = this.maxDate;
   }
 
-  private async chargerPersonnelParDate(): Promise<void> {
-  if (!this.dateFin) return;
+ private async chargerPersonnelParDate(): Promise<void> {
+  if (!this.dateDebut || !this.dateFin) return;
+  
   try {
-    const data: any = await this.http.get<any>(
-      this.statutApiUrl,
-      { params: { date: this.dateFin }, headers: this.getAuthHeaders() }
-    ).toPromise();
+    const dates: string[] = [];
+    const current = new Date(this.dateDebut);
+    const fin = new Date(this.dateFin);
+    
+    while (current <= fin) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
 
-    const tousOuvriers: OuvrierPersonnel[] =
-      data?.statistiques?.ouvriers || data?.ouvriers || [];
+    let totalPresents = 0, totalAbsents = 0, totalConges = 0, totalSelections = 0;
 
-    // Nettoyer les espaces parasites
-    this.personnelParDate = tousOuvriers.map((o: OuvrierPersonnel) => ({
-      ...o,
-      statut: (o.statut ?? '').toString().trim() as any,
-      matricule: o.matricule?.toString().trim()
-    }));
+    for (const date of dates) {
+      try {
+        const data: any = await this.http.get<any>(
+          this.statutApiUrl,
+          { params: { date }, headers: this.getAuthHeaders() }
+        ).toPromise();
 
-    // Calculer les vrais comptages
+        const ouvriers: any[] = data?.statistiques?.ouvriers || data?.ouvriers || [];
+        if (ouvriers.length === 0) continue;
+
+        const mapped = ouvriers.map((o: any) => ({
+          ...o,
+          statut: (o.statut ?? '').toString().trim(),
+        }));
+
+        totalPresents   += mapped.filter(o => o.statut === 'P').length;
+        totalAbsents    += mapped.filter(o => o.statut === 'AB').length;
+        totalConges     += mapped.filter(o => o.statut === 'C').length;
+        totalSelections += mapped.filter(o => o.statut === 'S').length;
+
+      } catch (err) {
+        continue;
+      }
+    }
+
+    // ✅ Total direct, pas de division
     this.personnelComptesReels = {
-      presents:   this.personnelParDate.filter(o => o.statut === 'P').length,
-      absents:    this.personnelParDate.filter(o => o.statut === 'AB').length,
-      conges:     this.personnelParDate.filter(o => o.statut === 'C').length,
-      selections: this.personnelParDate.filter(o => o.statut === 'S').length,
+      presents:   totalPresents,
+      absents:    totalAbsents,
+      conges:     totalConges,
+      selections: totalSelections,
     };
+
   } catch (err) {
     console.error('Erreur chargement personnel par-date:', err);
   }
 }
 
-  // â”€â”€ Utilitaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -404,7 +426,7 @@ personnelComptesReels = { presents: 0, absents: 0, conges: 0, selections: 0 };
     }
   }
 
-  // â”€â”€ Graphique â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  
 
   private creerGraphique(): void {
     if (!this.chartCanvas || !this.statsData) return;

@@ -25,6 +25,9 @@ export class StatutOuvrier {
   @Column({ nullable: true })
   commentaire: string;
 
+ @Column({ type: 'varchar', nullable: true })
+nomDocteur: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

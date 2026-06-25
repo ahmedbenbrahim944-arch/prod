@@ -585,26 +585,16 @@ closeMPSuggestions(): void {
   
   if (!planif) return planif;
   
-  // Étape 1 : Filtrer les références qui ont au moins un OF non vide
-  let filteredReferences = planif.references.filter(ref => {
-    // Vérifier si au moins un jour a un OF valide (non null et non vide)
-    return this.weekDays.some(day => {
-      const dayEntry = ref[day] as DayEntry;
-      return dayEntry && dayEntry.of && dayEntry.of.trim() !== '';
-    });
-  });
+  // Filtre uniquement par recherche — plus de contrainte sur OF
+  let filteredReferences = planif.references;
   
-  // Étape 2 : Appliquer le filtre de recherche par référence si une query existe
   if (query) {
     filteredReferences = filteredReferences.filter(ref => 
       ref.reference.toLowerCase().includes(query)
     );
   }
   
-  return {
-    ...planif,
-    references: filteredReferences
-  };
+  return { ...planif, references: filteredReferences };
 });
 
   filteredProductionRecords = computed(() => {
@@ -748,95 +738,104 @@ onLigneSelected(line: ProductionLine): void {
 
   // ==================== CHARGEMENT PLANIFICATION ====================
 
-  private loadWeekPlanificationFromAPI(semaineNom: string, line: ProductionLine): void {
-    this.loading.set(true);
-    
-    this.semaineService.getPlanificationsForWeek(semaineNom).subscribe({
-      next: (response) => {
-        const planificationsLigne = response.planifications?.filter(
-          (p: any) => p.ligne === line.ligne && (p.poste || 'poste1') === this.selectedPoste()
-        ) || [];
-        
-        const references: ReferenceProduction[] = [];
-        const refsMap = new Map<string, ReferenceProduction>();
-        
-        line.references.forEach(reference => {
-          refsMap.set(reference, {
-            reference: reference,
-            ligne: line.ligne
-          });
+ private loadWeekPlanificationFromAPI(semaineNom: string, line: ProductionLine): void {
+  this.loading.set(true);
+  
+  this.semaineService.getPlanificationsForWeek(semaineNom).subscribe({
+    next: (response) => {
+      
+      // ✅ ÉTAPE 1 : Toutes les planifications de la ligne (tous postes confondus)
+      const toutesPlanificationsLigne = response.planifications?.filter(
+        (p: any) => p.ligne === line.ligne
+      ) || [];
+
+      // ✅ ÉTAPE 2 : Filtrer par poste sélectionné pour C/M/DP/DM/Δ uniquement
+      const planificationsLigne = toutesPlanificationsLigne.filter(
+        (p: any) => (p.poste || 'poste1') === this.selectedPoste()
+      );
+
+      const references: ReferenceProduction[] = [];
+      const refsMap = new Map<string, ReferenceProduction>();
+      
+      line.references.forEach(reference => {
+        refsMap.set(reference, {
+          reference: reference,
+          ligne: line.ligne
         });
+      });
+      
+      const ofByReference = new Map<string, string>();
+      const noteByReference = new Map<string, string>();
+
+      // ✅ CORRECTION : OF et notes depuis TOUS les postes
+      // pour ne jamais perdre un OF même s'il n'existe que dans poste1
+      toutesPlanificationsLigne.forEach((plan: any) => {
+        if (plan.of && !ofByReference.has(plan.reference)) {
+          ofByReference.set(plan.reference, plan.of);
+        }
+        if (plan.note != null && plan.note !== '' && !noteByReference.has(plan.reference)) {
+          noteByReference.set(plan.reference, plan.note);
+        }
+      });
+      
+      // Les données C/M/DP/DM/Δ viennent uniquement du poste sélectionné
+      planificationsLigne.forEach((plan: any) => {
+        const refKey = plan.reference;
+        if (refsMap.has(refKey)) {
+          const refObj = refsMap.get(refKey)!;
+          const jour = plan.jour.toLowerCase();
+          const ofForThisRef = ofByReference.get(refKey) || '';
+          
+          refObj[jour] = {
+            of: ofForThisRef,
+            nbOperateurs: plan.nbOperateurs || 0,
+            c: plan.qtePlanifiee || 0,
+            m: plan.qteModifiee || 0,
+            dp: plan.decProduction || 0,
+            dm: plan.decMagasin || 0,
+            delta: plan.pcsProd || 0
+          };
+        }
+      });
+      
+      refsMap.forEach((refObj) => {
+        const ofForThisRef = ofByReference.get(refObj.reference) || '';
+        refObj.note = noteByReference.get(refObj.reference) || '';
         
-        const ofByReference = new Map<string, string>();
-        // NOUVEAU : Map pour stocker la note par référence
-        const noteByReference = new Map<string, string>();
-        planificationsLigne.forEach((plan: any) => {
-          if (plan.of && !ofByReference.has(plan.reference)) {
-            ofByReference.set(plan.reference, plan.of);
-          }
-          // Récupérer la note (une seule par référence)
-          if (plan.note != null && plan.note !== '' && !noteByReference.has(plan.reference)) {
-            noteByReference.set(plan.reference, plan.note);
-          }
-        });
-        
-        planificationsLigne.forEach((plan: any) => {
-          const refKey = plan.reference;
-          if (refsMap.has(refKey)) {
-            const refObj = refsMap.get(refKey)!;
-            const jour = plan.jour.toLowerCase();
-            const ofForThisRef = ofByReference.get(refKey) || '';
-            
-            refObj[jour] = {
+        this.weekDays.forEach(day => {
+          if (!refObj[day]) {
+            refObj[day] = {
               of: ofForThisRef,
-              nbOperateurs: plan.nbOperateurs || 0,
-              c: plan.qtePlanifiee || 0,
-              m: plan.qteModifiee || 0,
-              dp: plan.decProduction || 0,
-              dm: plan.decMagasin || 0,
-              delta: plan.pcsProd || 0
+              nbOperateurs: 0,
+              c: 0,
+              m: 0,
+              dp: 0,
+              dm: 0,
+              delta: 0
             };
           }
         });
-        
-        refsMap.forEach((refObj) => {
-          const ofForThisRef = ofByReference.get(refObj.reference) || '';
-          // NOUVEAU : Affecter la note
-          refObj.note = noteByReference.get(refObj.reference) || '';
-          this.weekDays.forEach(day => {
-            if (!refObj[day]) {
-              refObj[day] = {
-                of: ofForThisRef,
-                nbOperateurs: 0,
-                c: 0,
-                m: 0,
-                dp: 0,
-                dm: 0,
-                delta: 0
-              };
-            }
-          });
-          references.push(refObj);
-        });
-        
-        const weekInfo = this.getWeekDates(new Date().getFullYear(), this.selectedWeek() || 1);
-        
-        this.weekPlanification.set({
-          weekNumber: this.selectedWeek() || 0,
-          ligne: line.ligne,
-          startDate: weekInfo.startDate,
-          endDate: weekInfo.endDate,
-          references
-        });
-        
-        this.loading.set(false);
-      },
-      error: (error) => {
-        this.createEmptyPlanifications(line);
-        this.loading.set(false);
-      }
-    });
-  }
+        references.push(refObj);
+      });
+      
+      const weekInfo = this.getWeekDates(new Date().getFullYear(), this.selectedWeek() || 1);
+      
+      this.weekPlanification.set({
+        weekNumber: this.selectedWeek() || 0,
+        ligne: line.ligne,
+        startDate: weekInfo.startDate,
+        endDate: weekInfo.endDate,
+        references
+      });
+      
+      this.loading.set(false);
+    },
+    error: (error) => {
+      this.createEmptyPlanifications(line);
+      this.loading.set(false);
+    }
+  });
+}
 
   private getWeekDates(year: number, weekNumber: number): WeekInfo {
     return this.semaineService.getWeekDates(year, weekNumber);

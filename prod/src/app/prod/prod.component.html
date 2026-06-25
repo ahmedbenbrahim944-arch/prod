@@ -30,7 +30,20 @@
       Déconnexion
     </button>
   </div>
-
+  <div class="warning-banner">
+  <div class="warning-content">
+    <span class="warning-icon">⚠️</span>
+    <div class="warning-text">
+      <span class="warning-title">⚠️ ATTENTION</span>
+      <span class="warning-message">
+        Après 8h30, le planning sera fermé. Aucune modification ou saisie ne sera possible après ce délai.
+        Chaque personne est responsable de ses propres données.
+        N'oubliez pas de lancer le temps pour chaque ligne : RXT2 - RXT4 - SGCLOPO - GBXT4 - MXT5 - COMXT5
+      </span>
+    </div>
+    <button class="warning-close" onclick="this.parentElement.parentElement.style.display='none'">✕</button>
+  </div>
+</div>
   <!-- ── STATISTIQUES ── -->
   <div class="home-stats">
     <div class="home-stat">
@@ -252,6 +265,14 @@
           <button class="sub-item" [routerLink]="['/aff']" (click)="closeModuleModal()">
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5a.5.5 0 11-1 0 .5.5 0 011 0zm-7-4a.5.5 0 11-1 0 .5.5 0 011 0zm-4 7.5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg></div>
             <span>Affectation ouvrier</span>
+          </button>
+           <button class="sub-item" [routerLink]="['/employe']" (click)="closeModuleModal()">
+            <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5a.5.5 0 11-1 0 .5.5 0 011 0zm-7-4a.5.5 0 11-1 0 .5.5 0 011 0zm-4 7.5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg></div>
+            <span>employee par service</span>
+          </button>
+          <button class="sub-item" [routerLink]="['/pointage-dashboard']" (click)="closeModuleModal()">
+            <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 3.5a.5.5 0 11-1 0 .5.5 0 011 0zm-7-4a.5.5 0 11-1 0 .5.5 0 011 0zm-4 7.5a.5.5 0 11-1 0 .5.5 0 011 0z"/></svg></div>
+            <span>Pointage </span>
           </button>
           <button class="sub-item" [routerLink]="['/admin/tracking']" (click)="closeModuleModal()">
             <div class="si-icon"><svg fill="none" stroke="white" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div>

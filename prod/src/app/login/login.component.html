@@ -1,4 +1,4 @@
-<div class="flex items-center justify-center min-h-screen text-white relative overflow-hidden">
+<div class="split-screen-wrapper">
 
   <!-- Background -->
   <div class="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -20,53 +20,53 @@
       <!-- ============================================
            FACE AVANT - LOGIN
            ============================================ -->
-      <div class="face front bg-gray-900/85 backdrop-blur-md border border-gray-600/40">
+      <div class="face front split-card">
 
-        <!-- Header : Boutons + Logo aligné au-dessus du clavier -->
-        <div class="login-type-selector">
-          <div class="flex items-center">
+        <!-- ===== PANNEAU GAUCHE — NAVY, FIXE ===== -->
+        <div class="brand-panel">
+          <div class="brand-panel-top">
+            <img src="assets/images/seraf.jpg" alt="Logo SERAF" class="logo-seraf">
+          </div>
 
-            <!-- Boutons gauche -->
-            <div class="flex gap-4 flex-1">
+          <div class="brand-panel-middle">
+            <h1 class="brand-title">Bienvenue sur<br><span>PROD SERAF</span></h1>
+            <p class="brand-subtitle">Plateforme de gestion de production, suivi des opérateurs et pilotage en temps réel.</p>
+          </div>
+
+          <div class="brand-panel-bottom">
+            <div class="role-toggle">
               <button (click)="toggleLoginType('admin')" [ngClass]="{
-                  'type-button': true,
-                  'admin': loginType === 'admin',
-                  'inactive': loginType !== 'admin'
+                  'role-btn': true,
+                  'active': loginType === 'admin'
                 }">
                 Administrateur
               </button>
               <button (click)="toggleLoginType('user')" [ngClass]="{
-                  'type-button': true,
-                  'user': loginType === 'user',
-                  'inactive': loginType !== 'user'
+                  'role-btn': true,
+                  'role-btn-green': true,
+                  'active': loginType === 'user'
                 }">
                 Chef Secteur
               </button>
             </div>
-
-            <!-- ✅ Logo - même largeur que le numpad, via CSS -->
-            <div class="logo-seraf-wrapper">
-              <img src="assets/images/seraf.jpg" alt="Logo SERAF" class="logo-seraf">
-            </div>
-
           </div>
         </div>
 
-        <!-- Message d'erreur -->
-        <div *ngIf="errorMessage" class="error-message mx-10 mt-6 p-4 bg-red-500/20 border border-red-500 rounded-xl">
-          <p class="text-red-400 font-bold text-lg"> {{ errorMessage }}</p>
-        </div>
+        <!-- ===== PANNEAU DROIT — FORMULAIRE + NUMPAD ===== -->
+        <div class="form-panel">
 
-        <!-- Contenu principal -->
-        <div class="flex-1 w-full p-10">
-          <div class="flex gap-10 items-start">
+          <!-- Message d'erreur -->
+          <div *ngIf="errorMessage" class="error-message mb-6 p-4 bg-red-500/20 border border-red-500 rounded-xl">
+            <p class="text-red-400 font-bold text-base">{{ errorMessage }}</p>
+          </div>
+
+          <div class="form-panel-inner">
 
             <!-- Formulaire -->
-            <div class="flex-1 flex flex-col justify-center">
-              <h2 class="text-4xl font-bold text-cyan-400 mb-4 neon">CONNEXION</h2>
-              <p class="text-gray-300 text-xl mb-8"></p>
+            <div class="form-side">
+              <h2 class="neon">CONNEXION</h2>
 
-              <form (ngSubmit)="onLogin()" class="space-y-6">
+              <form (ngSubmit)="onLogin()" class="space-y-5 mt-6">
                 <!-- Matricule -->
                 <div>
                   <input class="input-industrial w-full" placeholder="Matricule" [(ngModel)]="loginForm.nom" name="nom"
@@ -74,7 +74,7 @@
                       'error': loginForm.errors.nom,
                       'active': currentInputField === 'email'
                     }" (click)="openNumpad('email')" readonly>
-                  <div *ngIf="loginForm.errors.nom" class="text-red-400 text-base mt-2">
+                  <div *ngIf="loginForm.errors.nom" class="text-red-400 text-sm mt-2">
                     {{ loginForm.errors.nom }}
                   </div>
                 </div>
@@ -86,7 +86,7 @@
                       'error': loginForm.errors.password,
                       'active': currentInputField === 'password'
                     }" (click)="openNumpad('password')" readonly>
-                  <div *ngIf="loginForm.errors.password" class="text-red-400 text-base mt-2">
+                  <div *ngIf="loginForm.errors.password" class="text-red-400 text-sm mt-2">
                     {{ loginForm.errors.password }}
                   </div>
                 </div>
@@ -95,7 +95,7 @@
                 <button type="submit" class="btn-industrial w-full">
                   <span class="flex items-center justify-center gap-3">
                     SE CONNECTER
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -104,19 +104,20 @@
               </form>
 
               <!-- Lien inscription -->
-              <div class="text-center mt-8 pt-8 border-t border-gray-600/50">
-                <p class="text-base text-gray-300">
+              <div class="text-center mt-7 pt-6 border-t border-gray-600/50">
+                <p class="text-sm text-gray-300">
                   Pas de compte ?
-                  <span (click)="toggleFlip()"
+                  <span 
                     class="text-cyan-400 cursor-pointer hover:text-cyan-300 transition-colors ml-2 font-bold">
+                    Créer un compte
                   </span>
                 </p>
               </div>
             </div>
 
             <!-- Clavier numérique -->
-            <div class="w-auto flex-shrink-0">
-              <div class="numpad-large bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-gray-600/30">
+            <div class="numpad-side">
+              <div class="numpad-large">
 
                 <!-- Indicateur champ -->
                 <div class="current-field-indicator">
@@ -151,35 +152,38 @@
       <!-- ============================================
            FACE ARRIÈRE - REGISTER
            ============================================ -->
-      <div class="face back bg-gray-900/85 backdrop-blur-md border border-gray-600/40">
+      <div class="face back split-card">
 
-        <!-- Header : Titre + Logo aligné au-dessus du clavier -->
-        <div class="login-type-selector">
-          <div class="flex items-center">
+        <!-- ===== PANNEAU GAUCHE — NAVY, FIXE (identique) ===== -->
+        <div class="brand-panel">
+          <div class="brand-panel-top">
+            <img src="assets/images/seraf.jpg" alt="Logo SERAF" class="logo-seraf">
+          </div>
 
-            <!-- Titre gauche -->
-            <div class="flex-1">
-              <h3 class="text-2xl font-bold text-indigo-400">Inscription Administrateur</h3>
+          <div class="brand-panel-middle">
+            <h1 class="brand-title">Bienvenue sur<br><span>PROD SERAF</span></h1>
+            <p class="brand-subtitle">Plateforme de gestion de production, suivi des opérateurs et pilotage en temps réel.</p>
+          </div>
+
+          <div class="brand-panel-bottom">
+            <div class="role-toggle">
+              <div class="role-btn active" style="cursor:default;">
+                Inscription Administrateur
+              </div>
             </div>
-
-            <!-- ✅ Logo - même largeur que le numpad, via CSS -->
-            <div class="logo-seraf-wrapper">
-              <img src="assets/images/seraf.jpg" alt="Logo SERAF" class="logo-seraf">
-            </div>
-
           </div>
         </div>
 
-        <!-- Contenu principal -->
-        <div class="flex-1 w-full p-10">
-          <div class="flex gap-10 items-start">
+        <!-- ===== PANNEAU DROIT — FORMULAIRE + NUMPAD ===== -->
+        <div class="form-panel">
+          <div class="form-panel-inner">
 
             <!-- Formulaire -->
-            <div class="flex-1 flex flex-col justify-center">
-              <h2 class="text-4xl font-bold text-indigo-400 mb-4">CRÉER UN COMPTE</h2>
-              <p class="text-gray-300 text-xl mb-8">Rejoignez la plateforme</p>
+            <div class="form-side">
+              <h2 class="neon">CRÉER UN COMPTE</h2>
+              <p class="text-gray-300 text-base mt-2 mb-2">Rejoignez la plateforme</p>
 
-              <form (ngSubmit)="onRegister()" class="space-y-6">
+              <form (ngSubmit)="onRegister()" class="space-y-5 mt-4">
                 <!-- Prénom & Nom -->
                 <div class="grid grid-cols-2 gap-4">
                   <div>
@@ -211,7 +215,7 @@
                       'error': registerForm.errors.nom,
                       'active': currentInputField === 'registerEmail'
                     }" (click)="openNumpad('registerEmail')" readonly>
-                  <div *ngIf="registerForm.errors.nom" class="text-red-400 text-base mt-2">
+                  <div *ngIf="registerForm.errors.nom" class="text-red-400 text-sm mt-2">
                     {{ registerForm.errors.nom }}
                   </div>
                 </div>
@@ -223,7 +227,7 @@
                       'error': registerForm.errors.password,
                       'active': currentInputField === 'registerPassword'
                     }" (click)="openNumpad('registerPassword')" readonly>
-                  <div *ngIf="registerForm.errors.password" class="text-red-400 text-base mt-2">
+                  <div *ngIf="registerForm.errors.password" class="text-red-400 text-sm mt-2">
                     {{ registerForm.errors.password }}
                   </div>
                 </div>
@@ -235,7 +239,7 @@
                       'error': registerForm.errors.confirm,
                       'active': currentInputField === 'confirmPassword'
                     }" (click)="openNumpad('confirmPassword')" readonly>
-                  <div *ngIf="registerForm.errors.confirm" class="text-red-400 text-base mt-2">
+                  <div *ngIf="registerForm.errors.confirm" class="text-red-400 text-sm mt-2">
                     {{ registerForm.errors.confirm }}
                   </div>
                 </div>
@@ -244,7 +248,7 @@
                 <button type="submit" class="btn-industrial-register w-full">
                   <span class="flex items-center justify-center gap-3">
                     S'INSCRIRE
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -253,8 +257,8 @@
               </form>
 
               <!-- Lien retour -->
-              <div class="text-center mt-8 pt-8 border-t border-gray-600/50">
-                <p class="text-base text-gray-300">
+              <div class="text-center mt-6 pt-5 border-t border-gray-600/50">
+                <p class="text-sm text-gray-300">
                   Déjà un compte ?
                   <span (click)="toggleFlip()"
                     class="text-indigo-400 cursor-pointer hover:text-indigo-300 transition-colors ml-2 font-bold">
@@ -265,8 +269,8 @@
             </div>
 
             <!-- Clavier numérique -->
-            <div class="w-auto flex-shrink-0">
-              <div class="numpad-large bg-gray-800/70 backdrop-blur-md rounded-2xl p-6 shadow-2xl border border-gray-600/30">
+            <div class="numpad-side">
+              <div class="numpad-large">
 
                 <!-- Indicateur champ -->
                 <div class="current-field-indicator">

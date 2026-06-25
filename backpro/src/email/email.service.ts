@@ -78,7 +78,7 @@ export class EmailService {
 
     const ccM5 = this.configService.get<string>(
       'M5_REPORT_CC',
-      'faycal.boulares@seraftunisie.com,marco.carrea@seraftunisie.com',
+      'faycal.boulares@seraftunisie.com,marco.carrea@seraftunisie.com,qualiterami@gmail.com',
     );
 
     try {

@@ -47,6 +47,10 @@ import { AffichageOverviewComponent } from './affichage-overview/affichage-overv
 import { ScreenSaver1Component } from './screen-saver1/screen-saver1.component';
 import { SuiviComponent } from './suivi/suivi.component';
 import { PlanificationmodComponent } from './planificationmod/planificationmod.component';
+import { SmsSendComponent } from './sms-send/sms-send.component';
+import { AbsentsComponent } from './absents/absents.component';
+import { EmployeeUpdateComponent } from './employee-update/employee-update.component';
+import { PointageDashboardComponent } from './pointage-dashboard/pointage-dashboard.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -112,6 +116,11 @@ export const routes: Routes = [
   { path: 'dashboard1', component: ScreenSaver1Component },
   { path: 'suivi', component: SuiviComponent },
   { path: 'M', component: PlanificationmodComponent },
+  { path: 'sms-send', component: SmsSendComponent },
+  { path: 'absents', component: AbsentsComponent },
+  { path: 'employe', component: EmployeeUpdateComponent },
+  { path: 'pointage-dashboard', component: PointageDashboardComponent },
+
 
 
 ];

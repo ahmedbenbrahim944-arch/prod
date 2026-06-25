@@ -131,7 +131,17 @@
           [ngStyle]="getCapitaineStyle(row)">
 
           <td><span class="badge-mat">{{ row.matricule }}</span></td>
-          <td class="td-nom">{{ row.nomPrenom }}</td>
+          <td class="td-nom">
+  <span class="presence-dot"
+    [class.dot-present]="row.pointageStatut === 'present'"
+    [class.dot-absent]="row.pointageStatut === 'absent'"
+    [title]="row.pointageStatut === 'present' ? 'Pointé à ' + row.heurePointage : 'Absent'">
+  </span>
+  {{ row.nomPrenom }}
+  <span *ngIf="row.pointageStatut === 'present'" class="heure-pointage">
+    {{ row.heurePointage }}
+  </span>
+</td>
 
           <!-- ══ MODE LECTURE ══ -->
           <ng-container *ngIf="!row.editing">
@@ -328,19 +338,31 @@
           <span class="ligne-badge">Ligne</span>
         </h3>
         <div class="ligne-stats">
-          <span class="stat">
-            👥 {{ group.totalOuvriers }} ouvrier{{ group.totalOuvriers > 1 ? 's' : '' }}
-          </span>
-          <span class="stat">
-            ⏱️ {{ group.totalHeures }} heures totales
-          </span>
-          <span *ngIf="group.capitaine" class="stat capitaine-info">
-            ⭐ Capitaine: {{ group.capitaine.nomPrenom }} ({{ group.capitaine.matricule }})
-          </span>
-          <span *ngIf="!group.capitaine && group.ligne !== 'Non affecté'" class="stat no-capitaine">
-            ⚠️ Aucun capitaine désigné
-          </span>
-        </div>
+  <span class="stat">
+     {{ group.totalOuvriers }} ouvrier{{ group.totalOuvriers > 1 ? 's' : '' }}
+  </span>
+  <span class="stat">
+     {{ group.totalHeures }} heures totales
+  </span>
+
+  <!-- ── Présence du jour ── -->
+  <span class="stat-presence stat-present">
+    🟢 {{ getLignePresents(group.ligne) }} présents
+  </span>
+  <span class="stat-presence stat-absent">
+    🔴 {{ getLigneAbsents(group.ligne) }} absents
+  </span>
+  <span class="stat-presence stat-taux">
+     {{ getLigneTauxPresence(group.ligne) }}%
+  </span>
+
+  <span *ngIf="group.capitaine" class="stat capitaine-info">
+     Capitaine: {{ group.capitaine.nomPrenom }} ({{ group.capitaine.matricule }})
+  </span>
+  <span *ngIf="!group.capitaine && group.ligne !== 'Non affecté'" class="stat no-capitaine">
+     Aucun capitaine désigné
+  </span>
+</div>
       </div>
     </div>
     

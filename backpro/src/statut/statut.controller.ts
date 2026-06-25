@@ -10,12 +10,15 @@ import {
   ValidationPipe,
   HttpCode,
   HttpStatus,
+  Put,      // 👈 Ajouter
+  Param,    // 👈 Ajouter
 } from '@nestjs/common';
 import { StatutService } from './statut.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateStatutDto } from './dto/update-statut.dto';
 import { GetStatutByDateDto } from './dto/get-statut-by-date.dto';
-import { GetStatutByMatriculeDateDto } from './dto/get-statut-by-matricule-date.dto'; // 🆕
+import { GetStatutByMatriculeDateDto } from './dto/get-statut-by-matricule-date.dto';
+import { UpdateDocteurDto } from './dto/update-docteur.dto'; // 👈 Nouveau DTO
 
 @Controller('statut')
 export class StatutController {
@@ -54,7 +57,7 @@ export class StatutController {
   }
 
   /**
-   * 🆕 Rechercher le statut d'un ouvrier par matricule + date
+   * Rechercher le statut d'un ouvrier par matricule + date
    * GET /statut/ouvrier?matricule=1234&date=2026-01-05
    */
   @Get('ouvrier')
@@ -68,4 +71,36 @@ export class StatutController {
       query.date,
     );
   }
+
+  /**
+   * Obtenir les absents pour une date
+   * GET /statut/absents?date=2026-01-05
+   */
+  @Get('absents')
+  @UseGuards(JwtAuthGuard)
+  async getAbsentsByDate(@Query('date') date: string) {
+    return this.statutService.getAbsentsByDate(date);
+  }
+
+  /**
+   * 🆕 Mettre à jour le nom du docteur pour un absent
+   * PUT /statut/absents/:id/docteur
+   */
+  @Put('absents/:id/docteur')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async updateNomDocteur(
+    @Param('id') id: string,
+    @Body() updateDocteurDto: UpdateDocteurDto,
+  ) {
+    return this.statutService.updateNomDocteur(+id, updateDocteurDto.nomDocteur);
+  }
+  @Get('absents/periode')
+@UseGuards(JwtAuthGuard)
+async getAbsentsByPeriode(
+  @Query('dateDebut') dateDebut: string,
+  @Query('dateFin') dateFin: string,
+) {
+  return this.statutService.getAbsentsByPeriode(dateDebut, dateFin);
+}
 }

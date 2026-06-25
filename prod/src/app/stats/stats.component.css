@@ -4,7 +4,7 @@
 .stats-container {
   padding: 2rem;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #0a3bbf 100%);
 }
 
 /* ============================================ */
@@ -52,7 +52,7 @@
 .filter-header svg {
   width: 24px;
   height: 24px;
-  color: #667eea;
+  color: #04219e;
   flex-shrink: 0;
 }
 
@@ -92,8 +92,8 @@
 
 .filter-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #04219e;
+  box-shadow: 0 0 0 3px rgba(4, 33, 158, 0.1);
 }
 
 .filter-actions {
@@ -118,13 +118,13 @@
 }
 
 .btn-filter {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #1d9e75 100%);
   color: white;
 }
 
 .btn-filter:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 12px rgba(4, 33, 158, 0.3);
 }
 
 .btn-filter:disabled {
@@ -134,15 +134,15 @@
 
 .btn-reset {
   background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
+  color: #04219e;
+  border: 2px solid #04219e;
 }
 
 .btn-reset:hover:not(:disabled) {
-  background: #667eea;
+  background: #04219e;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 12px rgba(4, 33, 158, 0.3);
 }
 
 .btn-filter svg,
@@ -168,7 +168,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #1d9e75 100%);
   color: white;
   border: none;
   border-radius: 10px;
@@ -182,7 +182,7 @@
 
 .btn-retour:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6px 12px rgba(4, 33, 158, 0.3);
 }
 
 .btn-retour svg {
@@ -223,7 +223,7 @@
   width: 60px;
   height: 60px;
   border: 5px solid #e5e7eb;
-  border-top-color: #667eea;
+  border-top-color: #04219e;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -250,7 +250,7 @@
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #1d9e75 100%);
   border-radius: 50%;
   margin-bottom: 1.5rem;
 }
@@ -301,6 +301,7 @@
   padding: 1.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  border-top: 3px solid #1d9e75;
 }
 
 .sidebar-card:hover {
@@ -320,7 +321,7 @@
 .card-header svg {
   width: 20px;
   height: 20px;
-  color: #667eea;
+  color: #04219e;
   flex-shrink: 0;
 }
 
@@ -366,7 +367,7 @@
 .pcs-value {
   font-size: 3rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #1d9e75 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -441,7 +442,7 @@
 }
 
 .personnel-item.total {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #0a3bbf 100%);
   color: white;
 }
 
@@ -851,7 +852,7 @@
   align-items: center;
   padding: 1.5rem 2rem;
   border-bottom: 2px solid #e5e7eb;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #04219e 0%, #1d9e75 100%);
   border-radius: 16px 16px 0 0;
 }
 
@@ -1412,7 +1413,7 @@
   font-weight: 600;
   font-size: 0.875rem;
   color: #334155;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #04219e;
 }
 
 .m7-references-header svg {
@@ -1535,9 +1536,9 @@
 
 /* Indicateur de colonne active */
 .m7-references-table thead th:nth-child(6) {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  border-bottom: 2px solid #667eea;
+  background: rgba(4, 33, 158, 0.1);
+  color: #04219e;
+  border-bottom: 2px solid #04219e;
 }
 
 /* ============================================ */
@@ -1627,7 +1628,7 @@
 
 .filter-badge {
   margin-left: auto;
-  background: #667eea;
+  background: linear-gradient(135deg, #04219e, #1d9e75);
   color: white;
   border-radius: 999px;
   font-size: 0.7rem;
@@ -1667,7 +1668,7 @@
 
 .ligne-search-input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #04219e;
   background: white;
 }
 
@@ -1691,13 +1692,13 @@
 }
 
 .btn-select-all {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #04219e;
+  color: #04219e;
   background: transparent;
 }
 
 .btn-select-all:hover {
-  background: #667eea;
+  background: #04219e;
   color: white;
 }
 
@@ -1730,7 +1731,7 @@
   width: 5px;
 }
 .ligne-list::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: linear-gradient(180deg, #04219e, #4ade80);
   border-radius: 4px;
 }
 
@@ -1753,7 +1754,7 @@
 }
 
 .ligne-item.selected {
-  background: #eef2ff;
+  background: #eef3ff;
 }
 
 .ligne-checkbox {
@@ -1769,8 +1770,8 @@
 }
 
 .ligne-checkbox.checked {
-  background: #667eea;
-  border-color: #667eea;
+  background: #04219e;
+  border-color: #04219e;
 }
 
 .ligne-checkbox.checked svg {
@@ -1790,7 +1791,7 @@
 }
 
 .ligne-item.selected .ligne-name {
-  color: #4338ca;
+  color: #0a3bbf;
   font-weight: 600;
 }
 
@@ -1816,16 +1817,16 @@
   gap: 0.4rem;
   margin-top: 0.6rem;
   padding: 0.4rem 0.6rem;
-  background: #eef2ff;
+  background: #eef3ff;
   border-radius: 6px;
   font-size: 0.75rem;
-  color: #4338ca;
+  color: #0a3bbf;
   font-weight: 600;
 }
 
 .filter-active-info svg {
   flex-shrink: 0;
-  color: #667eea;
+  color: #04219e;
 }
 
 /* ============================================ */
@@ -1833,7 +1834,7 @@
 /* ============================================ */
 .filter-active-badge {
   margin-left: auto;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #04219e, #1d9e75);
   color: white;
   font-size: 0.65rem;
   font-weight: 700;
@@ -1844,7 +1845,7 @@
 }
 
 .productivity-card.filtered {
-  border: 2px solid #667eea;
+  border: 2px solid #04219e;
 }
 
 .filter-scope-info {
@@ -1852,13 +1853,13 @@
   align-items: center;
   gap: 0.35rem;
   font-size: 0.75rem;
-  color: #667eea;
+  color: #04219e;
   font-weight: 600;
   margin: 0.25rem 0 0.5rem;
 }
 
 .filter-scope-info svg {
-  color: #667eea;
+  color: #04219e;
 }
 
 /* ============================================ */
@@ -1881,9 +1882,9 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  background: linear-gradient(135deg, #667eea22, #764ba222);
-  border: 1.5px solid #667eea55;
-  color: #4338ca;
+  background: linear-gradient(135deg, #04219e22, #0a3bbf22);
+  border: 1.5px solid #04219e55;
+  color: #0a3bbf;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 12px;

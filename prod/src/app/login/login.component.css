@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -37,9 +36,19 @@
    ======================================== */
 body,
 .min-h-screen,
-.flex.items-center.justify-center.min-h-screen {
+.split-screen-wrapper {
   background: #eef2fb !important;
   background-color: #eef2fb !important;
+}
+
+.split-screen-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
 /* Image de fond atténuée */
@@ -53,170 +62,217 @@ body,
    ======================================== */
 .card-container {
   width: 100%;
-  max-width: 1400px;
-  min-height: 750px;
-  perspective: 1500px;
+  max-width: 1280px;
+  min-height: 700px;
+  perspective: 1800px;
   padding: 1.5rem;
+  animation: page-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .flip {
   transform-style: preserve-3d;
-  transition: transform 1s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transition: transform 0.85s cubic-bezier(0.45, 0.05, 0.15, 1);
   position: relative;
   width: 100%;
-  min-height: 750px;
+  min-height: 700px;
 }
 
 .flipped { transform: rotateY(180deg); }
 
 /* ========================================
-   FACE — CARTE BLANCHE
-   Écrase bg-gray-900/85 backdrop-blur-md
+   FACE — CARTE SPLIT SCREEN
    ======================================== */
 .face,
-.face.front,
-.face.back,
-.bg-gray-900\/85 {
+.split-card {
   background-color: #ffffff !important;
-  background: #ffffff !important;
-  --tw-bg-opacity: 1 !important;
   border-radius: 22px !important;
   border: 1.5px solid #e2e8f0 !important;
   box-shadow:
-    0 8px 32px rgba(26,63,160,0.12),
+    0 10px 40px rgba(26,63,160,0.13),
     0 2px 8px rgba(0,0,0,0.06) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
 }
 
 .face {
   position: absolute !important;
   width: 100% !important;
-  min-height: 750px !important;
+  min-height: 700px !important;
   backface-visibility: hidden !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
+  overflow: hidden !important;
 }
 
 .back { transform: rotateY(180deg) !important; }
 
 /* ========================================
-   HEADER SELECTOR
+   PANNEAU GAUCHE — NAVY FIXE
    ======================================== */
-.login-type-selector {
-  background: linear-gradient(135deg, #15803d 0%, #16a34a 60%, #22c55e 100%) !important;
-  padding: 1.25rem 2rem !important;
-  border-bottom: none !important;                    /* ← on retire le trait gris */
-  border-radius: 22px 22px 0 0 !important;
-  box-shadow: 0 4px 16px rgba(22,163,74,0.25) !important;
+.brand-panel {
+  width: 38%;
+  min-width: 340px;
+  background: linear-gradient(160deg, #1a3fa0 0%, #15327f 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2.75rem 2.5rem;
+  position: relative;
+  color: #ffffff;
+  overflow-y: auto;
 }
 
-/* ========================================
-   BOUTONS ROLES
-   ======================================== */
-.type-button {
-  padding: 0.75rem 1.75rem !important;
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  font-size: 1rem !important;
-  transition: all 0.25s ease !important;
-  min-width: 165px !important;
-  cursor: pointer !important;
+/* léger motif radial discret pour la profondeur */
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 85% 8%, rgba(34,160,75,0.18), transparent 45%),
+    radial-gradient(circle at 10% 95%, rgba(255,255,255,0.06), transparent 50%);
+  pointer-events: none;
 }
 
-.type-button.admin {
-  background: #1a3fa0 !important;
-  color: #ffffff !important;
-  border: 2px solid #1a3fa0 !important;
-  box-shadow: 0 4px 14px rgba(26,63,160,0.40) !important;
-}
-.type-button.admin:hover {
-  background: #122d78 !important;
-  transform: translateY(-1px) !important;
+.brand-panel-top,
+.brand-panel-middle,
+.brand-panel-bottom {
+  position: relative;
+  z-index: 1;
 }
 
-
-.type-button.user {
-  background: #1a3fa0 !important;
-  color: #ffffff !important;
-  border: 2px solid #1a3fa0 !important;
-  box-shadow: 0 4px 14px rgba(26,63,160,0.40) !important;
-}
-.type-button.user:hover {
-  background: #122d78 !important;
-  transform: translateY(-1px) !important;
-}
-
-.type-button.inactive {
-  background: rgba(255,255,255,0.20) !important;
-  color: #ffffff !important;
-  border: 1.5px solid rgba(255,255,255,0.40) !important;
-  box-shadow: none !important;
-}
-.type-button.inactive:hover {
-  background: rgba(255,255,255,0.32) !important;
-  color: #ffffff !important;
-  border-color: rgba(255,255,255,0.65) !important;
-}
-
-/* ========================================
-   LOGO
-   ======================================== */
 .logo-seraf {
-  height: 90px !important;
+  height: 56px !important;
   width: auto !important;
   object-fit: contain !important;
   background-color: #ffffff !important;
-  border-radius: 12px !important;
-  padding: 8px 18px !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+  border-radius: 10px !important;
+  padding: 6px 14px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important;
 }
 
-.logo-seraf-wrapper {
-  width: 360px !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
+.brand-panel-middle {
+  margin: auto 0;
+  padding: 2rem 0;
+}
+
+.brand-title {
+  font-family: 'Syne', sans-serif !important;
+  font-size: clamp(1.65rem, 2.4vw, 2.15rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  margin: 0 0 1rem 0 !important;
+  letter-spacing: -0.01em;
+}
+.brand-title span {
+  color: #6ee0a0;
+  font-weight: 800 !important;
+}
+
+.brand-subtitle {
+  font-size: 0.95rem !important;
+  line-height: 1.65 !important;
+  color: rgba(255,255,255,0.75) !important;
+  max-width: 320px;
+  font-weight: 400 !important;
+}
+
+.role-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.role-btn {
+  padding: 0.8rem 1.25rem !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  cursor: pointer !important;
+  border: 1.5px solid rgba(255,255,255,0.25) !important;
+  background: rgba(255,255,255,0.08) !important;
+  color: rgba(255,255,255,0.75) !important;
+  text-align: left;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+.role-btn:hover {
+  background: rgba(255,255,255,0.16) !important;
+  border-color: rgba(255,255,255,0.45) !important;
+  color: #ffffff !important;
+}
+.role-btn.active {
+  background: #ffffff !important;
+  color: #1a3fa0 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.18) !important;
+}
+.role-btn.active.role-btn-green {
+  background: #22a04b !important;
+  color: #ffffff !important;
+  border-color: #22a04b !important;
 }
 
 /* ========================================
-   TITRES
+   PANNEAU DROIT — FORMULAIRE
+   ======================================== */
+.form-panel {
+  flex: 1;
+  padding: 2.75rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.form-panel-inner {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.form-side {
+  flex: 1;
+  min-width: 0;
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.numpad-side {
+  flex-shrink: 0;
+  animation: fade-in-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   TITRE CONNEXION
    ======================================== */
 .neon {
   color: #1a3fa0 !important;
   font-family: 'Syne', sans-serif !important;
-  font-size: clamp(2rem, 3vw, 3rem) !important;
+  font-size: clamp(1.6rem, 2.4vw, 2.1rem) !important;
   font-weight: 800 !important;
-  text-shadow: none !important;
   letter-spacing: -0.02em !important;
+  margin: 0 !important;
 }
 .neon::after {
   content: '';
   display: block;
-  width: 44px;
+  width: 40px;
   height: 4px;
   background: linear-gradient(90deg, #1a3fa0, #22a04b);
   border-radius: 2px;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
-/* Tous les textes gris/blanc sur fond sombre → foncés */
 .text-gray-300 { color: #94a3b8 !important; }
-.text-gray-300.text-xl { color: #94a3b8 !important; font-size: 1rem !important; }
-
-.text-4xl.font-bold.text-indigo-400 {
-  color: #1a3fa0 !important;
-  font-family: 'Syne', sans-serif !important;
-  font-weight: 800 !important;
-}
-.text-2xl.font-bold.text-indigo-400 {
-  color: #1a3fa0 !important;
-  font-family: 'Syne', sans-serif !important;
-  font-weight: 700 !important;
-}
 
 /* ========================================
    INPUTS
@@ -225,20 +281,16 @@ body,
   background: #f8fafc !important;
   border: 1.5px solid #e2e8f0 !important;
   color: #1e293b !important;
-  transition: all 0.2s ease !important;
-  font-size: 1.1rem !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease !important;
+  font-size: 1.05rem !important;
   cursor: pointer !important;
-  min-height: 60px !important;
-  padding: 0.875rem 1.25rem !important;
+  min-height: 56px !important;
+  padding: 0.8rem 1.15rem !important;
   border-radius: 12px !important;
   outline: none !important;
 }
 .input-industrial::placeholder { color: #94a3b8 !important; }
-.input-industrial:focus {
-  border-color: #1a3fa0 !important;
-  box-shadow: 0 0 0 4px rgba(26,63,160,0.09) !important;
-  background: #ffffff !important;
-}
+.input-industrial:focus,
 .input-industrial.active {
   border-color: #1a3fa0 !important;
   box-shadow: 0 0 0 4px rgba(26,63,160,0.09) !important;
@@ -248,12 +300,13 @@ body,
   border-color: #dc2626 !important;
   box-shadow: 0 0 0 4px rgba(220,38,38,0.08) !important;
   background: #fef2f2 !important;
+  animation: shake 0.4s ease-in-out;
 }
 
 /* ========================================
    ERREURS
    ======================================== */
-.error-message { animation: shake 0.45s ease-in-out; }
+.error-message { animation: shake 0.4s ease-in-out, fade-in-up 0.3s ease both; }
 .text-red-400  { color: #dc2626 !important; }
 .bg-red-500\/20 {
   background: #fef2f2 !important;
@@ -262,8 +315,8 @@ body,
 }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-8px); }
-  75%     { transform: translateX(8px); }
+  25%     { transform: translateX(-6px); }
+  75%     { transform: translateX(6px); }
 }
 
 /* ========================================
@@ -271,35 +324,36 @@ body,
    ======================================== */
 .btn-industrial {
   background: #1a3fa0 !important;
-  padding: 1rem 2rem !important;
+  padding: 0.95rem 2rem !important;
   border-radius: 12px !important;
   color: #ffffff !important;
   font-weight: 700 !important;
-  font-size: 1.1rem !important;
-  letter-spacing: 0.04em !important;
-  transition: all 0.25s ease !important;
-  min-height: 60px !important;
-  box-shadow: 0 4px 16px rgba(26,63,160,0.28) !important;
+  font-size: 1.05rem !important;
+  letter-spacing: 0.03em !important;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease !important;
+  min-height: 56px !important;
+  box-shadow: 0 4px 14px rgba(26,63,160,0.25) !important;
   border: none !important;
   cursor: pointer !important;
 }
 .btn-industrial:hover {
   background: #122d78 !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 8px 24px rgba(26,63,160,0.36) !important;
+  box-shadow: 0 8px 22px rgba(26,63,160,0.34) !important;
 }
+.btn-industrial:active { transform: translateY(0) scale(0.99) !important; }
 
 .btn-industrial-register {
   background: #22a04b !important;
-  padding: 1rem 2rem !important;
+  padding: 0.95rem 2rem !important;
   border-radius: 12px !important;
   color: #ffffff !important;
   font-weight: 700 !important;
-  font-size: 1.1rem !important;
-  letter-spacing: 0.04em !important;
-  transition: all 0.25s ease !important;
-  min-height: 60px !important;
-  box-shadow: 0 4px 16px rgba(34,160,75,0.28) !important;
+  font-size: 1.05rem !important;
+  letter-spacing: 0.03em !important;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease !important;
+  min-height: 56px !important;
+  box-shadow: 0 4px 14px rgba(34,160,75,0.25) !important;
   border: none !important;
   cursor: pointer !important;
 }
@@ -307,6 +361,7 @@ body,
   background: #187a38 !important;
   transform: translateY(-2px) !important;
 }
+.btn-industrial-register:active { transform: translateY(0) scale(0.99) !important; }
 
 /* ========================================
    LIENS BAS DE PAGE
@@ -318,81 +373,68 @@ body,
 .hover\:text-indigo-300:hover { color: #187a38 !important; }
 
 /* ========================================
-   CLAVIER — CONTENEUR
-   Écrase bg-gray-800/70 backdrop-blur-md
+   CLAVIER NUMÉRIQUE
    ======================================== */
-.bg-gray-800\/70 {
-  background-color: #f8fafc !important;
-  background: #f8fafc !important;
-  --tw-bg-opacity: 1 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border: 1.5px solid #e2e8f0 !important;
-}
-
 .numpad-large {
-  width: 360px !important;
+  width: 300px !important;
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
   border-radius: 18px !important;
   box-shadow: 0 4px 16px rgba(26,63,160,0.10) !important;
-  padding: 1.5rem !important;
+  padding: 1.25rem !important;
 }
 
-/* ========================================
-   INDICATEUR & AFFICHEUR
-   ======================================== */
 .current-field-indicator {
   background: #e8edfb !important;
   border: 1.5px solid rgba(26,63,160,0.2) !important;
   border-radius: 10px !important;
-  padding: 0.7rem !important;
-  margin-bottom: 0.875rem !important;
+  padding: 0.6rem !important;
+  margin-bottom: 0.75rem !important;
   text-align: center !important;
+  transition: background 0.2s ease;
 }
 .current-field-text {
   color: #1a3fa0 !important;
   font-weight: 600 !important;
-  font-size: 1.05rem !important;
+  font-size: 0.95rem !important;
 }
 
 .value-display {
   background: #ffffff !important;
   border: 1.5px solid #e2e8f0 !important;
   border-radius: 10px !important;
-  padding: 1rem !important;
-  margin-bottom: 1.25rem !important;
+  padding: 0.85rem !important;
+  margin-bottom: 1.1rem !important;
   text-align: center !important;
-  min-height: 64px !important;
+  min-height: 56px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.5rem !important;
+  font-size: 1.35rem !important;
   font-weight: 700 !important;
   font-family: 'Syne', sans-serif !important;
   letter-spacing: 4px !important;
   color: #1a3fa0 !important;
+  transition: box-shadow 0.2s ease;
 }
 
-/* ========================================
-   TOUCHES CLAVIER
-   ======================================== */
 .numpad-btn-large {
-  min-height: 4.25rem !important;
-  height: 4.25rem !important;
+  min-height: 3.75rem !important;
+  height: 3.75rem !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
-  transition: all 0.12s ease !important;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.625rem !important;
+  font-size: 1.45rem !important;
   font-weight: 700 !important;
   font-family: 'Syne', sans-serif !important;
   border-radius: 10px !important;
   width: 100% !important;
   cursor: pointer !important;
 }
-.numpad-btn-large:active { transform: scale(0.96) !important; }
+.numpad-btn-large:active { transform: scale(0.95) !important; }
 
-/* Chiffres — bg-gray-700/90 */
 .bg-gray-700\/90 {
   background: #ffffff !important;
   color: #1e293b !important;
@@ -408,7 +450,6 @@ body,
   transform: translateY(-1px) !important;
 }
 
-/* Supprimer */
 .bg-red-500 {
   background: #fef2f2 !important;
   color: #dc2626 !important;
@@ -420,7 +461,6 @@ body,
   border-color: #dc2626 !important;
 }
 
-/* Valider */
 .bg-green-500 {
   background: #e8f7ee !important;
   color: #22a04b !important;
@@ -449,16 +489,16 @@ body,
   justify-content: center !important;
   z-index: 2000 !important;
   backdrop-filter: blur(8px) !important;
+  animation: fade-in-up 0.25s ease both;
 }
 .loader {
-  width: 68px !important;
-  height: 68px !important;
+  width: 64px !important;
+  height: 64px !important;
   border: 4px solid #e2e8f0 !important;
   border-top: 4px solid #1a3fa0 !important;
   border-right: 4px solid #22a04b !important;
   border-radius: 50% !important;
-  animation: spin 1s ease-in-out infinite !important;
-  box-shadow: none !important;
+  animation: spin 0.9s ease-in-out infinite !important;
 }
 @keyframes spin {
   0%   { transform: rotate(0deg); }
@@ -473,37 +513,39 @@ body,
 /* ========================================
    RESPONSIVE
    ======================================== */
-@media (max-width: 1024px) {
-  .card-container   { max-width: 96%; min-height: 640px; }
-  .flip             { min-height: 640px; }
-  .type-button      { min-width: 140px; font-size: 0.95rem !important; }
-  .numpad-large     { width: 310px !important; }
-  .numpad-btn-large { min-height: 3.75rem !important; height: 3.75rem !important; font-size: 1.5rem !important; }
-  .input-industrial { font-size: 1rem !important; min-height: 56px !important; }
-  .logo-seraf       { height: 70px !important; }
-  .logo-seraf-wrapper { width: 310px !important; }
+@media (max-width: 1100px) {
+  .card-container { max-width: 96%; }
+  .brand-panel    { width: 34%; min-width: 280px; padding: 2rem 1.75rem; }
+  .form-panel     { padding: 2.25rem 2rem; }
+  .form-panel-inner { gap: 1.75rem; }
+  .numpad-large   { width: 270px !important; }
 }
 
-@media (max-width: 768px) {
-  .card-container   { padding: 0.5rem; min-height: 520px; }
-  .flip             { min-height: 520px; }
-  .type-button      { min-width: 120px; font-size: 0.875rem !important; }
-  .numpad-large     { width: 100% !important; }
-  .numpad-btn-large { min-height: 3.5rem !important; height: 3.5rem !important; font-size: 1.375rem !important; }
-  .input-industrial { font-size: 0.975rem !important; min-height: 52px !important; }
-  .btn-industrial, .btn-industrial-register { font-size: 1rem !important; min-height: 54px !important; }
-  .logo-seraf       { height: 52px !important; }
-  .logo-seraf-wrapper { width: auto !important; }
+@media (max-width: 900px) {
+  .face            { flex-direction: column !important; overflow-y: auto !important; }
+  .card-container  { min-height: auto; }
+  .flip            { min-height: auto; }
+  .face            { position: relative !important; min-height: auto !important; }
+
+  .brand-panel     { width: 100%; min-width: 0; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 1.5rem 1.75rem; gap: 1rem; }
+  .brand-panel-middle { display: none; }
+  .brand-panel-bottom { flex: 1; }
+  .role-toggle     { flex-direction: row; flex-wrap: wrap; }
+  .role-btn        { flex: 1; text-align: center; min-width: 140px; }
+
+  .form-panel-inner { flex-direction: column; }
+  .numpad-side     { width: 100%; }
+  .numpad-large    { width: 100% !important; }
 }
 
 @media (max-width: 480px) {
-  .card-container   { padding: 0.25rem; min-height: 400px; }
-  .flip             { min-height: 400px; }
-  .type-button      { min-width: 105px; font-size: 0.8rem !important; }
-  .numpad-btn-large { min-height: 3rem !important; height: 3rem !important; font-size: 1.125rem !important; }
-  .btn-industrial, .btn-industrial-register { font-size: 0.9rem !important; min-height: 48px !important; }
-  .input-industrial { font-size: 0.875rem !important; min-height: 46px !important; }
-  .logo-seraf       { height: 42px !important; }
+  .brand-panel       { padding: 1.25rem; }
+  .logo-seraf        { height: 42px !important; }
+  .form-panel        { padding: 1.5rem 1.25rem; }
+  .input-industrial  { font-size: 0.95rem !important; min-height: 50px !important; }
+  .btn-industrial, .btn-industrial-register { font-size: 0.95rem !important; min-height: 50px !important; }
+  .numpad-btn-large  { min-height: 3.25rem !important; height: 3.25rem !important; font-size: 1.2rem !important; }
+  .grid.grid-cols-2.gap-4 { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
 }
 
 /* ========================================

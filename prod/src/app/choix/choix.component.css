@@ -698,3 +698,109 @@ select.form-input optgroup {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* ════════════════════════════════
+   BANDEAU D'AVERTISSEMENT ROUGE
+════════════════════════════════ */
+
+.warning-banner {
+  margin: 12px 2rem 0 2rem;
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border-radius: 14px;
+  padding: 4px;
+  box-shadow: 0 6px 24px rgba(220, 38, 38, 0.35);
+  animation: warningPulse 2s ease-in-out infinite;
+  border: 2px solid #fca5a5;
+}
+
+@keyframes warningPulse {
+  0%, 100% { box-shadow: 0 6px 24px rgba(220, 38, 38, 0.35); }
+  50% { box-shadow: 0 6px 40px rgba(220, 38, 38, 0.60); }
+}
+
+.warning-content {
+  background: #7f1d1d;
+  border-radius: 11px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.warning-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  animation: warningShake 1.5s ease-in-out infinite;
+}
+
+@keyframes warningShake {
+  0%, 100% { transform: rotate(0deg); }
+  5% { transform: rotate(12deg); }
+  10% { transform: rotate(-12deg); }
+  15% { transform: rotate(8deg); }
+  20% { transform: rotate(-8deg); }
+  25% { transform: rotate(4deg); }
+  30% { transform: rotate(-4deg); }
+  35% { transform: rotate(0deg); }
+}
+
+.warning-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+
+.warning-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fecaca;
+  letter-spacing: 1px;
+}
+
+.warning-message {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.warning-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.warning-close:hover {
+  background: rgba(255, 255, 255, 0.30);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .warning-banner {
+    margin: 10px 1rem 0 1rem;
+  }
+  .warning-content {
+    padding: 14px 18px;
+    gap: 12px;
+  }
+  .warning-icon {
+    font-size: 1.8rem;
+  }
+  .warning-title {
+    font-size: 1rem;
+  }
+  .warning-message {
+    font-size: 0.95rem;
+  }
+}

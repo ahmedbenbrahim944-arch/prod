@@ -64,6 +64,9 @@ export class AuthService {
           else if (matricule === '1922') {
             this.router.navigate(['/lan']);
           }
+          else if (matricule === '0001') {
+            this.router.navigate(['/absents']);
+          }
           else if (matricule === this.SPECIAL_MATRICULE_LISTP) {
             this.router.navigate(['/listP']);
           }

@@ -17,6 +17,7 @@ import { GetStats5MDateDto } from './dto/get-stats-5m-date.dto';
 import { StatutOuvrier } from 'src/statut/entities/statut-ouvrier.entity';
 import { GetStatsPeriodeDto } from './dto/get-stats-periode.dto';
 import { PlanningSelection } from 'src/planning-selection/entities/planning-selection.entity';
+import { GetStatsSelectionDto } from './dto/get-stats-selection.dto';
 
 @Injectable()
 export class StatsService {
@@ -1681,5 +1682,95 @@ export class StatsService {
   async getAllStats(semaine?: string) { /* à implémenter si besoin */ }
   private buildPosteWhere(poste?: string): Pick<Planification, 'poste'> | Record<string, never> {
   return poste ? { poste } : {};
+}
+async getStatsPersonnesSelection(dto: GetStatsSelectionDto): Promise<any> {
+  const { dateDebut, dateFin } = dto;
+ 
+  // ── Validation des dates ───────────────────────────────────────────────────
+  const debut = new Date(dateDebut);
+  const fin   = new Date(dateFin);
+ 
+  if (isNaN(debut.getTime()) || isNaN(fin.getTime())) {
+    throw new BadRequestException('Format de date invalide');
+  }
+  if (debut > fin) {
+    throw new BadRequestException('La date de début doit être avant la date de fin');
+  }
+ 
+  // ── Récupérer tous les plannings de la période ─────────────────────────────
+  // On ramène uniquement les colonnes utiles (date + matricule + nomPrenom)
+  // pour limiter la charge mémoire.
+  const plannings = await this.planningSelectionRepository
+    .createQueryBuilder('ps')
+    .select('ps.date',      'date')
+    .addSelect('ps.matricule', 'matricule')
+    .addSelect('ps.nomPrenom', 'nomPrenom')
+    .where('ps.date BETWEEN :dateDebut AND :dateFin', { dateDebut, dateFin })
+    .orderBy('ps.date', 'ASC')
+    .addOrderBy('ps.matricule', 'ASC')
+    .getRawMany();
+ 
+  // ── Détail par jour ────────────────────────────────────────────────────────
+  // Map<date, Map<matricule, nomPrenom>>
+  const parJourMap = new Map<string, Map<number, string>>();
+ 
+  for (const row of plannings) {
+    const date      = row.date as string;         // format YYYY-MM-DD
+    const matricule = Number(row.matricule);
+    const nomPrenom = row.nomPrenom as string;
+ 
+    if (!parJourMap.has(date)) {
+      parJourMap.set(date, new Map());
+    }
+    // Set garantit l'unicité par matricule pour ce jour
+    parJourMap.get(date)!.set(matricule, nomPrenom);
+  }
+ 
+  // Formater le détail par jour (trié chronologiquement)
+  const detailParJour = [...parJourMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, ouvrierMap]) => ({
+      date,
+      nombrePersonnes: ouvrierMap.size,
+      ouvriers: [...ouvrierMap.entries()].map(([matricule, nomPrenom]) => ({
+        matricule,
+        nomPrenom,
+      })),
+    }));
+ 
+  // ── Total global : matricules distincts sur toute la période ───────────────
+  const matriculesDistincts = new Map<number, string>();
+  for (const row of plannings) {
+    matriculesDistincts.set(Number(row.matricule), row.nomPrenom as string);
+  }
+ 
+  const totalPersonnesDistinctes = plannings.length;
+ 
+  // ── Moyenne journalière ────────────────────────────────────────────────────
+  const nombreJours = detailParJour.length; // jours qui ont au moins 1 entrée
+  const moyenneParJour =
+    nombreJours > 0
+      ? Number((totalPersonnesDistinctes / nombreJours).toFixed(2))
+      : 0;
+ 
+  // ── Réponse ────────────────────────────────────────────────────────────────
+  return {
+    message: `Statistiques personnes en sélection du ${dateDebut} au ${dateFin}`,
+    periode: {
+      dateDebut,
+      dateFin,
+      dateCalcul: new Date().toISOString(),
+    },
+    global: {
+      totalPersonnesDistinctes,
+  totalAffectations: plannings.length,
+  nombreJoursAvecActivite: nombreJours,
+  moyennePersonnesParJour: moyenneParJour,
+  listeOuvriersDistincts: [...matriculesDistincts.entries()].map(
+    ([matricule, nomPrenom]) => ({ matricule, nomPrenom }),
+      ),
+    },
+    detailParJour,
+  };
 }
 }

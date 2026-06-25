@@ -1,123 +1,46 @@
 <div class="page-container">
-  <div class="slide-wrapper">
 
-    <!-- ══ Slide indicator ══ -->
-    <div class="slide-indicator">
-      <span class="dot" [class.active]="currentSlide === 0"></span>
-      <span class="dot" [class.active]="currentSlide === 1"></span>
+  <div class="main-wrapper">
+
+    <!-- Corps -->
+    <div class="note-body">
+
+      <!-- Images côte à côte -->
+      <div class="images-row">
+        <div class="image-card">
+          <img src="assets/images/verain1.jpg" alt="Vérin de sécurité 1" />
+        </div>
+        <div class="image-card">
+          <img src="assets/images/verain2.png" alt="Vérin de sécurité 2" />
+        </div>
+      </div>
+
+      <!-- Message d'avertissement -->
+      <div class="warning-box">
+        <span class="warning-icon">⚠️</span>
+        <span class="warning-text">
+          تحذير — لا تلمس القطعة إلا بعد التأكد من أن vérin de sécurité (الدائرة الحمراء في الصورة) موجودا
+        </span>
+      </div>
+
     </div>
 
-    <!-- ══════════ SLIDE 1 ══════════ -->
-    <div class="slide slide-1" [class.active]="currentSlide === 0">
-      <div class="main-wrapper">
-
-        <!-- FR header -->
-        <div class="header-bar">
-          <div class="header-logo">NS</div>
-          <div class="header-titles">
-            <span class="header-main">Note de Service</span>
-            <span class="header-sub">Seraf Tunisie — Direction Générale</span>
-          </div>
-          <div class="header-date">20 / 05 / 2026</div>
-        </div>
-
-        <!-- FR body -->
-        <div class="notices-wrapper">
-          <p class="intro-text">
-            La société <strong>Seraf Tunisie</strong> informe l'ensemble du personnel que le congé de
-            l'Aïd El-Adha est fixé <strong>du mardi 26/05/2026 au dimanche 31/05/2026</strong>.
-          </p>
-          <div class="highlight-bar">
-            La reprise normale du travail est prévue pour le <strong>lundi 01/06/2026</strong>.
-          </div>
-          <p class="closing-text">La Direction souhaite à tout le personnel un <strong>Aïd Moubarak</strong>.</p>
-        </div>
-
-        <!-- AR body -->
-        <div class="divider"></div>
-        <div class="notices-wrapper rtl">
-          <p class="intro-text">
-            تُعلم شركة <strong>سيراف</strong> كافة العاملين أن عطلة عيد الأضحى المبارك ستكون من
-            <strong>يوم الثلاثاء 26/05/2026 إلى غاية يوم الأحد 31/05/2026</strong>.
-          </p>
-          <div class="highlight-bar">
-            وسيتم استئناف العمل بصفة عادية يوم <strong>الاثنين 01/06/2026</strong>.
-          </div>
-          <p class="closing-text">وتتقدم الإدارة إلى كافة العاملين بأحرّ التهاني بمناسبة عيد الأضحى.</p>
-        </div>
-
-        <div class="footer-note">
-          <span class="footer-text">Ressources Humaines · الموارد البشرية</span>
-          <span class="footer-sep">—</span>
-          <span class="footer-sub">Seraf Tunisie</span>
-          <span class="footer-sig">Directeur Général</span>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ══════════ SLIDE 2 ══════════ -->
-    <div class="slide slide-2" [class.active]="currentSlide === 1">
-      <div class="main-wrapper">
-
-        <!-- FR header -->
-        <div class="header-bar header-bar--warn">
-          <div class="header-logo">NS</div>
-          <div class="header-titles">
-            <span class="header-main">Note de Service — Organisation Aïd</span>
-            <span class="header-sub">Seraf Tunisie — Direction Générale</span>
-          </div>
-          <div class="header-date">20 / 05 / 2026</div>
-        </div>
-
-        <!-- FR body -->
-        <div class="notices-wrapper">
-          <p class="intro-text">
-            La société <strong>Seraf Tunisie</strong> informe l'ensemble du personnel que l'organisation du travail
-            durant la période de l'Aïd est planifiée comme suit :
-          </p>
-          <ul class="schedule-list">
-            <li><span class="tag tag-y">Samedi 23/05</span> 6 heures de production planifiées. Horaires communiqués dès confirmation des bus.</li>
-            <li><span class="tag tag-y">Lundi 25/05</span> Reprise normale avec 8 heures de production planifiées.</li>
-            <li><span class="tag tag-r">Mardi 26/05 (Export)</span> Opération d'export à 09h00 — présence obligatoire de 4 magasiniers (personnes contactées directement).</li>
-          </ul>
-          <div class="alert-bar">
-            <strong>Rappel important :</strong> Toute absence injustifiée entraînera la suppression de la prime de productivité du 3<sup>e</sup> mois qui suit l'Aïd.
-          </div>
-          <p class="closing-text">Nous vous remercions pour votre engagement et votre rigueur.</p>
-        </div>
-
-        <!-- AR body -->
-        <div class="divider"></div>
-        <div class="notices-wrapper rtl">
-          <p class="intro-text">
-            تُعلم شركة <strong>سيراف</strong> كافة العاملين أن تنظيم العمل خلال فترة عيد الأضحى المبارك سيكون وفق البرنامج التالي:
-          </p>
-          <ul class="schedule-list">
-            <li><span class="tag tag-y">2026/05/23 السبت</span> برمجة 6 ساعات عمل، وسيتم إعلامكم بالتوقيت المحدد فور تأكيد جاهزية وسائل النقل (الحافلات).</li>
-            <li><span class="tag tag-y">2026/05/25 الاثنين</span> استئناف النشاط بصفة عادية مع برمجة 8 ساعات عمل إنتاجية.</li>
-            <li><span class="tag tag-r">2026/05/26 الثلاثاء (قسم التصدير)</span> تمت برمجة عملية التصدير على الساعة التاسعة صباحاً، وسيتم الاتصال بالمعنيين مباشرة.</li>
-          </ul>
-          <div class="alert-bar">
-            <strong>تذكير هام:</strong> عند الالتزام بالحضور خلال التوقيت المحدد أمراً إلزامياً، وطبقاً للإجراءات المعمول بها، فإن كل غياب غير مبرر سيترتب عنه إلغاء منحة الإنتاجية لمدة ثلاثة أشهر التالية للعيد.
-          </div>
-          <p class="closing-text">نشكر لكم حسن تعاونكم والتزامكم المتواصل، ونتمنى لكم عيد أضحى مباركاً وأنتم بخير.</p>
-        </div>
-
-        <div class="footer-note">
-          <span class="footer-text">Ressources Humaines · الموارد البشرية</span>
-          <span class="footer-sep">—</span>
-          <span class="footer-sub">Seraf Tunisie</span>
-          <span class="footer-sig">Directeur Général</span>
-        </div>
-
-      </div>
+    <!-- Footer -->
+    <div class="footer-note">
+      <span class="footer-text">Ressources Humaines · الموارد البشرية</span>
+      <span class="footer-sep">—</span>
+      <span class="footer-sub">Seraf Tunisie</span>
+      <span class="footer-sig">Directeur Général</span>
     </div>
 
   </div>
 
   <!-- Progress bar -->
   <div class="progress-track">
-    <div class="progress-fill" [style.transition]="progressTransition" [style.width]="progressWidth"></div>
+    <div class="progress-fill"
+         [style.transition]="progressTransition"
+         [style.width]="progressWidth">
+    </div>
   </div>
+
 </div>

@@ -129,4 +129,10 @@ export class AffectationService {
       { headers: this.headers() }
     );
   }
+  getPointagesToday(): Observable<{ total: number; presents: any[]; absents: any[] }> {
+  return this.http.get<{ total: number; presents: any[]; absents: any[] }>(
+    `${this.api}/pointage/today`,
+    { headers: this.headers() }
+  );
+}
 }

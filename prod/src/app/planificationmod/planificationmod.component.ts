@@ -414,20 +414,16 @@ export class PlanificationmodComponent implements OnInit {
   }
 
   // ✅ Méthode startEdit modifiée : vérifie si OF existe
-  startEdit(ref: ReferenceRow, day: string, poste: string): void {
-    const ofValue = this.getOfForRef(ref, poste);
-    
-    // Vérifier si OF existe et n'est pas vide
-    if (!ofValue || ofValue.trim() === '') {
-      // OF manquant → demander de le saisir d'abord
-      this.pendingEdit = { ref, day, poste };
-      this.tempOfValue = '';
-      this.showOfPrompt = true;
-    } else {
-      // OF existe → éditer M directement
-      this.doStartEdit(ref, day, poste);
-    }
-  }
+  // ✅ APRÈS — toujours afficher le prompt OF
+startEdit(ref: ReferenceRow, day: string, poste: string): void {
+  this.pendingEdit = { ref, day, poste };
+  
+  // Pré-remplir avec l'OF existant si disponible
+  const existingOf = this.getOfForRef(ref, poste);
+  this.tempOfValue = existingOf || '';
+  
+  this.showOfPrompt = true;
+}
 
   // Édition directe de M
   private doStartEdit(ref: ReferenceRow, day: string, poste: string): void {
@@ -443,54 +439,51 @@ export class PlanificationmodComponent implements OnInit {
   }
 
   // Sauvegarder OF puis ouvrir l'édition de M
-  saveOfAndContinue(): void {
-    if (!this.pendingEdit) return;
-    
-    const { ref, day, poste } = this.pendingEdit;
-    const newOf = this.tempOfValue;
-    
-    if (!newOf || newOf.trim() === '') {
-      this.errorMessage = 'Veuillez saisir un OF valide';
-      setTimeout(() => this.errorMessage = '', 3000);
-      return;
-    }
-    
-    // Mise à jour locale immédiate
-    for (const d of this.weekDays) {
-      const entry = this.getDayEntry(ref, d, poste);
-      if (entry) {
-        entry.of = newOf;
-      }
-    }
-    
-    const payload = {
-      semaine: this.selectedSemaine,
-      ligne: ref.ligne,
-      reference: ref.reference,
-      poste: poste,
-      of: newOf
-    };
-    
-    this.savingKey = `${ref.reference}|${ref.ligne}|${poste}`;
-    
-    this.semaineService.updatePlanificationByCriteria(payload).subscribe({
-      next: () => {
-        this.savingKey = null;
-        this.showOfPrompt = false;
-        this.pendingEdit = null;
-        this.tempOfValue = '';
-        // Après sauvegarde OF, ouvrir l'édition de M
-        this.doStartEdit(ref, day, poste);
-        this.showSuccess('OF sauvegardé ✓');
-      },
-      error: (err) => {
-        console.error('Erreur sauvegarde OF:', err);
-        this.errorMessage = 'Erreur lors de la saisie du OF';
-        this.savingKey = null;
-        setTimeout(() => this.errorMessage = '', 3000);
-      }
-    });
+ saveOfAndContinue(): void {
+  if (!this.pendingEdit) return;
+  
+  const { ref, day, poste } = this.pendingEdit;
+  const newOf = this.tempOfValue;
+  
+  if (!newOf || newOf.trim() === '') {
+    this.errorMessage = 'Veuillez saisir un OF valide';
+    setTimeout(() => this.errorMessage = '', 3000);
+    return;
   }
+  
+  // Mise à jour locale
+  for (const d of this.weekDays) {
+    const entry = this.getDayEntry(ref, d, poste);
+    if (entry) entry.of = newOf;
+  }
+  
+  const payload = {
+    semaine: this.selectedSemaine,
+    ligne: ref.ligne,
+    reference: ref.reference,
+    poste: poste,
+    of: newOf
+  };
+  
+  this.savingKey = `${ref.reference}|${ref.ligne}|${poste}`;
+  
+  this.semaineService.updatePlanificationByCriteria(payload).subscribe({
+    next: () => {
+      this.savingKey = null;
+      this.showOfPrompt = false;
+      this.pendingEdit = null;
+      this.tempOfValue = '';
+      this.doStartEdit(ref, day, poste); // ← ouvre ensuite l'édition M
+      this.showSuccess('OF confirmé ✓');
+    },
+    error: (err) => {
+      console.error('Erreur sauvegarde OF:', err);
+      this.errorMessage = 'Erreur lors de la saisie du OF';
+      this.savingKey = null;
+      setTimeout(() => this.errorMessage = '', 3000);
+    }
+  });
+}
 
   cancelOfPrompt(): void {
     this.showOfPrompt = false;

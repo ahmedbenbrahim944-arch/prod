@@ -26,6 +26,8 @@ interface OuvrierRow extends Ouvrier {
   availablePhases: string[];
   loadingPhases: boolean;
   liveTotal: number;
+  pointageStatut: 'present' | 'absent' | 'unknown'; 
+  heurePointage: string | null; 
 }
 
 // ── Nouveau : stat par bus ──────────────────────────────────────────────────
@@ -70,6 +72,8 @@ export class AffectationComponent implements OnInit {
   viewMode: 'table' | 'grouped' = 'table';
   selectedLigne: string = '';
   selectedBus: string = '';
+  private pointageInterval: any;
+presentesMatricules = new Map<number, string | null>();
 
   constructor(
     private svc: AffectationService,
@@ -77,7 +81,52 @@ export class AffectationComponent implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {}
 
-  ngOnInit(): void { this.loadData(); }
+  ngOnInit(): void {
+  this.loadData();
+  // rafraîchissement auto toutes les 30 secondes
+  this.pointageInterval = setInterval(() => {
+    this.loadPointages();
+  }, 30000);
+}
+
+ngOnDestroy(): void {
+  if (this.pointageInterval) {
+    clearInterval(this.pointageInterval);
+  }
+}
+loadPointages(): void {
+  this.svc.getPointagesToday().subscribe({
+    next: (data) => {
+      this.presentesMatricules.clear();
+      data.presents.forEach(p => {
+        // formater heure ex: "06:31"
+        const heure = p.heureEntree
+          ? new Date(p.heureEntree).toLocaleTimeString('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : null;
+        this.presentesMatricules.set(p.matricule, heure);
+      });
+
+      // mettre à jour chaque ouvrier
+      this.rows.forEach(row => {
+        if (this.presentesMatricules.has(row.matricule)) {
+          row.pointageStatut = 'present';
+          row.heurePointage = this.presentesMatricules.get(row.matricule) ?? null;
+        } else {
+          row.pointageStatut = 'absent';
+          row.heurePointage = null;
+        }
+      });
+
+      this.cdr.markForCheck();
+    },
+    error: () => {
+      console.warn('Erreur chargement pointages');
+    }
+  });
+}
 
   // ── Chargement ─────────────────────────────────────────────────────────────
 
@@ -118,10 +167,13 @@ export class AffectationComponent implements OnInit {
             availablePhases: [],
             loadingPhases: false,
             liveTotal: 0,
+            pointageStatut: 'unknown',  
+            heurePointage: null,  
           };
         });
 
         this.loading = false;
+        this.loadPointages();
         this.cdr.markForCheck();
       },
       error: () => {
@@ -304,20 +356,23 @@ export class AffectationComponent implements OnInit {
 
   exporting = false;
 
-  async exportExcel(): Promise<void> {
-    const affectations = this.rows
-      .filter((r) => r.affectation !== null)
-      .map((r) => r.affectation!);
+ async exportExcel(): Promise<void> {
+  const exportRows = this.rows.map((r) => ({
+    matricule:      r.matricule,
+    nomPrenom:      r.nomPrenom,
+    affectation:    r.affectation,
+    pointageStatut: r.pointageStatut, // ← nouveau
+  }));
 
-    if (affectations.length === 0) return;
+  if (exportRows.every(r => r.affectation === null)) return;
 
-    this.exporting = true;
-    try {
-      await this.exportSvc.exportAffectations(affectations);
-    } finally {
-      this.exporting = false;
-    }
+  this.exporting = true;
+  try {
+    await this.exportSvc.exportAffectations(exportRows);
+  } finally {
+    this.exporting = false;
   }
+}
 
   // ── Vue groupée ─────────────────────────────────────────────────────────────
 
@@ -450,4 +505,23 @@ export class AffectationComponent implements OnInit {
     }
     return {};
   }
+  getLignePresents(ligne: string): number {
+  return this.rows.filter(r =>
+    r.affectation?.ligne === ligne &&
+    r.pointageStatut === 'present'
+  ).length;
+}
+
+getLigneAbsents(ligne: string): number {
+  return this.rows.filter(r =>
+    r.affectation?.ligne === ligne &&
+    r.pointageStatut === 'absent'
+  ).length;
+}
+
+getLigneTauxPresence(ligne: string): number {
+  const total = this.getLigneCount(ligne);
+  if (!total) return 0;
+  return Math.round((this.getLignePresents(ligne) / total) * 100);
+}
 }

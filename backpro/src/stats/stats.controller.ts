@@ -23,6 +23,7 @@ import { GetAffectationPersonnelDto } from './dto/get-affectation-personnel.dto'
 import { GetStats5MDateDto } from './dto/get-stats-5m-date.dto';
 import { GetProductiviteOuvriersDto } from './dto/get-productivite-ouvriers.dto';
 import { GetStatsPeriodeDto } from './dto/get-stats-periode.dto';
+import { GetStatsSelectionDto } from './dto/get-stats-selection.dto';
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
 const POSTES_VALIDES = ['poste1', 'poste2'];
@@ -313,4 +314,35 @@ export class StatsController {
     validerPoste(poste);
     return this.statsService.getStatsParPeriode(dateDebut, dateFin, poste);
   }
+  @Post('personnes-selection')
+@UseGuards(JwtAuthGuard)
+@UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+@HttpCode(HttpStatus.OK)
+async getPersonnesSelection(@Body() dto: GetStatsSelectionDto) {
+  return this.statsService.getStatsPersonnesSelection(dto);
+}
+ 
+// ──────────────────────────────────────────────────────────────────────────────
+// GET /stats/personnes-selection?dateDebut=YYYY-MM-DD&dateFin=YYYY-MM-DD
+// ──────────────────────────────────────────────────────────────────────────────
+@Get('personnes-selection')
+@UseGuards(JwtAuthGuard)
+async getPersonnesSelectionQuery(
+  @Query('dateDebut') dateDebut: string,
+  @Query('dateFin')   dateFin: string,
+) {
+  if (!dateDebut || !dateFin) {
+    throw new BadRequestException(
+      'Les paramètres "dateDebut" et "dateFin" sont obligatoires',
+    );
+  }
+  validerDate(dateDebut, 'dateDebut');
+  validerDate(dateFin,   'dateFin');
+ 
+  const dto = new GetStatsSelectionDto();
+  dto.dateDebut = dateDebut;
+  dto.dateFin   = dateFin;
+ 
+  return this.statsService.getStatsPersonnesSelection(dto);
+}
 }

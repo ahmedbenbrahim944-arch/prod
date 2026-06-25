@@ -1731,6 +1731,192 @@
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+/* ============================================================ */
+/* CARTE SÉLECTION — à ajouter à la fin de stats1.component.css */
+/* ============================================================ */
+
+/* ── Carte principale ────────────────────────────────────────── */
+.selection-card {
+  border-top: 4px solid #7c3aed;  /* violet indigo */
+}
+
+/* ── Chiffre principal ───────────────────────────────────────── */
+.selection-main {
+  text-align: center;
+  padding: 1.25rem 0 0.5rem;
+}
+
+.selection-count {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #7c3aed;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.selection-sublabel {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Méta (jours actifs + moyenne) ──────────────────────────── */
+.selection-meta {
+  display: flex;
+  justify-content: space-around;
+  background: #f5f3ff;
+  border-radius: 10px;
+  padding: 0.75rem 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.selection-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.selection-meta-label {
+  font-size: 0.7rem;
+  color: #7c3aed;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.selection-meta-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #4c1d95;
+}
+
+/* ── Bouton accordéon ────────────────────────────────────────── */
+.selection-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0.75rem;
+  margin-top: 0.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #7c3aed;
+  background: transparent;
+  transition: background 0.2s ease;
+  user-select: none;
+}
+
+.selection-toggle:hover {
+  background: #f5f3ff;
+}
+
+.selection-toggle svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.25s ease;
+  color: #7c3aed;
+  flex-shrink: 0;
+}
+
+.selection-toggle svg.rotated {
+  transform: rotate(180deg);
+}
+
+/* ── Liste détail par jour ────────────────────────────────────── */
+.selection-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0 0.25rem;
+  max-height: 200px;
+  overflow-y: auto;
+  /* scrollbar fine */
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5fd #f5f3ff;
+}
+
+.selection-detail-list::-webkit-scrollbar {
+  width: 4px;
+}
+.selection-detail-list::-webkit-scrollbar-thumb {
+  background: #c4b5fd;
+  border-radius: 2px;
+}
+
+.selection-day-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  background: #f5f3ff;
+  transition: background 0.15s;
+}
+
+.selection-day-row:hover {
+  background: #ede9fe;
+}
+
+.selection-day-date {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4c1d95;
+}
+
+.selection-day-badge {
+  background: #7c3aed;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 12px;
+  min-width: 28px;
+  text-align: center;
+}
+
+/* ── État vide ───────────────────────────────────────────────── */
+.selection-empty {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-align: center;
+  padding: 0.5rem;
+  font-style: italic;
+}
+
+/* ── Loading ─────────────────────────────────────────────────── */
+.selection-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  padding: 1rem 0;
+  color: #7c3aed;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.selection-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e9d5ff;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Carte squelette ─────────────────────────────────────────── */
+.selection-card-skeleton {
+  opacity: 0.7;
+}
 
 /* ============================================ */
 /* CORRECTIF 6M - AFFICHAGE SANS SCROLL         */

@@ -249,23 +249,23 @@ export class StatutService {
       let resultat;
       
       if (statutExistant) {
-        // Mettre à jour le statut existant
-        statutExistant.statut = statut;
-        statutExistant.commentaire = commentaire || `Statut manuel: ${this.getLibelleStatut(statut)}`;
-        resultat = await this.statutOuvrierRepository.save(statutExistant);
-        console.log(`Statut mis à jour pour ${matricule}`);
-      } else {
-        // Créer un nouveau statut
-        const nouveauStatut = this.statutOuvrierRepository.create({
-          matricule: updateStatutDto.matricule as any,
-          nomPrenom: nomPrenom || ouvrier.nomPrenom,
-          date,
-          statut,
-          commentaire: commentaire || `Statut manuel: ${this.getLibelleStatut(statut)}`
-        });
-        resultat = await this.statutOuvrierRepository.save(nouveauStatut);
-        console.log(`Nouveau statut créé pour ${matricule}`);
-      }
+  statutExistant.statut = statut;
+  statutExistant.commentaire = commentaire || `Statut manuel: ${this.getLibelleStatut(statut)}`;
+  // 🆕 — on enregistre nomDocteur seulement si AB, sinon on efface
+  statutExistant.nomDocteur = statut === 'AB' ? (updateStatutDto.nomDocteur ?? null) : null;
+  resultat = await this.statutOuvrierRepository.save(statutExistant);
+} else {
+  const nouveauStatut = this.statutOuvrierRepository.create({
+    matricule: updateStatutDto.matricule as any,
+    nomPrenom: nomPrenom || ouvrier.nomPrenom,
+    date,
+    statut,
+    commentaire: commentaire || `Statut manuel: ${this.getLibelleStatut(statut)}`,
+    // 🆕
+    nomDocteur: statut === 'AB' ? (updateStatutDto.nomDocteur ?? null) : null,
+  });
+  resultat = await this.statutOuvrierRepository.save(nouveauStatut);
+}
 
       // 🆕 4. Si le statut est 'S' (Sélection), créer automatiquement une entrée dans planning_selection
       if (statut === 'S') {
@@ -287,6 +287,7 @@ export class StatutService {
           statut: resultat.statut,
           libelleStatut: this.getLibelleStatut(resultat.statut),
           commentaire: resultat.commentaire,
+          nomDocteur: resultat.nomDocteur ?? null,
           createdAt: resultat.createdAt
         }
       };
@@ -854,6 +855,157 @@ async getStatutsByDate(getStatutByDateDto: GetStatutByDateDto) {
  
     throw new InternalServerErrorException(
       `Erreur lors de la recherche du statut: ${error.message}`,
+    );
+  }
+}
+async getAbsentsByDate(date: string) {
+  console.log(`=== RÉCUPÉRATION DES ABSENTS POUR ${date} ===`);
+
+  try {
+    // Valider la date
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      throw new BadRequestException(`Date invalide: ${date}`);
+    }
+
+    const absents = await this.statutOuvrierRepository.find({
+      where: { date, statut: 'AB' },
+      order: { nomPrenom: 'ASC' }
+    });
+
+    return {
+      message: `Ouvriers absents pour le ${date}`,
+      date,
+      nombreAbsents: absents.length,
+      absents: absents.map(s => ({
+        id: s.id,
+        matricule: s.matricule,
+        nomPrenom: s.nomPrenom,
+        date: s.date,
+        statut: s.statut,
+        libelleStatut: this.getLibelleStatut(s.statut),
+        commentaire: s.commentaire ?? null,
+        nomDocteur: s.nomDocteur ?? null,  // 🆕
+        createdAt: s.createdAt
+      }))
+    };
+
+  } catch (error) {
+    console.error(`Erreur dans getAbsentsByDate:`, error);
+
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+
+    throw new InternalServerErrorException(
+      `Erreur lors de la récupération des absents: ${error.message}`
+    );
+  }
+}
+async updateNomDocteur(absenceId: number, nomDocteur: string) {
+  console.log(`=== MISE À JOUR NOM DOCTEUR ===`);
+  console.log(`ID absence: ${absenceId}, Nom docteur: ${nomDocteur}`);
+
+  try {
+    // 1. Vérifier que le statut existe
+    const statutAbsence = await this.statutOuvrierRepository.findOne({
+      where: { id: absenceId }
+    });
+
+    if (!statutAbsence) {
+      throw new NotFoundException(`Absence avec l'ID ${absenceId} non trouvée`);
+    }
+
+    // 2. Vérifier que le statut est bien 'AB' (absent)
+    if (statutAbsence.statut !== 'AB') {
+      throw new BadRequestException(
+        `Impossible d'ajouter un nom de docteur pour un statut qui n'est pas 'Absent'. Statut actuel: ${statutAbsence.statut}`
+      );
+    }
+
+    // 3. Mettre à jour le nom du docteur
+    statutAbsence.nomDocteur = nomDocteur;
+    const statutMisAJour = await this.statutOuvrierRepository.save(statutAbsence);
+
+    return {
+      message: `Nom du docteur mis à jour avec succès pour ${statutMisAJour.nomPrenom}`,
+      absent: {
+        id: statutMisAJour.id,
+        matricule: statutMisAJour.matricule,
+        nomPrenom: statutMisAJour.nomPrenom,
+        date: statutMisAJour.date,
+        statut: statutMisAJour.statut,
+        libelleStatut: this.getLibelleStatut(statutMisAJour.statut),
+        commentaire: statutMisAJour.commentaire,
+        nomDocteur: statutMisAJour.nomDocteur,
+        createdAt: statutMisAJour.createdAt
+      }
+    };
+
+  } catch (error) {
+    console.error(`Erreur dans updateNomDocteur:`, error);
+    
+    if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      throw error;
+    }
+    
+    throw new InternalServerErrorException(
+      `Erreur lors de la mise à jour du nom du docteur: ${error.message}`
+    );
+  }
+}
+async getAbsentsByPeriode(dateDebut: string, dateFin: string) {
+  console.log(`=== RÉCUPÉRATION DES ABSENTS DU ${dateDebut} AU ${dateFin} ===`);
+
+  try {
+    // Valider les dates
+    const debutObj = new Date(dateDebut);
+    const finObj = new Date(dateFin);
+    
+    if (isNaN(debutObj.getTime()) || isNaN(finObj.getTime())) {
+      throw new BadRequestException('Dates invalides');
+    }
+
+    if (debutObj > finObj) {
+      throw new BadRequestException('La date début doit être antérieure à la date fin');
+    }
+
+    const absents = await this.statutOuvrierRepository
+      .createQueryBuilder('statut')
+      .where('statut.statut = :statut', { statut: 'AB' })
+      .andWhere('statut.date >= :dateDebut', { dateDebut })
+      .andWhere('statut.date <= :dateFin', { dateFin })
+      .orderBy('statut.date', 'ASC')
+      .addOrderBy('statut.nomPrenom', 'ASC')
+      .getMany();
+
+    return {
+      message: `Ouvriers absents du ${dateDebut} au ${dateFin}`,
+      dateDebut,
+      dateFin,
+      nombreAbsents: absents.length,
+      absents: absents.map(s => ({
+        id: s.id,
+        matricule: s.matricule,
+        nomPrenom: s.nomPrenom,
+        date: s.date,
+        statut: s.statut,
+        libelleStatut: this.getLibelleStatut(s.statut),
+        commentaire: s.commentaire ?? null,
+        nomDocteur: s.nomDocteur ?? null,
+        createdAt: s.createdAt
+      }))
+    };
+
+  } catch (error) {
+    console.error(`Erreur dans getAbsentsByPeriode:`, error);
+
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+
+    throw new InternalServerErrorException(
+      `Erreur lors de la récupération des absents sur période: ${error.message}`
     );
   }
 }

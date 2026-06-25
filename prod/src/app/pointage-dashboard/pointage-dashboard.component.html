@@ -1,0 +1,177 @@
+<div class="db">
+
+  <!-- ── Header ────────────────────────────────────────────── -->
+  <div class="db-header">
+    <div class="db-header-left">
+      <div class="db-header-icon">📊</div>
+      <div>
+        <div class="db-title">POINTAGE — TEMPS RÉEL</div>
+        <div class="db-date">{{ today() }}</div>
+      </div>
+    </div>
+    <div class="db-header-right">
+      <div class="db-live">
+        <div class="db-live-dot"></div>
+        {{ lastSync || 'En attente...' }}
+      </div>
+      <button class="btn-refresh" (click)="load()" title="Actualiser">🔄</button>
+    </div>
+  </div>
+
+  <!-- ── Filtre dates ───────────────────────────────────────── -->
+  <div class="filter-card">
+    <div class="filter-group">
+      <label class="filter-label">Date début</label>
+      <input class="filter-input" type="date" [(ngModel)]="dateDebut" />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Date fin</label>
+      <input class="filter-input" type="date" [(ngModel)]="dateFin" />
+    </div>
+    <button class="btn-filter" (click)="loadPeriode()">🔍 Rechercher</button>
+    <button class="btn-today" (click)="loadToday()">📅 Aujourd'hui</button>
+  </div>
+  <div class="service-filter">
+    <button class="service-btn"
+      [class.active]="selectedService === 'Administratif'"
+      (click)="selectService('Administratif')">
+       Administratif
+    </button>
+    <button class="service-btn"
+      [class.active]="selectedService === 'Maintenance'"
+      (click)="selectService('Maintenance')">
+       Maintenance
+    </button>
+    <button class="service-btn"
+      [class.active]="selectedService === 'Magasin'"
+      (click)="selectService('Magasin')">
+       Magasin
+    </button>
+    <button class="service-btn"
+      [class.active]="selectedService === 'Qualité'"
+      (click)="selectService('Qualité')">
+       Qualité
+    </button>
+
+    <div *ngIf="selectedService" class="service-banner">
+      Filtré : <strong>{{ selectedService }}</strong> (aujourd'hui)
+      <button class="btn-clear-service" (click)="clearServiceFilter()">✕</button>
+    </div>
+  </div>
+
+  <!-- ── Loading ───────────────────────────────────────────── -->
+  <div *ngIf="loading" class="db-loading">
+    <div class="spinner"></div>
+    <span>Chargement...</span>
+  </div>
+
+  <ng-container *ngIf="!loading && data">
+
+    <!-- ── Métriques ─────────────────────────────────────────── -->
+    <div class="metrics">
+      <div class="metric green">
+        <div class="metric-label">Présents</div>
+        <div class="metric-value">{{ totalPresents }}</div>
+        <div class="metric-sub">sur {{ totalOuvriers }} {{ totalLabel }}</div>
+      </div>
+      <div class="metric red">
+        <div class="metric-label">Absents</div>
+        <div class="metric-value">{{ totalAbsents }}</div>
+        <div class="metric-sub">{{ 100 - tauxPresence }}% du total</div>
+      </div>
+      <div class="metric blue">
+        <div class="metric-label">Taux présence</div>
+        <div class="metric-value">{{ tauxPresence }}%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Dernière sync</div>
+        <div class="metric-value small">{{ lastSync }}</div>
+        <div class="metric-sub">toutes les 30 sec</div>
+      </div>
+    </div>
+
+    <!-- ── Ticker ─────────────────────────────────────────────── -->
+    <div class="ticker" *ngIf="dernierPointages.length > 0">
+      <span class="ticker-label">Derniers pointages</span>
+      <div class="ticker-items">
+        <div class="ticker-item" *ngFor="let p of dernierPointages">
+          <div class="dot-green-sm"></div>
+          {{ p.nomPrenom }} — {{ formatHeure(p.heureEntree) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Charts ─────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">Présents par pointeuse</div>
+        <div class="bar-row" *ngFor="let l of ligneStats">
+          <div class="bar-label">{{ l.ligne }}</div>
+          <div class="bar-track">
+            <div class="bar-fill"
+              [style.width.%]="(l.presents / maxLigne) * 100">
+            </div>
+          </div>
+          <div class="bar-val">{{ l.presents }}</div>
+        </div>
+        <div *ngIf="ligneStats.length === 0" class="no-data">Aucune donnée</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Arrivées par heure</div>
+        <div class="arrivals">
+          <div class="arr-col" *ngFor="let a of arriveeStats">
+            <div class="arr-bar"
+              [class.peak]="a.peak"
+              [style.height.px]="a.count > 0 ? (a.count / maxArrivee) * 80 : 4">
+            </div>
+            <div class="arr-label">{{ a.heure }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Liste ouvriers ─────────────────────────────────────── -->
+    <div class="card list-section">
+      <div class="list-header">
+        <input class="list-search" type="text"
+          placeholder="🔍 Matricule ou nom..."
+          [(ngModel)]="searchTerm" />
+        <div class="list-tabs">
+          <button class="tab" [class.active]="filterTab === 'tous'"
+            (click)="filterTab = 'tous'">
+            Tous ({{ totalOuvriers }})
+          </button>
+          <button class="tab" [class.active]="filterTab === 'presents'"
+            (click)="filterTab = 'presents'">
+            🟢 Présents ({{ totalPresents }})
+          </button>
+          <button class="tab" [class.active]="filterTab === 'absents'"
+            (click)="filterTab = 'absents'">
+            🔴 Absents ({{ totalAbsents }})
+          </button>
+        </div>
+      </div>
+
+      <div class="ouvrier-list">
+        <div *ngIf="filteredList.length === 0" class="no-data">
+          Aucun ouvrier trouvé
+        </div>
+        <div class="ouvrier-row" *ngFor="let o of filteredList">
+          <div class="presence-dot"
+            [class.dot-green]="o.statut === 'present'"
+            [class.dot-red]="o.statut === 'absent'">
+          </div>
+          <div class="ouvrier-mat">{{ o.matricule }}</div>
+          <div class="ouvrier-name">{{ o.nomPrenom }}</div>
+          <div *ngIf="o.timbratrice" class="ouvrier-ligne">{{ o.timbratrice }}</div>
+          <div [class.badge-present]="o.statut === 'present'"
+               [class.badge-absent]="o.statut === 'absent'">
+            {{ o.statut === 'present' ? formatHeure(o.heureEntree) : 'Absent' }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

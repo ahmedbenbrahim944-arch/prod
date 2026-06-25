@@ -390,14 +390,14 @@ export class PlanificationComponent implements AfterViewInit, OnInit {
         });
 
         // Première passe : récupérer OF et notes
-        planificationsLigne.forEach((plan: any) => {
-          if (plan.of && !ofByReference.has(plan.reference)) {
-            ofByReference.set(plan.reference, plan.of);
-          }
-          if (plan.note !== undefined && plan.note !== null && !noteByReference.has(plan.reference)) {
-            noteByReference.set(plan.reference, plan.note);
-          }
-        });
+       toutesPlanificationsLigne.forEach((plan: any) => {
+  if (plan.of && !ofByReference.has(plan.reference)) {
+    ofByReference.set(plan.reference, plan.of);
+  }
+  if (plan.note !== undefined && plan.note !== null && !noteByReference.has(plan.reference)) {
+    noteByReference.set(plan.reference, plan.note);
+  }
+});
 
         // Mettre à jour avec les données existantes
         planificationsLigne.forEach((plan: any) => {

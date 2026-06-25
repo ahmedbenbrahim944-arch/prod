@@ -796,3 +796,65 @@
   color: #6d28d9;
   border: 1px solid #ddd6fe;
 }
+/* ── Pointage présence ─────────────────────────────────── */
+.presence-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  background-color: #ccc;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.presence-dot.dot-present {
+  background-color: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  animation: pulse-green 2s infinite;
+}
+
+.presence-dot.dot-absent {
+  background-color: #ef4444;
+}
+
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.6); }
+  50%       { box-shadow: 0 0 10px rgba(34, 197, 94, 0.9); }
+}
+
+.heure-pointage {
+  font-size: 11px;
+  color: #22c55e;
+  font-weight: 600;
+  margin-left: 6px;
+  background: #f0fdf4;
+  padding: 1px 6px;
+  border-radius: 10px;
+  border: 1px solid #bbf7d0;
+}
+/* ── Présence par ligne ─────────────────────────────────── */
+.stat-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.stat-present {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+.stat-absent {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+.stat-taux {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}

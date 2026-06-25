@@ -32,13 +32,16 @@ import { AffichageModule } from './affichage/affichage.module';
 import { ProductionModule } from './production/production.module';
 import { ConfigModule } from '@nestjs/config';
 import { DailyReportModule } from './daily-report/daily-report.module';
+import { EmployeeModule } from './employee/employee.module';
+import { PointageModule } from './pointage/pointage.module';
+import { StatutManuelModule } from './statut-manuel/statut-manuel.module';
 
 
 @Module({
   imports: [
      ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env', '.env.sms'],
     }),
     // Configuration TypeORM directement ici
     TypeOrmModule.forRoot({
@@ -81,7 +84,10 @@ import { DailyReportModule } from './daily-report/daily-report.module';
     PlannMagModule,
     AffichageModule,
     ProductionModule,
-    DailyReportModule
+    DailyReportModule,
+    EmployeeModule,
+    PointageModule,
+    StatutManuelModule
 
   ],
   controllers: [],

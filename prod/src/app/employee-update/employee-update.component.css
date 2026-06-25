@@ -1,0 +1,426 @@
+/* employee-update.component.css — Style Seraf Tunisie */
+
+/* ── Variables Seraf ─────────────────────────────────────── */
+:host {
+  --green:      #2EB151;
+  --green-dark: #259444;
+  --navy:       #2D3A8C;
+  --navy-dark:  #1e2a6e;
+  --white:      #ffffff;
+  --bg:         #f0f2f5;
+  --card-bg:    #ffffff;
+  --text-main:  #1a202c;
+  --text-muted: #64748b;
+  --border:     #dde3ec;
+  --input-bg:   #f8fafc;
+  --radius:     10px;
+  --shadow:     0 2px 16px rgba(45,58,140,0.08);
+  --shadow-hover: 0 6px 28px rgba(45,58,140,0.15);
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Page ─────────────────────────────────────────────────── */
+.page-wrapper {
+  min-height: 100vh;
+  background: var(--bg);
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* ── Header Seraf (bande verte) ───────────────────────────── */
+.page-header {
+  background: var(--green);
+  padding: 0 32px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon {
+  font-size: 1.4rem;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.page-subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.8);
+}
+
+.header-logo {
+  background: white;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: 1px;
+}
+
+/* ── Contenu principal ────────────────────────────────────── */
+.page-content {
+  padding: 28px 32px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Grille des services ──────────────────────────────────── */
+.services-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Carte service ────────────────────────────────────────── */
+.service-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border-left: 4px solid transparent;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.service-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.service-card.active {
+  border-left-color: var(--green);
+  box-shadow: var(--shadow-hover);
+}
+
+/* ── En-tête de la carte ──────────────────────────────────── */
+.service-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition);
+}
+
+.service-header:hover {
+  background: #f5f7fb;
+}
+
+.service-card.active .service-header {
+  background: #f0f7f3;
+  border-bottom: 1px solid #dde8e2;
+}
+
+.service-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.service-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: background var(--transition);
+}
+
+.service-card.active .service-icon-wrap {
+  background: var(--green);
+}
+
+.service-label {
+  font-size: 0.97rem;
+  font-weight: 600;
+  color: var(--navy);
+  letter-spacing: 0.2px;
+}
+
+.service-card.active .service-label {
+  color: var(--green-dark);
+}
+
+.service-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.service-badge {
+  font-size: 0.72rem;
+  background: var(--navy);
+  color: white;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.service-card.active .service-badge {
+  background: var(--green);
+  opacity: 1;
+}
+
+.toggle-icon {
+  display: inline-block;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  transition: transform var(--transition);
+  font-weight: 400;
+}
+
+.toggle-icon.rotated {
+  transform: rotate(90deg);
+  color: var(--green);
+}
+
+/* ── Corps animé ──────────────────────────────────────────── */
+.service-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.service-body.open {
+  max-height: 900px;
+}
+
+/* ── Formulaire interne ───────────────────────────────────── */
+.form-wrapper {
+  padding: 22px 24px 24px;
+}
+
+/* ── Ligne matricule + nom ────────────────────────────────── */
+.matricule-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+  align-items: end;
+}
+
+/* ── Champ générique ──────────────────────────────────────── */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--navy);
+}
+
+.field-input {
+  padding: 9px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 0.91rem;
+  background: var(--input-bg);
+  color: var(--text-main);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field-input:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(46,177,81,0.13);
+  background: white;
+}
+
+.field-input:read-only {
+  background: #eef2fb;
+  border-color: #c8d0e8;
+  color: var(--navy);
+  font-weight: 600;
+  cursor: default;
+}
+
+.field-select {
+  cursor: pointer;
+}
+
+/* ── Loader matricule ─────────────────────────────────────── */
+.input-with-loader {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-loader .field-input {
+  padding-right: 36px;
+}
+
+.loader-spin {
+  position: absolute;
+  right: 10px;
+  font-size: 0.85rem;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Nom affiché auto ─────────────────────────────────────── */
+.nom-display {
+  min-height: 40px;
+  padding: 9px 13px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 0.91rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.nom-display.found {
+  background: #edfaf2;
+  border-color: var(--green);
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.nom-placeholder {
+  font-style: italic;
+  opacity: 0.55;
+  font-size: 0.86rem;
+}
+
+.nom-notfound {
+  color: #dc2626;
+  font-size: 0.84rem;
+}
+
+/* ── Séparateur ───────────────────────────────────────────── */
+.form-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 18px;
+  color: var(--navy);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.form-divider::before,
+.form-divider::after {
+  content: '';
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(to right, var(--border), var(--green), var(--border));
+}
+
+/* ── Grille des champs ────────────────────────────────────── */
+.fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+/* ── Alertes ──────────────────────────────────────────────── */
+.alert {
+  padding: 11px 15px;
+  border-radius: 7px;
+  font-size: 0.86rem;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.alert-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* ── Bouton save — style Seraf ────────────────────────────── */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save {
+  padding: 10px 32px;
+  border: none;
+  border-radius: 8px;
+  background: var(--navy);
+  color: white;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 2px 8px rgba(45,58,140,0.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-save:hover:not(:disabled) {
+  background: var(--green);
+  box-shadow: 0 4px 16px rgba(46,177,81,0.3);
+  transform: translateY(-1px);
+}
+
+.btn-save:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .page-header   { padding: 0 16px; }
+  .page-content  { padding: 16px; }
+  .matricule-row { grid-template-columns: 1fr; }
+  .fields-grid   { grid-template-columns: 1fr; }
+}
