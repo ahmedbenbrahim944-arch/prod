@@ -12,6 +12,7 @@ export enum TypeStatutManuel {
   MALADIE = 'maladie',
   MISSION = 'mission',
   AUTRE = 'autre',
+  PRESENT = 'present',
 }
 
 @Entity('statuts_manuels')

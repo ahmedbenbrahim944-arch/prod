@@ -6,6 +6,7 @@ import { Ouvrier } from '../ouvrier/entities/ouvrier.entity';
 import { Badge } from 'src/autosaisie/entities/badge.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { StatutManuelService } from '../statut-manuel/statut-manuel.service'; // ✅ NOUVEAU
+import { TypeStatutManuel } from 'src/statut-manuel/entites/statut-manuel.entity';
 
 // ✅ Type étendu — inclut les statuts manuels
 export type StatutPresence = 'present' | 'absent' | 'conge' | 'maladie' | 'mission' | 'autre';
@@ -112,13 +113,16 @@ export class PointageService {
       .getMany();
 
     const matriculesPresents = new Set(pointagesJour.map((p) => p.matricule));
-
-    // ✅ NOUVEAU — statuts manuels actifs aujourd'hui
     const statutsActifs = await this.statutManuelService.findActifsPourDate(today);
 
-    const presents = tousOuvriers
-      .filter((o) => matriculesPresents.has(o.matricule))
-      .map((o) => {
+    const presents: any[] = [];
+    const absents: any[] = [];
+
+    for (const o of tousOuvriers) {
+      const manuel = statutsActifs.get(String(o.matricule));
+
+      if (matriculesPresents.has(o.matricule)) {
+        // ── Présent via pointage physique ──────────────────────
         const entree = pointagesJour.find(
           (p) => p.matricule === o.matricule && p.ingressoUscita === '0100',
         );
@@ -126,28 +130,36 @@ export class PointageService {
           (p) => p.matricule === o.matricule && p.ingressoUscita === '0000',
         );
         const pointage = entree || sortie;
-        return {
+        presents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
           heureEntree: entree?.dataOra || null,
           heureSortie: sortie?.dataOra || null,
           timbratrice: pointage?.timbratrice,
           statut: 'present' as StatutPresence,
-        };
-      });
-
-    const absents = tousOuvriers
-      .filter((o) => !matriculesPresents.has(o.matricule))
-      .map((o) => {
-        // ✅ NOUVEAU — fusion avec le statut manuel si présent
-        const manuel = statutsActifs.get(String(o.matricule));
-        return {
+          commentaire: null,
+        });
+      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
+        // ✅ NOUVEAU — présent manuel (badge oublié), pas de pointage physique
+        presents.push({
+          matricule: o.matricule,
+          nomPrenom: o.nomPrenom,
+          heureEntree: null,
+          heureSortie: null,
+          timbratrice: null,
+          statut: 'present' as StatutPresence,
+          commentaire: manuel.commentaire || null,
+        });
+      } else {
+        // ── Absent (avec ou sans motif manuel : congé/maladie/...) ──
+        absents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
           statut: (manuel?.statut || 'absent') as StatutPresence,
           commentaire: manuel?.commentaire || null,
-        };
-      });
+        });
+      }
+    }
 
     return {
       total: presents.length,
@@ -174,34 +186,42 @@ export class PointageService {
       .getMany();
 
     const matriculesPresents = new Set(pointagesPeriode.map((p) => p.matricule));
-
-    // ✅ NOUVEAU — statuts manuels qui chevauchent la période
     const statutsActifs = await this.statutManuelService.findActifsPourPeriode(debut, fin);
 
-    const presents = tousOuvriers
-      .filter((o) => matriculesPresents.has(o.matricule))
-      .map((o) => {
+    const presents: any[] = [];
+    const absents: any[] = [];
+
+    for (const o of tousOuvriers) {
+      const manuel = statutsActifs.get(String(o.matricule));
+
+      if (matriculesPresents.has(o.matricule)) {
         const pointage = pointagesPeriode.find((p) => p.matricule === o.matricule);
-        return {
+        presents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
           heureEntree: pointage?.dataOra,
           timbratrice: pointage?.timbratrice,
           statut: 'present' as StatutPresence,
-        };
-      });
-
-    const absents = tousOuvriers
-      .filter((o) => !matriculesPresents.has(o.matricule))
-      .map((o) => {
-        const manuel = statutsActifs.get(String(o.matricule));
-        return {
+          commentaire: null,
+        });
+      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
+        presents.push({
+          matricule: o.matricule,
+          nomPrenom: o.nomPrenom,
+          heureEntree: null,
+          timbratrice: null,
+          statut: 'present' as StatutPresence,
+          commentaire: manuel.commentaire || null,
+        });
+      } else {
+        absents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
           statut: (manuel?.statut || 'absent') as StatutPresence,
           commentaire: manuel?.commentaire || null,
-        };
-      });
+        });
+      }
+    }
 
     return {
       dateDebut,
@@ -215,7 +235,7 @@ export class PointageService {
   // ════════════════════════════════════════════════════════════════
   // Présents/Absents du jour, basé sur Employee (4 services)
   // ════════════════════════════════════════════════════════════════
-  async getPresentsAujourdhuiEmployees() {
+ async getPresentsAujourdhuiEmployees() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -230,8 +250,6 @@ export class PointageService {
       .getMany();
 
     const matriculesPresents = new Set(pointagesJour.map((p) => p.matricule));
-
-    // ✅ NOUVEAU
     const statutsActifs = await this.statutManuelService.findActifsPourDate(today);
 
     const presents: PresenceEmployee[] = [];
@@ -239,21 +257,9 @@ export class PointageService {
 
     for (const e of employees) {
       const matriculeNum = parseInt(e.matricule, 10);
+      const manuel = statutsActifs.get(e.matricule);
 
-      if (isNaN(matriculeNum)) {
-        this.logger.warn(`⚠️ Matricule invalide pour ${e.nomPrenom}: "${e.matricule}"`);
-        const manuel = statutsActifs.get(e.matricule);
-        absents.push({
-          matricule: e.matricule,
-          nomPrenom: e.nomPrenom,
-          service: e.service,
-          statut: manuel?.statut || 'absent',
-          commentaire: manuel?.commentaire || null,
-        });
-        continue;
-      }
-
-      if (matriculesPresents.has(matriculeNum)) {
+      if (!isNaN(matriculeNum) && matriculesPresents.has(matriculeNum)) {
         const entree = pointagesJour.find(
           (p) => p.matricule === matriculeNum && p.ingressoUscita === '0100',
         );
@@ -270,10 +276,21 @@ export class PointageService {
           heureSortie: sortie?.dataOra || null,
           timbratrice: pointage?.timbratrice || null,
           statut: 'present',
+          commentaire: null,
+        });
+      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
+        // ✅ NOUVEAU — présent manuel (badge oublié)
+        presents.push({
+          matricule: e.matricule,
+          nomPrenom: e.nomPrenom,
+          service: e.service,
+          heureEntree: null,
+          heureSortie: null,
+          timbratrice: null,
+          statut: 'present',
+          commentaire: manuel.commentaire || null,
         });
       } else {
-        // ✅ NOUVEAU — fusion statut manuel
-        const manuel = statutsActifs.get(e.matricule);
         absents.push({
           matricule: e.matricule,
           nomPrenom: e.nomPrenom,
@@ -316,8 +333,6 @@ export class PointageService {
       .getMany();
 
     const matriculesPresents = new Set(pointagesPeriode.map((p) => p.matricule));
-
-    // ✅ NOUVEAU
     const statutsActifs = await this.statutManuelService.findActifsPourPeriode(debut, fin);
 
     const presents: PresenceEmployee[] = [];
@@ -325,6 +340,7 @@ export class PointageService {
 
     for (const e of employees) {
       const matriculeNum = parseInt(e.matricule, 10);
+      const manuel = statutsActifs.get(e.matricule);
 
       if (!isNaN(matriculeNum) && matriculesPresents.has(matriculeNum)) {
         const pointage = pointagesPeriode.find((p) => p.matricule === matriculeNum);
@@ -335,9 +351,19 @@ export class PointageService {
           heureEntree: pointage?.dataOra,
           timbratrice: pointage?.timbratrice,
           statut: 'present',
+          commentaire: null,
+        });
+      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
+        presents.push({
+          matricule: e.matricule,
+          nomPrenom: e.nomPrenom,
+          service: e.service,
+          heureEntree: null,
+          timbratrice: null,
+          statut: 'present',
+          commentaire: manuel.commentaire || null,
         });
       } else {
-        const manuel = statutsActifs.get(e.matricule);
         absents.push({
           matricule: e.matricule,
           nomPrenom: e.nomPrenom,

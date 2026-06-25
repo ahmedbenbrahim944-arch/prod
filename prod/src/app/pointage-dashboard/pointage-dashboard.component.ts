@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   PointageService, PresenceData, Present, Absent,
-  PresenceEmployeeData // ✅ NOUVEAU
+  PresenceEmployeeData
 } from './pointage.service';
 
 @Component({
@@ -34,9 +34,8 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
   // ── Derniers pointages ticker ─────────────────────────────────
   dernierPointages: Present[] = [];
 
-  // ✅ NOUVEAU — Filtre par service (Employee)
+  // Filtre par service (Employee)
   selectedService: string | null = null;
-  private employeeData: PresenceEmployeeData | null = null;
   readonly services = ['Administratif', 'Maintenance', 'Magasin', 'Qualité'];
 
   constructor(
@@ -46,18 +45,15 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.load();
-
   }
 
   ngOnDestroy(): void {
     clearInterval(this.interval);
   }
 
-  // ✅ NOUVEAU — rafraîchit selon le mode courant
   refresh(): void {
     if (this.selectedService) {
-      this.employeeData = null; // force un re-fetch
-      this.selectService(this.selectedService);
+      this.loadServiceData();
     } else {
       this.load();
     }
@@ -74,34 +70,33 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
         this.loading = false;
         this.cdr.markForCheck();
       },
-      error: () => {
-        this.loading = false;
-      }
+      error: () => { this.loading = false; }
     });
   }
 
-  // ✅ NOUVEAU — clic sur un bouton service
+  // ── Sélection d'un service ──────────────────────────────────────
   selectService(service: string): void {
     // re-clic sur le même bouton → retour à la vue normale (Ouvrier)
-    if (this.selectedService === service && this.employeeData) {
+    if (this.selectedService === service) {
       this.clearServiceFilter();
       return;
     }
-
     this.selectedService = service;
+    this.loadServiceData(); // ✅ MODIFIÉ — respecte maintenant dateDebut/dateFin
+  }
+
+  // ✅ MODIFIÉ — utilise l'endpoint période (et non plus "today" en dur)
+  // ça permet d'appliquer la même date début/fin que pour les ouvriers
+  private loadServiceData(): void {
+    if (!this.selectedService) return;
     this.loading = true;
 
-    if (this.employeeData) {
-      this.applyServiceFilter();
-      this.loading = false;
-      this.cdr.markForCheck();
-      return;
-    }
+    const debut = this.dateDebut || new Date().toISOString().split('T')[0];
+    const fin = this.dateFin || debut;
 
-    this.svc.getPresenceTodayEmployees().subscribe({
+    this.svc.getPresencePeriodeEmployees(debut, fin).subscribe({
       next: (data) => {
-        this.employeeData = data;
-        this.applyServiceFilter();
+        this.applyServiceFilter(data);
         this.lastSync = new Date().toLocaleTimeString('fr-FR', {
           hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
@@ -112,15 +107,15 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  // ✅ NOUVEAU — applique le filtre service sur les données en cache
-  private applyServiceFilter(): void {
-    if (!this.employeeData || !this.selectedService) return;
+  // ✅ MODIFIÉ — reçoit maintenant les données en paramètre (plus de cache)
+  private applyServiceFilter(data: PresenceEmployeeData): void {
+    if (!this.selectedService) return;
 
-    const presents = this.employeeData.presents.filter(
+    const presents = data.presents.filter(
       (p) => p.service === this.selectedService
     ) as unknown as Present[];
 
-    const absents = this.employeeData.absents.filter(
+    const absents = data.absents.filter(
       (a) => a.service === this.selectedService
     ) as unknown as Absent[];
 
@@ -128,25 +123,29 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
     this.computeStats(this.data);
   }
 
-  // ✅ NOUVEAU — annule le filtre service, retour à la vue Ouvrier normale
+  // ✅ MODIFIÉ — repart sur l'endpoint ouvrier en respectant la période en cours
   clearServiceFilter(): void {
     this.selectedService = null;
-    this.load();
+
+    const today = new Date().toISOString().split('T')[0];
+    if (this.dateDebut === today && this.dateFin === today) {
+      this.load();
+    } else {
+      this.loadPeriode();
+    }
   }
 
   computeStats(data: PresenceData): void {
-    // ── derniers pointages (5 derniers par heure) ─────────────
     this.dernierPointages = [...data.presents]
-      .filter(p => !!p.heureEntree) // ✅ garde-fou si heureEntree null
+      .filter(p => !!p.heureEntree)
       .sort((a, b) =>
         new Date(b.heureEntree).getTime() - new Date(a.heureEntree).getTime()
       )
       .slice(0, 5);
 
-    // ── arrivées par heure ────────────────────────────────────
     const heureMap = new Map<string, number>();
     data.presents.forEach(p => {
-      if (!p.heureEntree) return; // ✅ garde-fou
+      if (!p.heureEntree) return;
       const h = new Date(p.heureEntree).getHours();
       const key = `${h.toString().padStart(2, '0')}h`;
       heureMap.set(key, (heureMap.get(key) || 0) + 1);
@@ -162,11 +161,9 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
       peak: counts[i] === maxCount,
     }));
 
-    // ── stats par timbratrice (ligne) ─────────────────────────
     const lignePresents = new Map<string, number>();
-
     data.presents.forEach(p => {
-      if (!p.timbratrice) return; // ✅ garde-fou
+      if (!p.timbratrice) return;
       const l = p.timbratrice;
       lignePresents.set(l, (lignePresents.get(l) || 0) + 1);
     });
@@ -204,7 +201,6 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
     return Math.max(...this.arriveeStats.map(a => a.count), 1);
   }
 
-  // ✅ NOUVEAU — libellé dynamique selon le mode
   get totalLabel(): string {
     return this.selectedService ? 'employés' : 'ouvriers';
   }
@@ -251,17 +247,28 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
     return Math.max(...this.ligneStats.map(l => l.presents), 1);
   }
 
+  // ✅ MODIFIÉ — ne réinitialise plus selectedService
   loadToday(): void {
-    this.selectedService = null; // ✅ on quitte le mode service
     const today = new Date().toISOString().split('T')[0];
     this.dateDebut = today;
     this.dateFin   = today;
-    this.load();
+
+    if (this.selectedService) {
+      this.loadServiceData();
+    } else {
+      this.load();
+    }
   }
 
+  // ✅ MODIFIÉ — ne réinitialise plus selectedService
   loadPeriode(): void {
     if (!this.dateDebut || !this.dateFin) return;
-    this.selectedService = null; // ✅ on quitte le mode service
+
+    if (this.selectedService) {
+      this.loadServiceData();
+      return;
+    }
+
     this.loading = true;
     this.svc.getPresencePeriode(this.dateDebut, this.dateFin).subscribe({
       next: (data) => {

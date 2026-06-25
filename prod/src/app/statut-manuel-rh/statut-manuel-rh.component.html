@@ -1,0 +1,178 @@
+<div class="db">
+
+  <!-- ── Header ────────────────────────────────────────────── -->
+  <div class="db-header">
+    <div class="db-header-left">
+      <div class="db-header-icon"></div>
+      <div>
+        <div class="db-title">GESTION DES STATUTS — RH</div>
+        <div class="db-date">{{ today() }}</div>
+      </div>
+    </div>
+    <div class="db-header-right">
+      <button class="btn-refresh" (click)="load()" title="Actualiser"></button>
+    </div>
+  </div>
+
+  <!-- ── Filtre dates ───────────────────────────────────────── -->
+  <div class="filter-card">
+    <div class="filter-group">
+      <label class="filter-label">Date début</label>
+      <input class="filter-input" type="date" [(ngModel)]="dateDebut" />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Date fin</label>
+      <input class="filter-input" type="date" [(ngModel)]="dateFin" />
+    </div>
+    <button class="btn-filter" (click)="loadPeriode()"> Rechercher</button>
+    <button class="btn-today" (click)="loadToday()"> Aujourd'hui</button>
+    <button class="btn-export" (click)="exportExcel()" [disabled]="exportingExcel">
+      {{ exportingExcel ? '⏳ Génération...' : '📊 Export Excel' }}
+    </button>
+  </div>
+
+  <div *ngIf="exportError" class="rh-form-error">⚠️ {{ exportError }}</div>
+
+  <!-- ── Filtre service ─────────────────────────────────────── -->
+  <div class="service-filter">
+    <button class="service-btn" *ngFor="let s of services"
+      [class.active]="selectedService === s"
+      (click)="selectService(s)">
+      {{ s }}
+    </button>
+    <div *ngIf="selectedService" class="service-banner">
+      Filtré : <strong>{{ selectedService }}</strong>
+      <button class="btn-clear-service" (click)="clearServiceFilter()">✕</button>
+    </div>
+  </div>
+
+  <!-- ── Métriques ─────────────────────────────────────────── -->
+  <div class="metrics" *ngIf="!loading">
+    <div class="metric green">
+      <div class="metric-label">Présents</div>
+      <div class="metric-value">{{ totalPresents }}</div>
+      <div class="metric-sub">sur {{ totalPersonnes }}</div>
+    </div>
+    <div class="metric red">
+      <div class="metric-label">Absents</div>
+      <div class="metric-value">{{ totalAbsents }}</div>
+      <div class="metric-sub">{{ 100 - tauxPresence }}% du total</div>
+    </div>
+    <div class="metric blue">
+      <div class="metric-label">Taux présence</div>
+      <div class="metric-value">{{ tauxPresence }}%</div>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="db-loading">
+    <div class="spinner"></div>
+    <span>Chargement...</span>
+  </div>
+
+  <!-- ── Formulaire ajout / édition ────────────────────────── -->
+  <div class="card" id="rh-form-card">
+    <div class="card-title">{{ editingId ? ' Modifier un statut' : '➕ Ajouter un statut' }}</div>
+
+    <form class="rh-form" (ngSubmit)="submitForm()">
+      <div class="rh-form-row">
+        <div class="rh-form-group">
+          <label class="filter-label">Matricule</label>
+          <input class="filter-input" type="text" [(ngModel)]="formModel.matricule" name="matricule" required />
+        </div>
+        <div class="rh-form-group grow">
+          <label class="filter-label">Nom & Prénom</label>
+          <input class="filter-input" type="text" [(ngModel)]="formModel.nomPrenom" name="nomPrenom" required />
+        </div>
+      </div>
+
+      <div class="rh-form-row">
+        <div class="rh-form-group">
+          <label class="filter-label">Statut</label>
+          <select class="filter-input" [(ngModel)]="formModel.statut" name="statut">
+            <option *ngFor="let o of statutOptions" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </div>
+        <div class="rh-form-group">
+          <label class="filter-label">Date début</label>
+          <input class="filter-input" type="date" [(ngModel)]="formModel.dateDebut" name="dateDebutForm" />
+        </div>
+        <div class="rh-form-group">
+          <label class="filter-label">Date fin</label>
+          <input class="filter-input" type="date" [(ngModel)]="formModel.dateFin" name="dateFinForm" />
+        </div>
+      </div>
+
+      <div class="rh-form-row">
+        <div class="rh-form-group grow">
+          <label class="filter-label">Commentaire (optionnel)</label>
+          <input class="filter-input" type="text" [(ngModel)]="formModel.commentaire" name="commentaire"
+            placeholder="Ex: Badge oublié, certificat médical..." />
+        </div>
+      </div>
+
+      <div *ngIf="formError" class="rh-form-error">⚠️ {{ formError }}</div>
+
+      <div class="rh-form-actions">
+        <button type="submit" class="btn-filter" [disabled]="savingForm">
+          {{ savingForm ? 'Enregistrement...' : (editingId ? ' Mettre à jour' : '➕ Ajouter') }}
+        </button>
+        <button type="button" class="btn-cancel" *ngIf="editingId" (click)="resetForm()">Annuler</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Liste présents / absents ──────────────────────────── -->
+  <div class="card list-section" *ngIf="!loading && data">
+    <div class="list-header">
+      <input class="list-search" type="text" placeholder=" Matricule ou nom..." [(ngModel)]="searchTerm" />
+      <div class="list-tabs">
+        <button class="tab" [class.active]="filterTab === 'tous'" (click)="filterTab = 'tous'">
+          Tous ({{ totalPersonnes }})
+        </button>
+        <button class="tab" [class.active]="filterTab === 'presents'" (click)="filterTab = 'presents'">
+          🟢 Présents ({{ totalPresents }})
+        </button>
+        <button class="tab" [class.active]="filterTab === 'absents'" (click)="filterTab = 'absents'">
+          🔴 Absents ({{ totalAbsents }})
+        </button>
+      </div>
+    </div>
+
+    <div class="ouvrier-list">
+      <div *ngIf="filteredList.length === 0" class="no-data">Aucun résultat</div>
+      <div class="ouvrier-row" *ngFor="let o of filteredList">
+        <div class="presence-dot" [class.dot-green]="o.statut === 'present'" [class.dot-red]="o.statut !== 'present'"></div>
+        <div class="ouvrier-mat">{{ o.matricule }}</div>
+        <div class="ouvrier-name">{{ o.nomPrenom }}</div>
+        <div *ngIf="o.commentaire" class="ouvrier-ligne">{{ o.commentaire }}</div>
+        <div [class.badge-present]="o.statut === 'present'" [class.badge-absent]="o.statut !== 'present'">
+          {{ o.statut === 'present' ? (o.heureEntree ? formatHeure(o.heureEntree) : '✅ Présent') : statutLabel(o.statut) }}
+        </div>
+        <button *ngIf="o.statut !== 'present'" class="btn-quick-add" (click)="prefillFromPersonne(o)" title="Ajouter un statut">
+          ➕
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Table des statuts manuels enregistrés ─────────────── -->
+  <div class="card list-section">
+    <div class="card-title"> Statuts manuels enregistrés</div>
+
+    <div *ngIf="loadingStatuts" class="db-loading"><div class="spinner"></div><span>Chargement...</span></div>
+
+    <div class="ouvrier-list" *ngIf="!loadingStatuts">
+      <div *ngIf="statuts.length === 0" class="no-data">Aucun statut enregistré</div>
+      <div class="ouvrier-row" *ngFor="let s of statuts">
+        <div class="ouvrier-mat">{{ s.matricule }}</div>
+        <div class="ouvrier-name">{{ s.nomPrenom }}</div>
+        <div class="ouvrier-ligne">{{ statutLabel(s.statut) }}</div>
+        <div class="ouvrier-ligne">{{ s.dateDebut }} → {{ s.dateFin }}</div>
+        <div *ngIf="s.commentaire" class="ouvrier-ligne">{{ s.commentaire }}</div>
+        <button class="btn-edit" (click)="editStatut(s)" title="Modifier"></button>
+        <button class="btn-delete" (click)="deleteStatut(s)" title="Supprimer">🗑️</button>
+      </div>
+    </div>
+  </div>
+
+</div>

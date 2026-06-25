@@ -51,6 +51,7 @@ import { SmsSendComponent } from './sms-send/sms-send.component';
 import { AbsentsComponent } from './absents/absents.component';
 import { EmployeeUpdateComponent } from './employee-update/employee-update.component';
 import { PointageDashboardComponent } from './pointage-dashboard/pointage-dashboard.component';
+import { StatutManuelRhComponent } from './statut-manuel-rh/statut-manuel-rh.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -120,6 +121,7 @@ export const routes: Routes = [
   { path: 'absents', component: AbsentsComponent },
   { path: 'employe', component: EmployeeUpdateComponent },
   { path: 'pointage-dashboard', component: PointageDashboardComponent },
+  { path: 'Statuts-rh', component: StatutManuelRhComponent },
 
 
 

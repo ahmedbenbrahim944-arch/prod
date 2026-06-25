@@ -13,13 +13,15 @@ export interface Present {
   nomPrenom: string;
   heureEntree: string;
   timbratrice: string;
-  statut: 'present';
+  statut: string;
+  commentaire?: string
 }
 
 export interface Absent {
   matricule: number | string; // ✅ élargi
   nomPrenom: string;
-  statut: 'absent';
+   statut: string;
+   commentaire?: string | null;
 }
 
 // ✅ NOUVEAU — types pour la réponse /pointage/employes/today
@@ -30,7 +32,8 @@ export interface PresenceEmployeeItem {
   heureEntree?: string | null;
   heureSortie?: string | null;
   timbratrice?: string | null;
-  statut: 'present' | 'absent';
+  statut: string;
+  commentaire?: string | null;
 }
 
 export interface PresenceEmployeeData {
@@ -72,6 +75,12 @@ export class PointageService {
   getPresenceTodayEmployees(): Observable<PresenceEmployeeData> {
     return this.http.get<PresenceEmployeeData>(
       `${this.api}/pointage/employes/today`,
+      { headers: this.headers() }
+    );
+  }
+   getPresencePeriodeEmployees(debut: string, fin: string): Observable<PresenceEmployeeData> {
+    return this.http.get<PresenceEmployeeData>(
+      `${this.api}/pointage/employes/periode?debut=${debut}&fin=${fin}`,
       { headers: this.headers() }
     );
   }
