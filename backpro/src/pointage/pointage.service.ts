@@ -6,7 +6,7 @@ import { Ouvrier } from '../ouvrier/entities/ouvrier.entity';
 import { Badge } from 'src/autosaisie/entities/badge.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { StatutManuelService } from '../statut-manuel/statut-manuel.service'; // ✅ NOUVEAU
-import { TypeStatutManuel } from 'src/statut-manuel/entites/statut-manuel.entity';
+import { TypeStatutManuel, StatutManuel } from 'src/statut-manuel/entites/statut-manuel.entity';
 
 // ✅ Type étendu — inclut les statuts manuels
 export type StatutPresence = 'present' | 'absent' | 'conge' | 'maladie' | 'mission' | 'autre';
@@ -20,6 +20,16 @@ export interface PresenceEmployee {
   timbratrice?: string | null;
   statut: StatutPresence;
   commentaire?: string | null; // ✅ NOUVEAU
+}
+
+// ✅ NOUVEAU — récap jours présent/absent/congé pour une personne sur une période
+export interface RecapPersonneJours {
+  matricule: string | number;
+  nomPrenom: string;
+  service?: string;
+  joursPresent: number;
+  joursAbsent: number;
+  joursConge: number;
 }
 
 @Injectable()
@@ -382,6 +392,113 @@ export class PointageService {
       totalAbsents: absents.length,
       presents,
       absents,
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — Récap jours Présent/Absent/Congé sur une période,
+  // pour Ouvriers ET Employees, en se basant uniquement sur les
+  // données réelles (pointage physique + table des statuts manuels).
+  // ════════════════════════════════════════════════════════════════
+  async getRecapJoursPeriode(dateDebut: string, dateFin: string) {
+    const debut = new Date(dateDebut);
+    debut.setHours(0, 0, 0, 0);
+
+    const fin = new Date(dateFin);
+    fin.setHours(23, 59, 59, 999);
+
+    // ── Liste des jours (yyyy-MM-dd) de la période ────────────────
+    const jours: string[] = [];
+    const cursor = new Date(debut);
+    while (cursor <= fin) {
+      jours.push(cursor.toISOString().split('T')[0]);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    // ── Pointages "entrée" sur la période → Map<matricule, Set<jour>> ──
+    const pointagesPeriode = await this.pointageRepo
+      .createQueryBuilder('p')
+      .where('p.dataOra >= :debut', { debut })
+      .andWhere('p.dataOra <= :fin', { fin })
+      .andWhere('p.ingressoUscita = :entree', { entree: '0100' })
+      .getMany();
+
+    const joursPresentsParMatricule = new Map<number, Set<string>>();
+    pointagesPeriode.forEach((p) => {
+      const jour = p.dataOra.toISOString().split('T')[0];
+      if (!joursPresentsParMatricule.has(p.matricule)) {
+        joursPresentsParMatricule.set(p.matricule, new Set());
+      }
+      joursPresentsParMatricule.get(p.matricule)!.add(jour);
+    });
+
+    // ── Statuts manuels qui chevauchent la période (liste complète) ──
+    const statutsManuels = await this.statutManuelService.findAllActifsPourPeriode(debut, fin);
+    const statutsParMatricule = new Map<string, StatutManuel[]>();
+    statutsManuels.forEach((s) => {
+      if (!statutsParMatricule.has(s.matricule)) statutsParMatricule.set(s.matricule, []);
+      statutsParMatricule.get(s.matricule)!.push(s);
+    });
+
+    const statutPourJour = (matriculeStr: string, jour: string): TypeStatutManuel | null => {
+      const liste = statutsParMatricule.get(matriculeStr);
+      if (!liste) return null;
+      const found = liste.find((s) => s.dateDebut <= jour && s.dateFin >= jour);
+      return found ? found.statut : null;
+    };
+
+    const calculerRecap = (matriculeNum: number, matriculeStr: string) => {
+      let joursPresent = 0;
+      let joursAbsent = 0;
+      let joursConge = 0;
+      const joursPresentsSet = joursPresentsParMatricule.get(matriculeNum);
+
+      for (const jour of jours) {
+        if (joursPresentsSet?.has(jour)) {
+          joursPresent++;
+          continue;
+        }
+        const statut = statutPourJour(matriculeStr, jour);
+        if (statut === TypeStatutManuel.PRESENT) {
+          joursPresent++;
+        } else if (statut) {
+          // conge / maladie / mission / autre → regroupés en "Congé"
+          joursConge++;
+        } else {
+          joursAbsent++;
+        }
+      }
+      return { joursPresent, joursAbsent, joursConge };
+    };
+
+    // ── Ouvriers ───────────────────────────────────────────────────
+    const tousOuvriers = await this.ouvrierRepo.find();
+    const recapOuvriers: RecapPersonneJours[] = tousOuvriers.map((o) => ({
+      matricule: o.matricule,
+      nomPrenom: o.nomPrenom,
+      ...calculerRecap(o.matricule, String(o.matricule)),
+    }));
+
+    // ── Employees (4 services) ──────────────────────────────────────
+    const employees = await this.employeeRepo.find({
+      where: { service: In(this.servicesAutorises) },
+      order: { nomPrenom: 'ASC' },
+    });
+    const recapEmployees: RecapPersonneJours[] = employees.map((e) => {
+      const matriculeNum = parseInt(e.matricule, 10);
+      return {
+        matricule: e.matricule,
+        nomPrenom: e.nomPrenom,
+        service: e.service,
+        ...calculerRecap(matriculeNum, e.matricule),
+      };
+    });
+
+    return {
+      dateDebut,
+      dateFin,
+      recapOuvriers,
+      recapEmployees,
     };
   }
 }

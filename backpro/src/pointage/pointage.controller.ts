@@ -38,4 +38,14 @@ export class PointageController {
   ) {
     return this.pointageService.getPresenceParPeriodeEmployees(debut, fin);
   }
+
+  // ✅ NOUVEAU — Récap jours Présent/Absent/Congé (Ouvriers + Employees)
+  @UseGuards(JwtAuthGuard)
+  @Get('recap-periode')
+  async getRecapPeriode(
+    @Query('debut') debut: string,
+    @Query('fin') fin: string,
+  ) {
+    return this.pointageService.getRecapJoursPeriode(debut, fin);
+  }
 }
