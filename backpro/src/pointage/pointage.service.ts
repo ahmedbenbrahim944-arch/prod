@@ -30,6 +30,7 @@ export interface RecapPersonneJours {
   joursPresent: number;
   joursAbsent: number;
   joursConge: number;
+  datesAbsence: string[];
 }
 
 @Injectable()
@@ -400,15 +401,10 @@ export class PointageService {
   // pour Ouvriers ET Employees, en se basant uniquement sur les
   // données réelles (pointage physique + table des statuts manuels).
   // ════════════════════════════════════════════════════════════════
-   async getRecapJoursPeriode(dateDebut: string, dateFin: string) {
-    // ── Liste des jours (yyyy-MM-dd) — calcul par chaîne pure, AUCUN
-    //    passage par toISOString() après une manipulation en heure
-    //    locale (c'était la source du bug de décalage d'un jour) ───
+  async getRecapJoursPeriode(dateDebut: string, dateFin: string) {
+    // ── Liste des jours (yyyy-MM-dd) — calcul par chaîne pure ───────
     const jours: string[] = this.genererJoursPeriode(dateDebut, dateFin);
 
-    // ── Bornes [début, fin] de chaque jour, calculées EXACTEMENT
-    //    comme le reste du fichier (setHours en heure locale) pour
-    //    rester cohérent avec getPresenceParPeriode / Employees ───
     const bornesParJour = jours.map(jour => {
       const debutJour = new Date(jour);
       debutJour.setHours(0, 0, 0, 0);
@@ -428,8 +424,6 @@ export class PointageService {
       .andWhere('p.ingressoUscita = :entree', { entree: '0100' })
       .getMany();
 
-    // ── Pour chaque matricule, dans quels jours a-t-il pointé ?
-    //    (comparaison directe par bornes de date, pas par string UTC) ──
     const joursPresentsParMatricule = new Map<number, Set<string>>();
     pointagesPeriode.forEach((p) => {
       const jourTrouve = bornesParJour.find(
@@ -464,6 +458,7 @@ export class PointageService {
       let joursPresent = 0;
       let joursAbsent = 0;
       let joursConge = 0;
+      const datesAbsence: string[] = []; // ✅ NOUVEAU
       const joursPresentsSet = joursPresentsParMatricule.get(matriculeNum);
 
       for (const jour of jours) {
@@ -479,9 +474,10 @@ export class PointageService {
           joursConge++;
         } else {
           joursAbsent++;
+          datesAbsence.push(jour); // ✅ NOUVEAU — on retient la date
         }
       }
-      return { joursPresent, joursAbsent, joursConge };
+      return { joursPresent, joursAbsent, joursConge, datesAbsence };
     };
 
     // ── Ouvriers ───────────────────────────────────────────────────
@@ -514,7 +510,7 @@ export class PointageService {
       recapEmployees,
     };
   }
-  private genererJoursPeriode(dateDebut: string, dateFin: string): string[] {
+ private genererJoursPeriode(dateDebut: string, dateFin: string): string[] {
     const jours: string[] = [];
     let cursor = dateDebut;
     while (cursor <= dateFin) {

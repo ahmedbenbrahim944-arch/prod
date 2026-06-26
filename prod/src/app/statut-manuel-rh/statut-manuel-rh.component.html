@@ -70,7 +70,8 @@
   </div>
 
   <!-- ── Formulaire ajout / édition ────────────────────────── -->
-  <div class="card" id="rh-form-card">
+  <!-- ✅ NOUVEAU — caché par défaut, ne s'affiche qu'au clic sur ➕ (personne absente) ou ✏️ (statut existant) -->
+  <div class="card" id="rh-form-card" *ngIf="showForm">
     <div class="card-title">{{ editingId ? ' Modifier un statut' : '➕ Ajouter un statut' }}</div>
 
     <form class="rh-form" (ngSubmit)="submitForm()">
@@ -116,7 +117,8 @@
         <button type="submit" class="btn-filter" [disabled]="savingForm">
           {{ savingForm ? 'Enregistrement...' : (editingId ? ' Mettre à jour' : '➕ Ajouter') }}
         </button>
-        <button type="button" class="btn-cancel" *ngIf="editingId" (click)="resetForm()">Annuler</button>
+        <!-- ✅ NOUVEAU — visible dès que le formulaire est ouvert, pas seulement en édition -->
+        <button type="button" class="btn-cancel" (click)="resetForm()">Annuler</button>
       </div>
     </form>
   </div>

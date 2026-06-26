@@ -24,6 +24,7 @@ export interface ExportRecapRow {
   joursPresent: number;
   joursAbsent: number;
   joursConge: number;
+  datesAbsence: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -127,7 +128,7 @@ export class ExportExcelService {
   // ════════════════════════════════════════════════════════════
   // ✅ NOUVEAU — Construction de l'onglet "Récapitulatif"
   // ════════════════════════════════════════════════════════════
-  private buildRecapSheet(
+ private buildRecapSheet(
     workbook: ExcelJS.Workbook,
     rows: ExportRecapRow[],
     dateDebut: string,
@@ -144,10 +145,11 @@ export class ExportExcelService {
       { width: 16 }, // Service / Catégorie
       { width: 14 }, // Jours Présent
       { width: 14 }, // Jours Absent
+      { width: 32 }, // ✅ NOUVEAU — Dates d'absence
       { width: 14 }, // Jours Congé
       { width: 14 }, // Total jours
     ];
-    const nbCols = 7;
+    const nbCols = 8; // ✅ +1
 
     // ── Titre fusionné ─────────────────────────────────────────────
     sheet.mergeCells(1, 1, 1, nbCols);
@@ -169,7 +171,9 @@ export class ExportExcelService {
 
     // ── En-têtes colonnes ───────────────────────────────────────────
     const headerRow = sheet.addRow([
-      'Matricule', 'Nom & Prénom', 'Service', 'Jours Présent', 'Jours Absent', 'Jours Congé', 'Total jours',
+      'Matricule', 'Nom & Prénom', 'Service',
+      'Jours Présent', 'Jours Absent', 'Dates Absence', // ✅ NOUVEAU
+      'Jours Congé', 'Total jours',
     ]);
     headerRow.eachCell(cell => {
       cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: this.COLOR_WHITE } };
@@ -190,9 +194,12 @@ export class ExportExcelService {
 
     sorted.forEach(r => {
       const total = r.joursPresent + r.joursAbsent + r.joursConge;
+      const datesAbsenceStr = this.formatDatesAbsence(r.datesAbsence); // ✅ NOUVEAU
+
       const row = sheet.addRow([
         r.matricule, r.nomPrenom, r.service || 'Ouvrier',
-        r.joursPresent, r.joursAbsent, r.joursConge, total,
+        r.joursPresent, r.joursAbsent, datesAbsenceStr, // ✅ NOUVEAU
+        r.joursConge, total,
       ]);
 
       row.eachCell((cell, colNumber) => {
@@ -209,9 +216,16 @@ export class ExportExcelService {
         row.getCell(5).font = { name: 'Arial', size: 10, bold: true, color: { argb: this.COLOR_RED } };
       }
 
+      // Colonne "Dates Absence" → texte rouge, aligné à gauche (✅ NOUVEAU)
+      const datesCell = row.getCell(6);
+      datesCell.alignment = { vertical: 'middle', horizontal: 'left' };
+      if (r.joursAbsent > 0) {
+        datesCell.font = { name: 'Arial', size: 9, italic: true, color: { argb: this.COLOR_RED } };
+      }
+
       // Colonne "Jours Congé" → orange si > 0
       if (r.joursConge > 0) {
-        row.getCell(6).font = { name: 'Arial', size: 10, bold: true, color: { argb: this.COLOR_ORANGE } };
+        row.getCell(7).font = { name: 'Arial', size: 10, bold: true, color: { argb: this.COLOR_ORANGE } };
       }
     });
 
@@ -223,13 +237,27 @@ export class ExportExcelService {
     sheet.addRow([]);
     const totalRow = sheet.addRow([
       `Total : ${rows.length} personne(s)`, '', '',
-      totalPresent, totalAbsent, totalConge, totalPresent + totalAbsent + totalConge,
+      totalPresent, totalAbsent, '', // ✅ NOUVEAU — colonne dates vide sur le total
+      totalConge, totalPresent + totalAbsent + totalConge,
     ]);
     totalRow.eachCell(cell => {
       cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: this.COLOR_BLUE } };
     });
 
     sheet.views = [{ state: 'frozen', ySplit: 3 }];
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — Formate une liste de dates yyyy-MM-dd en "dd/MM, dd/MM..."
+  // ════════════════════════════════════════════════════════════
+  private formatDatesAbsence(dates: string[]): string {
+    if (!dates || dates.length === 0) return '';
+    return dates
+      .map(d => {
+        const [, m, day] = d.split('-');
+        return `${day}/${m}`;
+      })
+      .join(', ');
   }
 
   // ════════════════════════════════════════════════════════════

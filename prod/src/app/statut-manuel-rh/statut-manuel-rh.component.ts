@@ -52,6 +52,7 @@ export class StatutManuelRhComponent implements OnInit {
   exportError: string | null = null;
 
   // ── Formulaire ────────────────────────────────────────────────
+  showForm = false; // ✅ NOUVEAU — formulaire caché par défaut
   formModel: CreateStatutManuelPayload = this.emptyForm();
   editingId: number | null = null;
   savingForm = false;
@@ -132,7 +133,6 @@ export class StatutManuelRhComponent implements OnInit {
     this.exportError = null;
     this.exportingExcel = true;
 
-    // ✅ On récupère en parallèle : Employees (4 services), Ouvriers, et le récap jours
     forkJoin({
       employees: this.pointageSvc.getPresencePeriodeEmployees(this.dateDebut, this.dateFin),
       ouvriers: this.pointageSvc.getPresencePeriode(this.dateDebut, this.dateFin),
@@ -140,7 +140,6 @@ export class StatutManuelRhComponent implements OnInit {
     }).subscribe({
       next: async ({ employees, ouvriers, recap }) => {
         try {
-          // ── Données par service (comme avant) ───────────────────
           const dataParService: Record<string, ExportPeriodeData> = {};
           this.services.forEach(service => {
             dataParService[service] = {
@@ -149,13 +148,11 @@ export class StatutManuelRhComponent implements OnInit {
             };
           });
 
-          // ── Données Ouvriers (✅ NOUVEAU) ────────────────────────
           const dataOuvriers: ExportPeriodeData = {
             presents: ouvriers.presents || [],
             absents: ouvriers.absents || [],
           };
 
-          // ── Récap jours Présent/Absent/Congé (✅ NOUVEAU) ────────
           const recapRows: ExportRecapRow[] = [
             ...(recap.recapEmployees || []),
             ...(recap.recapOuvriers || []).map(o => ({ ...o, service: 'Ouvrier' })),
@@ -216,6 +213,7 @@ export class StatutManuelRhComponent implements OnInit {
   }
 
   // Pré-remplit le formulaire depuis une ligne absente cliquée
+  // ✅ NOUVEAU — c'est ce qui ouvre désormais le formulaire (il était caché)
   prefillFromPersonne(p: PersonneRow): void {
     this.editingId = null;
     this.formModel = {
@@ -226,6 +224,7 @@ export class StatutManuelRhComponent implements OnInit {
       dateFin: this.dateFin,
       commentaire: '',
     };
+    this.showForm = true; // ✅ NOUVEAU
     this.scrollToForm();
   }
 
@@ -239,6 +238,7 @@ export class StatutManuelRhComponent implements OnInit {
       dateFin: s.dateFin,
       commentaire: s.commentaire || '',
     };
+    this.showForm = true; // ✅ NOUVEAU
     this.scrollToForm();
   }
 
@@ -246,6 +246,7 @@ export class StatutManuelRhComponent implements OnInit {
     this.editingId = null;
     this.formModel = this.emptyForm();
     this.formError = null;
+    this.showForm = false; // ✅ NOUVEAU — referme le formulaire
   }
 
   submitForm(): void {
@@ -270,7 +271,7 @@ export class StatutManuelRhComponent implements OnInit {
     obs.subscribe({
       next: () => {
         this.savingForm = false;
-        this.resetForm();
+        this.resetForm(); // referme aussi le formulaire (showForm = false)
         this.loadStatuts();
         this.load();
       },

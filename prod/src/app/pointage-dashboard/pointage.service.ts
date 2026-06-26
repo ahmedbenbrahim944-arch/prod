@@ -52,6 +52,7 @@ export interface RecapPersonneJours {
   joursPresent: number;
   joursAbsent: number;
   joursConge: number;
+  datesAbsence: string[];
 }
 
 export interface RecapPeriodeResponse {
