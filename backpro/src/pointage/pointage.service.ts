@@ -400,40 +400,53 @@ export class PointageService {
   // pour Ouvriers ET Employees, en se basant uniquement sur les
   // données réelles (pointage physique + table des statuts manuels).
   // ════════════════════════════════════════════════════════════════
-  async getRecapJoursPeriode(dateDebut: string, dateFin: string) {
-    const debut = new Date(dateDebut);
-    debut.setHours(0, 0, 0, 0);
+   async getRecapJoursPeriode(dateDebut: string, dateFin: string) {
+    // ── Liste des jours (yyyy-MM-dd) — calcul par chaîne pure, AUCUN
+    //    passage par toISOString() après une manipulation en heure
+    //    locale (c'était la source du bug de décalage d'un jour) ───
+    const jours: string[] = this.genererJoursPeriode(dateDebut, dateFin);
 
-    const fin = new Date(dateFin);
-    fin.setHours(23, 59, 59, 999);
+    // ── Bornes [début, fin] de chaque jour, calculées EXACTEMENT
+    //    comme le reste du fichier (setHours en heure locale) pour
+    //    rester cohérent avec getPresenceParPeriode / Employees ───
+    const bornesParJour = jours.map(jour => {
+      const debutJour = new Date(jour);
+      debutJour.setHours(0, 0, 0, 0);
+      const finJour = new Date(jour);
+      finJour.setHours(23, 59, 59, 999);
+      return { jour, debutJour, finJour };
+    });
 
-    // ── Liste des jours (yyyy-MM-dd) de la période ────────────────
-    const jours: string[] = [];
-    const cursor = new Date(debut);
-    while (cursor <= fin) {
-      jours.push(cursor.toISOString().split('T')[0]);
-      cursor.setDate(cursor.getDate() + 1);
-    }
+    const debutPeriode = bornesParJour[0].debutJour;
+    const finPeriode = bornesParJour[bornesParJour.length - 1].finJour;
 
-    // ── Pointages "entrée" sur la période → Map<matricule, Set<jour>> ──
+    // ── Pointages "entrée" sur toute la période ──────────────────
     const pointagesPeriode = await this.pointageRepo
       .createQueryBuilder('p')
-      .where('p.dataOra >= :debut', { debut })
-      .andWhere('p.dataOra <= :fin', { fin })
+      .where('p.dataOra >= :debut', { debut: debutPeriode })
+      .andWhere('p.dataOra <= :fin', { fin: finPeriode })
       .andWhere('p.ingressoUscita = :entree', { entree: '0100' })
       .getMany();
 
+    // ── Pour chaque matricule, dans quels jours a-t-il pointé ?
+    //    (comparaison directe par bornes de date, pas par string UTC) ──
     const joursPresentsParMatricule = new Map<number, Set<string>>();
     pointagesPeriode.forEach((p) => {
-      const jour = p.dataOra.toISOString().split('T')[0];
+      const jourTrouve = bornesParJour.find(
+        (b) => p.dataOra >= b.debutJour && p.dataOra <= b.finJour,
+      );
+      if (!jourTrouve) return;
       if (!joursPresentsParMatricule.has(p.matricule)) {
         joursPresentsParMatricule.set(p.matricule, new Set());
       }
-      joursPresentsParMatricule.get(p.matricule)!.add(jour);
+      joursPresentsParMatricule.get(p.matricule)!.add(jourTrouve.jour);
     });
 
     // ── Statuts manuels qui chevauchent la période (liste complète) ──
-    const statutsManuels = await this.statutManuelService.findAllActifsPourPeriode(debut, fin);
+    const statutsManuels = await this.statutManuelService.findAllActifsPourPeriode(
+      debutPeriode,
+      finPeriode,
+    );
     const statutsParMatricule = new Map<string, StatutManuel[]>();
     statutsManuels.forEach((s) => {
       if (!statutsParMatricule.has(s.matricule)) statutsParMatricule.set(s.matricule, []);
@@ -500,5 +513,24 @@ export class PointageService {
       recapOuvriers,
       recapEmployees,
     };
+  }
+  private genererJoursPeriode(dateDebut: string, dateFin: string): string[] {
+    const jours: string[] = [];
+    let cursor = dateDebut;
+    while (cursor <= dateFin) {
+      jours.push(cursor);
+      cursor = this.lendemain(cursor);
+    }
+    return jours;
+  }
+
+  private lendemain(jour: string): string {
+    const [y, m, d] = jour.split('-').map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    date.setUTCDate(date.getUTCDate() + 1);
+    const yyyy = date.getUTCFullYear();
+    const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(date.getUTCDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 }

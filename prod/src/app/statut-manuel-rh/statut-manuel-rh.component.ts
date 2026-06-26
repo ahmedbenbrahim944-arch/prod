@@ -7,7 +7,7 @@ import { PointageService, PresenceData } from '../pointage-dashboard/pointage.se
 import {
   StatutManuelService, StatutManuel, TypeStatutManuel, CreateStatutManuelPayload
 } from './statut-manuel.service';
-import { ExportExcelService, ExportPeriodeData } from './export-excel.service';
+import { ExportExcelService, ExportPeriodeData, ExportRecapRow } from './export-excel.service';
 import { Observable, forkJoin } from 'rxjs';
 
 interface PersonneRow {
@@ -125,27 +125,46 @@ export class StatutManuelRhComponent implements OnInit {
   }
 
   // ════════════════════════════════════════════════════════════
-  // Export Excel — pointage de la période, un onglet par service
+  // Export Excel — pointage de la période : services + ouvriers + récap
   // ════════════════════════════════════════════════════════════
   exportExcel(): void {
     if (!this.dateDebut || !this.dateFin) return;
     this.exportError = null;
     this.exportingExcel = true;
 
-    // On récupère toujours TOUS les services pour l'export (indépendant du filtre à l'écran)
-    this.pointageSvc.getPresencePeriodeEmployees(this.dateDebut, this.dateFin).subscribe({
-      next: async (res: any) => {
+    // ✅ On récupère en parallèle : Employees (4 services), Ouvriers, et le récap jours
+    forkJoin({
+      employees: this.pointageSvc.getPresencePeriodeEmployees(this.dateDebut, this.dateFin),
+      ouvriers: this.pointageSvc.getPresencePeriode(this.dateDebut, this.dateFin),
+      recap: this.pointageSvc.getRecapPeriode(this.dateDebut, this.dateFin),
+    }).subscribe({
+      next: async ({ employees, ouvriers, recap }) => {
         try {
+          // ── Données par service (comme avant) ───────────────────
           const dataParService: Record<string, ExportPeriodeData> = {};
           this.services.forEach(service => {
             dataParService[service] = {
-              presents: (res.presents || []).filter((p: any) => p.service === service),
-              absents: (res.absents || []).filter((a: any) => a.service === service),
+              presents: (employees.presents || []).filter((p: any) => p.service === service),
+              absents: (employees.absents || []).filter((a: any) => a.service === service),
             };
           });
 
+          // ── Données Ouvriers (✅ NOUVEAU) ────────────────────────
+          const dataOuvriers: ExportPeriodeData = {
+            presents: ouvriers.presents || [],
+            absents: ouvriers.absents || [],
+          };
+
+          // ── Récap jours Présent/Absent/Congé (✅ NOUVEAU) ────────
+          const recapRows: ExportRecapRow[] = [
+            ...(recap.recapEmployees || []),
+            ...(recap.recapOuvriers || []).map(o => ({ ...o, service: 'Ouvrier' })),
+          ];
+
           await this.exportSvc.exportPointagePeriode(
             dataParService,
+            dataOuvriers,
+            recapRows,
             this.statuts,
             this.dateDebut,
             this.dateFin,

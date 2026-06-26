@@ -44,6 +44,23 @@ export interface PresenceEmployeeData {
   absents: PresenceEmployeeItem[];
 }
 
+// ✅ NOUVEAU — récap jours Présent/Absent/Congé sur une période
+export interface RecapPersonneJours {
+  matricule: number | string;
+  nomPrenom: string;
+  service?: string;
+  joursPresent: number;
+  joursAbsent: number;
+  joursConge: number;
+}
+
+export interface RecapPeriodeResponse {
+  dateDebut: string;
+  dateFin: string;
+  recapOuvriers: RecapPersonneJours[];
+  recapEmployees: RecapPersonneJours[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class PointageService {
   private api = 'http://102.207.250.53:3000';
@@ -81,6 +98,14 @@ export class PointageService {
    getPresencePeriodeEmployees(debut: string, fin: string): Observable<PresenceEmployeeData> {
     return this.http.get<PresenceEmployeeData>(
       `${this.api}/pointage/employes/periode?debut=${debut}&fin=${fin}`,
+      { headers: this.headers() }
+    );
+  }
+
+  // ✅ NOUVEAU — récap jours Présent/Absent/Congé (Ouvriers + Employees)
+  getRecapPeriode(debut: string, fin: string): Observable<RecapPeriodeResponse> {
+    return this.http.get<RecapPeriodeResponse>(
+      `${this.api}/pointage/recap-periode?debut=${debut}&fin=${fin}`,
       { headers: this.headers() }
     );
   }
