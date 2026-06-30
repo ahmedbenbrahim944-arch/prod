@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { StatutManuel } from '../statut-manuel/entites/statut-manuel.entity'
+import { StatutManuel, TypeStatutManuel, TypeMaladie } from '../statut-manuel/entites/statut-manuel.entity'
 import { CreateStatutManuelDto } from './dto/create-statut-manuel.dto';
 import { UpdateStatutManuelDto } from '../statut-manuel/dto/update-statut-manuel.dto'
 
@@ -11,6 +11,18 @@ export class StatutManuelService {
     @InjectRepository(StatutManuel)
     private repo: Repository<StatutManuel>,
   ) {}
+
+  /**
+   * Options pour peupler les selects du frontend :
+   * - statuts disponibles
+   * - sous-types maladie disponibles
+   */
+  getOptions() {
+    return {
+      statuts: Object.values(TypeStatutManuel),
+      typesMaladie: Object.values(TypeMaladie),
+    };
+  }
 
   async create(dto: CreateStatutManuelDto): Promise<StatutManuel> {
     const statut = this.repo.create(dto);

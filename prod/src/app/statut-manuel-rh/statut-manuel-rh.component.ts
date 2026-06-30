@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PointageService, PresenceData } from '../pointage-dashboard/pointage.service';
 import {
-  StatutManuelService, StatutManuel, TypeStatutManuel, CreateStatutManuelPayload
+  StatutManuelService, StatutManuel, TypeStatutManuel, TypeMaladie, CreateStatutManuelPayload
 } from './statut-manuel.service';
 import { ExportExcelService, ExportPeriodeData, ExportRecapRow } from './export-excel.service';
 import { Observable, forkJoin } from 'rxjs';
@@ -27,6 +27,13 @@ interface QuickStatutOption {
   icon: string;
 }
 
+// ✅ NOUVEAU — les 4 gros boutons affichés sur CHAQUE ligne d'absence
+interface RowActionButton {
+  statut: TypeStatutManuel;
+  label: string;
+  icon: string;
+}
+
 @Component({
   selector: 'app-statut-manuel-rh',
   standalone: true,
@@ -35,10 +42,12 @@ interface QuickStatutOption {
   styleUrls: ['./statut-manuel-rh.component.css'],
 })
 export class StatutManuelRhComponent implements OnInit {
+  readonly String = String;
 
   // ── Filtre dates ─────────────────────────────────────────────
   dateDebut: string = new Date().toISOString().split('T')[0];
   dateFin: string   = new Date().toISOString().split('T')[0];
+  
 
   // ── Filtre service ───────────────────────────────────────────
   selectedService: string | null = null;
@@ -68,11 +77,35 @@ export class StatutManuelRhComponent implements OnInit {
   quickError: string | null = null;
 
   readonly quickStatutOptions: QuickStatutOption[] = [
-    { value: 'present', label: 'Présent',  icon: '✅' },
-    { value: 'conge',   label: 'Congé',    icon: '🏖️' },
-    { value: 'maladie', label: 'Maladie',  icon: '🤒' },
-    { value: 'mission', label: 'Mission',  icon: '🚗' },
+    { value: 'present',                label: 'Présent',                 icon: '✅' },
+    { value: 'badge_oublie',           label: 'Badge oublié',            icon: '🪪' },
+    { value: 'conge',                  label: 'Congé',                   icon: '🏖️' },
+    { value: 'maladie',                label: 'Maladie',                 icon: '🤒' },
+    { value: 'absence_non_justifiee',  label: 'Absence non justifiée',   icon: '🚫' },
+    { value: 'mission',                label: 'Mission',                 icon: '🚗' },
   ];
+
+  // ════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — 4 gros boutons d'action affichés sur chaque ligne
+  // d'absence dans la liste "Présence". Cliquer dessus enregistre
+  // immédiatement le statut pour la période affichée (dateDebut → dateFin).
+  // ════════════════════════════════════════════════════════════
+  readonly rowActionButtons: RowActionButton[] = [
+    { statut: 'conge',                 label: 'Congé',                  icon: '🏖️' },
+    { statut: 'badge_oublie',          label: 'Présent (badge oublié)', icon: '🪪' },
+    { statut: 'absence_non_justifiee', label: 'Absence non justifiée',  icon: '🚫' },
+    { statut: 'maladie',               label: 'Congé maladie',          icon: '🤒' },
+  ];
+
+  // Matricule de la personne dont on enregistre actuellement un statut rapide (désactive ses boutons)
+  rowSaving: string | null = null;
+  // Erreur d'enregistrement rapide, par matricule
+  rowErrors = new Map<string, string>();
+
+  // ── Sous-formulaire "Congé maladie" ouvert sur une ligne ────── ✅ NOUVEAU
+  // Matricule de la ligne pour laquelle le sous-panneau Accouchement/Certificat est ouvert
+  maladieFormMatricule: string | null = null;
+  maladieSubModel: { typeMaladie: TypeMaladie | null; dateDebut: string; dateFin: string; nomDocteur: string } = this.emptyMaladieSubModel();
 
   // ── Données statuts manuels (table de gestion) ───────────────
   statuts: StatutManuel[] = [];
@@ -91,11 +124,18 @@ export class StatutManuelRhComponent implements OnInit {
   formSelectionPersonnes: PersonneRow[] = []; // ✅ NOUVEAU — personnes du groupe quand le formulaire vient de la sélection multiple
 
   readonly statutOptions: { value: TypeStatutManuel; label: string }[] = [
-    { value: 'present', label: ' Présent (badge oublié)' },
-    { value: 'conge',   label: ' Congé' },
-    { value: 'maladie', label: ' Maladie' },
-    { value: 'mission', label: ' Mission' },
-    { value: 'autre',   label: ' Autre' },
+    { value: 'present',                label: ' Présent' },
+    { value: 'badge_oublie',           label: ' Présent (badge oublié)' },
+    { value: 'conge',                  label: ' Congé' },
+    { value: 'maladie',                label: ' Congé maladie' },
+    { value: 'absence_non_justifiee',  label: ' Absence non justifiée' },
+    { value: 'mission',                label: ' Mission' },
+    { value: 'autre',                  label: ' Autre' },
+  ];
+
+  readonly typeMaladieOptions: { value: TypeMaladie; label: string }[] = [
+    { value: 'accouchement', label: 'Accouchement' },
+    { value: 'certificat',   label: 'Certificat médical' },
   ];
 
   constructor(
@@ -257,6 +297,122 @@ export class StatutManuelRhComponent implements OnInit {
   }
 
   // ════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — Action rapide en 1 clic, DIRECTEMENT depuis une ligne
+  // d'absence (les 4 gros boutons : Congé / Présent badge oublié /
+  // Absence non justifiée / Congé maladie). Utilise la période affichée
+  // (dateDebut → dateFin). "maladie" ouvre un sous-panneau au lieu
+  // d'enregistrer directement (il faut choisir accouchement/certificat).
+  // ════════════════════════════════════════════════════════════
+  onRowAction(p: PersonneRow, statut: TypeStatutManuel): void {
+    if (statut === 'maladie') {
+      this.toggleMaladieForm(p);
+      return;
+    }
+    this.saveQuickStatutPourPersonne(p, { statut });
+  }
+
+  private saveQuickStatutPourPersonne(
+    p: PersonneRow,
+    extra: { statut: TypeStatutManuel; typeMaladie?: TypeMaladie; nomDocteur?: string; dateDebut?: string; dateFin?: string },
+  ): void {
+    const matricule = String(p.matricule);
+    this.rowSaving = matricule;
+    this.rowErrors.delete(matricule);
+
+    const dateDebut = extra.dateDebut || this.dateDebut;
+    const dateFin = extra.dateFin || this.dateFin;
+
+    // Si un statut existe déjà pour cette personne sur une période qui chevauche → on le met à jour
+    const existant = this.statuts.find(s =>
+      String(s.matricule) === matricule &&
+      s.dateDebut <= dateFin && s.dateFin >= dateDebut
+    );
+
+    const payload: CreateStatutManuelPayload = {
+      matricule,
+      nomPrenom: p.nomPrenom,
+      statut: extra.statut,
+      dateDebut,
+      dateFin,
+      typeMaladie: extra.typeMaladie,
+      nomDocteur: extra.nomDocteur,
+    };
+
+    const obs = existant
+      ? this.statutSvc.update(existant.id, payload)
+      : this.statutSvc.create(payload);
+
+    obs.subscribe({
+      next: () => {
+        this.rowSaving = null;
+        this.maladieFormMatricule = null;
+        this.loadStatuts();
+        this.load();
+      },
+      error: (err) => {
+        this.rowSaving = null;
+        this.rowErrors.set(matricule, err?.error?.message || "Erreur lors de l'enregistrement.");
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  // ── Sous-panneau "Congé maladie" (accouchement / certificat) ──── ✅ NOUVEAU
+  private emptyMaladieSubModel() {
+    return {
+      typeMaladie: null as TypeMaladie | null,
+      dateDebut: this.dateDebut,
+      dateFin: this.dateFin,
+      nomDocteur: '',
+    };
+  }
+
+  toggleMaladieForm(p: PersonneRow): void {
+    const matricule = String(p.matricule);
+    if (this.maladieFormMatricule === matricule) {
+      this.maladieFormMatricule = null; // referme si déjà ouvert
+      return;
+    }
+    this.maladieFormMatricule = matricule;
+    this.maladieSubModel = this.emptyMaladieSubModel();
+    this.rowErrors.delete(matricule);
+  }
+
+  closeMaladieForm(): void {
+    this.maladieFormMatricule = null;
+  }
+
+  selectTypeMaladie(type: TypeMaladie): void {
+    this.maladieSubModel.typeMaladie = type;
+  }
+
+  submitMaladieForm(p: PersonneRow): void {
+    const matricule = String(p.matricule);
+    if (!this.maladieSubModel.typeMaladie) {
+      this.rowErrors.set(matricule, 'Choisissez Accouchement ou Certificat.');
+      return;
+    }
+    if (!this.maladieSubModel.dateDebut || !this.maladieSubModel.dateFin) {
+      this.rowErrors.set(matricule, 'Date début et date fin sont obligatoires.');
+      return;
+    }
+    if (this.maladieSubModel.dateFin < this.maladieSubModel.dateDebut) {
+      this.rowErrors.set(matricule, 'La date de fin doit être après la date de début.');
+      return;
+    }
+
+    this.saveQuickStatutPourPersonne(p, {
+      statut: 'maladie',
+      typeMaladie: this.maladieSubModel.typeMaladie,
+      dateDebut: this.maladieSubModel.dateDebut,
+      dateFin: this.maladieSubModel.dateFin,
+      nomDocteur: this.maladieSubModel.typeMaladie === 'certificat'
+        ? (this.maladieSubModel.nomDocteur || undefined)
+        : undefined,
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════
   // Export Excel — pointage de la période : services + ouvriers + récap
   // ════════════════════════════════════════════════════════════
   exportExcel(): void {
@@ -344,7 +500,6 @@ export class StatutManuelRhComponent implements OnInit {
   }
 
   // Pré-remplit le formulaire depuis une ligne absente cliquée
-  // ✅ NOUVEAU — c'est ce qui ouvre désormais le formulaire (il était caché)
   prefillFromPersonne(p: PersonneRow): void {
     this.editingId = null;
     this.formModel = {
@@ -355,8 +510,8 @@ export class StatutManuelRhComponent implements OnInit {
       dateFin: this.dateFin,
       commentaire: '',
     };
-    this.formSelectionPersonnes = []; // ✅ NOUVEAU — formulaire mono-personne, pas de groupe
-    this.showForm = true; // ✅ NOUVEAU
+    this.formSelectionPersonnes = [];
+    this.showForm = true;
     this.scrollToForm();
   }
 
@@ -369,9 +524,11 @@ export class StatutManuelRhComponent implements OnInit {
       dateDebut: s.dateDebut,
       dateFin: s.dateFin,
       commentaire: s.commentaire || '',
+      typeMaladie: s.typeMaladie || undefined,
+      nomDocteur: s.nomDocteur || '',
     };
-    this.formSelectionPersonnes = []; // ✅ NOUVEAU
-    this.showForm = true; // ✅ NOUVEAU
+    this.formSelectionPersonnes = [];
+    this.showForm = true;
     this.scrollToForm();
   }
 
@@ -379,14 +536,14 @@ export class StatutManuelRhComponent implements OnInit {
     this.editingId = null;
     this.formModel = this.emptyForm();
     this.formError = null;
-    this.formSelectionPersonnes = []; // ✅ NOUVEAU
-    this.showForm = false; // ✅ NOUVEAU — referme le formulaire
+    this.formSelectionPersonnes = [];
+    this.showForm = false;
   }
 
   submitForm(): void {
     this.formError = null;
 
-    // ✅ NOUVEAU — soumission groupée (plusieurs personnes sélectionnées)
+    // ✅ soumission groupée (plusieurs personnes sélectionnées)
     if (this.formSelectionPersonnes.length > 0) {
       this.submitFormGroupe();
       return;
@@ -400,9 +557,20 @@ export class StatutManuelRhComponent implements OnInit {
       this.formError = 'La date de fin doit être après la date de début.';
       return;
     }
+    if (this.formModel.statut === 'maladie' && !this.formModel.typeMaladie) {
+      this.formError = 'Précisez le type : Accouchement ou Certificat.';
+      return;
+    }
 
     this.savingForm = true;
-    const payload = { ...this.formModel, commentaire: this.formModel.commentaire || undefined };
+    const payload: CreateStatutManuelPayload = {
+      ...this.formModel,
+      commentaire: this.formModel.commentaire || undefined,
+      typeMaladie: this.formModel.statut === 'maladie' ? this.formModel.typeMaladie : undefined,
+      nomDocteur: this.formModel.statut === 'maladie' && this.formModel.typeMaladie === 'certificat'
+        ? (this.formModel.nomDocteur || undefined)
+        : undefined,
+    };
 
     const obs = this.editingId
       ? this.statutSvc.update(this.editingId, payload)
@@ -422,7 +590,7 @@ export class StatutManuelRhComponent implements OnInit {
     });
   }
 
-  /** ✅ NOUVEAU — applique le statut/dates/commentaire du formulaire à tout le groupe sélectionné */
+  /** ✅ applique le statut/dates/commentaire du formulaire à tout le groupe sélectionné */
   private submitFormGroupe(): void {
     if (this.formModel.dateFin < this.formModel.dateDebut) {
       this.formError = 'La date de fin doit être après la date de début.';
@@ -500,6 +668,16 @@ export class StatutManuelRhComponent implements OnInit {
     return Math.round((this.totalPresents / this.totalPersonnes) * 100);
   }
 
+  /**
+   * ✅ NOUVEAU — Absences qui n'ont PAS encore de statut manuel enregistré
+   * sur la période affichée. Dès qu'un statut est ajouté pour une personne,
+   * elle disparaît de cette liste (et apparaît dans "Statuts manuels
+   * enregistrés" en bas, où elle reste modifiable/supprimable).
+   */
+  get absencesATraiter(): PersonneRow[] {
+    return (this.data?.absents || []).filter((a: any) => a.statut === 'absent');
+  }
+
   get filteredList(): PersonneRow[] {
     let list: any[] = [];
     if (this.filterTab === 'tous') {
@@ -507,7 +685,7 @@ export class StatutManuelRhComponent implements OnInit {
     } else if (this.filterTab === 'presents') {
       list = this.data?.presents || [];
     } else {
-      list = this.data?.absents || [];
+      list = this.absencesATraiter; // ✅ NOUVEAU — uniquement les absences non traitées
     }
 
     if (this.searchTerm) {
@@ -522,6 +700,11 @@ export class StatutManuelRhComponent implements OnInit {
 
   statutLabel(statut: string): string {
     return this.statutOptions.find(o => o.value === statut)?.label || statut;
+  }
+
+  typeMaladieLabel(type?: string | null): string {
+    if (!type) return '';
+    return this.typeMaladieOptions.find(o => o.value === type)?.label || type;
   }
 
   formatHeure(date: string | null | undefined): string {

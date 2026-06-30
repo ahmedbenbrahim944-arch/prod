@@ -5,7 +5,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   PointageService, PresenceData, Present, Absent,
-  PresenceEmployeeData
+  PresenceEmployeeData, RecapPoste
 } from './pointage.service';
 
 @Component({
@@ -24,6 +24,15 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
   filterTab: 'tous' | 'presents' | 'absents' = 'tous';
   searchTerm = '';
   private interval: any;
+
+  // ── Partie 1 : vue d'ensemble globale (ouvriers + tous services) ──
+  globalStats: { presents: number; absents: number; total: number } | null = null;
+
+  // ── Partie 2 : mode "Ouvrier" avec sous-filtre poste ──────────────
+  ouvrierMode = false; // true quand le bouton "Ouvrier" est actif
+  selectedPoste: '1ere poste' | '2eme poste' | null = null;
+  posteStats: { totalAffectes: number; presents: number; absents: number } | null = null;
+  readonly postes: ('1ere poste' | '2eme poste')[] = ['1ere poste', '2eme poste'];
 
   // ── Stats par ligne ───────────────────────────────────────────
   ligneStats: { ligne: string; presents: number; total: number; pct: number }[] = [];
@@ -45,6 +54,109 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.load();
+    this.loadGlobalStats();
+  }
+
+  loadGlobalStats(): void {
+    const debut = this.dateDebut || new Date().toISOString().split('T')[0];
+    const fin = this.dateFin || debut;
+    const isToday = debut === new Date().toISOString().split('T')[0] && fin === debut;
+
+    const ouvriers$ = isToday
+      ? this.svc.getPresenceToday()
+      : this.svc.getPresencePeriode(debut, fin);
+
+    const employees$ = isToday
+      ? this.svc.getPresenceTodayEmployees()
+      : this.svc.getPresencePeriodeEmployees(debut, fin);
+
+    ouvriers$.subscribe({
+      next: (ouv) => {
+        employees$.subscribe({
+          next: (emp) => {
+            this.globalStats = {
+              presents: ouv.presents.length + emp.totalPresents,
+              absents: ouv.absents.length + emp.totalAbsents,
+              total: ouv.presents.length + ouv.absents.length + emp.totalEmployes,
+            };
+            this.cdr.markForCheck();
+          },
+        });
+      },
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — Partie 2 : bouton "Ouvrier" + sous-filtre poste
+  // ════════════════════════════════════════════════════════════════
+  selectOuvrier(): void {
+    if (this.ouvrierMode) {
+      // re-clic → on désactive le mode, retour à la vue ouvrier normale
+      this.ouvrierMode = false;
+      this.selectedPoste = null;
+      this.posteStats = null;
+      return;
+    }
+    this.ouvrierMode = true;
+    this.selectedPoste = null;
+    this.posteStats = null;
+
+    // sécurité : on désactive le filtre service en parallèle
+    if (this.selectedService) {
+      this.selectedService = null;
+    }
+    this.load(); // recharge la liste ouvrier classique en dessous
+  }
+
+  selectPoste(poste: '1ere poste' | '2eme poste'): void {
+    // re-clic sur le même poste → on revient à la vue "Ouvrier" globale
+    if (this.selectedPoste === poste) {
+      this.selectedPoste = null;
+      this.posteStats = null;
+      return;
+    }
+
+    this.selectedPoste = poste;
+    this.loading = true;
+
+    const debut = this.dateDebut || new Date().toISOString().split('T')[0];
+    const fin = this.dateFin || debut;
+    const isToday = debut === new Date().toISOString().split('T')[0] && fin === debut;
+
+    const obs = isToday
+      ? this.svc.getRecapPosteToday()
+      : this.svc.getRecapPostePeriode(debut, fin);
+
+    obs.subscribe({
+      next: (rows: RecapPoste[]) => {
+        const filtres = rows.filter(r => r.poste === poste);
+        this.posteStats = filtres.reduce(
+          (acc, r) => ({
+            totalAffectes: acc.totalAffectes + r.totalAffectes,
+            presents: acc.presents + r.presents,
+            absents: acc.absents + r.absents,
+          }),
+          { totalAffectes: 0, presents: 0, absents: 0 }
+        );
+        this.loading = false;
+        this.cdr.markForCheck();
+      },
+      error: () => { this.loading = false; }
+    });
+  }
+  get totalOuvriers(): number {
+    if (this.posteStats) return this.posteStats.totalAffectes;
+    return (this.data?.presents.length || 0) + (this.data?.absents.length || 0);
+  }
+
+  get totalPresents(): number {
+    if (this.posteStats) return this.posteStats.presents;
+    return this.data?.presents.length || 0;
+  }
+
+  get totalAbsents(): number {
+    if (this.posteStats) return this.posteStats.absents;
+    return this.data?.absents.length || 0;
   }
 
   ngOnDestroy(): void {
@@ -180,17 +292,7 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
   }
 
   // ── Getters ───────────────────────────────────────────────────
-  get totalOuvriers(): number {
-    return (this.data?.presents.length || 0) + (this.data?.absents.length || 0);
-  }
-
-  get totalPresents(): number {
-    return this.data?.presents.length || 0;
-  }
-
-  get totalAbsents(): number {
-    return this.data?.absents.length || 0;
-  }
+  
 
   get tauxPresence(): number {
     if (!this.totalOuvriers) return 0;
@@ -253,7 +355,11 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
     this.dateDebut = today;
     this.dateFin   = today;
 
-    if (this.selectedService) {
+    this.loadGlobalStats(); // ✅ NOUVEAU
+
+    if (this.selectedPoste) {
+      this.selectPoste(this.selectedPoste);
+    } else if (this.selectedService) {
       this.loadServiceData();
     } else {
       this.load();
@@ -261,9 +367,15 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
   }
 
   // ✅ MODIFIÉ — ne réinitialise plus selectedService
-  loadPeriode(): void {
+ loadPeriode(): void {
     if (!this.dateDebut || !this.dateFin) return;
 
+    this.loadGlobalStats(); // ✅ NOUVEAU
+
+    if (this.selectedPoste) {
+      this.selectPoste(this.selectedPoste);
+      return;
+    }
     if (this.selectedService) {
       this.loadServiceData();
       return;

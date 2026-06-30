@@ -2,7 +2,17 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
-export type TypeStatutManuel = 'conge' | 'maladie' | 'mission' | 'autre' | 'present';
+export type TypeStatutManuel =
+  | 'conge'
+  | 'maladie'
+  | 'mission'
+  | 'autre'
+  | 'present'
+  | 'badge_oublie'
+  | 'absence_non_justifiee';
+
+// ── Sous-types applicables uniquement quand statut === 'maladie' ──
+export type TypeMaladie = 'accouchement' | 'certificat';
 
 export interface StatutManuel {
   id: number;
@@ -12,6 +22,8 @@ export interface StatutManuel {
   dateDebut: string;
   dateFin: string;
   commentaire: string | null;
+  typeMaladie?: TypeMaladie | null;
+  nomDocteur?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -23,6 +35,8 @@ export interface CreateStatutManuelPayload {
   dateDebut: string;
   dateFin: string;
   commentaire?: string;
+  typeMaladie?: TypeMaladie;
+  nomDocteur?: string;
 }
 
 export type UpdateStatutManuelPayload = Partial<CreateStatutManuelPayload>;

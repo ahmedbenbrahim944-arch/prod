@@ -706,6 +706,148 @@
   border-radius: 20px;
 }
 
+/* ── ✅ NOUVEAU — Grandes cartes d'absence à traiter ──────────────
+   Une carte par personne absente, nom en grand, 4 gros boutons d'action
+   directement dessous, et un sous-panneau qui s'ouvre pour "Congé maladie".
+   ────────────────────────────────────────────────────────────── */
+.absence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 650px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.absence-card {
+  background: var(--white);
+  border: 1.5px solid var(--gray-border);
+  border-left: 5px solid var(--red);
+  border-radius: 14px;
+  padding: 18px 20px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.absence-card:hover {
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+.absence-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.absence-info {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.absence-mat {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--gray-bg);
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+.absence-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: -0.2px;
+}
+.absence-service {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  background: #dbeafe;
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+/* ── Les 4 gros boutons d'action ─────────────────────────────── */
+.absence-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.btn-row-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--gray-border);
+  background: var(--gray-bg);
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.btn-row-action-icon { font-size: 22px; line-height: 1; }
+.btn-row-action-label { font-size: 12.5px; line-height: 1.25; }
+.btn-row-action:hover {
+  background: var(--white);
+  border-color: var(--blue);
+  color: var(--blue);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(4, 33, 158, 0.12);
+}
+.btn-row-action.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--white);
+}
+.btn-row-action:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* ── Sous-panneau Congé maladie (Accouchement / Certificat) ──────── */
+.maladie-subpanel {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: var(--gray-bg);
+  border: 1.5px dashed var(--gray-border);
+  border-radius: 12px;
+}
+.maladie-subpanel-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.btn-maladie-type {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--gray-border);
+  background: var(--white);
+  color: var(--text-dark);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-maladie-type:hover { border-color: var(--blue); color: var(--blue); }
+.btn-maladie-type.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--white);
+}
+.maladie-subpanel-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.maladie-subpanel-fields .rh-form-group { min-width: 150px; }
+.maladie-subpanel-actions {
+  display: flex;
+  gap: 10px;
+}
+
 /* ── Responsive mobile ───────────────────────────────────────── */
 @media (max-width: 768px) {
   .db { padding: 0.75rem; }

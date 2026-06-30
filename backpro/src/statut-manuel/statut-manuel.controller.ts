@@ -24,6 +24,12 @@ export class StatutManuelController {
     return this.service.create(dto);
   }
 
+  // ⚠️ Doit rester AVANT @Get(':id') sinon "options" sera interprété comme un id
+  @Get('options')
+  getOptions() {
+    return this.service.getOptions();
+  }
+
   @Get()
   findAll() {
     return this.service.findAll();

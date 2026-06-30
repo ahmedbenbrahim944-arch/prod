@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, IsDateString } from 'class-validator';
-import { TypeStatutManuel } from '../entites/statut-manuel.entity';
+import { TypeStatutManuel, TypeMaladie } from '../entites/statut-manuel.entity';
 
 export class UpdateStatutManuelDto {
   @IsOptional()
@@ -25,4 +25,12 @@ export class UpdateStatutManuelDto {
   @IsOptional()
   @IsString()
   commentaire?: string;
+
+  @IsOptional()
+  @IsEnum(TypeMaladie)
+  typeMaladie?: TypeMaladie;
+
+  @IsOptional()
+  @IsString()
+  nomDocteur?: string;
 }

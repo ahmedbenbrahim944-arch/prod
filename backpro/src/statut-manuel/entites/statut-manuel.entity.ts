@@ -13,6 +13,14 @@ export enum TypeStatutManuel {
   MISSION = 'mission',
   AUTRE = 'autre',
   PRESENT = 'present',
+  BADGE_OUBLIE = 'badge_oublie',
+  ABSENCE_NON_JUSTIFIEE = 'absence_non_justifiee',
+}
+
+// ── Sous-types applicables uniquement quand statut === MALADIE ──
+export enum TypeMaladie {
+  ACCOUCHEMENT = 'accouchement',
+  CERTIFICAT = 'certificat',
 }
 
 @Entity('statuts_manuels')
@@ -42,6 +50,18 @@ export class StatutManuel {
 
   @Column({ length: 255, nullable: true })
   commentaire: string;
+
+  // ── Renseignés uniquement quand statut === MALADIE ──
+  @Column({
+    type: 'enum',
+    enum: TypeMaladie,
+    nullable: true,
+  })
+  typeMaladie: TypeMaladie | null;
+
+  // ── Optionnel, pertinent seulement quand typeMaladie === CERTIFICAT ──
+  @Column({ type: 'json', nullable: true })
+  nomDocteur: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

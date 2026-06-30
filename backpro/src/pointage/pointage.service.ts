@@ -7,9 +7,29 @@ import { Badge } from 'src/autosaisie/entities/badge.entity';
 import { Employee } from '../employee/entities/employee.entity';
 import { StatutManuelService } from '../statut-manuel/statut-manuel.service'; // ✅ NOUVEAU
 import { TypeStatutManuel, StatutManuel } from 'src/statut-manuel/entites/statut-manuel.entity';
+import { Affectation } from 'src/affectation/entities/affectation.entity';
 
-// ✅ Type étendu — inclut les statuts manuels
-export type StatutPresence = 'present' | 'absent' | 'conge' | 'maladie' | 'mission' | 'autre';
+// ✅ Type étendu — inclut tous les statuts manuels possibles
+export type StatutPresence =
+  | 'present'
+  | 'absent'
+  | 'conge'
+  | 'maladie'
+  | 'mission'
+  | 'autre'
+  | 'badge_oublie'
+  | 'absence_non_justifiee';
+
+// ── Statuts manuels qui doivent être comptés comme "présent" ──
+// (la personne est physiquement là, juste pas de pointage badge)
+const STATUTS_PRESENT_MANUEL = new Set<TypeStatutManuel>([
+  TypeStatutManuel.PRESENT,
+  TypeStatutManuel.BADGE_OUBLIE,
+]);
+
+function estStatutPresentManuel(statut?: TypeStatutManuel | null): boolean {
+  return !!statut && STATUTS_PRESENT_MANUEL.has(statut);
+}
 
 export interface PresenceEmployee {
   matricule: string;
@@ -20,6 +40,13 @@ export interface PresenceEmployee {
   timbratrice?: string | null;
   statut: StatutPresence;
   commentaire?: string | null; // ✅ NOUVEAU
+}
+export interface RecapPoste {
+  ligne: string;
+  poste: string; // 'jour' | 'nuit'
+  totalAffectes: number;
+  presents: number;
+  absents: number;
 }
 
 // ✅ NOUVEAU — récap jours présent/absent/congé pour une personne sur une période
@@ -53,6 +80,8 @@ export class PointageService {
     private badgeRepo: Repository<Badge>,
     @InjectRepository(Employee)
     private employeeRepo: Repository<Employee>,
+     @InjectRepository(Affectation) // ✅ NOUVEAU
+    private affectationRepo: Repository<Affectation>,
     private statutManuelService: StatutManuelService, // ✅ NOUVEAU
   ) {}
 
@@ -150,8 +179,8 @@ export class PointageService {
           statut: 'present' as StatutPresence,
           commentaire: null,
         });
-      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
-        // ✅ NOUVEAU — présent manuel (badge oublié), pas de pointage physique
+      } else if (estStatutPresentManuel(manuel?.statut)) {
+        // ✅ présent manuel (présent saisi manuellement OU badge oublié), pas de pointage physique
         presents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
@@ -159,10 +188,10 @@ export class PointageService {
           heureSortie: null,
           timbratrice: null,
           statut: 'present' as StatutPresence,
-          commentaire: manuel.commentaire || null,
+          commentaire: manuel?.commentaire || null,
         });
       } else {
-        // ── Absent (avec ou sans motif manuel : congé/maladie/...) ──
+        // ── Absent (avec ou sans motif manuel : congé/maladie/absence non justifiée/...) ──
         absents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
@@ -215,14 +244,14 @@ export class PointageService {
           statut: 'present' as StatutPresence,
           commentaire: null,
         });
-      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
+      } else if (estStatutPresentManuel(manuel?.statut)) {
         presents.push({
           matricule: o.matricule,
           nomPrenom: o.nomPrenom,
           heureEntree: null,
           timbratrice: null,
           statut: 'present' as StatutPresence,
-          commentaire: manuel.commentaire || null,
+          commentaire: manuel?.commentaire || null,
         });
       } else {
         absents.push({
@@ -289,8 +318,8 @@ export class PointageService {
           statut: 'present',
           commentaire: null,
         });
-      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
-        // ✅ NOUVEAU — présent manuel (badge oublié)
+      } else if (estStatutPresentManuel(manuel?.statut)) {
+        // ✅ présent manuel (présent saisi manuellement OU badge oublié)
         presents.push({
           matricule: e.matricule,
           nomPrenom: e.nomPrenom,
@@ -299,14 +328,14 @@ export class PointageService {
           heureSortie: null,
           timbratrice: null,
           statut: 'present',
-          commentaire: manuel.commentaire || null,
+          commentaire: manuel?.commentaire || null,
         });
       } else {
         absents.push({
           matricule: e.matricule,
           nomPrenom: e.nomPrenom,
           service: e.service,
-          statut: manuel?.statut || 'absent',
+          statut: (manuel?.statut as StatutPresence) || 'absent',
           commentaire: manuel?.commentaire || null,
         });
       }
@@ -364,7 +393,7 @@ export class PointageService {
           statut: 'present',
           commentaire: null,
         });
-      } else if (manuel?.statut === TypeStatutManuel.PRESENT) {
+      } else if (estStatutPresentManuel(manuel?.statut)) {
         presents.push({
           matricule: e.matricule,
           nomPrenom: e.nomPrenom,
@@ -372,14 +401,14 @@ export class PointageService {
           heureEntree: null,
           timbratrice: null,
           statut: 'present',
-          commentaire: manuel.commentaire || null,
+          commentaire: manuel?.commentaire || null,
         });
       } else {
         absents.push({
           matricule: e.matricule,
           nomPrenom: e.nomPrenom,
           service: e.service,
-          statut: manuel?.statut || 'absent',
+          statut: (manuel?.statut as StatutPresence) || 'absent',
           commentaire: manuel?.commentaire || null,
         });
       }
@@ -467,10 +496,11 @@ export class PointageService {
           continue;
         }
         const statut = statutPourJour(matriculeStr, jour);
-        if (statut === TypeStatutManuel.PRESENT) {
+        if (estStatutPresentManuel(statut)) {
+          // présent (saisi manuellement) ou badge oublié
           joursPresent++;
         } else if (statut) {
-          // conge / maladie / mission / autre → regroupés en "Congé"
+          // conge / maladie / mission / absence_non_justifiee / autre → regroupés en "Congé"
           joursConge++;
         } else {
           joursAbsent++;
@@ -528,5 +558,87 @@ export class PointageService {
     const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
     const dd = String(date.getUTCDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
+  }
+   async getRecapPosteAujourdhui(): Promise<RecapPoste[]> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const affectations = await this.affectationRepo.find({ relations: ['ouvrier'] });
+
+    const pointagesJour = await this.pointageRepo
+      .createQueryBuilder('p')
+      .where('p.dataOra >= :today', { today })
+      .getMany();
+
+    const matriculesPresents = new Set(pointagesJour.map((p) => p.matricule));
+    const statutsActifs = await this.statutManuelService.findActifsPourDate(today);
+
+    return this.aggregerParPosteLigne(affectations, matriculesPresents, statutsActifs);
+  }
+
+  // ─── Sur une période ────────────────────────────────────────────
+  async getRecapPostePeriode(dateDebut: string, dateFin: string): Promise<RecapPoste[]> {
+    const debut = new Date(dateDebut);
+    debut.setHours(0, 0, 0, 0);
+
+    const fin = new Date(dateFin);
+    fin.setHours(23, 59, 59, 999);
+
+    const affectations = await this.affectationRepo.find({ relations: ['ouvrier'] });
+
+    const pointagesPeriode = await this.pointageRepo
+      .createQueryBuilder('p')
+      .where('p.dataOra >= :debut', { debut })
+      .andWhere('p.dataOra <= :fin', { fin })
+      .andWhere('p.ingressoUscita = :entree', { entree: '0100' })
+      .getMany();
+
+    const matriculesPresents = new Set(pointagesPeriode.map((p) => p.matricule));
+    const statutsActifs = await this.statutManuelService.findActifsPourPeriode(debut, fin);
+
+    return this.aggregerParPosteLigne(affectations, matriculesPresents, statutsActifs);
+  }
+
+  // ─── Helper d'agrégation commun ─────────────────────────────────
+  private aggregerParPosteLigne(
+    affectations: Affectation[],
+    matriculesPresents: Set<number>,
+    statutsActifs: Map<string, any>,
+  ): RecapPoste[] {
+    const map = new Map<string, RecapPoste>();
+
+    for (const a of affectations) {
+      if (!a.ouvrier) continue; // sécurité, cf. format() existant
+
+      const matricule = a.ouvrier.matricule;
+      const key = `${a.ligne}__${a.poste}`;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          ligne: a.ligne,
+          poste: a.poste,
+          totalAffectes: 0,
+          presents: 0,
+          absents: 0,
+        });
+      }
+
+      const entry = map.get(key)!;
+      entry.totalAffectes++;
+
+      const manuel = statutsActifs.get(String(matricule));
+      const estPresent =
+        matriculesPresents.has(matricule) || estStatutPresentManuel(manuel?.statut);
+
+      if (estPresent) {
+        entry.presents++;
+      } else {
+        entry.absents++;
+      }
+    }
+
+    return Array.from(map.values()).sort(
+      (x, y) => x.ligne.localeCompare(y.ligne) || x.poste.localeCompare(y.poste),
+    );
   }
 }

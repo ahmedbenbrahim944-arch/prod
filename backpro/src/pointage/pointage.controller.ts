@@ -48,4 +48,19 @@ export class PointageController {
   ) {
     return this.pointageService.getRecapJoursPeriode(debut, fin);
   }
+  @UseGuards(JwtAuthGuard)
+  @Get('poste/today')
+  async getRecapPosteToday() {
+    return this.pointageService.getRecapPosteAujourdhui();
+  }
+
+  // ✅ NOUVEAU — Récap présents/absents par ligne + poste (jour/nuit), sur une période
+  @UseGuards(JwtAuthGuard)
+  @Get('poste/periode')
+  async getRecapPostePeriode(
+    @Query('debut') debut: string,
+    @Query('fin') fin: string,
+  ) {
+    return this.pointageService.getRecapPostePeriode(debut, fin);
+  }
 }

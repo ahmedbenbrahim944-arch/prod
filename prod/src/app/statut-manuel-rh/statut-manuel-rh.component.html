@@ -69,15 +69,13 @@
     <span>Chargement...</span>
   </div>
 
-  <!-- ── Formulaire ajout / édition ────────────────────────── -->
-  <!-- ✅ NOUVEAU — caché par défaut, ne s'affiche qu'au clic sur ➕ (personne absente), ✏️ (statut existant) ou "Plus de détails" (sélection multiple) -->
+  <!-- ── Formulaire ajout / édition (manuel, depuis la table du bas) ── -->
   <div class="card" id="rh-form-card" *ngIf="showForm">
     <div class="card-title">
       {{ formSelectionPersonnes.length > 0 ? '✏️ Statut pour ' + formSelectionPersonnes.length + ' personne(s)' : (editingId ? ' Modifier un statut' : '➕ Ajouter un statut') }}
     </div>
 
     <form class="rh-form" (ngSubmit)="submitForm()">
-      <!-- ✅ NOUVEAU — mode groupe : on affiche les personnes en chips, pas de saisie matricule/nom -->
       <div class="rh-form-row" *ngIf="formSelectionPersonnes.length > 0">
         <div class="rh-form-group grow">
           <label class="filter-label">Personnes concernées</label>
@@ -115,11 +113,26 @@
         </div>
       </div>
 
+      <!-- ✅ NOUVEAU — sous-options Congé maladie : Accouchement / Certificat + docteur -->
+      <div class="rh-form-row" *ngIf="formModel.statut === 'maladie'">
+        <div class="rh-form-group">
+          <label class="filter-label">Type</label>
+          <select class="filter-input" [(ngModel)]="formModel.typeMaladie" name="typeMaladieForm">
+            <option [ngValue]="undefined" disabled>Choisir...</option>
+            <option *ngFor="let o of typeMaladieOptions" [value]="o.value">{{ o.label }}</option>
+          </select>
+        </div>
+        <div class="rh-form-group grow" *ngIf="formModel.typeMaladie === 'certificat'">
+          <label class="filter-label">Nom du docteur (optionnel)</label>
+          <input class="filter-input" type="text" [(ngModel)]="formModel.nomDocteur" name="nomDocteurForm" />
+        </div>
+      </div>
+
       <div class="rh-form-row">
         <div class="rh-form-group grow">
           <label class="filter-label">Commentaire (optionnel)</label>
           <input class="filter-input" type="text" [(ngModel)]="formModel.commentaire" name="commentaire"
-            placeholder="Ex: Badge oublié, certificat médical..." />
+            placeholder="Ex: précisions complémentaires..." />
         </div>
       </div>
 
@@ -129,7 +142,6 @@
         <button type="submit" class="btn-filter" [disabled]="savingForm">
           {{ savingForm ? 'Enregistrement...' : (formSelectionPersonnes.length > 0 ? '✅ Appliquer au groupe' : (editingId ? ' Mettre à jour' : '➕ Ajouter')) }}
         </button>
-        <!-- ✅ NOUVEAU — visible dès que le formulaire est ouvert, pas seulement en édition -->
         <button type="button" class="btn-cancel" (click)="resetForm()">Annuler</button>
       </div>
     </form>
@@ -147,12 +159,86 @@
           🟢 Présents ({{ totalPresents }})
         </button>
         <button class="tab" [class.active]="filterTab === 'absents'" (click)="filterTab = 'absents'">
-          🔴 Absents ({{ totalAbsents }})
+          🔴 À traiter ({{ absencesATraiter.length }})
         </button>
       </div>
     </div>
 
-    <div class="ouvrier-list">
+    <!-- ════════════════════════════════════════════════════════
+         Vue "À traiter" — grandes cartes avec 4 gros boutons
+         ════════════════════════════════════════════════════════ -->
+    <div class="absence-list" *ngIf="filterTab === 'absents'">
+      <div *ngIf="filteredList.length === 0" class="no-data">
+        🎉 Aucune absence à traiter sur cette période.
+      </div>
+
+      <div class="absence-card" *ngFor="let o of filteredList">
+        <div class="absence-card-top">
+          <div class="absence-info">
+            <div class="absence-mat">{{ o.matricule }}</div>
+            <div class="absence-name">{{ o.nomPrenom }}</div>
+            <div class="absence-service" *ngIf="o.service">{{ o.service }}</div>
+          </div>
+        </div>
+
+        <div class="absence-actions">
+          <button class="btn-row-action" *ngFor="let btn of rowActionButtons"
+            [class.active]="btn.statut === 'maladie' && maladieFormMatricule === String(o.matricule)"
+            [disabled]="rowSaving === String(o.matricule)"
+            (click)="onRowAction(o, btn.statut)">
+            <span class="btn-row-action-icon">{{ btn.icon }}</span>
+            <span class="btn-row-action-label">{{ btn.label }}</span>
+          </button>
+        </div>
+
+        <!-- ✅ NOUVEAU — sous-panneau Congé maladie : Accouchement / Certificat -->
+        <div class="maladie-subpanel" *ngIf="maladieFormMatricule === String(o.matricule)">
+          <div class="maladie-subpanel-buttons">
+            <button type="button" class="btn-maladie-type"
+              [class.active]="maladieSubModel.typeMaladie === 'accouchement'"
+              (click)="selectTypeMaladie('accouchement')">
+              👶 Accouchement
+            </button>
+            <button type="button" class="btn-maladie-type"
+              [class.active]="maladieSubModel.typeMaladie === 'certificat'"
+              (click)="selectTypeMaladie('certificat')">
+              📄 Certificat
+            </button>
+          </div>
+
+          <div class="maladie-subpanel-fields" *ngIf="maladieSubModel.typeMaladie">
+            <div class="rh-form-group">
+              <label class="filter-label">Date début</label>
+              <input class="filter-input" type="date" [(ngModel)]="maladieSubModel.dateDebut" name="maladieDebut-{{o.matricule}}" />
+            </div>
+            <div class="rh-form-group">
+              <label class="filter-label">Date fin</label>
+              <input class="filter-input" type="date" [(ngModel)]="maladieSubModel.dateFin" name="maladieFin-{{o.matricule}}" />
+            </div>
+            <div class="rh-form-group grow" *ngIf="maladieSubModel.typeMaladie === 'certificat'">
+              <label class="filter-label">Nom du docteur (optionnel)</label>
+              <input class="filter-input" type="text" [(ngModel)]="maladieSubModel.nomDocteur" name="maladieDocteur-{{o.matricule}}" />
+            </div>
+          </div>
+
+          <div class="maladie-subpanel-actions" *ngIf="maladieSubModel.typeMaladie">
+            <button type="button" class="btn-filter" [disabled]="rowSaving === String(o.matricule)" (click)="submitMaladieForm(o)">
+              {{ rowSaving === String(o.matricule) ? 'Enregistrement...' : '✅ Valider' }}
+            </button>
+            <button type="button" class="btn-cancel" (click)="closeMaladieForm()">Annuler</button>
+          </div>
+        </div>
+
+        <div *ngIf="rowErrors.get(String(o.matricule))" class="rh-form-error">
+          ⚠️ {{ rowErrors.get(String(o.matricule)) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         Vue "Tous" / "Présents" — liste compacte d'origine
+         ════════════════════════════════════════════════════════ -->
+    <div class="ouvrier-list" *ngIf="filterTab !== 'absents'">
       <div *ngIf="filteredList.length === 0" class="no-data">Aucun résultat</div>
       <div class="ouvrier-row" *ngFor="let o of filteredList" [class.row-selected]="isSelected(o.matricule)">
         <input class="select-checkbox" type="checkbox" [checked]="isSelected(o.matricule)" (change)="toggleSelection(o)" title="Sélectionner" />
@@ -163,7 +249,7 @@
         <div [class.badge-present]="o.statut === 'present'" [class.badge-absent]="o.statut !== 'present'">
           {{ o.statut === 'present' ? (o.heureEntree ? formatHeure(o.heureEntree) : '✅ Présent') : statutLabel(o.statut) }}
         </div>
-        <button *ngIf="o.statut !== 'present'" class="btn-quick-add" (click)="prefillFromPersonne(o)" title="Ajouter un statut">
+        <button *ngIf="o.statut !== 'present'" class="btn-quick-add" (click)="prefillFromPersonne(o)" title="Ajouter / corriger un statut">
           ➕
         </button>
       </div>
@@ -171,7 +257,6 @@
   </div>
 
   <!-- ── Barre d'action flottante — sélection multiple ───────── -->
-  <!-- ✅ NOUVEAU — apparaît dès qu'une ou plusieurs personnes sont cochées ci-dessus -->
   <div class="quick-action-bar" *ngIf="selectedCount > 0">
     <div class="quick-action-count">{{ selectedCount }} sélectionné(s)</div>
     <div class="quick-action-buttons">
@@ -202,9 +287,11 @@
         <div class="ouvrier-mat">{{ s.matricule }}</div>
         <div class="ouvrier-name">{{ s.nomPrenom }}</div>
         <div class="ouvrier-ligne">{{ statutLabel(s.statut) }}</div>
+        <div class="ouvrier-ligne" *ngIf="s.typeMaladie">{{ typeMaladieLabel(s.typeMaladie) }}</div>
+        <div class="ouvrier-ligne" *ngIf="s.nomDocteur">Dr. {{ s.nomDocteur }}</div>
         <div class="ouvrier-ligne">{{ s.dateDebut }} → {{ s.dateFin }}</div>
         <div *ngIf="s.commentaire" class="ouvrier-ligne">{{ s.commentaire }}</div>
-        <button class="btn-edit" (click)="editStatut(s)" title="Modifier"></button>
+        <button class="btn-edit" (click)="editStatut(s)" title="Modifier / corriger"></button>
         <button class="btn-delete" (click)="deleteStatut(s)" title="Supprimer">🗑️</button>
       </div>
     </div>

@@ -17,6 +17,14 @@ export interface Present {
   commentaire?: string
 }
 
+export interface RecapPoste {
+  ligne: string;
+  poste: string; // '1ere poste' | '2eme poste'
+  totalAffectes: number;
+  presents: number;
+  absents: number;
+}
+
 export interface Absent {
   matricule: number | string; // ✅ élargi
   nomPrenom: string;
@@ -107,6 +115,21 @@ export class PointageService {
   getRecapPeriode(debut: string, fin: string): Observable<RecapPeriodeResponse> {
     return this.http.get<RecapPeriodeResponse>(
       `${this.api}/pointage/recap-periode?debut=${debut}&fin=${fin}`,
+      { headers: this.headers() }
+    );
+  }
+  // ✅ NOUVEAU — récap par poste (1ere/2eme), aujourd'hui
+  getRecapPosteToday(): Observable<RecapPoste[]> {
+    return this.http.get<RecapPoste[]>(
+      `${this.api}/pointage/poste/today`,
+      { headers: this.headers() }
+    );
+  }
+
+  // ✅ NOUVEAU — récap par poste (1ere/2eme), sur une période
+  getRecapPostePeriode(debut: string, fin: string): Observable<RecapPoste[]> {
+    return this.http.get<RecapPoste[]>(
+      `${this.api}/pointage/poste/periode?debut=${debut}&fin=${fin}`,
       { headers: this.headers() }
     );
   }

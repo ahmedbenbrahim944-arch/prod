@@ -522,3 +522,55 @@
   padding: 0 4px;
   line-height: 1;
 }
+/* ── Vue d'ensemble globale ─────────────────────────────────── */
+.global-overview { margin-bottom: 1.25rem; }
+.overview-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.overview-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.overview-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.overview-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+.overview-item.green .overview-value { color: var(--green); }
+.overview-item.red .overview-value { color: var(--red); }
+
+/* ── Sous-filtre poste ──────────────────────────────────────── */
+.poste-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  margin-left: 12px;
+}
+.poste-btn {
+  background: var(--white);
+  border: 1.5px solid var(--blue);
+  color: var(--blue);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.poste-btn:hover { background: var(--gray-bg); }
+.poste-btn.active {
+  background: var(--blue);
+  color: var(--white);
+}
