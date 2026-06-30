@@ -5,6 +5,8 @@ import { RouterModule, Router } from '@angular/router';
 import { SemaineService, WeekInfo } from '../prod/semaine.service';
 import { ProductService, ProductLine } from '../prod/product.service';
 import { NonConfService } from '../prod2/non-conf.service';
+import { AffectationService } from '../affectation/affectation.service';
+import { forkJoin } from 'rxjs';
 
 
 
@@ -144,13 +146,19 @@ export class PlanificationComponent implements AfterViewInit, OnInit {
   private touchStartX = 0;
   private scrollLeftStart = 0;
 
+  lignePresents = signal<number>(0);
+ligneAbsents = signal<number>(0);
+ligneTotal = signal<number>(0);
+loadingPresence = signal<boolean>(false);
+
   weekDays = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 
   constructor(
     private router: Router,
     private semaineService: SemaineService,
     private productService: ProductService,
-    private nonConfService: NonConfService
+    private nonConfService: NonConfService,
+    private affectationService: AffectationService
   ) {
     this.generateParticles();
   }
@@ -276,6 +284,7 @@ export class PlanificationComponent implements AfterViewInit, OnInit {
     this.isEditing.set(false);
     this.selectedReferenceDetails.set(null);
     this.loadAvailableWeeks();
+    this.loadPresenceForLigne(line.ligne);
   }
 
   onWeekSelected(weekNumber: number): void {
@@ -899,4 +908,46 @@ export class PlanificationComponent implements AfterViewInit, OnInit {
     if (!planif?.references) return 0;
     return planif.references.reduce((total, ref) => total + this.getTotalDMForReference(ref), 0);
   }
+
+  private loadPresenceForLigne(ligne: string): void {
+  this.loadingPresence.set(true);
+  this.lignePresents.set(0);
+  this.ligneAbsents.set(0);
+  this.ligneTotal.set(0);
+
+  // Appels parallèles : affectations + pointage du jour
+  forkJoin({
+    affectations: this.affectationService.getAllAffectations(),
+    pointage: this.affectationService.getPointagesToday()
+  }).subscribe({
+    next: ({ affectations, pointage }) => {
+      // Filtrer les ouvriers affectés à cette ligne
+      const ouvriersDeLaLigne = affectations.data.filter(a => a.ligne === ligne);
+      const matriculesDeLaLigne = new Set(ouvriersDeLaLigne.map(a => a.matricule));
+
+      // Matricules présents aujourd'hui
+      const matriculesPresents = new Set(
+        pointage.presents.map((p: any) => Number(p.matricule))
+      );
+
+      let presents = 0;
+      let absents = 0;
+      matriculesDeLaLigne.forEach(matricule => {
+        if (matriculesPresents.has(Number(matricule))) {
+          presents++;
+        } else {
+          absents++;
+        }
+      });
+
+      this.ligneTotal.set(matriculesDeLaLigne.size);
+      this.lignePresents.set(presents);
+      this.ligneAbsents.set(absents);
+      this.loadingPresence.set(false);
+    },
+    error: () => {
+      this.loadingPresence.set(false);
+    }
+  });
+}
 }

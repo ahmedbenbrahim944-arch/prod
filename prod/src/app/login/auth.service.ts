@@ -58,6 +58,9 @@ export class AuthService {
           else if (matricule === '1411') {
             this.router.navigate(['/ch5']);
           }
+           else if (matricule === '0002') {
+            this.router.navigate(['/pointage-dashboard']);
+          }
           else if (matricule === '1952') {
             this.router.navigate(['/ecran']);
           }

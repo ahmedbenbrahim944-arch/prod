@@ -912,3 +912,39 @@
     grid-template-columns: repeat(1, 1fr) !important;
   }
 }
+.presence-summary {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.presence-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-green { background-color: #22c55e; }
+.dot-red   { background-color: #ef4444; }
+
+.presence-total {
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+}
+
+.presence-loading {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}

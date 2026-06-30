@@ -3,170 +3,83 @@
 html, body { height: 100%; overflow: hidden; }
 
 .page-container {
-  background: #0f172a;
+  background: #000;
   height: 100vh;
   width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-family: 'Segoe UI', 'Tahoma', 'Arabic Typesetting', sans-serif;
-  padding: 0.3rem;
+  font-family: 'Segoe UI', 'Tahoma', sans-serif;
   overflow: hidden;
 }
 
-/* ── Card ── */
 .main-wrapper {
   width: 100%;
-  max-width: 100%;
-  height: calc(100vh - 1.5rem);
-  background: #ffffff;
-  border-radius: 0.4rem;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  overflow: hidden;
+  height: 100vh;
   display: flex;
   flex-direction: column;
-}
-
-/* ── Header ── */
-.header-bar {
-  display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-  color: white;
-  flex-shrink: 0;
+  justify-content: center;
+  gap: 3rem;
 }
 
-.header-logo {
-  width: 52px; height: 52px;
-  background: rgba(255,255,255,0.15);
-  border-radius: 0.4rem;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: 1.1rem; flex-shrink: 0;
-}
-
-.header-titles { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; }
-.header-main   { font-size: 1.4rem; font-weight: 700; }
-.header-sub    { font-size: 1rem; color: rgba(255,255,255,0.65); }
-
-.header-badge {
-  font-size: 1rem;
-  font-weight: 700;
-  background: #dc2626;
-  color: #fff;
-  border-radius: 999px;
-  padding: 0.2rem 0.9rem;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.header-date {
-  font-size: 1rem; font-weight: 600;
-  color: rgba(255,255,255,0.75);
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* ── Corps ── */
 .note-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2rem 3rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
+  gap: 3rem;
 }
 
-/* ── Images côte à côte ── */
-.images-row {
-  display: flex;
-  gap: 1.5rem;
-  width: 100%;
-  justify-content: center;
-  align-items: stretch;
-}
-
-.image-card {
-  flex: 1;
-  max-width: 48%;
-  border-radius: 0.6rem;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  border: 2px solid #e2e8f0;
-}
-
-.image-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* ── Message d'avertissement ── */
-.warning-box {
+/* Logo */
+.logo-wrapper {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  background: #fff1f2;
-  border: 2px solid #dc2626;
-  border-radius: 0.6rem;
-  padding: 1rem 1.8rem;
-  width: 100%;
-  direction: rtl;
+}
+
+.brand-logo {
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 1rem;
+}
+
+/* Texte */
+.welcome-block {
   text-align: center;
-}
-
-.warning-icon {
-  font-size: 2.2rem;
-  flex-shrink: 0;
-}
-
-.warning-text {
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #dc2626;
-  font-family: 'Arabic Typesetting', 'Segoe UI', sans-serif;
-  line-height: 1.6;
-}
-
-/* ── Footer ── */
-.footer-note {
-  padding: 0.28rem 0.85rem;
-  border-top: 1px solid #e2e8f0;
-  background: #f8fafc;
-  font-size: 0.58rem;
   display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0.8rem;
 }
-.footer-text { color: #1e3c72; font-weight: 700; }
-.footer-sep  { color: #94a3b8; }
-.footer-sub  { color: #64748b; flex: 1; }
-.footer-sig  { color: #94a3b8; font-style: italic; }
 
-/* ── Progress bar ── */
-.progress-track {
-  margin-top: 0.3rem;
-  width: 100%;
-  max-width: 100%;
-  height: 2px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  overflow: hidden;
-  flex-shrink: 0;
+.welcome-text {
+  font-size: 5rem;
+  font-weight: 300;
+  color: #ffffff;
+  letter-spacing: 0.05em;
 }
+
+.brand-name {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #3dcd58; /* vert Schneider */
+  letter-spacing: 0.08em;
+}
+
+/* Progress bar */
+.progress-track {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
 .progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(to right, #60a5fa, #34d399);
-  border-radius: 2px;
+  background: #3dcd58;
 }

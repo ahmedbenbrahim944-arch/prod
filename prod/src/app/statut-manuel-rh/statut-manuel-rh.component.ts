@@ -20,6 +20,13 @@ interface PersonneRow {
   commentaire?: string | null;
 }
 
+// ✅ NOUVEAU — un statut rapide applicable en 1 clic depuis la sélection multiple
+interface QuickStatutOption {
+  value: TypeStatutManuel;
+  label: string;
+  icon: string;
+}
+
 @Component({
   selector: 'app-statut-manuel-rh',
   standalone: true,
@@ -41,7 +48,31 @@ export class StatutManuelRhComponent implements OnInit {
   data: PresenceData | null = null;
   loading = true;
   filterTab: 'tous' | 'presents' | 'absents' = 'absents';
-  searchTerm = '';
+  private _searchTerm = '';
+
+  // ✅ NOUVEAU — dès qu'on tape une recherche, on bascule sur "Tous" pour retrouver n'importe qui
+  // sans devoir changer d'onglet manuellement
+  get searchTerm(): string {
+    return this._searchTerm;
+  }
+  set searchTerm(value: string) {
+    this._searchTerm = value;
+    if (value.trim()) {
+      this.filterTab = 'tous';
+    }
+  }
+
+  // ── Sélection multiple ──────────────────────────────────────── ✅ NOUVEAU
+  selectedMatricules = new Set<string>();
+  applyingQuick = false;
+  quickError: string | null = null;
+
+  readonly quickStatutOptions: QuickStatutOption[] = [
+    { value: 'present', label: 'Présent',  icon: '✅' },
+    { value: 'conge',   label: 'Congé',    icon: '🏖️' },
+    { value: 'maladie', label: 'Maladie',  icon: '🤒' },
+    { value: 'mission', label: 'Mission',  icon: '🚗' },
+  ];
 
   // ── Données statuts manuels (table de gestion) ───────────────
   statuts: StatutManuel[] = [];
@@ -57,6 +88,7 @@ export class StatutManuelRhComponent implements OnInit {
   editingId: number | null = null;
   savingForm = false;
   formError: string | null = null;
+  formSelectionPersonnes: PersonneRow[] = []; // ✅ NOUVEAU — personnes du groupe quand le formulaire vient de la sélection multiple
 
   readonly statutOptions: { value: TypeStatutManuel; label: string }[] = [
     { value: 'present', label: ' Présent (badge oublié)' },
@@ -123,6 +155,105 @@ export class StatutManuelRhComponent implements OnInit {
   clearServiceFilter(): void {
     this.selectedService = null;
     this.load();
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — Sélection multiple sur la liste "Présence du jour"
+  // ════════════════════════════════════════════════════════════
+  isSelected(matricule: string | number): boolean {
+    return this.selectedMatricules.has(String(matricule));
+  }
+
+  toggleSelection(p: PersonneRow): void {
+    const key = String(p.matricule);
+    if (this.selectedMatricules.has(key)) {
+      this.selectedMatricules.delete(key);
+    } else {
+      this.selectedMatricules.add(key);
+    }
+  }
+
+  clearSelection(): void {
+    this.selectedMatricules.clear();
+    this.quickError = null;
+  }
+
+  get selectedCount(): number {
+    return this.selectedMatricules.size;
+  }
+
+  /** Les objets PersonneRow correspondant aux matricules sélectionnés (pour pré-remplir le formulaire détaillé) */
+  get selectedPersonnes(): PersonneRow[] {
+    const all = [...(this.data?.presents || []), ...(this.data?.absents || [])];
+    return all.filter(p => this.selectedMatricules.has(String(p.matricule)));
+  }
+
+  /**
+   * ✅ NOUVEAU — Bouton rapide : applique un statut à toutes les personnes sélectionnées
+   * pour aujourd'hui → aujourd'hui, sans ouvrir de formulaire.
+   * Si un statut existe déjà pour la personne sur cette date exacte, il est mis à jour (update),
+   * sinon un nouveau statut est créé.
+   */
+  applyQuickStatut(statut: TypeStatutManuel): void {
+    if (this.selectedCount === 0 || this.applyingQuick) return;
+
+    this.quickError = null;
+    this.applyingQuick = true;
+
+    const today = new Date().toISOString().split('T')[0];
+    const personnes = this.selectedPersonnes;
+
+    const requests = personnes.map(p => {
+      const existant = this.statuts.find(s =>
+        String(s.matricule) === String(p.matricule) &&
+        s.dateDebut <= today && s.dateFin >= today
+      );
+
+      const payload: CreateStatutManuelPayload = {
+        matricule: String(p.matricule),
+        nomPrenom: p.nomPrenom,
+        statut,
+        dateDebut: today,
+        dateFin: today,
+        commentaire: existant?.commentaire || undefined,
+      };
+
+      return existant
+        ? this.statutSvc.update(existant.id, payload)
+        : this.statutSvc.create(payload);
+    });
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.applyingQuick = false;
+        this.clearSelection();
+        this.loadStatuts();
+        this.load();
+      },
+      error: (err) => {
+        this.applyingQuick = false;
+        this.quickError = err?.error?.message || "Erreur lors de l'application du statut.";
+      }
+    });
+  }
+
+  /** ✅ NOUVEAU — ouvre le formulaire détaillé pré-rempli avec toutes les personnes sélectionnées */
+  openDetailedFormForSelection(): void {
+    const personnes = this.selectedPersonnes;
+    if (personnes.length === 0) return;
+
+    this.editingId = null;
+    this.formModel = {
+      matricule: personnes.map(p => String(p.matricule)).join(', '),
+      nomPrenom: personnes.map(p => p.nomPrenom).join(', '),
+      statut: 'present',
+      dateDebut: this.dateDebut,
+      dateFin: this.dateFin,
+      commentaire: '',
+    };
+    this.formSelectionPersonnes = personnes; // ✅ NOUVEAU — gardé pour le submit multi
+    this.showForm = true;
+    this.scrollToForm();
   }
 
   // ════════════════════════════════════════════════════════════
@@ -224,6 +355,7 @@ export class StatutManuelRhComponent implements OnInit {
       dateFin: this.dateFin,
       commentaire: '',
     };
+    this.formSelectionPersonnes = []; // ✅ NOUVEAU — formulaire mono-personne, pas de groupe
     this.showForm = true; // ✅ NOUVEAU
     this.scrollToForm();
   }
@@ -238,6 +370,7 @@ export class StatutManuelRhComponent implements OnInit {
       dateFin: s.dateFin,
       commentaire: s.commentaire || '',
     };
+    this.formSelectionPersonnes = []; // ✅ NOUVEAU
     this.showForm = true; // ✅ NOUVEAU
     this.scrollToForm();
   }
@@ -246,11 +379,18 @@ export class StatutManuelRhComponent implements OnInit {
     this.editingId = null;
     this.formModel = this.emptyForm();
     this.formError = null;
+    this.formSelectionPersonnes = []; // ✅ NOUVEAU
     this.showForm = false; // ✅ NOUVEAU — referme le formulaire
   }
 
   submitForm(): void {
     this.formError = null;
+
+    // ✅ NOUVEAU — soumission groupée (plusieurs personnes sélectionnées)
+    if (this.formSelectionPersonnes.length > 0) {
+      this.submitFormGroupe();
+      return;
+    }
 
     if (!this.formModel.matricule?.trim() || !this.formModel.nomPrenom?.trim()) {
       this.formError = 'Matricule et nom sont obligatoires.';
@@ -278,6 +418,51 @@ export class StatutManuelRhComponent implements OnInit {
       error: (err) => {
         this.savingForm = false;
         this.formError = err?.error?.message || "Erreur lors de l'enregistrement.";
+      }
+    });
+  }
+
+  /** ✅ NOUVEAU — applique le statut/dates/commentaire du formulaire à tout le groupe sélectionné */
+  private submitFormGroupe(): void {
+    if (this.formModel.dateFin < this.formModel.dateDebut) {
+      this.formError = 'La date de fin doit être après la date de début.';
+      return;
+    }
+
+    this.savingForm = true;
+    const commentaire = this.formModel.commentaire || undefined;
+
+    const requests = this.formSelectionPersonnes.map(p => {
+      const existant = this.statuts.find(s =>
+        String(s.matricule) === String(p.matricule) &&
+        s.dateDebut <= this.formModel.dateFin && s.dateFin >= this.formModel.dateDebut
+      );
+
+      const payload: CreateStatutManuelPayload = {
+        matricule: String(p.matricule),
+        nomPrenom: p.nomPrenom,
+        statut: this.formModel.statut,
+        dateDebut: this.formModel.dateDebut,
+        dateFin: this.formModel.dateFin,
+        commentaire,
+      };
+
+      return existant
+        ? this.statutSvc.update(existant.id, payload)
+        : this.statutSvc.create(payload);
+    });
+
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.savingForm = false;
+        this.clearSelection();
+        this.resetForm();
+        this.loadStatuts();
+        this.load();
+      },
+      error: (err) => {
+        this.savingForm = false;
+        this.formError = err?.error?.message || "Erreur lors de l'enregistrement du groupe.";
       }
     });
   }

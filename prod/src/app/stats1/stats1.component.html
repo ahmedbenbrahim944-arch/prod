@@ -85,194 +85,63 @@
     </div>
   </div>
 
-  <!-- RÉSULTATS - PAGE COMPLÈTE -->
-  <div *ngIf="statsData" class="results-layout">
-    
-    <!-- SIDEBAR GAUCHE -->
-    <aside class="sidebar">
-      
-      <!-- INFO PÉRIODE -->
-      <div class="sidebar-card period-info">
-        <div class="card-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <h3>Période</h3>
-        </div>
-        <div class="period-details">
-          <div class="period-item">
-            <span class="period-label">Du</span>
-            <span class="period-value">{{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }}</span>
-          </div>
-          <div class="period-item">
-            <span class="period-label">Au</span>
-            <span class="period-value">{{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}</span>
-          </div>
-          <div class="period-item">
-            <span class="period-label">Jours</span>
-            <span class="period-value">{{ getNombreJours() }}</span>
-          </div>
-          <div class="period-item">
-            <span class="period-label">Semaines</span>
-            <span class="period-value">{{ statsData.periode.nombreSemaines }}</span>
-          </div>
-        </div>
+  <!-- RÉSULTATS - CARTE UNIFIÉE STYLE 3 -->
+  <div *ngIf="statsData" class="unified-card">
+
+    <!-- HEADER : titre + période + bouton retour -->
+    <div class="unified-header">
+      <div>
+        <h2>Production par Ligne</h2>
+        <p class="unified-periode">
+          {{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }}
+          au {{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}
+        </p>
       </div>
+      <button class="btn-retour" (click)="reinitialiser()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5"></path>
+          <path d="M12 19l-7-7 7-7"></path>
+        </svg>
+        Retour au filtre
+      </button>
+    </div>
 
-      <!-- PRODUCTIVITÉ GLOBALE -->
-      <div class="sidebar-card productivity-card">
-        <div class="card-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-          </svg>
-          <h3>Productivité Globale</h3>
-        </div>
-        <div class="productivity-value">
-          <span class="pcs-value">{{ statsData.productionGlobale.pcsTotal | number:'1.1-1' }}%</span>
-          <div class="productivity-status" [style.color]="getCouleurStatut(statsData.productionGlobale.pcsTotal)">
-            {{ getStatutProduction(statsData.productionGlobale.pcsTotal) }}
-          </div>
-        </div>
-        <div class="productivity-details">
-          <div class="detail-item">
-            <span class="detail-label">Qté Source</span>
-            <span class="detail-value">{{ statsData.productionGlobale.totalQteSource | number }}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Qté Déclarée</span>
-            <span class="detail-value">{{ statsData.productionGlobale.totalDecProduction | number }}</span>
-          </div>
-        </div>
-      </div>
+    <!-- PRODUCTIVITÉ GLOBALE - GRAND CHIFFRE -->
+    <div class="unified-pcs-hero">
+      <span class="unified-pcs-value">{{ statsData.productionGlobale.pcsTotal | number:'1.1-1' }}%</span>
+      <span class="unified-pcs-sub">
+        Productivité Globale · {{ getStatutProduction(statsData.productionGlobale.pcsTotal) }}
+        · {{ statsData.productionGlobale.totalQteSource | number }} → {{ statsData.productionGlobale.totalDecProduction | number }}
+      </span>
+    </div>
 
-      <!-- PERSONNEL -->
-      <div class="sidebar-card personnel-card">
-        <div class="card-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          <h3>Personnel</h3>
-        </div>
-        <div class="personnel-stats">
-          <div class="personnel-item total">
-            <span class="personnel-label">Total Ouvriers</span>
-            <span class="personnel-value">{{ personnelComptesReels.total }}</span>
-          </div>
-          <div class="personnel-item presents">
-            <span class="personnel-label">Présents</span>
-            <span class="personnel-value">{{ personnelComptesReels.presents }}</span>
-          </div>
-          <div class="personnel-item conges">
-            <span class="personnel-label">Congés</span>
-            <span class="personnel-value">{{ personnelComptesReels.conges }}</span>
-          </div>
-          <div class="personnel-item absents">
-            <span class="personnel-label">Absents</span>
-            <span class="personnel-value">{{ personnelComptesReels.absents }}</span>
-          </div>
-          <div class="personnel-item selections">
-            <span class="personnel-label">Sélections</span>
-            <span class="personnel-value">{{ personnelComptesReels.selections }}</span>
-          </div>
-        </div>
-      </div>
+    <!-- RANGÉE DE STATS PERSONNEL -->
+    <div class="unified-kpi-row">
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-blue">{{ personnelComptesReels.total }}</span><span class="unified-kpi-lbl">Total</span></div>
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-green">{{ personnelComptesReels.presents }}</span><span class="unified-kpi-lbl">Présents</span></div>
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-orange">{{ personnelComptesReels.conges }}</span><span class="unified-kpi-lbl">Congés</span></div>
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-red">{{ personnelComptesReels.absents }}</span><span class="unified-kpi-lbl">Absents</span></div>
+    </div>
 
-      <!-- ============================================ -->
-      <!-- CARTE SÉLECTION — placée dans la sidebar    -->
-      <!-- ============================================ -->
-      <div class="sidebar-card selection-card">
+    <!-- INFOS COMPLÉMENTAIRES : Période, Sélections, Réparation et Montage -->
+    <div class="unified-kpi-row unified-kpi-row-secondary">
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-blue">{{ getNombreJours() }}</span><span class="unified-kpi-lbl">Jours</span></div>
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-blue">{{ statsData.periode.nombreSemaines }}</span><span class="unified-kpi-lbl">Semaines</span></div>
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-green">{{ personnelComptesReels.selections }}</span><span class="unified-kpi-lbl">Sélections</span></div>
+      <div class="unified-kpi"><span class="unified-kpi-val unified-kpi-green">{{ statsSelection?.global?.totalAffectations || 0 }}</span><span class="unified-kpi-lbl">Répar./Montage</span></div>
+    </div>
 
-        <div class="card-header">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-          <h3>Réparation et Montage</h3>
-        </div>
-
-        <!-- LOADING -->
-        <div *ngIf="isLoadingSelection" class="selection-loading">
-          <div class="selection-spinner"></div>
-          <span>Chargement...</span>
-        </div>
-
-        <!-- DONNÉES -->
-        <ng-container *ngIf="!isLoadingSelection && statsSelection">
-
-          <div class="selection-main">
-  <div class="selection-count">
-    {{ statsSelection.global.totalAffectations }}
-  </div>
-  <div class="selection-sublabel">
-    Présents{{ statsSelection.global.totalAffectations > 1 ? '' : '' }}
-  </div>
-</div>
-
-         
-
-          
-
-          <div *ngIf="showSelectionDetail" class="selection-detail-list">
-            <div *ngFor="let jour of statsSelection.detailParJour" class="selection-day-row">
-              <span class="selection-day-date">{{ jour.date | date:'dd/MM' }}</span>
-              <span class="selection-day-badge">{{ jour.nombrePersonnes }}</span>
-            </div>
-            <div *ngIf="statsSelection.detailParJour.length === 0" class="selection-empty">
-              Aucune donnée sur la période
-            </div>
-          </div>
-
-        </ng-container>
-
-        <!-- AUCUNE DONNÉE -->
-        <div *ngIf="!isLoadingSelection && !statsSelection" class="selection-empty">
-          Aucune donnée de sélection
-        </div>
-
-      </div>
-      <!-- FIN CARTE SÉLECTION -->
-
-    </aside>
-
-    <!-- CONTENU PRINCIPAL -->
-    <main class="main-content">
-      
-      <div class="content-header">
-        <div class="header-top">
-          <div>
-            <h2>Production par Ligne</h2>
-            <p class="content-subtitle">
-              Période du {{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }} 
-              au {{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}
-            </p>
-          </div>
-          <button class="btn-retour" (click)="reinitialiser()">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 12H5"></path>
-              <path d="M12 19l-7-7 7-7"></path>
-            </svg>
-            Retour au filtre
-          </button>
-        </div>
-      </div>
-
+    <!-- GRAPHIQUE PCS PAR LIGNE -->
+    <div class="unified-section">
+      <h3 class="unified-section-title">PCS % par ligne</h3>
       <div class="chart-container">
         <canvas #chartCanvas></canvas>
       </div>
-
-    </main>
+    </div>
 
   </div>
 
-  <!-- SECTION ANALYSE DES 6M - PLEINE LARGEUR -->
+  <!-- SECTION ANALYSE DES 6M - PLEINE LARGEUR (fusionnée dans la même colonne) -->
   <div *ngIf="statsData" class="m7-fullwidth-section">
     <h2 class="m7-fullwidth-title">Analyse des 6M</h2>
     
@@ -411,6 +280,45 @@
         <div class="m-circle-description">{{ mDetails['environnement'].description }}</div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- CARTE SÉLECTION (Réparation/Montage détail) - sous forme de carte secondaire si besoin -->
+  <div *ngIf="statsData" class="unified-card selection-standalone-card">
+    <div class="card-header">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+        <circle cx="9" cy="7" r="4"></circle>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+      </svg>
+      <h3>Réparation et Montage</h3>
+    </div>
+
+    <div *ngIf="isLoadingSelection" class="selection-loading">
+      <div class="selection-spinner"></div>
+      <span>Chargement...</span>
+    </div>
+
+    <ng-container *ngIf="!isLoadingSelection && statsSelection">
+      <div class="selection-main">
+        <div class="selection-count">{{ statsSelection.global.totalAffectations }}</div>
+        <div class="selection-sublabel">Présents</div>
+      </div>
+
+      <div *ngIf="showSelectionDetail" class="selection-detail-list">
+        <div *ngFor="let jour of statsSelection.detailParJour" class="selection-day-row">
+          <span class="selection-day-date">{{ jour.date | date:'dd/MM' }}</span>
+          <span class="selection-day-badge">{{ jour.nombrePersonnes }}</span>
+        </div>
+        <div *ngIf="statsSelection.detailParJour.length === 0" class="selection-empty">
+          Aucune donnée sur la période
+        </div>
+      </div>
+    </ng-container>
+
+    <div *ngIf="!isLoadingSelection && !statsSelection" class="selection-empty">
+      Aucune donnée de sélection
     </div>
   </div>
 

@@ -70,12 +70,24 @@
   </div>
 
   <!-- ── Formulaire ajout / édition ────────────────────────── -->
-  <!-- ✅ NOUVEAU — caché par défaut, ne s'affiche qu'au clic sur ➕ (personne absente) ou ✏️ (statut existant) -->
+  <!-- ✅ NOUVEAU — caché par défaut, ne s'affiche qu'au clic sur ➕ (personne absente), ✏️ (statut existant) ou "Plus de détails" (sélection multiple) -->
   <div class="card" id="rh-form-card" *ngIf="showForm">
-    <div class="card-title">{{ editingId ? ' Modifier un statut' : '➕ Ajouter un statut' }}</div>
+    <div class="card-title">
+      {{ formSelectionPersonnes.length > 0 ? '✏️ Statut pour ' + formSelectionPersonnes.length + ' personne(s)' : (editingId ? ' Modifier un statut' : '➕ Ajouter un statut') }}
+    </div>
 
     <form class="rh-form" (ngSubmit)="submitForm()">
-      <div class="rh-form-row">
+      <!-- ✅ NOUVEAU — mode groupe : on affiche les personnes en chips, pas de saisie matricule/nom -->
+      <div class="rh-form-row" *ngIf="formSelectionPersonnes.length > 0">
+        <div class="rh-form-group grow">
+          <label class="filter-label">Personnes concernées</label>
+          <div class="selection-chips">
+            <span class="chip" *ngFor="let p of formSelectionPersonnes">{{ p.nomPrenom }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rh-form-row" *ngIf="formSelectionPersonnes.length === 0">
         <div class="rh-form-group">
           <label class="filter-label">Matricule</label>
           <input class="filter-input" type="text" [(ngModel)]="formModel.matricule" name="matricule" required />
@@ -115,7 +127,7 @@
 
       <div class="rh-form-actions">
         <button type="submit" class="btn-filter" [disabled]="savingForm">
-          {{ savingForm ? 'Enregistrement...' : (editingId ? ' Mettre à jour' : '➕ Ajouter') }}
+          {{ savingForm ? 'Enregistrement...' : (formSelectionPersonnes.length > 0 ? '✅ Appliquer au groupe' : (editingId ? ' Mettre à jour' : '➕ Ajouter')) }}
         </button>
         <!-- ✅ NOUVEAU — visible dès que le formulaire est ouvert, pas seulement en édition -->
         <button type="button" class="btn-cancel" (click)="resetForm()">Annuler</button>
@@ -142,7 +154,8 @@
 
     <div class="ouvrier-list">
       <div *ngIf="filteredList.length === 0" class="no-data">Aucun résultat</div>
-      <div class="ouvrier-row" *ngFor="let o of filteredList">
+      <div class="ouvrier-row" *ngFor="let o of filteredList" [class.row-selected]="isSelected(o.matricule)">
+        <input class="select-checkbox" type="checkbox" [checked]="isSelected(o.matricule)" (change)="toggleSelection(o)" title="Sélectionner" />
         <div class="presence-dot" [class.dot-green]="o.statut === 'present'" [class.dot-red]="o.statut !== 'present'"></div>
         <div class="ouvrier-mat">{{ o.matricule }}</div>
         <div class="ouvrier-name">{{ o.nomPrenom }}</div>
@@ -155,6 +168,26 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ── Barre d'action flottante — sélection multiple ───────── -->
+  <!-- ✅ NOUVEAU — apparaît dès qu'une ou plusieurs personnes sont cochées ci-dessus -->
+  <div class="quick-action-bar" *ngIf="selectedCount > 0">
+    <div class="quick-action-count">{{ selectedCount }} sélectionné(s)</div>
+    <div class="quick-action-buttons">
+      <button class="btn-quick-statut" *ngFor="let opt of quickStatutOptions"
+        [disabled]="applyingQuick"
+        (click)="applyQuickStatut(opt.value)">
+        {{ opt.icon }} {{ opt.label }}
+      </button>
+      <button class="btn-quick-detail" [disabled]="applyingQuick" (click)="openDetailedFormForSelection()">
+        ✏️ Plus de détails...
+      </button>
+      <button class="btn-quick-cancel" [disabled]="applyingQuick" (click)="clearSelection()" title="Annuler la sélection">
+        ✕
+      </button>
+    </div>
+    <div *ngIf="quickError" class="quick-action-error">⚠️ {{ quickError }}</div>
   </div>
 
   <!-- ── Table des statuts manuels enregistrés ─────────────── -->
