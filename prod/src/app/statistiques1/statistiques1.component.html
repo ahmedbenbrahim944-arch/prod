@@ -1,0 +1,1042 @@
+<div class="stats-container">
+
+  <!-- ============================================ -->
+  <!-- PAGE DE FILTRES (Page 1)                     -->
+  <!-- ============================================ -->
+  <div *ngIf="!showResultatsSemaine && !showResultatsDate && !showAffectation && !showProductiviteOuvriers">
+    
+    <button class="btn-retour-choix" (click)="retourChoix()">
+      <i class="fas fa-arrow-left"></i>
+      Retour
+    </button>
+
+    <div class="header">
+      <h1>Filtres Statistiques</h1>
+      
+      <div class="controls">
+        
+        <!-- SECTION FILTRE PAR SEMAINE -->
+        <div class="filter-group">
+          <div class="filter-header">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Filtrer par semaine</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="input-group">
+              <label for="semaine">Semaine :</label>
+              <select id="semaine" [(ngModel)]="semaineSelectionnee" class="filter-select">
+                <option *ngFor="let num of getSemainesArray()" [value]="'semaine' + num">
+                  Semaine {{ num }}
+                </option>
+              </select>
+            </div>
+            
+            <button class="btn-filter" (click)="chargerStatistiques()" [disabled]="isLoading">
+              <i class="fas fa-chart-line"></i>
+              <span *ngIf="!isLoading">Afficher les statistiques</span>
+              <span *ngIf="isLoading">Chargement...</span>
+            </button>
+            
+            <button class="btn-filter btn-affectation" (click)="chargerAffectationPersonnel()" [disabled]="isLoadingAffectation">
+              <i class="fas fa-users"></i>
+              <span *ngIf="!isLoadingAffectation">Affectation Personnel</span>
+              <span *ngIf="isLoadingAffectation">Chargement...</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-separator"></div>
+
+        <!-- SECTION FILTRE PAR DATE -->
+        <div class="filter-group">
+          <div class="filter-header">
+            <i class="fas fa-calendar-day"></i>
+            <span>Filtrer par date</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="input-group">
+              <label for="dateFilter">Date :</label>
+              <input type="date" id="dateFilter" [(ngModel)]="dateSelectionnee" class="filter-input" />
+            </div>
+            
+            <button class="btn-filter" (click)="chargerStatsParDate()" [disabled]="isLoadingDate">
+              <i class="fas fa-chart-line"></i>
+              <span *ngIf="!isLoadingDate">Afficher les statistiques</span>
+              <span *ngIf="isLoadingDate">Chargement...</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="filter-separator"></div>
+
+        <!-- SECTION FILTRE PAR POSTE -->
+        <div class="filter-group">
+          <div class="filter-header">
+            <i class="fas fa-clock"></i>
+            <span>Filtrer par poste</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="input-group">
+              <label for="posteFilter">Poste :</label>
+              <select id="posteFilter" [(ngModel)]="posteSelectionne" class="filter-select">
+                <option value="">Tous les postes</option>
+                <option value="poste1">Poste 1 (6h-14h)</option>
+                <option value="poste2">Poste 2 (14h-22h)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-separator"></div>
+
+        <!-- SECTION PRODUCTIVITÉ OUVRIERS -->
+        <div class="filter-group filter-group--productivite">
+          <div class="filter-header">
+            <i class="fas fa-users"></i>
+            <span>Productivité Ouvriers</span>
+          </div>
+          
+          <div class="filter-inputs">
+            <div class="input-group">
+              <label for="dateDebutProd">Date début :</label>
+              <input
+                type="date"
+                id="dateDebutProd"
+                [(ngModel)]="dateDebutProductivite"
+                [max]="maxDate"
+                class="filter-input"
+              />
+            </div>
+
+            <div class="input-group">
+              <label for="dateFinProd">Date fin :</label>
+              <input
+                type="date"
+                id="dateFinProd"
+                [(ngModel)]="dateFinProductivite"
+                [max]="maxDate"
+                class="filter-input"
+              />
+            </div>
+
+            <button
+              class="btn-filter btn-productivite"
+              (click)="chargerProductiviteOuvriers()"
+              [disabled]="isLoadingProductivite"
+            >
+              <i class="fas fa-chart-bar"></i>
+              <span *ngIf="!isLoadingProductivite">Afficher Productivité Ouvriers</span>
+              <span *ngIf="isLoadingProductivite">Chargement...</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div *ngIf="isLoading || isLoadingDate || isLoadingAffectation || isLoadingProductivite" class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des données...</p>
+    </div>
+
+    <div *ngIf="!isLoading && !isLoadingDate && !isLoadingAffectation && !isLoadingProductivite" class="welcome-card">
+      <div class="welcome-icon">
+        <i class="fas fa-chart-line"></i>
+      </div>
+      <h2>Bienvenue</h2>
+      <p>Sélectionnez une semaine ou une date puis cliquez sur "Afficher les statistiques"</p>
+    </div>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE DES RÉSULTATS PAR SEMAINE               -->
+  <!-- ============================================ -->
+  <div *ngIf="showResultatsSemaine" class="stats-content">
+    
+    <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux filtres
+    </button>
+
+    <div class="main-layout">
+      
+      <!-- Sidebar Lignes -->
+      <div class="lignes-sidebar">
+        <div class="sidebar-header">
+          <h2>Lignes de production</h2>
+          <span class="date-badge">{{ semaineSelectionnee }}</span>
+        </div>
+        <div class="lignes-list">
+          <div 
+            *ngFor="let ligne of statsLignes" 
+            class="ligne-card"
+            [class.selected]="ligne.ligne === ligneSelectionnee"
+            (click)="selectionnerLigne(ligne.ligne)">
+            
+            <div class="ligne-header">
+              <span class="ligne-nom">{{ ligne.ligne }}</span>
+              <span class="ligne-percentage">{{ ligne.pcsProdTotal.toFixed(1) }}%</span>
+            </div>
+            
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="ligne.pcsProdTotal"
+                [style.background-color]="getColorForPercentage(ligne.pcsProdTotal)">
+              </div>
+            </div>
+            
+            <div class="ligne-details">
+              <span>Planifications: {{ ligne.nombrePlanifications }}</span>
+              <span>Références: {{ ligne.nombreReferences }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenu principal -->
+      <div class="main-content">
+        
+        <!-- Bannière PCS Total -->
+        <div class="pcs-total-banner">
+          <div class="pcs-banner-content">
+            <div class="pcs-banner-label">PCS TOTAL DE LA SEMAINE</div>
+            <div class="pcs-banner-value">
+              {{ (pcsTotalSemaine || 0).toFixed(1) }}%
+            </div>
+          </div>
+        </div>
+        
+        <!-- Graphique -->
+        <div class="chart-card">
+          <h3>Production par ligne - {{ semaineSelectionnee }}</h3>
+          <div class="chart-wrapper">
+            <canvas id="barChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Section 5M -->
+        <div class="cinq-m-section">
+          <h3>{{ titre5M }}</h3>
+          
+          <div *ngIf="ligneSelectionnee" class="ligne-selectionnee-badge">
+            <i class="fas fa-check-circle"></i>
+            <span>Ligne sélectionnée : {{ ligneSelectionnee }}</span>
+            <button class="btn-reset-ligne" (click)="chargerStatistiques()" title="Revenir aux statistiques globales">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div class="cinq-m-grid">
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-matierePremiere"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.matierePremiere ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Matière Première</h4>
+                <p class="m-description">Écarts liés aux matières premières</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-absence"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.absence ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Absence</h4>
+                <p class="m-description">Écarts dus aux absences</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-methode"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.methode ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Méthode</h4>
+                <p class="m-description">Écarts dus aux méthodes de travail</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-rendement"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.rendement ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Rendement</h4>
+                <p class="m-description">Écarts de rendement</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-maintenance"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.maintenance ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Maintenance</h4>
+                <p class="m-description">Écarts dus à la maintenance</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-qualite"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.qualite ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Qualité</h4>
+                <p class="m-description">Écarts de qualité</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-environnement"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5M?.environnement ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Environnement</h4>
+                <p class="m-description">Écarts environnementaux</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE DES RÉSULTATS PAR DATE                  -->
+  <!-- ============================================ -->
+  <div *ngIf="showResultatsDate" class="stats-content">
+    
+    <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux filtres
+    </button>
+
+    <div class="main-layout">
+      
+      <div class="lignes-sidebar">
+        <div class="sidebar-header">
+          <h2>Lignes de production</h2>
+          <span class="date-badge">{{ statsDate?.periode?.date | date:'dd/MM/yyyy' }}</span>
+        </div>
+        
+        <div class="lignes-list">
+          <div 
+            *ngFor="let ligne of statsLignesDate" 
+            class="ligne-card"
+            [class.selected]="ligne.ligne === ligneSelectionneeDate"
+            (click)="selectionnerLigneDate(ligne.ligne)">
+            
+            <div class="ligne-header">
+              <span class="ligne-nom">{{ ligne.ligne }}</span>
+              <span class="ligne-percentage">{{ ligne.pcsProdTotal.toFixed(1) }}%</span>
+            </div>
+            
+            <div class="progress-bar">
+              <div 
+                class="progress-fill" 
+                [style.width.%]="ligne.pcsProdTotal"
+                [style.background-color]="getColorForPercentage(ligne.pcsProdTotal)">
+              </div>
+            </div>
+            
+            <div class="ligne-details">
+              <span>Planifications: {{ ligne.nombrePlanifications }}</span>
+              <span>Références: {{ ligne.nombreReferences }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-content">
+        
+        <div class="pcs-total-banner">
+          <div class="pcs-banner-content">
+            <div class="pcs-banner-label">PCS TOTAL TOUTES LIGNES</div>
+            <div class="pcs-banner-value">
+              {{ (pcsTotalDate || 0).toFixed(1) }}%
+            </div>
+          </div>
+        </div>
+        
+        <div class="chart-card">
+          <h3>Production par ligne - {{ statsDate?.periode?.date | date:'dd/MM/yyyy' }}</h3>
+          <div class="chart-wrapper">
+            <canvas id="barChartDate"></canvas>
+          </div>
+        </div>
+
+        <div class="cinq-m-section">
+          <h3>{{ titre5MDate }}</h3>
+          
+          <div *ngIf="ligneSelectionneeDate" class="ligne-selectionnee-badge">
+            <i class="fas fa-check-circle"></i>
+            <span>Ligne sélectionnée : {{ ligneSelectionneeDate }}</span>
+            <button class="btn-reset-ligne" (click)="resetSelectionLigneDate()" title="Revenir aux statistiques globales">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div class="cinq-m-grid">
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-matierePremiere-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.matierePremiere ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Matière Première</h4>
+                <p class="m-description">Écarts liés aux matières premières</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-absence-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.absence ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Absence</h4>
+                <p class="m-description">Écarts dus aux absences</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-methode-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.methode ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Méthode</h4>
+                <p class="m-description">Écarts dus aux méthodes de travail</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-rendement-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.rendement ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Rendement</h4>
+                <p class="m-description">Écarts de rendement</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-maintenance-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.maintenance ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Maintenance</h4>
+                <p class="m-description">Écarts dus à la maintenance</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-qualite-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.qualite ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Qualité</h4>
+                <p class="m-description">Écarts de qualité</p>
+              </div>
+            </div>
+
+            <div class="m-card">
+              <div class="m-chart-wrapper">
+                <canvas id="pieChart-environnement-date"></canvas>
+                <div class="m-center">
+                  <span class="m-percentage">{{ (stats5MDateActuel?.environnement ?? 0).toFixed(1) }}%</span>
+                </div>
+              </div>
+              <div class="m-info">
+                <h4>Environnement</h4>
+                <p class="m-description">Écarts environnementaux</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION SAISIE RAPPORTS -->
+        <div class="saisie-rapports-toggle">
+          <button class="btn-toggle-saisie" (click)="toggleSaisieRapports()">
+            <i class="fas fa-file-alt"></i>
+            <span>{{ showSaisieRapports ? 'Masquer' : 'Afficher' }} la Saisie des Rapports</span>
+            <i class="fas fa-chevron-down chevron-icon" [class.rotated]="showSaisieRapports"></i>
+          </button>
+        </div>
+
+        <div *ngIf="showSaisieRapports" class="saisie-rapports-section">
+          <h3>
+            <i class="fas fa-file-alt"></i>
+            Saisie des Rapports
+          </h3>
+          
+          <div class="saisie-summary-card">
+            <div class="saisie-stats">
+              <div class="saisie-stat">
+                <span class="stat-label">Ouvriers ayant saisi</span>
+                <span class="stat-value">{{ statsDate?.rapportsSaisie?.nombreRapportsSaisis || 0 }}</span>
+              </div>
+              <div class="saisie-stat">
+                <span class="stat-label">Ouvriers n'ayant pas saisi</span>
+                <span class="stat-value text-danger">{{ statsDate?.rapportsSaisie?.nombreOuvriersNonSaisis || 0 }}</span>
+              </div>
+              <div class="saisie-stat">
+                <span class="stat-label">Taux de saisie</span>
+                <span class="stat-value" [ngClass]="{
+                  'text-success': (statsDate?.rapportsSaisie?.tauxSaisie || 0) >= 80,
+                  'text-warning': (statsDate?.rapportsSaisie?.tauxSaisie || 0) >= 50 && (statsDate?.rapportsSaisie?.tauxSaisie || 0) < 80,
+                  'text-danger': (statsDate?.rapportsSaisie?.tauxSaisie || 0) < 50
+                }">
+                  {{ statsDate?.rapportsSaisie?.tauxSaisie || 0 }}%
+                </span>
+              </div>
+              <div class="saisie-stat">
+                <span class="stat-label">Total ouvriers</span>
+                <span class="stat-value">{{ statsDate?.rapportsSaisie?.nombreOuvriersTotal || 0 }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liste des ouvriers n'ayant pas saisi -->
+          <div *ngIf="statsDate?.rapportsSaisie?.nombreOuvriersNonSaisis > 0" class="non-saisie-section">
+            <div class="section-header" (click)="toggleNonSaisieList()">
+              <h4>
+                <i class="fas fa-users"></i>
+                Ouvriers n'ayant pas saisi ({{ statsDate?.rapportsSaisie?.nombreOuvriersNonSaisis }})
+                <span class="toggle-icon">{{ showNonSaisieList ? '−' : '+' }}</span>
+              </h4>
+            </div>
+            
+            <div *ngIf="showNonSaisieList" class="non-saisie-list">
+              <div class="table-container">
+                <table class="ouvriers-table">
+                  <thead>
+                    <tr>
+                      <th>Matricule</th>
+                      <th>Nom & Prénom</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let ouvrier of statsDate?.rapportsSaisie?.ouvriersNonSaisis">
+                      <td>{{ ouvrier.matricule }}</td>
+                      <td>{{ ouvrier.nomPrenom }}</td>
+                      <td>
+                        <button class="btn-notify" (click)="notifyOuvrier(ouvrier)">
+                          <i class="fas fa-bell"></i>
+                          Notifier
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liste des ouvriers ayant saisi -->
+          <div *ngIf="statsDate?.rapportsSaisie?.nombreRapportsSaisis > 0" class="saisie-details">
+            <div class="section-header" (click)="toggleSaisieDetails()">
+              <h4>
+                <i class="fas fa-check-circle"></i>
+                Ouvriers ayant saisi ({{ statsDate?.rapportsSaisie?.nombreRapportsSaisis }})
+                <span class="toggle-icon">{{ showSaisieDetails ? '−' : '+' }}</span>
+              </h4>
+            </div>
+            
+            <div *ngIf="showSaisieDetails" class="saisie-details-list">
+              <div *ngIf="statsDate?.rapportsSaisie?.repartitionParLigne" class="repartition-lignes">
+                <h5>Répartition par ligne</h5>
+                <div class="lignes-grid">
+                  <div *ngFor="let ligne of getLignesAvecSaisie()" class="ligne-saisie-card">
+                    <span class="ligne-nom">{{ ligne.nom }}</span>
+                    <span class="ligne-count">{{ ligne.nombreOuvriers }} ouvrier(s)</span>
+                    <span class="ligne-heures">{{ ligne.totalHeures }} heures</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE AFFECTATION PERSONNEL                   -->
+  <!-- ============================================ -->
+  <div *ngIf="showAffectation" class="stats-content">
+    
+    <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux filtres
+    </button>
+
+    <div class="affectation-header">
+      <h1>
+        <i class="fas fa-users"></i>
+        Affectation du Personnel - {{ semaineSelectionnee }}
+      </h1>
+    </div>
+
+    <div class="stats-globales-grid" *ngIf="affectationPersonnel">
+      <div class="stat-card">
+        <span class="stat-label">Total Planifié</span>
+        <span class="stat-value">{{ affectationPersonnel.statistiquesGlobales.totalPlanifie }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Total Saisi</span>
+        <span class="stat-value">{{ affectationPersonnel.statistiquesGlobales.totalSaisi }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Différence</span>
+        <span class="stat-value" [style.color]="getDeltaColor(affectationPersonnel.statistiquesGlobales.difference)">
+          {{ affectationPersonnel.statistiquesGlobales.difference >= 0 ? '+' : '' }}{{ affectationPersonnel.statistiquesGlobales.difference }}
+        </span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Non-conformités</span>
+        <span class="stat-value text-danger">{{ affectationPersonnel.statistiquesGlobales.nbNonConformites }}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Taux de Conformité</span>
+        <span class="stat-value text-success">{{ affectationPersonnel.statistiquesGlobales.tauxConformite }}</span>
+      </div>
+    </div>
+
+    <div class="affectation-table-container" *ngIf="affectationPersonnel">
+      <div class="table-scroll-wrapper">
+        <table class="affectation-table">
+          <thead>
+            <tr>
+              <th rowspan="2">LIGNE</th>
+              <th colspan="3" class="jour-header">LUNDI</th>
+              <th colspan="3" class="jour-header">MARDI</th>
+              <th colspan="3" class="jour-header">MERCREDI</th>
+              <th colspan="3" class="jour-header">JEUDI</th>
+              <th colspan="3" class="jour-header">VENDREDI</th>
+              <th colspan="3" class="jour-header">SAMEDI</th>
+            </tr>
+            <tr>
+              <ng-container *ngFor="let jour of ['LUNDI', 'MARDI', 'MERCREDI', 'JEUDI', 'VENDREDI', 'SAMEDI']">
+                <th class="sub-header">P</th>
+                <th class="sub-header">R</th>
+                <th class="sub-header">Δ</th>
+              </ng-container>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ligne of affectationPersonnel.lignes">
+              <td class="ligne-name">{{ ligne.ligne }}</td>
+              <td class="cell-planifie">{{ ligne.jours[0].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[0].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[0].difference || 0)">
+                <strong>{{ (ligne.jours[0].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[0].difference || 0 }}</strong>
+              </td>
+              <td class="cell-planifie">{{ ligne.jours[1].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[1].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[1].difference || 0)">
+                <strong>{{ (ligne.jours[1].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[1].difference || 0 }}</strong>
+              </td>
+              <td class="cell-planifie">{{ ligne.jours[2].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[2].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[2].difference || 0)">
+                <strong>{{ (ligne.jours[2].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[2].difference || 0 }}</strong>
+              </td>
+              <td class="cell-planifie">{{ ligne.jours[3].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[3].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[3].difference || 0)">
+                <strong>{{ (ligne.jours[3].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[3].difference || 0 }}</strong>
+              </td>
+              <td class="cell-planifie">{{ ligne.jours[4].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[4].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[4].difference || 0)">
+                <strong>{{ (ligne.jours[4].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[4].difference || 0 }}</strong>
+              </td>
+              <td class="cell-planifie">{{ ligne.jours[5].nbPlanifie || 0 }}</td>
+              <td class="cell-saisi">{{ ligne.jours[5].nbSaisi || 0 }}</td>
+              <td class="cell-delta" [style.color]="getDeltaColor(ligne.jours[5].difference || 0)">
+                <strong>{{ (ligne.jours[5].difference || 0) >= 0 ? '+' : '' }}{{ ligne.jours[5].difference || 0 }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="legende">
+      <h3>Légende</h3>
+      <div class="legende-items">
+        <div class="legende-item">
+          <span class="legende-box conforme"></span>
+          <span>Conforme (P = R)</span>
+        </div>
+        <div class="legende-item">
+          <span class="legende-box non-conforme"></span>
+          <span>Non-conforme (P ≠ R)</span>
+        </div>
+        <div class="legende-item"><strong>P</strong> = Nombre d'opérateurs planifiés</div>
+        <div class="legende-item"><strong>R</strong> = Nombre d'opérateurs ayant saisi</div>
+        <div class="legende-item"><strong>Δ</strong> = Différence (R - P)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PAGE PRODUCTIVITÉ OUVRIERS                   -->
+  <!-- ============================================ -->
+  <div *ngIf="showProductiviteOuvriers" class="stats-content">
+
+    <button class="btn-retour-choix" (click)="retourAuxFiltres()">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux filtres
+    </button>
+
+    <!-- En-tête -->
+    <div class="productivite-header">
+      <h1>
+        <i class="fas fa-users"></i>
+        Productivité des Ouvriers
+      </h1>
+      <p class="productivite-periode">
+        Période : {{ dateDebutProductivite | date:'dd/MM/yyyy' }}
+        → {{ dateFinProductivite | date:'dd/MM/yyyy' }}
+        <span *ngIf="posteSelectionne" class="poste-badge">
+          {{ getPosteLabel() }}
+        </span>
+      </p>
+    </div>
+
+    <!-- Cartes résumé -->
+    <div class="productivite-resume-grid" *ngIf="productiviteOuvriers?.statistiques?.resume">
+      <div class="resume-card">
+        <i class="fas fa-users resume-icon"></i>
+        <span class="resume-label">Nombre d'ouvriers</span>
+        <span class="resume-value">
+          {{ productiviteOuvriers?.statistiques?.resume?.nombreOuvriers || 0 }}
+        </span>
+      </div>
+      <div class="resume-card">
+        <i class="fas fa-file-alt resume-icon"></i>
+        <span class="resume-label">Nombre de rapports</span>
+        <span class="resume-value">
+          {{ productiviteOuvriers?.statistiques?.resume?.nombreRapports || 0 }}
+        </span>
+      </div>
+      <div class="resume-card">
+        <i class="fas fa-clock resume-icon"></i>
+        <span class="resume-label">Total heures</span>
+        <span class="resume-value">
+          {{ productiviteOuvriers?.statistiques?.resume?.totalHeures?.toFixed(1) || 0 }}h
+        </span>
+      </div>
+      <div class="resume-card">
+        <i class="fas fa-chart-line resume-icon"></i>
+        <span class="resume-label">Productivité moyenne</span>
+        <span
+          class="resume-value"
+          [style.color]="getColorForProductivite(productiviteOuvriers?.statistiques?.resume?.productiviteMoyenneGenerale || 0)"
+        >
+          {{ (productiviteOuvriers?.statistiques?.resume?.productiviteMoyenneGenerale || 0).toFixed(1) }}%
+        </span>
+      </div>
+    </div>
+
+    <!-- Barre outils : filtres + exports -->
+    <div class="productivite-toolbar">
+
+      <!-- Filtres -->
+      <div class="toolbar-filtres">
+
+        <select
+          [(ngModel)]="champFiltre"
+          (ngModelChange)="onChampFiltreChange()"
+          class="filter-select toolbar-select"
+        >
+          <option value="">-- Filtrer par --</option>
+          <option value="JOURS">Date</option>
+          <option value="MAT">Matricule</option>
+          <option value="NOM_ET_PRENOM">Nom & Prénom</option>
+          <option value="N_HEURES">Heures</option>
+          <option value="LIGNES">Ligne</option>
+          <option value="PRODUCTIVITE">Productivité (%)</option>
+          <option value="M1">M1 - Matière Première (%)</option>
+          <option value="M2">M2 - Méthode (%)</option>
+          <option value="M3">M3 - Maintenance (%)</option>
+          <option value="M4">M4 - Qualité (%)</option>
+          <option value="M5">M5 - Absence (%)</option>
+          <option value="M6">M6 - Rendement (%)</option>
+          <option value="M7">M7 - Environnement (%)</option>
+          <option value="NOTE">Note</option>
+        </select>
+
+        <!-- Input date -->
+        <ng-container *ngIf="isChampDate()">
+          <input
+            type="date"
+            [(ngModel)]="valeurFiltre"
+            (ngModelChange)="appliquerFiltre()"
+            class="filter-input toolbar-input"
+          />
+        </ng-container>
+
+        <!-- Input plage pourcentage -->
+        <ng-container *ngIf="isChampPourcentage()">
+          <div class="range-inputs">
+            <input
+              type="number"
+              [(ngModel)]="minPourcentage"
+              (ngModelChange)="appliquerFiltre()"
+              min="0" max="100"
+              placeholder="Min %"
+              class="filter-input toolbar-input range-input"
+            />
+            <span class="range-separator">—</span>
+            <input
+              type="number"
+              [(ngModel)]="maxPourcentage"
+              (ngModelChange)="appliquerFiltre()"
+              min="0" max="100"
+              placeholder="Max %"
+              class="filter-input toolbar-input range-input"
+            />
+          </div>
+        </ng-container>
+
+        <!-- Input texte générique -->
+        <ng-container *ngIf="!isChampDate() && !isChampPourcentage()">
+          <input
+            type="text"
+            [(ngModel)]="valeurFiltre"
+            (ngModelChange)="appliquerFiltre()"
+            [placeholder]="getPlaceholderFiltre()"
+            class="filter-input toolbar-input"
+          />
+        </ng-container>
+
+        <!-- Bouton reset filtre -->
+        <button
+          class="btn-reset-filtre"
+          (click)="reinitialiserFiltre()"
+          title="Réinitialiser le filtre"
+          *ngIf="champFiltre || valeurFiltre"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+
+      </div>
+
+      <!-- Boutons export -->
+      <div class="toolbar-exports">
+        <button class="btn-export btn-export-csv" (click)="exporterCSV()" title="Exporter les données détaillées en CSV">
+          <i class="fas fa-file-csv"></i>
+          Export CSV
+        </button>
+        <button class="btn-export btn-export-excel" (click)="exporterExcel()" title="Exporter les données détaillées en Excel">
+          <i class="fas fa-file-excel"></i>
+          Export Excel (détail)
+        </button>
+        <button class="btn-export btn-export-resume" (click)="exporterResumeExcel()" title="Exporter le résumé par ouvrier">
+          <i class="fas fa-file-excel"></i>
+          <i class="fas fa-star btn-star-icon"></i>
+          Résumé par ouvrier
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Compteur résultats -->
+    <div class="productivite-compteur">
+      <span *ngIf="!champFiltre && !valeurFiltre && !productiviteSortDirection">
+        <strong>{{ productiviteOuvriers?.tableau?.length || 0 }}</strong> ligne(s) au total
+      </span>
+      <span *ngIf="(champFiltre || valeurFiltre) && !productiviteSortDirection">
+        <strong>{{ productiviteFiltree.length }}</strong> résultat(s) trouvé(s)
+      </span>
+      <span *ngIf="productiviteSortDirection">
+        <strong>{{ productiviteDataSorted.length }}</strong> ligne(s) — trié par productivité
+        <i [class]="productiviteSortDirection === 'asc' ? 'fas fa-sort-amount-up-alt' : 'fas fa-sort-amount-down'"></i>
+      </span>
+    </div>
+
+    <!-- Tableau productivité -->
+    <div class="productivite-table-container">
+      <div class="table-scroll-wrapper">
+        <table class="productivite-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Matricule</th>
+              <th>Nom & Prénom</th>
+              <th>Heures</th>
+              <th>Ligne</th>
+              <th class="th-sortable" (click)="toggleSortProductivite()">
+                Productivité
+                <span class="sort-icon">
+                  <i *ngIf="!productiviteSortDirection" class="fas fa-sort"></i>
+                  <i *ngIf="productiviteSortDirection === 'asc'" class="fas fa-sort-amount-up-alt"></i>
+                  <i *ngIf="productiviteSortDirection === 'desc'" class="fas fa-sort-amount-down"></i>
+                </span>
+              </th>
+              <th title="Matière Première">M1</th>
+              <th title="Méthode">M2</th>
+              <th title="Maintenance">M3</th>
+              <th title="Qualité">M4</th>
+              <th title="Absence">M5</th>
+              <th title="Rendement">M6</th>
+              <th title="Environnement">M7</th>
+              <th>Prod. Moy.</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Données avec tri actif -->
+            <ng-container *ngIf="productiviteSortDirection">
+              <tr *ngFor="let ligne of productiviteDataSorted">
+                <ng-container *ngTemplateOutlet="ligneProductivite; context: { $implicit: ligne }"></ng-container>
+              </tr>
+              <tr *ngIf="productiviteDataSorted.length === 0">
+                <td colspan="15" class="empty-row">
+                  <i class="fas fa-search"></i> Aucune donnée trouvée
+                </td>
+              </tr>
+            </ng-container>
+
+            <!-- Données filtrées sans tri -->
+            <ng-container *ngIf="!productiviteSortDirection && (champFiltre || valeurFiltre)">
+              <tr *ngFor="let ligne of productiviteFiltree">
+                <ng-container *ngTemplateOutlet="ligneProductivite; context: { $implicit: ligne }"></ng-container>
+              </tr>
+              <tr *ngIf="productiviteFiltree.length === 0">
+                <td colspan="15" class="empty-row">
+                  <i class="fas fa-search"></i> Aucun résultat pour ce filtre
+                </td>
+              </tr>
+            </ng-container>
+
+            <!-- Toutes les données (sans filtre, sans tri) -->
+            <ng-container *ngIf="!productiviteSortDirection && !champFiltre && !valeurFiltre">
+              <tr *ngFor="let ligne of productiviteOuvriers?.tableau">
+                <ng-container *ngTemplateOutlet="ligneProductivite; context: { $implicit: ligne }"></ng-container>
+              </tr>
+              <tr *ngIf="!productiviteOuvriers?.tableau || productiviteOuvriers?.tableau?.length === 0">
+                <td colspan="15" class="empty-row">
+                  <i class="fas fa-inbox"></i> Aucune donnée disponible
+                </td>
+              </tr>
+            </ng-container>
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Légende M1–M7 -->
+    <div class="legende">
+      <h3>Légende des causes (M)</h3>
+      <div class="legende-items legende-m">
+        <div class="legende-item"><span class="legende-m-badge">M1</span> Matière Première</div>
+        <div class="legende-item"><span class="legende-m-badge">M2</span> Méthode</div>
+        <div class="legende-item"><span class="legende-m-badge">M3</span> Maintenance</div>
+        <div class="legende-item"><span class="legende-m-badge">M4</span> Qualité</div>
+        <div class="legende-item"><span class="legende-m-badge">M5</span> Absence</div>
+        <div class="legende-item"><span class="legende-m-badge">M6</span> Rendement</div>
+        <div class="legende-item"><span class="legende-m-badge">M7</span> Environnement</div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ============================================ -->
+<!-- NG-TEMPLATE : ligne du tableau productivité  -->
+<!-- ============================================ -->
+<ng-template #ligneProductivite let-ligne>
+  <td>{{ ligne.JOURS | date:'dd/MM/yyyy' }}</td>
+  <td>{{ ligne.MAT }}</td>
+  <td class="td-nom">{{ ligne['NOM ET PRENOM'] }}</td>
+  <td>{{ ligne['N°HEURS'] }}</td>
+  <td>{{ ligne.LIGNES }}</td>
+  <td>
+    <span
+      class="productivite-badge"
+      [style.background-color]="getColorForProductivite(ligne.PRODUCTIVITE || 0) + '22'"
+      [style.color]="getColorForProductivite(ligne.PRODUCTIVITE || 0)"
+      [style.border-color]="getColorForProductivite(ligne.PRODUCTIVITE || 0)"
+    >
+      {{ ligne.PRODUCTIVITE != null ? (ligne.PRODUCTIVITE | number:'1.1-1') + '%' : '-' }}
+    </span>
+  </td>
+  <td class="td-m">{{ formatPourcentage(ligne.M1) }}</td>
+  <td class="td-m">{{ formatPourcentage(ligne.M2) }}</td>
+  <td class="td-m">{{ formatPourcentage(ligne.M3) }}</td>
+  <td class="td-m">{{ formatPourcentage(ligne.M4) }}</td>
+  <td class="td-m">{{ formatPourcentage(ligne.M5) }}</td>
+  <td class="td-m">{{ formatPourcentage(ligne.M6) }}</td>
+  <td class="td-m">{{ formatPourcentage(ligne.M7) }}</td>
+  <td>
+    <span *ngIf="ligne['PRODUCTIVITE MOYENNE'] != null">
+      {{ ligne['PRODUCTIVITE MOYENNE'] | number:'1.1-1' }}%
+    </span>
+    <span *ngIf="ligne['PRODUCTIVITE MOYENNE'] == null">-</span>
+  </td>
+  <td>
+    <span
+      class="note-badge"
+      [ngClass]="{
+        'note-excellent': ligne.NOTE === 'Excellent' || ligne.NOTE === 'Très bien',
+        'note-bien':      ligne.NOTE === 'Bien',
+        'note-moyen':     ligne.NOTE === 'Moyen',
+        'note-faible':    ligne.NOTE === 'Faible' || ligne.NOTE === 'Insuffisant'
+      }"
+    >
+      {{ ligne.NOTE || '-' }}
+    </span>
+  </td>
+</ng-template>

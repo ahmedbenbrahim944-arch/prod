@@ -1,0 +1,241 @@
+/* ─── Conteneur principal ────────────────────────────────────────────────── */
+.choix-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ─── Conteneur des boutons ──────────────────────────────────────────────── */
+.boutons-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  max-width: 1200px;
+  width: 100%;
+}
+
+/* ─── Style de base bouton ───────────────────────────────────────────────── */
+.bouton-grand {
+  flex: 1;
+  min-width: 280px;
+  max-width: 500px;
+  height: auto;
+  min-height: 200px;
+  border: none;
+  border-radius: 20px;
+  padding: 30px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.bouton-grand:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
+}
+
+.bouton-grand:active {
+  transform: translateY(-2px);
+}
+
+.bouton-grand.active {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.bouton-grand:nth-child(2) { animation-delay: 0.1s; }
+.bouton-grand:nth-child(3) { animation-delay: 0.2s; }
+
+/* ─── Contenu bouton ─────────────────────────────────────────────────────── */
+.bouton-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  z-index: 2;
+}
+
+.bouton-icon {
+  width: 60px;
+  height: 60px;
+  stroke-width: 1.5;
+}
+
+.bouton-titre {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+.bouton-description {
+  font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+  line-height: 1.4;
+  max-width: 90%;
+  margin: 0;
+  color: white;
+}
+
+/* ─── Bouton Scanner ─────────────────────────────────────────────────────── */
+.bouton-grand.scanner {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: white;
+}
+.bouton-grand.scanner .bouton-icon { stroke: #4fc3f7; }
+.bouton-grand.scanner:hover {
+  background: linear-gradient(135deg, #2a2a4e 0%, #263050 50%, #1a4a80 100%);
+}
+
+/* ─── Bouton Planning ────────────────────────────────────────────────────── */
+.bouton-grand.planning {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+}
+.bouton-grand.planning .bouton-icon { stroke: #a5ffd6; }
+.bouton-grand.planning:hover {
+  background: linear-gradient(135deg, #1aad9e 0%, #52ff99 100%);
+}
+
+/* ─── Bouton Temps ───────────────────────────────────────────────────────── */
+.bouton-grand.temps {
+  background: linear-gradient(135deg, #f7971e 0%, #ffd200 100%);
+  color: white;
+}
+.bouton-grand.temps .bouton-icon { stroke: #fff3cd; }
+.bouton-grand.temps:hover {
+  background: linear-gradient(135deg, #f9a030 0%, #ffe033 100%);
+}
+
+/* ─── Bouton retour login ────────────────────────────────────────────────── */
+.btn-retour-login {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ff4757 0%, #ff3838 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+  z-index: 100;
+  white-space: nowrap;
+}
+.btn-retour-login:hover {
+  background: linear-gradient(135deg, #ff5e6c 0%, #ff5252 100%);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(255, 71, 87, 0.4);
+}
+.btn-retour-login svg {
+  width: 20px;
+  height: 20px;
+  stroke: white;
+  flex-shrink: 0;
+}
+
+/* ─── Bouton SERFA 4.0 ───────────────────────────────────────────────────── */
+.btn-serfa-40 {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  z-index: 1000;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.btn-serfa-40:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+.btn-serfa-40 svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+  transition: transform 0.3s ease;
+}
+.btn-serfa-40:hover svg { transform: translateX(4px); }
+.btn-serfa-text { font-size: 14px; font-weight: 700; }
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.btn-serfa-40 { animation: slideInRight 0.6s ease-out; }
+
+/* ─── Responsive ─────────────────────────────────────────────────────────── */
+@media (min-width: 1200px) {
+  .boutons-container { gap: 50px; }
+  .bouton-grand { min-height: 250px; padding: 40px; }
+}
+
+@media (max-width: 992px) {
+  .boutons-container { gap: 25px; }
+  .bouton-grand { min-width: 240px; min-height: 180px; padding: 25px; }
+}
+
+@media (max-width: 768px) {
+  .choix-container { padding: 15px; }
+  .boutons-container { flex-direction: column; align-items: center; gap: 20px; }
+  .bouton-grand { width: 100%; max-width: 400px; min-height: 170px; padding: 20px; }
+  .bouton-icon { width: 50px; height: 50px; }
+  .btn-retour-login { top: 15px; left: 15px; padding: 10px 18px; font-size: 14px; }
+  .btn-serfa-40 { top: 10px; right: 10px; padding: 10px 16px; font-size: 14px; }
+}
+
+@media (max-width: 576px) and (orientation: portrait) {
+  .choix-container { justify-content: flex-start; padding-top: 70px; }
+  .bouton-grand { min-height: 160px; }
+  .bouton-icon { width: 45px; height: 45px; }
+  .btn-retour-login { top: 10px; left: 10px; padding: 8px 12px; font-size: 12px; }
+}
+
+@media (max-width: 360px) {
+  .choix-container { padding: 10px; padding-top: 75px; }
+  .bouton-grand { min-width: 100%; min-height: 150px; padding: 15px; }
+  .bouton-titre { font-size: 1.3rem; }
+}

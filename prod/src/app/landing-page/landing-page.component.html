@@ -1,0 +1,56 @@
+<div class="page-container">
+
+  <div class="main-wrapper">
+
+    <!-- TITRE ET ANNONCE -->
+    <div class="announcement-section">
+      <div class="titre">{{ titre }}</div>
+      <div class="heures-sup">{{ heuresSup }}</div>
+    </div>
+
+    <!-- LIGNES DE PRODUCTION -->
+    <div class="lignes-section">
+      <div class="lignes-label">Les lignes :</div>
+      <div class="lignes-list">
+        <div class="ligne-item" *ngFor="let ligne of lignes">
+          <span class="ligne-nom">{{ ligne.nom }}</span>
+          <span class="ligne-poste">{{ ligne.postes }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEXTE -->
+    <div class="contexte-section">{{ periodeContext }}</div>
+
+    <!-- EN-TÊTE LISTE -->
+    <div class="list-header">
+      <div class="header-title">{{ periodeAffichage }}</div>
+    </div>
+
+    <!-- LISTE OPÉRATEURS EN COLONNES -->
+    <div class="ouvrier-list">
+      <div class="ouvrier-item" *ngFor="let op of operateurs">
+        <span class="matricule">{{ op.matricule }}</span>
+        <span class="nom">{{ op.nom }}</span>
+      </div>
+    </div>
+
+    <!-- SECTION TQ/TM -->
+    <div class="tq-tm-section">
+      <table class="tq-tm-table">
+        <tr>
+          <th class="col-fonction"></th>
+          <th class="col-poste">1er Poste : 6h00 à 11H00</th>
+          <th class="col-poste">2e Poste : 11h00 à 16H00</th>
+        </tr>
+        <tr *ngFor="let assign of assignations">
+          <td class="col-fonction">{{ assign.fonction }}</td>
+          <td class="col-poste">{{ assign.poste1 }}</td>
+          <td class="col-poste">{{ assign.poste2 }}</td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+
+</div>

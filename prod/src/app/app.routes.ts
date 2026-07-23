@@ -1,0 +1,132 @@
+import { Routes } from '@angular/router';
+import { LoginComponent } from './login/login.component';
+import { ProdComponent } from './prod/prod.component';
+import { PlanificationComponent } from './planification/planification.component';
+import { Prod2Component } from './prod2/prod2.component';
+import { ChoixComponent } from './choix/choix.component';
+import { StatistiquesComponent } from './statistiques/statistiques.component';
+import { MagasinComponent } from './magasin/magasin.component';
+import { Statistiques1Component } from './statistiques1/statistiques1.component';
+import { SelectionComponent } from './selection/selection.component';
+import { Choix1Component } from './choix1/choix1.component';
+import { PhaseComponent } from './phase/phase.component';
+import { StatsComponent } from './stats/stats.component';
+import { ListeComponent } from './liste/liste.component';
+import { ListeProductiviteComponent } from './liste-productivite/liste-productivite.component';
+import { NonconformiteComponent } from './nonconformite/nonconformite.component';
+import { OuvrierComponent } from './ouvrier/ouvrier.component';
+import { ProductionManagerComponent } from './production-manager/production-manager.component';
+import { Stats1Component } from './stats1/stats1.component';
+import { Planification1Component } from './planification1/planification1.component';
+import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
+import { authGuard } from './guards/auth.guard';
+import { SuperAdminGuard } from './guards/super-admin.guard'; // ✅ Importer le nouveau guard
+import { StatistiqueSelectionComponent } from './statistique-selection/statistique-selection.component';
+import { Planification2Component } from './planification2/planification2.component';
+import { LandingPageComponent } from './landing-page/landing-page.component';
+import { PlaquettesComponent } from './plaquettes/plaquettes.component';
+import { PlaquettesStatsComponent } from './plaquettes-stats/plaquettes-stats.component';
+import { Choix3Component } from './choix3/choix3.component';
+import { Magasin1Component } from './magasin1/magasin1.component';
+import { ScannerComponent } from './scanner/scanner.component';
+import { Choix4Component } from './choix4/choix4.component';
+import { AdminScanComponent } from './admin-scan/admin-scan.component';
+import { Stats2Component } from './stats2/stats2.component';
+import { AffectationComponent } from './affectation/affectation.component';
+import { PointageComponent } from './pointage/pointage.component';
+import { VerifStatusComponent } from './verif-status/verif-status.component';
+import { Choix5Component } from './choix5/choix5.component';
+import { PlannMagSearchComponent } from './plann-mag-search/plann-mag-search.component';
+import { PlannMagScanComponent } from './plann-mag-scan/plann-mag-scan.component';
+import { AffichageComponent } from './affichage/affichage.component';
+import { ScannerpfinComponent } from './scannerpfin/scannerpfin.component';
+import { Choix6Component } from './choix6/choix6.component';
+import { ScreenSaverComponent } from './screen-saver/screen-saver.component';
+import { VideoComponent } from './video/video.component';
+import { AffichageOverviewComponent } from './affichage-overview/affichage-overview.component';
+import { ScreenSaver1Component } from './screen-saver1/screen-saver1.component';
+import { SuiviComponent } from './suivi/suivi.component';
+import { PlanificationmodComponent } from './planificationmod/planificationmod.component';
+import { SmsSendComponent } from './sms-send/sms-send.component';
+import { AbsentsComponent } from './absents/absents.component';
+import { EmployeeUpdateComponent } from './employee-update/employee-update.component';
+import { PointageDashboardComponent } from './pointage-dashboard/pointage-dashboard.component';
+import { StatutManuelRhComponent } from './statut-manuel-rh/statut-manuel-rh.component';
+import { EffectifLigneComponent } from './effectif-ligne/effectif-ligne.component';
+import { StatsDashboardComponent } from './stats-dashboard/stats-dashboard.component';
+
+export const routes: Routes = [
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  { path: 'login', component: LoginComponent },
+  { path: 'planification', component: PlanificationComponent },
+  { path: 'prod2', component: Prod2Component },
+  { path: 'prod', component: ProdComponent },
+  { path: 'choix', component: ChoixComponent },
+  { path: 'stat', component: StatistiquesComponent },
+  { path: 'magasin', component: MagasinComponent },
+  { path: 'stat1', component: Statistiques1Component },
+  { path: 'sele', component: SelectionComponent },
+  { path: 'choix1', component: Choix1Component },
+  { path: 'pha', component: PhaseComponent },
+  { path: 'statP', component: StatsComponent },
+  { path: 'list', component: ListeComponent },
+  { path: 'listP', component: ListeProductiviteComponent },
+  { path: 'sais', component: NonconformiteComponent },
+  { path: 'ouvrier', component: OuvrierComponent },
+  {
+    path: 'production',
+    component: ProductionManagerComponent,
+  },
+  {
+    path: 'pause-history',
+    loadComponent: () => import('./pause-history/pause-history.component')
+      .then(m => m.PauseHistoryComponent)
+  },
+  { path: 'ecran', component: Stats1Component },
+  { path: 'pl1', component: Planification1Component },
+  { path: 'ad', component: AdminDashboardComponent },
+  
+  // ✅ NOUVELLE ROUTE POUR LE DASHBOARD TRACKING
+  {
+    path: 'admin/tracking',
+    loadComponent: () => import('./tracking-dashboard/tracking-dashboard.component')
+      .then(m => m.TrackingDashboardComponent),
+    canActivate: [authGuard, SuperAdminGuard] // ✅ Protégé par les deux guards
+  },
+  { path: 'stats', component: StatistiqueSelectionComponent },
+  { path: 'mod', component: Planification2Component },
+  { path: 'lan', component: LandingPageComponent },
+  { path: 'plaq', component: PlaquettesComponent },
+  { path: 'statp', component: PlaquettesStatsComponent },
+  { path: 'ch3', component: Choix3Component },
+  { path: 'magasin1', component: Magasin1Component },
+  { path: 'scan', component: ScannerComponent },
+  { path: 'ch4', component: Choix4Component },
+  { path: 'adscan', component: AdminScanComponent },
+  { path: 'stat2', component: Stats2Component },
+  { path: 'aff', component: AffectationComponent },
+  { path: 'auto', component: PointageComponent },
+  { path: 'verf', component: VerifStatusComponent },
+  { path: 'ch5', component: Choix5Component },
+  { path: 'planmag', component: PlannMagSearchComponent },
+  { path: 'scann', component: PlannMagScanComponent },
+  { path: 'affi', component: AffichageComponent },
+  { path: 'scanpf', component: ScannerpfinComponent },
+  { path: 'ch6', component: Choix6Component },
+  { path: 'dashboard', component: ScreenSaverComponent },
+  { path: 'video', component: VideoComponent },
+  { path: 'view', component: AffichageOverviewComponent },
+  { path: 'dashboard1', component: ScreenSaver1Component },
+  { path: 'suivi', component: SuiviComponent },
+  { path: 'M', component: PlanificationmodComponent },
+  { path: 'sms-send', component: SmsSendComponent },
+  { path: 'absents', component: AbsentsComponent },
+  { path: 'employe', component: EmployeeUpdateComponent },
+  { path: 'pointage-dashboard', component: PointageDashboardComponent },
+  { path: 'Statuts-rh', component: StatutManuelRhComponent },
+  { path: 'effectif-ligne', component: EffectifLigneComponent },
+  { path: 'stats-dashboard', component: StatsDashboardComponent },
+
+
+
+];

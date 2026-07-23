@@ -1,0 +1,659 @@
+/* src/app/affichage/overview/affichage-overview.component.css */
+
+:host {
+  display: block;
+  width: 100vw;
+  min-height: 100vh;
+  background: #f5f5f5;                      /* Fond gris très clair */
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+  color: #1a1a1a;
+}
+
+.overview-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════
+   HEADER - Compact
+══════════════════════════════════════════════════ */
+.overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: 45px;                              /* ← Hauteur réduite */
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2e7d32;
+  box-shadow: 0 0 4px rgba(46,125,50,0.3);
+  flex-shrink: 0;
+}
+
+.header-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: 0.2px;
+}
+
+.header-separator {
+  color: #bdbdbd;
+  font-size: 14px;
+}
+
+.header-date {
+  font-size: 0.8rem;
+  color: #616161;
+}
+
+.header-jour {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 2px 8px;
+  border-radius: 16px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.header-semaine {
+  background: #eeeeee;
+  color: #616161;
+  padding: 2px 8px;
+  border-radius: 16px;
+  font-size: 0.7rem;
+}
+
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.header-clock {
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1565c0;
+  letter-spacing: 1px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.date-input {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  color: #1a1a1a;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+}
+.date-input:focus { border-color: #1976d2; }
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #2e7d32;
+  color: #ffffff;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-refresh:hover:not(:disabled) { background: #1b5e20; }
+.btn-refresh:active:not(:disabled) { transform: scale(.97); }
+.btn-refresh:disabled { opacity: .5; cursor: not-allowed; }
+.refresh-icon { font-size: 0.9rem; }
+
+.last-update {
+  font-size: 0.7rem;
+  color: #9e9e9e;
+  font-family: monospace;
+}
+
+/* ══════════════════════════════════════════════════
+   BARRE KPIs GLOBAUX - Compact
+══════════════════════════════════════════════════ */
+.global-bar {
+  display: flex;
+  align-items: stretch;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+}
+
+.global-kpi {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 8px;                         /* ← Padding réduit */
+  border-right: 1px solid #eeeeee;
+  transition: background .15s;
+}
+.global-kpi:last-child { border-right: none; }
+.global-kpi:hover { background: #fafafa; }
+
+.gk-value {
+  font-size: 1.2rem;                        /* ← Taille réduite */
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1;
+}
+.gk-value.blue { color: #1565c0; }
+
+.gk-label {
+  font-size: 0.55rem;                       /* ← Plus petit */
+  color: #757575;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.kpi-pos .gk-value { color: #2e7d32; }
+.kpi-neg .gk-value { color: #c62828; }
+
+.oee-success .gk-value { color: #2e7d32; }
+.oee-warning .gk-value { color: #f57c00; }
+.oee-danger  .gk-value { color: #c62828; }
+
+/* ══════════════════════════════════════════════════
+   GRILLE - 3 ou 4 colonnes selon largeur écran
+══════════════════════════════════════════════════ */
+.detail-grid {
+  flex: 1;
+  display: grid;
+  /* ← 4 colonnes sur grand écran, 3 sur moyen, 2 sur petit */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #e0e0e0;
+  padding: 0;
+  height: auto;
+  align-content: start;
+}
+
+@media (max-width: 1600px) {
+  .detail-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 1200px) {
+  .detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 800px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── BLOC PAR LIGNE - Ultra Compact ───────────────── */
+.detail-block {
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  border-left: 3px solid transparent;
+  min-height: auto;
+  height: fit-content;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.block-success { border-left-color: #2e7d32; }
+.block-warning { border-left-color: #e65100; }
+.block-danger  { border-left-color: #c62828; }
+
+/* ── En-tête du bloc - Compact ───────────────────── */
+.block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;                        /* ← Padding réduit */
+  border-bottom: 1px solid #eeeeee;
+  flex-shrink: 0;
+  background: #fafafa;
+}
+
+.block-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.block-ligne-name {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;                        /* ← Plus petit */
+  font-weight: 700;
+  color: #1a1a1a;
+  background: #e3f2fd;
+  padding: 2px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+
+.block-statut-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-success { background: #2e7d32; box-shadow: 0 0 0 2px rgba(46,125,50,.15); }
+.dot-warning { background: #f57c00; box-shadow: 0 0 0 2px rgba(245,124,0,.15); }
+.dot-danger  { background: #c62828; box-shadow: 0 0 0 2px rgba(198,40,40,.15); }
+
+.block-detail-btn {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s;
+}
+.block-detail-btn:hover { background: #c8e6c9; }
+
+/* ── Loader & Erreur ─────────────────────────────── */
+.block-loader, .block-error {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #9e9e9e;
+  padding: 20px;
+}
+.block-error { color: #c62828; }
+
+/* ══════════════════════════════════════════════════
+   QUADRANT GRID - Ultra Compact
+══════════════════════════════════════════════════ */
+.quadrant-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+}
+
+.quadrant {
+  border-right: 1px solid #eeeeee;
+  border-bottom: 1px solid #eeeeee;
+  padding: 10px 12px;                       /* ← Padding réduit */
+  display: flex;
+  flex-direction: column;
+  min-height: auto;
+  height: auto;
+  background: #ffffff;
+}
+.quadrant:nth-child(2n) { border-right: none; }
+.quadrant:nth-child(3),
+.quadrant:nth-child(4) { border-bottom: none; }
+
+.quadrant-label {
+  font-size: 0.55rem;                       /* ← Plus petit */
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #757575;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.quadrant-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.quadrant-content.center {
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Q1 : Productivité - Compact ────────────────── */
+.oee-value {
+  font-size: 42px;                          /* ← Taille réduite */
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.oee-percent {
+  font-size: 0.35em;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.oee-success { color: #2e7d32; }
+.oee-warning { color: #f57c00; }
+.oee-danger  { color: #c62828; }
+
+.oee-bar-track {
+  width: 100%;
+  height: 4px;                              /* ← Plus fin */
+  background: #eeeeee;
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 8px 0 6px;
+}
+.oee-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .5s ease;
+}
+.bar-success { background: #2e7d32; }
+.bar-warning { background: #f57c00; }
+.bar-danger  { background: #c62828; }
+
+.oee-sublabel {
+  font-size: 0.65rem;
+  color: #9e9e9e;
+}
+
+/* ── Q2 : Opérateurs - Compact ──────────────────── */
+.op-top-section {
+  justify-content: flex-start;
+  padding-bottom: 2px;
+}
+
+.op-value {
+  font-size: 36px;                          /* ← Taille réduite */
+  font-weight: 800;
+  color: #1976d2;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.op-sublabel {
+  font-size: 0.65rem;
+  color: #9e9e9e;
+  margin-top: 2px;
+}
+
+.op-capitaine {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: #616161;
+}
+.cap-badge {
+  color: #f9a825;
+  font-size: 0.8rem;
+}
+
+.op-divider {
+  height: 1px;
+  background: #eeeeee;
+  margin: 6px 0;
+  flex-shrink: 0;
+}
+
+.theorique-label {
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+.theorique-section {
+  justify-content: flex-start;
+}
+
+.theorique-value {
+  font-size: 28px;                          /* ← Taille réduite */
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+.th-ahead  { color: #7e57c2; }
+.th-behind { color: #7e57c2; }
+
+.theorique-sublabel {
+  font-size: 0.6rem;
+  color: #9e9e9e;
+  margin-top: 2px;
+}
+
+.theorique-time {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #9e9e9e;
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+
+/* ── Q3 : Planification - Compact ───────────────── */
+.prod-kpi-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.prod-kpi-card {
+  flex: 1;
+  background: #fafafa;
+  border: 1px solid #eeeeee;
+  border-radius: 6px;
+  padding: 5px 6px;
+  text-align: center;
+}
+.prod-kpi-card.delta-pos { border-color: #c8e6c9; background: #f1f8e9; }
+.prod-kpi-card.delta-neg { border-color: #ffcdd2; background: #fef3f2; }
+
+.prod-kpi-label {
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #757575;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.prod-kpi-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.delta-pos .prod-kpi-value { color: #2e7d32; }
+.delta-neg .prod-kpi-value { color: #c62828; }
+
+.ref-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+  border-radius: 4px;
+  max-height: 150px;                        /* ← Limite hauteur tableau */
+}
+
+.ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.65rem;                       /* ← Plus petit */
+}
+
+.ref-table thead tr {
+  background: #f5f5f5;
+}
+
+.ref-table th {
+  padding: 4px 6px;
+  text-align: left;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #757575;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.ref-table td {
+  padding: 4px 6px;
+  color: #424242;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.ref-table tbody tr:hover td {
+  background: #fafafa;
+  color: #1a1a1a;
+}
+
+.no-data {
+  text-align: center;
+  color: #bdbdbd;
+  font-style: italic;
+  padding: 15px !important;
+}
+
+/* ── Q4 : Production - Compact ──────────────────── */
+.pcs-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pcs-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pcs-divider {
+  width: 1px;
+  height: 35px;
+  background: #e0e0e0;
+  flex-shrink: 0;
+}
+
+.pcs-value {
+  font-size: 24px;                          /* ← Taille réduite */
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.pcs-value.highlight { color: #2e7d32; }
+.pcs-value.muted     { color: #bdbdbd; }
+
+.pcs-sub {
+  font-size: 0.6rem;
+  color: #9e9e9e;
+  margin-top: 2px;
+}
+
+.pcs-bar-track {
+  width: 100%;
+  height: 4px;
+  background: #eeeeee;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+.pcs-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .5s ease;
+}
+
+.pcs-scans {
+  font-size: 0.6rem;
+  color: #9e9e9e;
+}
+
+/* ══════════════════════════════════════════════════
+   ÉTATS
+══════════════════════════════════════════════════ */
+.empty-state, .loader-overlay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #9e9e9e;
+  padding: 40px 20px;
+  background: #ffffff;
+}
+.empty-state p, .loader-overlay span { margin: 0; font-size: 0.9rem; color: #9e9e9e; }
+.empty-icon { font-size: 40px; opacity: .5; }
+
+.no-active-lines {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: #9e9e9e;
+  background: #ffffff;
+}
+.no-active-lines p { margin: 0; font-size: 0.9rem; }
+
+.error-banner {
+  background: #fef3f2;
+  border: 1px solid #ffcdd2;
+  color: #c62828;
+  padding: 8px 16px;
+  margin: 8px 16px 0;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.error-banner button {
+  background: none;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.loader-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #eeeeee;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: #f5f5f5; }
+::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #9e9e9e; }

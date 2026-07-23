@@ -1,0 +1,270 @@
+<!-- src/app/plaquettes/plaquettes-stats.component.html -->
+<div class="stats-shell">
+
+  <!-- ════════════════════════════════
+       PAGE 1 — FILTRE
+  ════════════════════════════════ -->
+  <ng-container *ngIf="currentPage === 'filtre'">
+
+    <div class="page-header">
+      <div class="page-header-text">
+        <h1 class="stats-title"><span class="stats-icon"></span> Statistiques Plaquettes</h1>
+        <p class="stats-subtitle">Sélectionnez une période pour analyser la consommation par type</p>
+      </div>
+    </div>
+
+    <div class="filter-page-center">
+      <section class="filter-big-card">
+
+        <div class="filter-card-header">
+          <span class="filter-card-icon"></span>
+          <h2 class="filter-card-title">Choisir la période</h2>
+        </div>
+
+        <div class="filter-fields">
+          <div class="filter-group">
+            <label class="filter-label">Date de début</label>
+            <input type="date" class="filter-input" [(ngModel)]="dateDebut" />
+          </div>
+
+          <div class="filter-arrow">→</div>
+
+          <div class="filter-group">
+            <label class="filter-label">Date de fin</label>
+            <input type="date" class="filter-input" [(ngModel)]="dateFin" [min]="dateDebut" />
+            <span class="filter-hint"> Même date pour un seul jour</span>
+          </div>
+        </div>
+
+        <!-- Aperçu dates sélectionnées -->
+        <div class="filter-preview" *ngIf="dateDebut">
+          <span class="preview-item">
+            <span class="preview-label">Du</span>
+            <span class="preview-val">{{ dateDebut | date:'dd/MM/yyyy' }}</span>
+          </span>
+          <span class="preview-sep">→</span>
+          <span class="preview-item">
+            <span class="preview-label">Au</span>
+            <span class="preview-val">{{ (dateFin || dateDebut) | date:'dd/MM/yyyy' }}</span>
+          </span>
+        </div>
+
+        <div *ngIf="error" class="alert-error"> {{ error }}</div>
+
+        <button class="btn-analyser" (click)="chargerStats()" [disabled]="!isFormValid || loading">
+          <ng-container *ngIf="!loading">
+            <span class="btn-analyser-icon"></span>
+            Analyser
+          </ng-container>
+          <span *ngIf="loading" class="spinner-white"></span>
+        </button>
+
+      </section>
+    </div>
+
+  </ng-container>
+
+  <!-- ════════════════════════════════
+       PAGE 2 — RÉSULTATS
+  ════════════════════════════════ -->
+  <ng-container *ngIf="currentPage === 'resultats' && result">
+
+    <!-- Topbar résultats -->
+    <div class="results-topbar">
+      <button class="btn-retour" (click)="retourFiltre()">
+        ← Retour
+      </button>
+      <div class="results-period">
+        <span class="period-label-inline">
+           {{ result.dateDebut | date:'dd/MM/yyyy' }}
+          <ng-container *ngIf="result.dateDebut !== result.dateFin">
+            → {{ result.dateFin | date:'dd/MM/yyyy' }}
+          </ng-container>
+        </span>
+        <span class="period-types-count">{{ result.statsParType.length }} type(s)</span>
+      </div>
+    </div>
+
+    <!-- Aucune donnée -->
+    <div *ngIf="result.statsParType.length === 0" class="no-data">
+      <span class="no-data-icon"></span>
+      <p>Aucune plaquette trouvée sur cette période</p>
+      <button class="btn-retour" (click)="retourFiltre()">← Modifier les dates</button>
+    </div>
+
+    <ng-container *ngIf="result.statsParType.length > 0">
+
+      <!-- ══ HISTOGRAMME CONSOMMATION ══ -->
+      <section class="chart-card">
+        <h3 class="chart-title">
+          Consommation par type
+          <span class="chart-unit">(% consommé)</span>
+        </h3>
+
+        <div class="histogram-wrapper">
+          <!-- Axe Y -->
+          <div class="y-axis">
+            <span>100%</span><span>90%</span><span>80%</span><span>70%</span>
+            <span>60%</span><span>50%</span><span>40%</span><span>30%</span>
+            <span>20%</span><span>10%</span><span>0%</span>
+          </div>
+
+          <div class="histogram-area">
+            <!-- Grille -->
+            <div class="grid-lines">
+              <div class="grid-line" *ngFor="let l of gridLines"></div>
+            </div>
+            <!-- Barres -->
+            <div class="bars-container">
+              <div *ngFor="let s of result.statsParType; trackBy: trackByType" class="bar-col">
+                <div class="bar-tooltip">
+                  <strong>{{ s.typeNom }}</strong><br>
+                  PCS: {{ s.pourcentageConsommation }}%<br>
+                  Consommation: {{ s.consommationTotale }}<br>
+                  Qté totale: {{ s.quantiteTotale }}
+                </div>
+                <div class="bar-value">{{ s.pourcentageConsommation }}%</div>
+                <div class="bar-body"
+                  [style.height.%]="s.pourcentageConsommation"
+                  [style.background]="getBarColor(s.pourcentageConsommation)">
+                </div>
+                <div class="bar-label">{{ s.typeNom }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="x-axis-title">Types de Plaquettes</div>
+      </section>
+
+      <!-- ══ CERCLES RESTE ══ -->
+      <section class="chart-card">
+        <h3 class="chart-title">
+          Reste par type
+          <span class="chart-unit">(% reste)</span>
+        </h3>
+        <div class="circles-grid">
+          <div *ngFor="let s of result.statsParType; trackBy: trackByType" class="circle-item">
+            <div class="donut-wrapper">
+              <svg class="donut-svg" viewBox="0 0 100 100">
+                <circle class="donut-bg" cx="50" cy="50" r="38" />
+                <circle class="donut-fill"
+                  cx="50" cy="50" r="38"
+                  [attr.stroke]="getRestBarColor(s.pourcentageReste)"
+                  [attr.stroke-dasharray]="getCircleDash(s.pourcentageReste)"
+                  stroke-dashoffset="0"
+                  transform="rotate(-90 50 50)" />
+                <circle class="donut-dot" cx="50" cy="12" r="4"
+                  [attr.fill]="getRestBarColor(s.pourcentageReste)" />
+              </svg>
+              <div class="donut-center">
+                <span class="donut-pct" [style.color]="getRestBarColor(s.pourcentageReste)">
+                  {{ s.pourcentageReste }}%
+                </span>
+                <span class="donut-sub">{{ s.resteTotale }} / {{ s.quantiteTotale }}</span>
+              </div>
+            </div>
+            <div class="circle-label">{{ s.typeNom }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ CERCLES REBUT ══ -->
+      <section class="chart-card">
+        <h3 class="chart-title">
+          Rebut par type
+          <span class="chart-unit">(% rebut)</span>
+        </h3>
+        <div class="circles-grid">
+          <div *ngFor="let s of result.statsParType; trackBy: trackByType" class="circle-item">
+            <div class="donut-wrapper">
+              <svg class="donut-svg" viewBox="0 0 100 100">
+                <circle class="donut-bg" cx="50" cy="50" r="38" />
+                <circle class="donut-fill"
+                  cx="50" cy="50" r="38"
+                  [attr.stroke]="getRebutColor(s.pourcentageRebut)"
+                  [attr.stroke-dasharray]="getCircleDash(s.pourcentageRebut)"
+                  stroke-dashoffset="0"
+                  transform="rotate(-90 50 50)" />
+                <circle class="donut-dot" cx="50" cy="12" r="4"
+                  [attr.fill]="getRebutColor(s.pourcentageRebut)" />
+              </svg>
+              <div class="donut-center">
+                <span class="donut-pct" [style.color]="getRebutColor(s.pourcentageRebut)">
+                  {{ s.pourcentageRebut }}%
+                </span>
+                <span class="donut-sub">{{ s.rebutTotal }} / {{ s.quantiteTotale }}</span>
+              </div>
+            </div>
+            <div class="circle-label">{{ s.typeNom }}</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ TABLEAU RÉCAP ══ -->
+      <section class="recap-table-card">
+        <div class="recap-header">
+          <h3 class="recap-title">Tableau récapitulatif</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th class="th-right">Qté totale</th>
+                <th class="th-right">Consommation</th>
+                <th class="th-right">% Conso</th>
+                <th class="th-right">Reste</th>
+                <th class="th-right">% Reste</th>
+                <th class="th-right">Rebut</th>
+                <th class="th-right">% Rebut</th>
+                <th class="th-right">Produit fini</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let s of result.statsParType; trackBy: trackByType" class="table-row">
+                <td><span class="tag tag-type">{{ s.typeNom }}</span></td>
+                <td class="td-number">{{ s.quantiteTotale }}</td>
+                <td class="td-number conso-val">{{ s.consommationTotale }}</td>
+                <td class="td-right">
+                  <span class="pct-badge"
+                    [style.background]="getBarColor(s.pourcentageConsommation) + '22'"
+                    [style.color]="getBarColor(s.pourcentageConsommation)"
+                    [style.border]="'1px solid ' + getBarColor(s.pourcentageConsommation) + '55'">
+                    {{ s.pourcentageConsommation }}%
+                  </span>
+                </td>
+                <td class="td-number reste-val">{{ s.resteTotale }}</td>
+                <td class="td-right">
+                  <span class="pct-badge"
+                    [style.background]="getRestBarColor(s.pourcentageReste) + '22'"
+                    [style.color]="getRestBarColor(s.pourcentageReste)"
+                    [style.border]="'1px solid ' + getRestBarColor(s.pourcentageReste) + '55'">
+                    {{ s.pourcentageReste }}%
+                  </span>
+                </td>
+                <td class="td-number rebut-val">{{ s.rebutTotal }}</td>
+                <td class="td-right">
+                  <span class="pct-badge"
+                    [style.background]="getRebutColor(s.pourcentageRebut) + '22'"
+                    [style.color]="getRebutColor(s.pourcentageRebut)"
+                    [style.border]="'1px solid ' + getRebutColor(s.pourcentageRebut) + '55'">
+                    {{ s.pourcentageRebut }}%
+                  </span>
+                </td>
+                <td class="td-number pf-val">{{ s.produitFiniTotal }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Bouton retour bas de page -->
+      <div class="bottom-retour">
+        <button class="btn-retour" (click)="retourFiltre()">← Modifier la période</button>
+      </div>
+
+    </ng-container>
+  </ng-container>
+
+</div>

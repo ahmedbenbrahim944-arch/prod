@@ -1,0 +1,31 @@
+<div class="video-wrapper">
+
+  <!-- ═══════════════════════════════════════════
+       Lecteur vidéo — plein écran, boucle, son
+  ════════════════════════════════════════════ -->
+  <video
+    #videoPlayer
+    class="video-player"
+    [src]="videoSrc"
+    loop
+    playsinline
+    preload="auto"
+  ></video>
+
+  <!-- ═══════════════════════════════════════════
+       Overlay — affiché si l'autoplay est bloqué
+       (politique navigateur : son interdit sans
+        interaction utilisateur préalable)
+  ════════════════════════════════════════════ -->
+  @if (showOverlay()) {
+    <div class="overlay" (click)="startPlayback()">
+      <div class="play-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </div>
+      <p class="overlay-label">Cliquer pour lancer</p>
+    </div>
+  }
+
+</div>

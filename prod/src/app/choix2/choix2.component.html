@@ -1,0 +1,52 @@
+<div class="choix-container">
+  
+  <!-- Bouton de retour au login -->
+  <button class="btn-retour-login" (click)="retourLogin()">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+    </svg>
+    Déconnexion
+  </button>
+  
+  <!-- Bouton SERFA 4.0 -->
+  <a href="https://www.appsheet.com/start/33402e69-1413-4098-abd5-0d89e3000638" 
+     target="_blank"
+     class="btn-serfa-40">
+    <span class="btn-serfa-text"> Retour SERFA 4.0</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </a>
+
+  
+  <div class="boutons-container">
+    <!-- Bouton Statistique (RouterLink vide) -->
+    <a class="bouton-grand statistique" 
+       routerLink="/statP"
+       routerLinkActive="active">
+      <div class="bouton-content">
+        <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 20V10"/>
+          <path d="M12 20V4"/>
+          <path d="M6 20v-6"/>
+        </svg>
+        <span class="bouton-titre">Statistique</span>
+        <span class="bouton-description"></span>
+      </div>
+    </a>
+<a class="bouton-grand ouvrier" 
+       routerLink="/ouvrier" 
+       routerLinkActive="active">
+      <div class="bouton-content">
+        <svg class="bouton-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 010 7.75"></path>
+        </svg>
+        <span class="bouton-titre">Liste Ouvrier</span>
+        <span class="bouton-description"></span>
+      </div>
+    </a>
+  </div>
+</div>

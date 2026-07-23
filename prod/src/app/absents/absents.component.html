@@ -1,0 +1,377 @@
+<!-- absents.component.html — STYLE 2 : DASHBOARD SIDEBAR -->
+<div class="absents-wrapper">
+
+  <!-- ══════════════════════════════════════════
+       SIDEBAR
+  ══════════════════════════════════════════ -->
+  <aside class="absents-sidebar">
+
+    <!-- Label section -->
+    <div class="sidebar-section-label">MENU RH</div>
+
+    <!-- Navigation -->
+    <nav>
+      <a class="sidebar-nav-item active">
+        <i class="fas fa-user-times"></i>
+        <span>Absents</span>
+      </a>
+      <a class="sidebar-nav-item" routerLink="/planning">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Planning</span>
+      </a>
+      <a class="sidebar-nav-item" routerLink="/stats">
+        <i class="fas fa-chart-bar"></i>
+        <span>Stats</span>
+      </a>
+    </nav>
+
+    <!-- Bouton retour en bas -->
+    <div class="sidebar-retour">
+      <button class="btn-retour-sidebar" (click)="goBack()">
+        <i class="fas fa-arrow-left"></i>
+        <span>Retour</span>
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ══════════════════════════════════════════
+       CONTENU PRINCIPAL
+  ══════════════════════════════════════════ -->
+  <main class="absents-main">
+
+    <!-- ── TOP BAR ── -->
+    <div class="absents-topbar">
+      <div class="topbar-title">
+        <div class="topbar-icon">
+          <i class="fas fa-user-times"></i>
+        </div>
+        <div>
+          <h1>Liste des Absents</h1>
+          <p>Gestion des absences & suivi médical</p>
+        </div>
+      </div>
+      <span class="topbar-badge" *ngIf="donneesChargees">
+        <i class="fas fa-calendar-check"></i>
+        {{ formaterDateCourte(dateDebut) }} — {{ formaterDateCourte(dateFin) }}
+      </span>
+    </div>
+
+    <!-- ── ZONE SCROLLABLE ── -->
+    <div class="absents-body">
+
+      <!-- ── FILTRES ── -->
+      <div class="filtres-grid">
+
+        <!-- Panneau période -->
+        <div class="filtre-panel">
+          <div class="filtre-panel-header">
+            <i class="fas fa-calendar-week"></i>
+            <span>Sélectionner une période</span>
+          </div>
+          <div class="filtre-panel-body">
+            <div>
+              <label class="field-label">Date début</label>
+              <input type="date" class="field-input"
+                [(ngModel)]="dateDebut" />
+            </div>
+            <div>
+              <label class="field-label">Date fin</label>
+              <input type="date" class="field-input"
+                [(ngModel)]="dateFin" />
+            </div>
+            <button class="btn-search"
+              (click)="chargerAbsentsParPeriode()"
+              [disabled]="isLoading || !dateDebut || !dateFin">
+              <i class="fas fa-circle-notch fa-spin" *ngIf="isLoading"></i>
+              <i class="fas fa-search" *ngIf="!isLoading"></i>
+              <span>{{ isLoading ? 'Chargement...' : 'Afficher les absents' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Panneau recherche (visible après chargement) -->
+        <div class="filtre-panel" *ngIf="donneesChargees">
+          <div class="filtre-panel-header">
+            <i class="fas fa-filter"></i>
+            <span>Filtrer les résultats</span>
+          </div>
+          <div class="filtre-panel-body">
+            <div>
+              <label class="field-label">Matricule</label>
+              <input type="text" class="field-input"
+                [(ngModel)]="filtreMatricule"
+                placeholder="Ex : 1023" />
+            </div>
+            <div>
+              <label class="field-label">Nom &amp; Prénom</label>
+              <input type="text" class="field-input"
+                [(ngModel)]="filtreNomPrenom"
+                placeholder="Ex : Ben Ali" />
+            </div>
+            <div>
+              <label class="field-label">Nom du Docteur</label>
+              <input type="text" class="field-input"
+                [(ngModel)]="filtreNomDocteur"
+                placeholder="Ex : Dr. Mansour" />
+            </div>
+            <button class="btn-reset-filter" *ngIf="aFiltresActifs"
+              (click)="reinitialiserFiltres()">
+              <i class="fas fa-times"></i>
+              Effacer les filtres
+            </button>
+          </div>
+        </div>
+
+      </div>
+      <!-- fin filtres-grid -->
+
+      <!-- ── LOADING ── -->
+      <div class="loading-state" *ngIf="isLoading">
+        <div class="loading-spinner"></div>
+        <p>Chargement des absents...</p>
+      </div>
+
+      <!-- ── ERREUR ── -->
+      <div class="alert-err" *ngIf="erreur && !isLoading">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{ erreur }}</span>
+      </div>
+
+      <!-- ── ÉTAT BIENVENUE ── -->
+      <div class="state-card" *ngIf="!donneesChargees && !isLoading && !erreur">
+        <div class="state-card-icon blue">
+          <i class="fas fa-user-md"></i>
+        </div>
+        <h2>Gestion des Absences</h2>
+        <p>Sélectionnez une période pour afficher la liste des ouvriers absents et leurs informations médicales.</p>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           RÉSULTATS
+      ══════════════════════════════════════ -->
+      <ng-container *ngIf="donneesChargees && !isLoading">
+
+        <!-- ── KPI CARDS ── -->
+        <div class="kpi-row">
+
+          <div class="kpi-card kpi-total">
+            <div class="kpi-icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <div>
+              <div class="kpi-num">{{ nombreAbsents }}</div>
+              <div class="kpi-lbl">Absents</div>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-green">
+            <div class="kpi-icon">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div>
+              <div class="kpi-num">{{ getMoisCouverts() }} <span style="font-size:1rem">m</span></div>
+              <div class="kpi-lbl">Mois couverts</div>
+            </div>
+          </div>
+
+          <div class="kpi-card kpi-red">
+            <div class="kpi-icon">
+              <i class="fas fa-user-md"></i>
+            </div>
+            <div>
+              <div class="kpi-num">{{ getSansDocteur() }}</div>
+              <div class="kpi-lbl">Sans docteur</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── BANNIÈRE PÉRIODE ── -->
+        <div class="periode-banner">
+          <div class="periode-dot"></div>
+          <span class="periode-text">Période sélectionnée</span>
+          <span class="periode-range">
+            <i class="fas fa-calendar"></i>
+            {{ formaterDateCourte(dateDebut) }} → {{ formaterDateCourte(dateFin) }}
+          </span>
+          <span *ngIf="aFiltresActifs" class="periode-range"
+            style="background:#f0f4ff; border-color:#c7d2fe; color:#4338ca; margin-left:6px;">
+            <i class="fas fa-filter"></i>
+            {{ absentsFiltres.length }} affiché(s)
+          </span>
+        </div>
+
+        <!-- ── TOUS PRÉSENTS ── -->
+        <div class="alert-ok" *ngIf="nombreAbsents === 0">
+          <i class="fas fa-check-circle"></i>
+          <span>Tous les ouvriers sont présents pour la période sélectionnée.</span>
+        </div>
+
+        <!-- ── AUCUN RÉSULTAT FILTRE ── -->
+        <div class="alert-warn" *ngIf="aucunResultatApresFiltre">
+          <i class="fas fa-search"></i>
+          <span>Aucun résultat ne correspond à vos filtres de recherche.</span>
+        </div>
+
+        <!-- ── TABLEAU ABSENTS ── -->
+        <div class="table-card" *ngIf="absentsFiltres.length > 0">
+
+          <div class="table-card-header">
+            <div class="table-card-title">
+              <i class="fas fa-list"></i>
+              Ouvriers absents
+              <span class="count-pill">
+                <i class="fas fa-user-times"></i>
+                {{ absentsFiltres.length }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Info saisie docteur -->
+          <div class="info-tip">
+            <i class="fas fa-info-circle"></i>
+            <span>
+              Saisissez le nom du docteur puis appuyez sur
+              <strong>Entrée</strong> ou cliquez sur
+              <i class="fas fa-check" style="color:#16a34a;"></i> pour enregistrer.
+            </span>
+          </div>
+
+          <!-- Tableau -->
+          <div class="absents-table-wrap">
+            <table class="absents-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Mat.</th>
+                  <th>Nom &amp; Prénom</th>
+                  <th>Statut</th>
+                  <th>Nom du Docteur</th>
+                  <th>Commentaire</th>
+                  <th>Enregistré le</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let absent of absentsFiltres">
+
+                  <!-- Date -->
+                  <td>
+                    <span class="date-chip">
+                      <i class="fas fa-calendar-day"></i>
+                      {{ formaterDateCourte(absent.date) }}
+                    </span>
+                  </td>
+
+                  <!-- Matricule -->
+                  <td>
+                    <span class="mat-chip">{{ absent.matricule }}</span>
+                  </td>
+
+                  <!-- Nom & Prénom -->
+                  <td>
+                    <div class="ouvrier-cell">
+                      <div class="ouvrier-avatar-sm">
+                        {{ absent.nomPrenom?.charAt(0) }}
+                      </div>
+                      <span class="ouvrier-nom">{{ absent.nomPrenom }}</span>
+                    </div>
+                  </td>
+
+                  <!-- Statut -->
+                  <td>
+                    <span class="absent-chip">
+                      <i class="fas fa-times-circle"></i>
+                      {{ absent.libelleStatut }}
+                    </span>
+                  </td>
+
+                  <!-- Nom Docteur avec saisie -->
+                  <td>
+                    <div class="docteur-input-wrapper">
+                      <div class="docteur-input-row">
+                        <div class="docteur-field-wrap">
+                          <i class="fas fa-user-md docteur-icon-inner"></i>
+                          <input
+                            type="text"
+                            class="docteur-input"
+                            [(ngModel)]="saisiesDocteur[absent.id]"
+                            placeholder="Nom du docteur..."
+                            (keyup.enter)="sauvegarderDocteur(absent)"
+                            [class.input-saved]="statutSauvegarde[absent.id] === 'saved'"
+                            [class.input-error]="statutSauvegarde[absent.id] === 'error'"
+                          />
+                        </div>
+                        <button class="btn-save-doc"
+                          (click)="sauvegarderDocteur(absent)"
+                          [disabled]="statutSauvegarde[absent.id] === 'saving'"
+                          title="Enregistrer">
+                          <i class="fas fa-circle-notch fa-spin"
+                            *ngIf="statutSauvegarde[absent.id] === 'saving'"></i>
+                          <i class="fas fa-check"
+                            *ngIf="statutSauvegarde[absent.id] !== 'saving'"></i>
+                        </button>
+                      </div>
+
+                      <!-- Indicateur statut -->
+                      <div class="docteur-status"
+                        [class.saved]="statutSauvegarde[absent.id] === 'saved'"
+                        [class.error]="statutSauvegarde[absent.id] === 'error'"
+                        [class.existing]="!statutSauvegarde[absent.id] && absent.nomDocteur"
+                        [class.empty]="!statutSauvegarde[absent.id] && !absent.nomDocteur">
+
+                        <ng-container [ngSwitch]="true">
+                          <span *ngSwitchCase="statutSauvegarde[absent.id] === 'saved'">
+                            <i class="fas fa-check-circle"></i> Enregistré
+                          </span>
+                          <span *ngSwitchCase="statutSauvegarde[absent.id] === 'error'">
+                            <i class="fas fa-times-circle"></i> Erreur
+                          </span>
+                          <span *ngSwitchCase="!statutSauvegarde[absent.id] && !!absent.nomDocteur">
+                            <i class="fas fa-check"></i> {{ absent.nomDocteur }}
+                          </span>
+                          <span *ngSwitchDefault>Non renseigné</span>
+                        </ng-container>
+
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- Commentaire -->
+                  <td>
+                    <span class="comment-text" *ngIf="absent.commentaire">{{ absent.commentaire }}</span>
+                    <span class="comment-empty" *ngIf="!absent.commentaire">—</span>
+                  </td>
+
+                  <!-- Date enregistrement -->
+                  <td>
+                    <span class="enreg-date">{{ formaterDateCourte(absent.createdAt) }}</span>
+                  </td>
+
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Footer tableau -->
+          <div class="table-footer">
+            <i class="fas fa-info-circle"></i>
+            <span>
+              Affichage de <strong>{{ absentsFiltres.length }}</strong>
+              sur <strong>{{ nombreAbsents }}</strong> absent(s)
+              <span *ngIf="aFiltresActifs"> (filtres actifs)</span>
+            </span>
+          </div>
+
+        </div>
+        <!-- fin table-card -->
+
+      </ng-container>
+      <!-- fin résultats -->
+
+    </div>
+    <!-- fin absents-body -->
+
+  </main>
+
+</div>

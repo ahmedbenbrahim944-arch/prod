@@ -1,0 +1,425 @@
+<div class="db">
+
+  <!-- ── Header ────────────────────────────────────────────────── -->
+  <div class="db-header">
+    <div>
+      <div class="db-title">Pointage — temps réel</div>
+      <div class="db-date">{{ today() }}</div>
+    </div>
+    <div class="db-header-right">
+      <div class="db-live">
+        <span class="db-live-dot"></span>
+        {{ lastSync || 'En attente...' }}
+      </div>
+      <!-- ✅ NOUVEAU — bouton Récup Production -->
+      <button class="btn-recup" (click)="openRecupProduction()" title="Récup Production">
+         Récup Production
+      </button>
+      <button class="btn-refresh" (click)="refresh()" title="Actualiser" aria-label="Actualiser">↻</button>
+    </div>
+  </div>
+
+  <!-- ── Hero : anneau de présence global + anneaux par poste ── -->
+  <div class="hero" *ngIf="globalStats">
+    <!-- Anneau global (avec titre) -->
+    <div class="ring-block">
+      <p class="ring-title">Total — tous les services</p>
+      <div class="ring-block-row">
+        <div class="ring-wrap">
+          <div class="ring"
+            [style.background]="'conic-gradient(var(--green) 0% ' + (globalStats.total ? (globalStats.presents / globalStats.total * 100) : 0) + '%, var(--gray-border) 0)'">
+            <div class="ring-inner">
+              <span class="ring-pct">{{ globalStats.total ? ((globalStats.presents / globalStats.total * 100) | number:'1.0-0') : 0 }}%</span>
+              <span class="ring-label">présence</span>
+            </div>
+          </div>
+        </div>
+        <div class="ring-chips">
+          <div class="hero-chip">
+            <span class="dot dot-green"></span>
+            <span class="chip-num">{{ globalStats.presents }}</span>
+            <span class="chip-cap">présents</span>
+          </div>
+          <div class="hero-chip">
+            <span class="dot dot-red"></span>
+            <span class="chip-num">{{ globalStats.absents }}</span>
+            <span class="chip-cap">absents</span>
+          </div>
+          <div class="hero-chip">
+            <span class="dot dot-amber"></span>
+            <span class="chip-num">{{ globalStats.enConge }}</span>
+            <span class="chip-cap">en congé / justifié</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ NOUVEAU — un anneau par poste (1ere poste / 2eme poste) -->
+    <div class="ring-block ring-block-poste" *ngFor="let r of posteRings">
+      <p class="ring-title">{{ r.label }} — Ouvrier</p>
+      <div class="ring-block-row">
+        <div class="ring-wrap">
+          <div class="ring"
+            [style.background]="'conic-gradient(var(--blue) 0% ' + r.pct + '%, var(--gray-border) 0)'">
+            <div class="ring-inner">
+              <span class="ring-pct">{{ r.pct }}%</span>
+              <span class="ring-label">présence</span>
+            </div>
+          </div>
+        </div>
+        <div class="ring-chips ring-chips-col">
+          <div class="hero-chip">
+            <span class="dot dot-green"></span>
+            <span class="chip-num">{{ r.presents }}</span>
+            <span class="chip-cap">présents</span>
+          </div>
+          <div class="hero-chip">
+            <span class="dot dot-red"></span>
+            <span class="chip-num">{{ r.absents }}</span>
+            <span class="chip-cap">absents</span>
+          </div>
+          <div class="hero-chip">
+            <span class="dot dot-amber"></span>
+            <span class="chip-num">{{ r.enConge }}</span>
+            <span class="chip-cap">en congé / justifié</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ NOUVEAU — anneaux par service (Maintenance / Magasin / Qualité) -->
+    <ng-container *ngIf="!hasLimitedAccess">
+      <div class="ring-block ring-block-service" *ngFor="let r of serviceRings">
+        <p class="ring-title">{{ r.label }} — Employé</p>
+        <div class="ring-block-row">
+          <div class="ring-wrap">
+            <div class="ring"
+              [style.background]="'conic-gradient(var(--blue) 0% ' + r.pct + '%, var(--gray-border) 0)'">
+              <div class="ring-inner">
+                <span class="ring-pct">{{ r.pct }}%</span>
+                <span class="ring-label">présence</span>
+              </div>
+            </div>
+          </div>
+          <div class="ring-chips ring-chips-col">
+            <div class="hero-chip">
+              <span class="dot dot-green"></span>
+              <span class="chip-num">{{ r.presents }}</span>
+              <span class="chip-cap">présents</span>
+            </div>
+            <div class="hero-chip">
+              <span class="dot dot-red"></span>
+              <span class="chip-num">{{ r.absents }}</span>
+              <span class="chip-cap">absents</span>
+            </div>
+            <div class="hero-chip">
+              <span class="dot dot-amber"></span>
+              <span class="chip-num">{{ r.enConge }}</span>
+              <span class="chip-cap">en congé / justifié</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <!-- ── Filtre dates ───────────────────────────────────────── -->
+  <div class="filter-card">
+    <div class="filter-group">
+      <label class="filter-label">Date début</label>
+      <input class="filter-input" type="date" [(ngModel)]="dateDebut" />
+    </div>
+    <div class="filter-group">
+      <label class="filter-label">Date fin</label>
+      <input class="filter-input" type="date" [(ngModel)]="dateFin" />
+    </div>
+    <button class="btn-filter" (click)="loadPeriode()">Rechercher</button>
+    <button class="btn-today" (click)="loadToday()">Aujourd'hui</button>
+  </div>
+
+  <!-- ── Filtrer par service ─────────────────────────────────── -->
+  <div class="service-filter-section">
+    <label class="service-filter-label">Filtrer par service</label>
+    <div class="service-filter">
+      <button class="service-pill"
+        *ngIf="!hasLimitedAccess"
+        [class.active]="selectedService === 'Administratif'"
+        (click)="selectService('Administratif')"
+        title="Administratif">
+        <i class="ti ti-briefcase"></i>
+        Administratif
+      </button>
+      <button class="service-pill"
+        *ngIf="!hasLimitedAccess"
+        [class.active]="selectedService === 'Maintenance'"
+        (click)="selectService('Maintenance')"
+        title="Maintenance">
+        <i class="ti ti-tools"></i>
+        Maintenance
+      </button>
+      <button class="service-pill"
+        *ngIf="!hasLimitedAccess"
+        [class.active]="selectedService === 'Magasin'"
+        (click)="selectService('Magasin')"
+        title="Magasin">
+        <i class="ti ti-building-warehouse"></i>
+        Magasin
+      </button>
+      <button class="service-pill"
+        *ngIf="!hasLimitedAccess"
+        [class.active]="selectedService === 'Qualité'"
+        (click)="selectService('Qualité')"
+        title="Qualité">
+        <i class="ti ti-checkbox"></i>
+        Qualité
+      </button>
+      <button class="service-pill"
+        [class.active]="ouvrierMode"
+        (click)="selectOuvrier()"
+        title="Ouvrier">
+        <i class="ti ti-users"></i>
+        Ouvrier
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Sous-boutons poste (visibles seulement en mode Ouvrier) ── -->
+  <div class="poste-filter" *ngIf="ouvrierMode">
+    <button class="poste-btn"
+      *ngFor="let p of postes"
+      [class.active]="selectedPoste === p"
+      (click)="selectPoste(p)">
+      {{ p }}
+    </button>
+    <div *ngIf="selectedPoste" class="service-banner">
+      Poste : <strong>{{ selectedPoste }}</strong>
+      <button class="btn-clear-service" (click)="selectPoste(selectedPoste)">✕</button>
+    </div>
+  </div>
+
+  <div class="mini-stats" *ngIf="ouvrierMode || selectedService">
+    <span class="mini-stat mini-present">{{ totalPresents }} présents</span>
+    <span class="mini-stat mini-absent">{{ totalAbsents }} absents</span>
+    <span class="mini-stat mini-conge">{{ totalEnConge }} en congé / justifié</span>
+  </div>
+
+  <!-- ── Loading ───────────────────────────────────────────── -->
+  <div *ngIf="loading" class="db-loading">
+    <div class="spinner"></div>
+    <span>Chargement...</span>
+  </div>
+
+  <ng-container *ngIf="!loading && data">
+
+    <!-- ── Ticker ─────────────────────────────────────────────── -->
+    <div class="ticker" *ngIf="dernierPointages.length > 0">
+      <span class="ticker-label">Derniers pointages</span>
+      <div class="ticker-items">
+        <div class="ticker-item" *ngFor="let p of dernierPointages">
+          <div class="dot-green-sm"></div>
+          {{ p.nomPrenom }} — {{ formatHeure(p.heureEntree) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Charts ─────────────────────────────────────────────── -->
+    <div class="charts-row">
+      <div class="card">
+        <div class="card-title">Présents par pointeuse</div>
+        <div class="bar-row" *ngFor="let l of ligneStats">
+          <div class="bar-label">{{ l.ligne }}</div>
+          <div class="bar-track">
+            <div class="bar-fill" [style.width.%]="(l.presents / maxLigne) * 100"></div>
+          </div>
+          <div class="bar-val">{{ l.presents }}</div>
+        </div>
+        <div *ngIf="ligneStats.length === 0" class="no-data">Aucune donnée</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Arrivées par heure</div>
+        <div class="arrivals">
+          <div class="arr-col" *ngFor="let a of arriveeStats">
+            <div class="arr-bar"
+              [class.peak]="a.peak"
+              [style.height.px]="a.count > 0 ? (a.count / maxArrivee) * 80 : 4">
+            </div>
+            <div class="arr-label">{{ a.heure }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Liste ouvriers ─────────────────────────────────────── -->
+    <div class="card list-section">
+      <div class="list-header">
+        <input class="list-search" type="text"
+          placeholder="Matricule ou nom..."
+          [(ngModel)]="searchTerm" />
+        <div class="list-tabs">
+          <button class="tab" [class.active]="filterTab === 'tous'"
+            (click)="filterTab = 'tous'">
+            Tous ({{ totalOuvriers }})
+          </button>
+          <button class="tab" [class.active]="filterTab === 'presents'"
+            (click)="filterTab = 'presents'">
+            Présents ({{ totalPresents }})
+          </button>
+          <button class="tab" [class.active]="filterTab === 'absents'"
+            (click)="filterTab = 'absents'">
+            Absents ({{ totalAbsents }})
+          </button>
+          <button class="tab tab-conge" [class.active]="filterTab === 'conge'"
+            (click)="filterTab = 'conge'">
+            En congé ({{ totalEnConge }})
+          </button>
+        </div>
+      </div>
+
+      <div class="ouvrier-list">
+        <div *ngIf="filteredList.length === 0" class="no-data">
+          Aucun ouvrier trouvé
+        </div>
+        <div class="ouvrier-row" *ngFor="let o of filteredList">
+          <div class="presence-dot"
+            [class.dot-green]="o.statut === 'present'"
+            [class.dot-red]="o.statut === 'absent'"
+            [class.dot-amber]="estEnConge(o.statut)">
+          </div>
+          <div class="ouvrier-mat">{{ o.matricule }}</div>
+          <div class="ouvrier-name">{{ o.nomPrenom }}</div>
+          <div *ngIf="o.timbratrice" class="ouvrier-ligne">{{ o.timbratrice }}</div>
+          <div *ngIf="o.dateDebut && o.dateFin" class="ouvrier-dates">
+            {{ o.dateDebut }} → {{ o.dateFin }}
+          </div>
+          <div [class.badge-present]="o.statut === 'present'"
+               [class.badge-absent]="o.statut === 'absent'"
+               [class.badge-conge]="estEnConge(o.statut)">
+            {{ o.statut === 'present' ? formatHeure(o.heureEntree) : statutLabel(o.statut) }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ════════════════════════════════════════════════════════════
+       ✅ NOUVEAU — Modal "Récup Production"
+       ════════════════════════════════════════════════════════════ -->
+  <div class="recup-overlay" *ngIf="showRecupModal" (click)="closeRecupModal()">
+    <div class="recup-modal" (click)="$event.stopPropagation()">
+
+      <div class="recup-modal-header">
+        <h3>Récup Production</h3>
+        <button class="recup-close" (click)="closeRecupModal()" aria-label="Fermer">✕</button>
+      </div>
+
+      <div class="recup-filter">
+        <label class="filter-label">Date</label>
+        <input class="filter-input" type="date" [(ngModel)]="recupDate" />
+        <button class="btn-filter" (click)="fetchRecupProduction()">Rechercher</button>
+      </div>
+
+      <div *ngIf="recupLoading" class="db-loading">
+        <div class="spinner"></div>
+        <span>Chargement...</span>
+      </div>
+
+      <div *ngIf="!recupLoading && recupError" class="no-data">
+        {{ recupError }}
+      </div>
+
+      <!-- ✅ NOUVEAU — vue LISTE : une carte par LIGNE -->
+      <div *ngIf="!recupLoading && !recupError && recupRows.length > 0 && !recupSelected">
+        <div class="recup-total-bar">
+          Total général — Planifié : <strong>{{ recupTotalPlanifie }}</strong>
+          &nbsp;|&nbsp; Déclaré : <strong>{{ recupTotalDeclare }}</strong>
+        </div>
+        <div class="recup-card-grid">
+          <button class="recup-ligne-card" [ngClass]="recupEcartClass(r)"
+            *ngFor="let r of recupRows" (click)="selectRecupRow(r)">
+            <div class="recup-ligne-card-header">
+              <div class="recup-ligne-card-title">{{ r.ligne }}</div>
+              <div class="recup-ligne-card-pct">{{ recupPct(r) }}%</div>
+            </div>
+            <div class="recup-ligne-card-stats">
+              <span class="recup-ligne-card-stat">
+                <span class="recup-ligne-card-stat-label">Planifié</span>
+                <span class="recup-ligne-card-stat-value">{{ r.totalPlanifie }}</span>
+              </span>
+              <span class="recup-ligne-card-stat">
+                <span class="recup-ligne-card-stat-label">Déclaré</span>
+                <span class="recup-ligne-card-stat-value">{{ r.totalDeclare }}</span>
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- ✅ NOUVEAU — vue DÉTAIL d'une ligne sélectionnée -->
+      <div *ngIf="!recupLoading && !recupError && recupSelected" class="recup-detail">
+        <button class="btn-back" (click)="backToRecupList()">← Retour</button>
+        <h4 class="recup-detail-title">{{ recupSelected.ligne }}</h4>
+
+        <div class="recup-detail-grid">
+          <div class="recup-detail-card">
+            <div class="recup-detail-label">Planifié (total)</div>
+            <div class="recup-detail-value">{{ recupSelected.totalPlanifie }}</div>
+          </div>
+          <div class="recup-detail-card">
+            <div class="recup-detail-label">Déclaré (total)</div>
+            <div class="recup-detail-value">{{ recupSelected.totalDeclare }}</div>
+          </div>
+          <div class="recup-detail-card">
+            <div class="recup-detail-label">1ère poste (Plan / Déc)</div>
+            <div class="recup-detail-value">{{ recupSelected.poste1.planifie }} / {{ recupSelected.poste1.declare }}</div>
+          </div>
+          <div class="recup-detail-card">
+            <div class="recup-detail-label">2ème poste (Plan / Déc)</div>
+            <div class="recup-detail-value">{{ recupSelected.poste2.planifie }} / {{ recupSelected.poste2.declare }}</div>
+          </div>
+        </div>
+       
+<!-- ✅ NOUVEAU — écart principal (cause 7M dominante) -->
+<div class="recup-detail-causes-loading" *ngIf="recupCauses7MLoading">
+  <div class="spinner"></div>
+  <span>Analyse de l'écart...</span>
+</div>
+
+<div class="recup-detail-grid recup-detail-grid-cause" *ngIf="!recupCauses7MLoading">
+  <div class="recup-detail-card recup-cause-card"
+       *ngIf="recupCausePrincipale"
+       [ngClass]="recupCauseSeverityClass(recupCausePrincipale.pct)">
+    <div class="recup-cause-main">
+      <span class="recup-cause-icon">⚠️</span>
+      <div>
+        <div class="recup-detail-label">Écart principal</div>
+        <div class="recup-cause-value">{{ recupCausePrincipale.label }}</div>
+      </div>
+    </div>
+    <div class="recup-cause-pct">{{ recupCausePrincipale.pct | number:'1.1-1' }}%</div>
+  </div>
+
+  <div class="recup-detail-card recup-cause-card recup-cause-none" *ngIf="!recupCausePrincipale">
+    <div class="recup-detail-label">Écart principal</div>
+    <div class="recup-cause-value">Aucun écart significatif</div>
+  </div>
+
+  <!-- ✅ NOUVEAU — les autres causes présentes -->
+  <div class="recup-autres-causes" *ngIf="recupAutresCauses.length > 0">
+    <div class="recup-detail-label">Autres écarts</div>
+    <div class="recup-cause-chip" *ngFor="let c of recupAutresCauses">
+      <span class="recup-cause-chip-label">{{ c.label }}</span>
+      <span class="recup-cause-chip-pct">{{ c.pct | number:'1.1-1' }}%</span>
+    </div>
+  </div>
+</div>
+
+
+      </div>
+
+    </div>
+  </div>
+
+</div>

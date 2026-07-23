@@ -1,0 +1,197 @@
+<!-- src/app/features/verif-status/verif-status.component.html -->
+<div class="verif-page">
+
+  <!-- ── CARD PRINCIPALE ── -->
+  <div class="verif-card">
+
+    <!-- En-tête -->
+    <div class="card-header">
+      <div class="header-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="card-title">Vérification de statut</h1>
+        <p class="card-subtitle">Consultez le statut d'un ouvrier pour une date donnée</p>
+      </div>
+    </div>
+
+    <!-- ── FORMULAIRE ── -->
+    <form [formGroup]="searchForm" (ngSubmit)="onSearch()" novalidate class="search-form">
+
+      <div class="form-grid">
+
+        <!-- Matricule -->
+        <div class="field-group">
+          <label for="matricule" class="field-label">
+            Matricule
+            <span class="required-star">*</span>
+          </label>
+          <div class="input-wrapper" [class.input-error]="isFieldInvalid('matricule')">
+            <span class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input
+              id="matricule"
+              type="number"
+              formControlName="matricule"
+              placeholder="Ex: 1234"
+              class="form-input"
+              min="1"
+            />
+          </div>
+          @if (isFieldInvalid('matricule')) {
+            <p class="field-error">
+              @if (searchForm.get('matricule')?.errors?.['required']) {
+                Le matricule est obligatoire.
+              } @else if (searchForm.get('matricule')?.errors?.['min']) {
+                Le matricule doit être supérieur à 0.
+              } @else {
+                Matricule invalide.
+              }
+            </p>
+          }
+        </div>
+
+        <!-- Date -->
+        <div class="field-group">
+          <label for="date" class="field-label">
+            Date
+            <span class="required-star">*</span>
+          </label>
+          <div class="input-wrapper" [class.input-error]="isFieldInvalid('date')">
+            <span class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                <line x1="16" x2="16" y1="2" y2="6"/>
+                <line x1="8" x2="8" y1="2" y2="6"/>
+                <line x1="3" x2="21" y1="10" y2="10"/>
+              </svg>
+            </span>
+            <input
+              id="date"
+              type="date"
+              formControlName="date"
+              class="form-input"
+            />
+          </div>
+          @if (isFieldInvalid('date')) {
+            <p class="field-error">La date est obligatoire (format YYYY-MM-DD).</p>
+          }
+        </div>
+
+      </div>
+
+      <!-- Boutons -->
+      <div class="form-actions">
+        <button
+          type="button"
+          (click)="onReset()"
+          class="btn-reset"
+          [disabled]="isLoading"
+        >
+          Réinitialiser
+        </button>
+        <button
+          type="submit"
+          class="btn-search"
+          [disabled]="isLoading"
+        >
+          @if (isLoading) {
+            <span class="spinner"></span>
+            Recherche…
+          } @else {
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+              class="btn-icon">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            Rechercher
+          }
+        </button>
+      </div>
+
+    </form>
+
+    <!-- ── SÉPARATEUR ── -->
+    @if (hasSearched) {
+      <div class="divider"></div>
+    }
+
+    <!-- ── ÉTAT CHARGEMENT ── -->
+    @if (isLoading) {
+      <div class="state-loading">
+        <div class="loading-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <p class="state-text">Consultation en cours…</p>
+      </div>
+    }
+
+    <!-- ── ÉTAT ERREUR ── -->
+    @if (!isLoading && errorMessage) {
+      <div class="state-error">
+        <div class="error-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" x2="12" y1="8" y2="12"/>
+            <line x1="12" x2="12.01" y1="16" y2="16"/>
+          </svg>
+        </div>
+        <p class="error-text">{{ errorMessage }}</p>
+      </div>
+    }
+
+    <!-- ── RÉSULTAT ── -->
+    @if (!isLoading && result) {
+      <div class="result-card" [class]="getStatutConfig(result.statut)?.borderClass ?? 'border-gray-200'">
+
+        <!-- Ligne ouvrier -->
+        <div class="result-header">
+          <div class="avatar">
+            {{ result.ouvrier.nomPrenom.charAt(0).toUpperCase() }}
+          </div>
+          <div class="ouvrier-info">
+            <p class="ouvrier-name">{{ result.ouvrier.nomPrenom }}</p>
+            <p class="ouvrier-meta">
+              Matricule&nbsp;<strong>#{{ result.ouvrier.matricule }}</strong>
+              &nbsp;·&nbsp;{{ result.date }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Badge statut -->
+        @if (result.statut && getStatutConfig(result.statut); as cfg) {
+          <div class="badge-row">
+            <div class="status-badge"
+              [ngClass]="[cfg.bgClass, cfg.textClass, cfg.borderClass]">
+              <span class="badge-dot" [ngClass]="cfg.dotClass"></span>
+              <span class="badge-code">{{ result.statut }}</span>
+              <span class="badge-sep">—</span>
+              <span class="badge-label">{{ cfg.label }}</span>
+            </div>
+          </div>
+        } @else {
+          <div class="badge-row">
+            <div class="status-badge bg-gray-50 text-gray-500 border-gray-200">
+              <span class="badge-dot bg-gray-400"></span>
+              <span class="badge-label">Non défini</span>
+            </div>
+          </div>
+        }
+
+      </div>
+    }
+
+  </div>
+</div>

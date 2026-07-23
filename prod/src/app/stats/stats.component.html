@@ -1,0 +1,1133 @@
+<div class="stats-container">
+  
+  <!-- ============================================ -->
+  <!-- SECTION FILTRE DE PÉRIODE -->
+  <!-- ============================================ -->
+  <div *ngIf="!statsData" class="header">
+    <h1>Statistiques par Période</h1>
+    
+    <div class="filter-section">
+      <div class="filter-group">
+        <div class="filter-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Sélectionner une période</span>
+        </div>
+        
+        <div class="date-inputs">
+          <div class="input-group">
+            <label for="dateDebut">Date début :</label>
+            <input 
+              type="date" 
+              id="dateDebut" 
+              [(ngModel)]="dateDebut"
+              [max]="dateFin || maxDate"
+              class="filter-input"
+            />
+          </div>
+          
+          <div class="input-group">
+            <label for="dateFin">Date fin :</label>
+            <input 
+              type="date" 
+              id="dateFin" 
+              [(ngModel)]="dateFin"
+              [min]="dateDebut"
+              [max]="maxDate"
+              class="filter-input"
+            />
+          </div>
+        </div>
+        
+        <div class="filter-actions">
+          <button 
+            type="button"
+            class="btn-filter" 
+            (click)="chargerStatsPeriode()"
+            [disabled]="isLoading || !dateDebut || !dateFin">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span *ngIf="!isLoading">Afficher les statistiques</span>
+            <span *ngIf="isLoading">Chargement...</span>
+          </button>
+          
+          <button 
+            type="button"
+            class="btn-reset" 
+            (click)="reinitialiser()"
+            [disabled]="isLoading">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+              <path d="M3 21v-5h5"></path>
+            </svg>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Message d'erreur -->
+    <div *ngIf="errorMessage" class="error-message">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- LOADING -->
+    <div *ngIf="isLoading" class="loading">
+      <div class="spinner"></div>
+      <p>Chargement des statistiques...</p>
+    </div>
+
+    <!-- MESSAGE DE BIENVENUE -->
+    
+  </div>
+
+  <!-- ============================================ -->
+  <!-- RÉSULTATS - PAGE COMPLÈTE -->
+  <!-- ============================================ -->
+  <div *ngIf="statsData" class="results-layout">
+    
+    <!-- SIDEBAR GAUCHE -->
+    <aside class="sidebar">
+      
+      <!-- INFO PÉRIODE -->
+      <div class="sidebar-card period-info">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <h3>Période</h3>
+        </div>
+        <div class="period-details">
+          <div class="period-item">
+            <span class="period-label">Du</span>
+            <span class="period-value">{{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">Au</span>
+            <span class="period-value">{{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">Jours</span>
+            <span class="period-value">{{ getNombreJours() }}</span>
+          </div>
+          <div class="period-item">
+            <span class="period-label">Semaines</span>
+            <span class="period-value">{{ statsData.periode.nombreSemaines }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRODUCTIVITÉ GLOBALE -->
+      <div class="sidebar-card productivity-card" [class.filtered]="isFilterActive">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+          </svg>
+          <h3>Productivité Globale</h3>
+          <span *ngIf="isFilterActive" class="filter-active-badge">Filtrée</span>
+        </div>
+        <div class="productivity-value">
+          <span class="pcs-value">{{ productionFiltree!.pcsTotal | number:'1.1-1' }}%</span>
+          <div class="productivity-status" [style.color]="getCouleurStatut(productionFiltree!.pcsTotal)">
+            {{ getStatutProduction(productionFiltree!.pcsTotal) }}
+          </div>
+        </div>
+        <div *ngIf="isFilterActive" class="filter-scope-info">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+          {{ selectedLignes.length }} ligne(s) sélectionnée(s)
+        </div>
+        <div class="productivity-details">
+          <div class="detail-item">
+            <span class="detail-label">Qté Source</span>
+            <span class="detail-value">{{ productionFiltree!.totalQteSource | number }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Qté Déclarée</span>
+            <span class="detail-value">{{ productionFiltree!.totalDecProduction | number }}</span>
+          </div>
+        </div>
+      </div>
+
+    
+
+      <!-- PERSONNEL -->
+       <div class="sidebar-card personnel-card">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <h3>Personnel</h3>
+        </div>
+        <div class="personnel-stats">
+
+          <!-- Total — non cliquable -->
+          <div class="personnel-item total">
+            <span class="personnel-label">Total Ouvriers</span>
+            <span class="personnel-value">{{ statsData.personnel.totalOuvriers }}</span>
+          </div>
+
+          <!-- Présents — CLIQUABLE -->
+          <div class="personnel-item presents personnel-clickable"
+               (click)="openPersonnelModal('P')"
+               title="Voir la liste des présents">
+            <span class="personnel-label">
+              Présents
+              <svg class="personnel-detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <span class="personnel-value">{{ personnelComptesReels.presents }}</span>
+          </div>
+
+          <!-- Congés — CLIQUABLE -->
+          <div class="personnel-item conges personnel-clickable"
+               (click)="openPersonnelModal('C')"
+               title="Voir la liste des congés">
+            <span class="personnel-label">
+              Congés
+              <svg class="personnel-detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <span class="personnel-value">{{ personnelComptesReels.conges }}</span>
+          </div>
+
+          <!-- Absents — CLIQUABLE -->
+          <div class="personnel-item absents personnel-clickable"
+               (click)="openPersonnelModal('AB')"
+               title="Voir la liste des absents">
+            <span class="personnel-label">
+              Absents
+              <svg class="personnel-detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <span class="personnel-value">{{ personnelComptesReels.absents }}</span>
+          </div>
+
+          <!-- Sélections — CLIQUABLE -->
+          <div class="personnel-item selections personnel-clickable"
+               (click)="openPersonnelModal('S')"
+               title="Voir la liste des sélections">
+            <span class="personnel-label">
+              Sélections
+              <svg class="personnel-detail-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </span>
+            <span class="personnel-value">{{ personnelComptesReels.selections }}</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FILTRE PAR LIGNE -->
+      <div class="sidebar-card ligne-filter-card">
+        <div class="card-header">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="6" x2="21" y2="6"></line>
+            <line x1="8" y1="12" x2="21" y2="12"></line>
+            <line x1="8" y1="18" x2="21" y2="18"></line>
+            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+          </svg>
+          <h3>Filtrer par Ligne</h3>
+          <span *ngIf="selectedLignes.length > 0" class="filter-badge">{{ selectedLignes.length }}</span>
+        </div>
+
+        <!-- Barre de recherche -->
+        <div class="ligne-search-wrapper">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            [(ngModel)]="ligneSearchFilter"
+            placeholder="Rechercher..."
+            class="ligne-search-input"
+          />
+        </div>
+
+        <!-- Boutons actions -->
+        <div class="ligne-filter-actions">
+          <button type="button" class="btn-select-all" (click)="selectAllLignes()">
+            Tout sélectionner
+          </button>
+          <button type="button" class="btn-clear-filter" (click)="clearLigneFilter()" [disabled]="selectedLignes.length === 0">
+            Effacer
+          </button>
+        </div>
+
+        <!-- Liste des lignes -->
+        <div class="ligne-list">
+          <div
+            *ngFor="let ligne of lignesFiltrees"
+            class="ligne-item"
+            [class.selected]="isLigneSelected(ligne)"
+            (click)="toggleLigneSelection(ligne)"
+          >
+            <div class="ligne-checkbox" [class.checked]="isLigneSelected(ligne)">
+              <svg *ngIf="isLigneSelected(ligne)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <span class="ligne-name">{{ formaterNomLigne(ligne) }}</span>
+            <span class="ligne-pcs-badge" [style.background-color]="getCouleurStatut(getLignePcs(ligne)) + '22'" [style.color]="getCouleurStatut(getLignePcs(ligne))">
+              {{ getLignePcs(ligne) | number:'1.0-0' }}%
+            </span>
+          </div>
+
+          <!-- Aucun résultat -->
+          <div *ngIf="lignesFiltrees.length === 0" class="no-lignes-msg">
+            Aucune ligne trouvée
+          </div>
+        </div>
+
+        <!-- Info filtre actif -->
+        <div *ngIf="selectedLignes.length > 0" class="filter-active-info">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          {{ selectedLignes.length }} ligne(s) sélectionnée(s) sur {{ lignesDisponibles.length }}
+        </div>
+      </div>
+      <!-- Ajoutez ce bloc dans la sidebar, par exemple après la carte "Filtrer par Ligne" -->
+<div class="sidebar-card poste-filter-card">
+  <div class="card-header">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+    <h3>Filtrer par poste</h3>
+    <span *ngIf="posteSelectionne" class="filter-badge">{{ posteSelectionne === 'poste1' ? 'P1' : 'P2' }}</span>
+  </div>
+  
+  <div class="poste-options">
+    <label class="poste-option" [class.active]="posteSelectionne === ''">
+      <input type="radio" name="poste" [value]="''" [(ngModel)]="posteSelectionne" (change)="onPosteChange()">
+      <span class="poste-label">📊 Tous les postes</span>
+    </label>
+    <label class="poste-option" [class.active]="posteSelectionne === 'poste1'">
+      <input type="radio" name="poste" value="poste1" [(ngModel)]="posteSelectionne" (change)="onPosteChange()">
+      <span class="poste-label">🌅 Poste 1 (6h-14h)</span>
+    </label>
+    <label class="poste-option" [class.active]="posteSelectionne === 'poste2'">
+      <input type="radio" name="poste" value="poste2" [(ngModel)]="posteSelectionne" (change)="onPosteChange()">
+      <span class="poste-label">🌙 Poste 2 (14h-22h)</span>
+    </label>
+  </div>
+  
+  <div *ngIf="posteSelectionne" class="poste-active-info">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    Filtré par {{ posteSelectionne === 'poste1' ? 'Poste 1 (6h-14h)' : 'Poste 2 (14h-22h)' }}
+  </div>
+</div>
+
+    </aside>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="main-content">
+      
+      <!-- HEADER AVEC BOUTON RETOUR -->
+      <div class="content-header">
+        <div class="header-top">
+          <div>
+            <h2>Production par Ligne</h2>
+            <p class="content-subtitle">
+              Période du {{ statsData.periode.dateDebut | date:'dd/MM/yyyy' }} 
+              au {{ statsData.periode.dateFin | date:'dd/MM/yyyy' }}
+            </p>
+          </div>
+          <button class="btn-retour" (click)="reinitialiser()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 12H5"></path>
+              <path d="M12 19l-7-7 7-7"></path>
+            </svg>
+            Retour au filtre
+          </button>
+        </div>
+      </div>
+
+      <!-- GRAPHIQUE HISTOGRAMME -->
+      <div class="chart-container">
+        <canvas #chartCanvas></canvas>
+      </div>
+      <!-- ✅ BLOC D'ALERTE - Lignes non conformes -->
+<ng-container *ngIf="!dismissAlert">
+  <div *ngIf="lignesNonCorrectes.length > 0" class="alert-lignes-incorrectes">
+    
+    <div class="alert-header">
+      <div class="alert-title-group">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span class="alert-title">
+          {{ lignesNonCorrectes.length }} ligne(s) nécessitent une vérification
+        </span>
+        <span class="alert-subtitle">(Production% + Σ 6M% devrait être ≈ 100%)</span>
+      </div>
+      <button class="alert-dismiss" (click)="toggleDismissAlert()" title="Masquer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="alert-table-wrapper">
+      <table class="alert-table">
+        <thead>
+          <tr>
+            <th>Ligne</th>
+            <th>Production%</th>
+            <th>Σ 6M%</th>
+            <th>Total</th>
+            <th>Écart</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of lignesNonCorrectes" class="alert-row">
+            <td class="alert-ligne-name">
+              <button class="alert-ligne-btn" (click)="openLigneModal(getLigneData(l.ligne))">
+                {{ formaterNomLigne(l.ligne) }}
+              </button>
+            </td>
+            <td class="alert-cell-prod">{{ l.pcsProd }}%</td>
+            <td class="alert-cell-6m">{{ l.total6M }}%</td>
+            <td class="alert-cell-total"
+              [ngClass]="{'total-bas': l.total < 98, 'total-haut': l.total > 102}">
+              {{ l.total }}%
+            </td>
+            <td class="alert-cell-ecart">± {{ l.ecart }}%</td>
+            <td>
+              <span class="alert-badge"
+                [ngClass]="{'badge-manque': l.total < 98, 'badge-surplus': l.total > 102}">
+                {{ l.total < 98 ? '⬇ Données manquantes' : '⬆ Données en surplus' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="alert-footer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      Cliquez sur une ligne pour voir le détail de ses 6M — Les lignes sans production sont exclues automatiquement.
+    </div>
+  </div>
+
+  <!-- Message tout OK -->
+  <div *ngIf="lignesNonCorrectes.length === 0 && statsData" class="alert-all-ok">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+    </svg>
+    Toutes les lignes actives sont conformes (Production + 6M ≈ 100%)
+  </div>
+</ng-container>
+
+<!-- Barre si alerte masquée -->
+<div *ngIf="dismissAlert && lignesNonCorrectes.length > 0"
+     class="alert-dismissed-bar"
+     (click)="toggleDismissAlert()">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+  </svg>
+  {{ lignesNonCorrectes.length }} ligne(s) à vérifier — Cliquez pour afficher
+</div>
+
+      <!-- ANALYSE DES 7M -->
+      <div class="m7-section">
+        <div class="m7-header-row">
+          <h2 class="m7-title">Analyse des 6M</h2>
+          <span *ngIf="isFilterActive" class="m7-filter-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+            {{ selectedLignes.length }} ligne(s) sélectionnée(s)
+          </span>
+        </div>
+        
+        <div class="m7-circles-grid">
+          <!-- M1: Matière Première -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('matierePremiere')"
+               [class.active]="selectedM === 'matierePremiere'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('matierePremiere')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('matierePremiere'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('matierePremiere') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('matierePremiere') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['matierePremiere'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['matierePremiere'].description }}</div>
+          </div>
+
+          <!-- M2: Absence -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('absence')"
+               [class.active]="selectedM === 'absence'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('absence')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('absence'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('absence') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('absence') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['absence'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['absence'].description }}</div>
+          </div>
+
+          <!-- M2: Rendement -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('rendement')"
+               [class.active]="selectedM === 'rendement'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('rendement')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('rendement'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('rendement') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('rendement') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['rendement'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['rendement'].description }}</div>
+          </div>
+
+          <!-- M3: Méthode -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('methode')"
+               [class.active]="selectedM === 'methode'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('methode')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('methode'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('methode') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('methode') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['methode'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['methode'].description }}</div>
+          </div>
+
+          <!-- M4: Maintenance -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('maintenance')"
+               [class.active]="selectedM === 'maintenance'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('maintenance')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('maintenance'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('maintenance') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('maintenance') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['maintenance'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['maintenance'].description }}</div>
+          </div>
+
+          <!-- M5: Qualité -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('qualite')"
+               [class.active]="selectedM === 'qualite'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('qualite')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('qualite'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('qualite') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('qualite') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['qualite'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['qualite'].description }}</div>
+          </div>
+
+          <!-- M6: Environnement -->
+          <div class="m-circle-item"
+               (click)="toggleMDetails('environnement')"
+               [class.active]="selectedM === 'environnement'">
+            <div class="m-circle-outer">
+              <svg class="progress-ring" width="140" height="140" viewBox="0 0 140 140">
+                <circle class="progress-ring-bg" cx="70" cy="70" r="60" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
+                <circle 
+                  class="progress-ring-progress" 
+                  cx="70" 
+                  cy="70" 
+                  r="60"
+                  stroke-width="8"
+                  fill="none"
+                  [style.stroke]="getColorForM('environnement')"
+                  [ngStyle]="getCircleStyle(getPourcentageMFiltre('environnement'))"
+                  stroke-linecap="round">
+                </circle>
+              </svg>
+              <div class="m-circle-content">
+                <div class="m-circle-value">{{ getPourcentageMFiltre('environnement') | number:'1.1-1' }}%</div>
+                <div class="m-circle-total">{{ getValeurTotalFiltre('environnement') }}</div>
+              </div>
+            </div>
+            <div class="m-circle-label">{{ mDetails['environnement'].label }}</div>
+            <div class="m-circle-description">{{ mDetails['environnement'].description }}</div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- MODALE DE DÉTAILS DES NON-CONFORMITÉS -->
+  <!-- ============================================ -->
+  <div *ngIf="showDetailsModal" class="modal-overlay" (click)="closeModal()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      
+      <!-- HEADER DE LA MODALE -->
+      <div class="modal-header">
+        <h2 class="modal-title">{{ detailsModalTitle }}</h2>
+        <button class="modal-close-btn" (click)="closeModal()">×</button>
+      </div>
+
+      <!-- INFOS DU HEADER -->
+     <!-- INFOS DU HEADER -->
+<div class="modal-info-bar">
+      <div class="modal-info-item">
+        <span class="info-label">Période:</span>
+        <span class="info-value">
+          {{ getPeriodeDisplay() }}
+        </span>
+      </div>
+      <div class="modal-info-item">
+        <span class="info-label">Cause:</span>
+        <span class="info-value">{{ detailsModalCause }}</span>
+      </div>
+      <div class="modal-info-item">
+        <span class="info-label">Références:</span>
+        <span class="info-value">{{ detailsModalData.length }}</span>
+      </div>
+      <div class="modal-info-item">
+        <span class="info-label">Total 7M:</span>
+        <span class="info-value">{{ (detailsModalStats?.total7M || 0) | number }}</span>
+      </div>
+    </div>
+
+      <!-- TABLEAU DES DÉTAILS -->
+      <div class="modal-table-container">
+  <table class="modal-table">
+    <thead>
+      <tr>
+        <th>Date</th>  <!-- ✅ NOUVELLE COLONNE -->
+        <th>Jour</th>  <!-- ✅ NOUVELLE COLONNE -->
+        <th>Ligne</th> <!-- ✅ DÉPLACÉ AVEC DATE -->
+        <th>Référence</th>
+        <th>OF</th>
+        <th>Qty Planifiée</th>
+        <th>Qty Produite</th>
+        <th>Delta</th>
+        <th>M1<br><small>Matière Première</small></th>
+        <th>M2<br><small>Absence</small></th>
+        <th>M3<br><small>Rendement</small></th>
+        <th>M4<br><small>Méthode</small></th>
+        <th>M5<br><small>Maintenance</small></th>
+        <th>M6<br><small>Qualité</small></th>
+        <th>M7<br><small>Environnement</small></th>
+        <th>Total 7M</th>
+        <th>% Écart</th>
+        <th>Réf MP</th>
+        <th>Réf Qualité</th>
+        <th *ngIf="detailsModalCause === 'M2:Absence'">Matricules Abs.</th>
+        <th *ngIf="detailsModalCause === 'M2:Rendement'">Matricules Rend.</th>
+        <th *ngIf="detailsModalCause === 'M4:Maintenance'">Phases Maint.</th>
+        <th *ngIf="detailsModalCause === 'M5:Qualité'">Commentaire</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let detail of detailsModalData">
+        <!-- NOUVELLES COLONNES DATE ET JOUR -->
+        <td class="text-bold">{{ detail.date | date:'dd/MM/yyyy' }}</td>
+        <td>{{ detail.jour | titlecase }}</td>
+        <td>{{ detail.ligne }}</td>
+        
+        <td class="text-bold">{{ detail.reference }}</td>
+        <td>{{ detail.of }}</td>
+        <td class="text-right">{{ detail.qtyPlanifiee | number }}</td>
+        <td class="text-right">{{ detail.qtyProduite | number }}</td>
+        <td class="text-right" [style.color]="getDeltaColor(detail.delta)">
+          {{ detail.delta | number }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m1_matierePremiere > 0">
+          {{ detail.m1_matierePremiere > 0 ? (detail.m1_matierePremiere | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m2_absence > 0">
+          {{ detail.m2_absence > 0 ? (detail.m2_absence | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m3_rendement > 0">
+          {{ detail.m3_rendement > 0 ? (detail.m3_rendement | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m4_methode > 0">
+          {{ detail.m4_methode > 0 ? (detail.m4_methode | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m5_maintenance > 0">
+          {{ detail.m5_maintenance > 0 ? (detail.m5_maintenance | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m6_qualite > 0">
+          {{ detail.m6_qualite > 0 ? (detail.m6_qualite | number) : '-' }}
+        </td>
+        <td class="text-right" [class.highlight]="detail.m7_environnement > 0">
+          {{ detail.m7_environnement > 0 ? (detail.m7_environnement | number) : '-' }}
+        </td>
+        <td class="text-right text-bold">{{ detail.total7M | number }}</td>
+        <td class="text-right">{{ detail.pourcentageEcart | number:'1.1-1' }}%</td>
+        <td class="text-center">{{ detail.refMP || '-' }}</td>
+        <td class="text-center">{{ detail.refQualite || '-' }}</td>
+        <td *ngIf="detailsModalCause === 'M2:Absence'" class="text-center">
+          <span class="ref-badge">{{ detail.matriculesAbsence || '-' }}</span>
+        </td>
+        <td *ngIf="detailsModalCause === 'M2:Rendement'" class="text-center">
+          <span class="ref-badge">{{ detail.matriculesRendement || '-' }}</span>
+        </td>
+        <td *ngIf="detailsModalCause === 'M4:Maintenance'" class="text-center">
+          <span class="ref-badge phases-badge">{{ detail.phasesMaintenance || '-' }}</span>
+        </td>
+        <td *ngIf="detailsModalCause === 'M5:Qualité'" class="text-center commentaire-cell">
+          {{ detail.commentaireTexte || '-' }}
+        </td>
+      </tr>
+
+      <!-- LIGNE DE TOTAUX -->
+      <tr class="totals-row">
+        <td colspan="3" class="text-bold">TOTAUX</td>
+        <td></td>
+        <td class="text-right text-bold">{{ detailsModalStats.totalQtyPlanifiee | number }}</td>
+        <td class="text-right text-bold">{{ detailsModalStats.totalQtyProduite | number }}</td>
+        <td class="text-right text-bold">{{ detailsModalStats.totalDelta | number }}</td>
+        <td colspan="7"></td>
+        <td class="text-right text-bold">{{ detailsModalStats.total7M | number }}</td>
+        <td class="text-right text-bold">{{ detailsModalStats.tauxConformite }}%</td>
+        <td colspan="2"></td>
+        <td *ngIf="detailsModalCause === 'M2:Absence'"></td>
+        <td *ngIf="detailsModalCause === 'M2:Rendement'"></td>
+        <td *ngIf="detailsModalCause === 'M4:Maintenance'"></td>
+        <td *ngIf="detailsModalCause === 'M5:Qualité'"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+      <!-- FOOTER STATISTIQUES -->
+      <div class="modal-footer-stats">
+        <div class="footer-stat-card">
+          <div class="footer-stat-label">Références avec non-conf</div>
+          <div class="footer-stat-value">{{ detailsModalStats.referencesAvecNonConf }}/{{ detailsModalStats.totalReferences }}</div>
+        </div>
+        <div class="footer-stat-card">
+          <div class="footer-stat-label">Taux de conformité</div>
+          <div class="footer-stat-value">{{ detailsModalStats.tauxConformite }}%</div>
+        </div>
+        <div class="footer-stat-card">
+          <div class="footer-stat-label">Cause principale</div>
+          <div class="footer-stat-value">{{ detailsModalStats.causesPrincipales }}</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+<!-- MODALE DES DÉTAILS D'UNE LIGNE -->
+<!-- ============================================ -->
+<div *ngIf="showLigneModal && ligneModalData" class="modal-overlay" (click)="closeLigneModal()">
+  <div class="modal-container ligne-modal" (click)="$event.stopPropagation()">
+    
+    <!-- HEADER -->
+    <div class="modal-header">
+      <h2 class="modal-title">{{ ligneModalTitle }}</h2>
+      <button class="modal-close-btn" (click)="closeLigneModal()">×</button>
+    </div>
+
+    <!-- STATISTIQUES PRINCIPALES -->
+    <div class="ligne-stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Productivité (PCS)</div>
+          <div class="stat-value">{{ ligneModalData.production.pcs | number:'1.1-1' }}%</div>
+          <div class="stat-status" [style.color]="getCouleurStatut(ligneModalData.production.pcs)">
+            {{ getStatutProduction(ligneModalData.production.pcs) }}
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Quantité Source</div>
+          <div class="stat-value">{{ ligneModalData.production.totalQteSource | number }}</div>
+          <div class="stat-sub">Planifiée</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Quantité Déclarée</div>
+          <div class="stat-value">{{ ligneModalData.production.totalDecProduction | number }}</div>
+          <div class="stat-sub">Produite</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon"></div>
+        <div class="stat-content">
+          <div class="stat-label">Références</div>
+          <div class="stat-value">{{ ligneModalData.nombreReferences }}</div>
+          <div class="stat-sub">Articles différents</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYSE DES 7M POUR CETTE LIGNE -->
+    <div class="m7-section-ligne">
+      <h3 class="section-title">Analyse des 7M pour cette ligne</h3>
+      
+      <div class="m7-mini-grid">
+        <div *ngFor="let item of mDetails | keyvalue:originalOrder" class="m7-mini-card-wrapper">
+          <!-- Badge cliquable -->
+          <div class="m7-mini-card" 
+               [class.clickable]="hasCause7MReferences(item.key)"
+               [class.expanded]="isCause7MExpanded(item.key)"
+               (click)="hasCause7MReferences(item.key) ? toggleCause7M(item.key) : null">
+            <div class="m7-mini-header">
+              <div class="m7-mini-icon" [style.background]="getColorForM(item.key)">
+                {{ item.value.icon }}
+              </div>
+              <div class="m7-mini-title">{{ item.value.label }}</div>
+            </div>
+            <div class="m7-mini-content">
+              <div class="m7-mini-value">
+                {{ getPourcentageMForLigne(item.key) | number:'1.1-1' }}%
+              </div>
+              <div class="m7-mini-quantity">
+                {{ getQuantiteMForLigne(item.key) | number }}
+              </div>
+            </div>
+            <div *ngIf="hasCause7MReferences(item.key)" >
+            
+            </div>
+          </div>
+          
+          <div *ngIf="isCause7MExpanded(item.key)" class="m7-references-expanded">
+  <div class="m7-references-header">
+   
+  
+  </div>
+  
+  <div class="m7-references-table-container">
+    <table class="m7-references-table">
+      <thead>
+        <tr>
+          <th>Référence</th>
+          <th>Date</th>
+          <th>OF</th>
+          <th>Qty Planifiée</th>
+          <th>Qty Produite</th>
+          <th class="text-center">Quantité {{ item.value.label }}</th>
+          <th *ngIf="item.key === 'matierePremiere'" class="text-center">Réf MP</th>
+          <th *ngIf="item.key === 'qualite'" class="text-center">Réf Qualité</th>
+          <th *ngIf="item.key === 'qualite'" class="text-center">Commentaire</th>
+          <th *ngIf="item.key === 'absence'" class="text-center">Matricules Absence</th>
+          <th *ngIf="item.key === 'rendement'" class="text-center">Matricules Rendement</th>
+          <th *ngIf="item.key === 'maintenance'" class="text-center">Phases Maintenance</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let ref of getReferencesForCause7M(item.key)">
+          <td class="text-bold">{{ ref.reference || '-' }}</td>
+          <td>{{ ref.date | date:'dd/MM/yyyy' }}</td>
+          <td>{{ ref.of || '-' }}</td>
+          <td class="text-right">{{ ref.qtePlanifiee | number }}</td>
+          <td class="text-right">{{ ref.decProduction | number }}</td>
+          <td class="text-right text-bold" [style.color]="getColorForM(item.key)">
+            {{ ref.causes7M?.[item.key] | number }}
+          </td>
+          <!-- ✅ COLONNE RÉF MP (uniquement pour M1) -->
+          <td *ngIf="item.key === 'matierePremiere'" class="text-center">
+            <span *ngIf="ref.causes7M?.matierePremiere > 0" class="ref-badge">
+              {{ getRefMPForReference(ref) || '-' }}
+            </span>
+            <span *ngIf="ref.causes7M?.matierePremiere === 0">-</span>
+          </td>
+          <!-- ✅ COLONNE RÉF QUALITÉ (uniquement pour M6) -->
+          <td *ngIf="item.key === 'qualite'" class="text-center">
+            <span *ngIf="ref.causes7M?.qualite > 0" class="ref-badge">
+              {{ getRefQualiteForReference(ref) || '-' }}
+            </span>
+            <span *ngIf="ref.causes7M?.qualite === 0">-</span>
+          </td>
+          <!-- ✅ COLONNE COMMENTAIRE QUALITÉ -->
+          <td *ngIf="item.key === 'qualite'" class="text-center commentaire-cell">
+            <span *ngIf="ref.causes7M?.qualite > 0">
+              {{ getCommentaireQualiteForReference(ref) }}
+            </span>
+            <span *ngIf="ref.causes7M?.qualite === 0">-</span>
+          </td>
+          <!-- ✅ COLONNE MATRICULES ABSENCE -->
+          <td *ngIf="item.key === 'absence'" class="text-center">
+            <span *ngIf="ref.causes7M?.absence > 0" class="ref-badge">
+              {{ getMatriculesAbsenceForReference(ref) }}
+            </span>
+            <span *ngIf="ref.causes7M?.absence === 0">-</span>
+          </td>
+          <!-- ✅ COLONNE MATRICULES RENDEMENT -->
+          <td *ngIf="item.key === 'rendement'" class="text-center">
+            <span *ngIf="ref.causes7M?.rendement > 0" class="ref-badge">
+              {{ getMatriculesRendementForReference(ref) }}
+            </span>
+            <span *ngIf="ref.causes7M?.rendement === 0">-</span>
+          </td>
+          <!-- ✅ COLONNE PHASES MAINTENANCE -->
+          <td *ngIf="item.key === 'maintenance'" class="text-center">
+            <span *ngIf="ref.causes7M?.maintenance > 0" class="ref-badge phases-badge">
+              {{ getPhaseMaintenanceForReference(ref) }}
+            </span>
+            <span *ngIf="ref.causes7M?.maintenance === 0">-</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLEAU DES RÉFÉRENCES -->
+    <div *ngIf="ligneModalReferences.length > 0" class="references-section">
+      <h3 class="section-title">Détail par Référence</h3>
+      
+      <div class="table-container">
+        <table class="references-table">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Date</th>
+              <th>OF</th>
+              <th>Qty Planifiée</th>
+              <th>Qty Modifiée</th>
+              <th>Qty Produite</th>
+              <th>PCS</th>
+              <th>7M Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ref of ligneModalReferences">
+              <td class="text-bold">{{ ref.reference || ref.Reference || '-' }}</td>
+              <td>{{ ref.date ? (ref.date | date:'dd/MM/yyyy') : (ref.Date ? (ref.Date | date:'dd/MM/yyyy') : ref.jour || '-') }}</td>
+              <td>{{ ref.of || ref.OF || '-' }}</td>
+              <td class="text-right">{{ ref.qtePlanifiee || ref.QtyPlanifiee || 0 | number }}</td>
+              <td class="text-right">{{ ref.qteModifiee || ref.QtyModifiee || 0 | number }}</td>
+              <td class="text-right">{{ ref.decProduction || ref.DecProduction || 0 | number }}</td>
+              <td class="text-right">{{ ref.pcsProd || ref.PcsProd || 0 | number:'1.1-1' }}%</td>
+              <td class="text-right">
+                {{ (ref.causes7M?.total || ref.Causes7M?.total || ref.total7M || 0) | number }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MESSAGE SI PAS DE RÉFÉRENCES -->
+    <div *ngIf="ligneModalReferences.length === 0" class="no-data-message">
+      
+      <p>Les détails par référence ne sont pas disponibles</p>
+    </div>
+
+  </div>
+</div>
+
+<div *ngIf="showPersonnelModal" class="modal-overlay" (click)="closePersonnelModal()">
+  <div class="modal-container personnel-modal" (click)="$event.stopPropagation()">
+
+    <!-- HEADER avec couleur du statut -->
+    <div class="modal-header"
+         [style.border-left]="'4px solid ' + getPersonnelModalColor(personnelModalStatut)">
+      <div class="modal-header-content">
+        <h2 class="modal-title">{{ personnelModalTitle }}</h2>
+        <span class="personnel-modal-badge"
+              [style.background]="getPersonnelModalColor(personnelModalStatut) + '22'"
+              [style.color]="getPersonnelModalColor(personnelModalStatut)">
+          {{ personnelModalList.length }} personne(s)
+        </span>
+      </div>
+      <button class="modal-close-btn" (click)="closePersonnelModal()">×</button>
+    </div>
+
+    <!-- CHARGEMENT -->
+    <div *ngIf="isLoadingPersonnel" class="personnel-modal-loading">
+      <div class="spinner"></div>
+      <p>Chargement...</p>
+    </div>
+
+    <!-- CONTENU -->
+    <div *ngIf="!isLoadingPersonnel">
+
+      <!-- Aucun résultat -->
+      <div *ngIf="personnelModalList.length === 0" class="no-data-message">
+        <p>Aucun employé dans cette catégorie pour la période sélectionnée.</p>
+      </div>
+
+      <!-- Tableau — même structure que statistiques1 (matricule + nomPrenom) -->
+      <div *ngIf="personnelModalList.length > 0" class="table-container">
+        <table class="references-table personnel-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Matricule</th>
+              <th>Nom et Prénom</th>
+              <th *ngIf="personnelModalList[0]?.ligne">Ligne</th>
+              <th>Statut</th>
+              <th *ngIf="personnelModalList[0]?.commentaire !== undefined">Commentaire</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let emp of personnelModalList; let i = index">
+              <td class="text-center text-muted">{{ i + 1 }}</td>
+              <td class="text-bold">{{ emp.matricule }}</td>
+              <td>{{ emp.nomPrenom }}</td>
+              <td *ngIf="personnelModalList[0]?.ligne">{{ emp.ligne || '-' }}</td>
+              <td>
+                <span class="statut-badge-readonly"
+                      [style.background-color]="getPersonnelModalColor(emp.statut || '')"
+                      style="padding:3px 8px; border-radius:12px; color:#fff; font-size:0.8rem; font-weight:600;">
+                  {{ getLibelleStatutPersonnel(emp.statut) }}
+                </span>
+              </td>
+              <td *ngIf="personnelModalList[0]?.commentaire !== undefined">
+                {{ emp.commentaire || '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+</div>

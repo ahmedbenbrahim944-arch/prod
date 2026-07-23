@@ -1,0 +1,249 @@
+$navy: #04219e;
+$green: #16a34a;
+$red: #dc2626;
+$amber: #d97706;
+$blue: #2563eb;
+$gray-text: #64748b;
+$border: #e2e8f0;
+$bg-card: #ffffff;
+
+.effectif-container {
+  font-family: inherit;
+  padding: 1.5rem;
+}
+
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+
+  h2 {
+    margin: 0;
+    color: $navy;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .sous-titre {
+    margin: 2px 0 0;
+    color: $gray-text;
+    font-size: 13px;
+  }
+}
+
+.btn-refresh {
+  border: 1px solid $border;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: $navy;
+  cursor: pointer;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.filtres {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.chip {
+  border: 1px solid $border;
+  background: #fff;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #334155;
+
+  &.actif {
+    background: $navy;
+    border-color: $navy;
+    color: #fff;
+  }
+}
+
+.metriques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.metrique-card {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 14px 16px;
+
+  .label {
+    margin: 0 0 6px;
+    font-size: 12px;
+    color: $gray-text;
+  }
+
+  .valeur {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #0f172a;
+
+    &.presents { color: $green; }
+    &.conge { color: $amber; }
+    &.maladie { color: $red; }
+    &.injustifiee { color: $red; }
+  }
+}
+
+.message-erreur {
+  color: $red;
+  font-size: 14px;
+}
+
+.grille-lignes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.carte-ligne {
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 16px 18px;
+
+  &.alerte {
+    border-color: rgba($red, 0.35);
+  }
+}
+
+.carte-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+
+  .nom-ligne {
+    margin: 0;
+    font-weight: 600;
+    font-size: 15px;
+    color: $navy;
+  }
+
+  .poste-label {
+    margin: 0;
+    font-size: 12px;
+    color: $gray-text;
+  }
+}
+
+.barre-couverture {
+  background: #f1f5f9;
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.barre-remplissage {
+  height: 100%;
+  transition: width 0.3s ease;
+
+  &.ok { background: $green; }
+  &.alerte { background: $red; }
+}
+
+.stats-ligne {
+  font-size: 13px;
+  color: #334155;
+  margin: 0 0 10px;
+
+  .txt-ok { color: $green; font-weight: 600; }
+  .txt-alerte { color: $red; font-weight: 600; }
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.badge, .badge-mini {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+
+  &.badge-conge { background: rgba($amber, 0.12); color: $amber; }
+  &.badge-maladie { background: rgba($red, 0.12); color: $red; }
+  &.badge-injustifiee { background: rgba($red, 0.12); color: $red; }
+  &.badge-autre { background: rgba($blue, 0.12); color: $blue; }
+  &.badge-sans_motif { background: #f1f5f9; color: $gray-text; }
+}
+
+.effectif-complet {
+  font-size: 12px;
+  color: $green;
+  margin: 0 0 12px;
+}
+
+.btn-detail {
+  width: 100%;
+  border: 1px solid $border;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 12px;
+  color: $navy;
+  cursor: pointer;
+
+  &:hover { background: #f8fafc; }
+}
+
+.detail-liste {
+  margin-top: 12px;
+  border-top: 1px solid $border;
+  padding-top: 10px;
+}
+
+.section-detail {
+  margin-bottom: 10px;
+
+  .titre-section {
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+    margin: 0 0 6px;
+  }
+}
+
+.ligne-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f5f9;
+
+  .matricule {
+    background: #f1f5f9;
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: $gray-text;
+    min-width: 32px;
+    text-align: center;
+  }
+
+  .nom { flex: 1; color: #0f172a; }
+  .heure { color: $gray-text; }
+}

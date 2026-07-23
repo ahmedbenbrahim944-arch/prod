@@ -1,0 +1,121 @@
+<div class="effectif-container">
+  <div class="header-bar">
+    <div>
+      <h2>Effectif réel par ligne</h2>
+      <p class="sous-titre">Mardi 7 juillet 2026</p>
+    </div>
+    <button class="btn-refresh" (click)="charger()" [disabled]="chargement()">
+      <span *ngIf="!chargement()">↻ Actualiser</span>
+      <span *ngIf="chargement()">Chargement…</span>
+    </button>
+  </div>
+
+  <div class="filtres">
+    <button
+      class="chip"
+      [class.actif]="filtrePoste() === 'tous'"
+      (click)="filtrePoste.set('tous')"
+    >Tous</button>
+    <button
+      class="chip"
+      [class.actif]="filtrePoste() === 'jour'"
+      (click)="filtrePoste.set('jour')"
+    >Poste jour</button>
+    <button
+      class="chip"
+      [class.actif]="filtrePoste() === 'nuit'"
+      (click)="filtrePoste.set('nuit')"
+    >Poste nuit</button>
+  </div>
+
+  <div class="metriques" *ngIf="!chargement() && !erreur()">
+    <div class="metrique-card">
+      <p class="label">Effectif théorique</p>
+      <p class="valeur">{{ totaux().effectif }}</p>
+    </div>
+    <div class="metrique-card">
+      <p class="label">Présents</p>
+      <p class="valeur presents">{{ totaux().presents }}</p>
+    </div>
+    <div class="metrique-card">
+      <p class="label">Congé / mission</p>
+      <p class="valeur conge">{{ totaux().conge }}</p>
+    </div>
+    <div class="metrique-card">
+      <p class="label">Maladie</p>
+      <p class="valeur maladie">{{ totaux().maladie }}</p>
+    </div>
+    <div class="metrique-card">
+      <p class="label">Injustifiée</p>
+      <p class="valeur injustifiee">{{ totaux().injustifiee }}</p>
+    </div>
+  </div>
+
+  <p class="message-erreur" *ngIf="erreur()">{{ erreur() }}</p>
+
+  <div class="grille-lignes" *ngIf="!chargement() && !erreur()">
+    <div
+      class="carte-ligne"
+      *ngFor="let l of lignesFiltrees()"
+      [class.alerte]="l.enAlerte"
+    >
+      <div class="carte-header">
+        <p class="nom-ligne">Ligne {{ l.ligne }}</p>
+        <p class="poste-label">{{ l.poste === 'jour' ? 'Poste jour' : 'Poste nuit' }}</p>
+      </div>
+
+      <div class="barre-couverture">
+        <div
+          class="barre-remplissage"
+          [class.ok]="!l.enAlerte"
+          [class.alerte]="l.enAlerte"
+          [style.width.%]="l.tauxCouverture"
+        ></div>
+      </div>
+
+      <p class="stats-ligne">
+        {{ l.presents }}/{{ l.totalAffectes }} présents —
+        <span [class.txt-alerte]="l.enAlerte" [class.txt-ok]="!l.enAlerte">
+          {{ l.tauxCouverture }}%
+        </span>
+      </p>
+
+      <div class="badges" *ngIf="categoriesAffichees(l).length">
+        <span
+          class="badge"
+          *ngFor="let c of categoriesAffichees(l)"
+          [class]="'badge-' + c.cat"
+        >{{ c.nb }} {{ labelsCategorie[c.cat] | lowercase }}</span>
+      </div>
+      <p class="effectif-complet" *ngIf="!categoriesAffichees(l).length">
+        ✓ Effectif complet
+      </p>
+
+      <button class="btn-detail" (click)="toggleDetail(l)">
+        {{ estOuverte(l) ? 'Masquer le détail' : 'Voir le détail' }}
+      </button>
+
+      <div class="detail-liste" *ngIf="estOuverte(l)">
+        <div class="section-detail" *ngIf="l.absentsListe.length">
+          <p class="titre-section">Absents ({{ l.absentsListe.length }})</p>
+          <div class="ligne-detail" *ngFor="let a of l.absentsListe">
+            <span class="matricule">{{ a.matricule }}</span>
+            <span class="nom">{{ a.nomPrenom }}</span>
+            <span class="badge-mini" [class]="'badge-' + a.categorie">
+              {{ labelsCategorie[a.categorie] }}
+            </span>
+          </div>
+        </div>
+
+        <div class="section-detail" *ngIf="l.presentsListe.length">
+          <p class="titre-section">Présents ({{ l.presentsListe.length }})</p>
+          <div class="ligne-detail" *ngFor="let p of l.presentsListe">
+            <span class="matricule">{{ p.matricule }}</span>
+            <span class="nom">{{ p.nomPrenom }}</span>
+            <span class="heure" *ngIf="p.heureEntree">{{ p.heureEntree | date:'HH:mm' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

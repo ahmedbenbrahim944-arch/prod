@@ -1,0 +1,484 @@
+<!-- components/nonconformite/nonconformite.component.html -->
+<div class="nonconformite-container">
+  <div class="header">
+    <h2>🔴 Ajouter une Non-Conformité</h2>
+  </div>
+
+  <!-- Messages d'erreur et de succès -->
+  <div class="alerts">
+    <div *ngIf="errorMessage" class="alert alert-error">
+      ⚠️ {{ errorMessage }}
+    </div>
+    
+    <div *ngIf="successMessage" class="alert alert-success">
+      ✅ {{ successMessage }}
+    </div>
+  </div>
+
+  <form [formGroup]="nonconfForm" (ngSubmit)="onSubmit()" class="nonconf-form">
+  
+    <!-- Ligne 1: Date | Ligne | Référence -->
+    <div class="form-row">
+      <!-- Date -->
+      <div class="form-group">
+        <label for="date">Date <span class="required">*</span></label>
+        <input
+          type="date"
+          id="date"
+          formControlName="date"
+          class="form-control"
+          [class.error]="hasError('date')"
+        />
+        <small *ngIf="hasError('date')" class="error-message">
+          {{ getErrorMessage('date') }}
+        </small>
+        <small class="help-text">Sélectionnez la date de la non-conformité</small>
+      </div>
+
+      <!-- Ligne (Sélection) -->
+      <div class="form-group">
+        <label for="ligne">Ligne <span class="required">*</span></label>
+        <select
+          id="ligne"
+          formControlName="ligne"
+          class="form-control"
+          [class.error]="hasError('ligne')"
+        >
+          <option value="">Sélectionnez une ligne</option>
+          <option *ngFor="let ligne of availableLines" [value]="ligne">
+            {{ ligne }}
+          </option>
+        </select>
+        <small *ngIf="hasError('ligne')" class="error-message">
+          {{ getErrorMessage('ligne') }}
+        </small>
+        <small class="help-text">Choisissez d'abord une ligne</small>
+      </div>
+
+      <!-- Référence (dépend de la ligne) -->
+      <div class="form-group">
+        <label for="reference">Référence <span class="required">*</span></label>
+        <select
+          id="reference"
+          formControlName="reference"
+          class="form-control"
+          [class.error]="hasError('reference')"
+          [disabled]="!nonconfForm.get('ligne')?.value"
+        >
+          <option value="">
+            {{ nonconfForm.get('ligne')?.value ? 'Sélectionnez une référence' : 'Choisissez d\'abord une ligne' }}
+          </option>
+          <option *ngFor="let ref of availableReferences" [value]="ref.reference">
+            {{ ref.reference }} ({{ ref.type }})
+          </option>
+        </select>
+        <small *ngIf="hasError('reference')" class="error-message">
+          {{ getErrorMessage('reference') }}
+        </small>
+        <small class="help-text">
+          {{ availableReferences.length }} référence(s) disponible(s)
+        </small>
+      </div>
+    </div>
+
+    <!-- Ligne 2: Source Type | Type Interne (conditionnel) | Type -->
+    <div class="form-row">
+      <!-- Source Type -->
+      <div class="form-group">
+        <label for="sourceType">Source <span class="required">*</span></label>
+        <select
+          id="sourceType"
+          formControlName="sourceType"
+          class="form-control"
+          [class.error]="hasError('sourceType')"
+        >
+          <option value="fournisseur">Fournisseur</option>
+          <option value="interne">Interne</option>
+        </select>
+        <small *ngIf="hasError('sourceType')" class="error-message">
+          {{ getErrorMessage('sourceType') }}
+        </small>
+      </div>
+
+      <!-- Type Interne (conditionnel) -->
+      <div class="form-group" *ngIf="nonconfForm.get('sourceType')?.value === 'interne'">
+        <label for="typeInterne">Type Interne <span class="required">*</span></label>
+        <select
+          id="typeInterne"
+          formControlName="typeInterne"
+          class="form-control"
+          [class.error]="hasError('typeInterne')"
+        >
+          <option value="">Sélectionner un type</option>
+          <option value="Essai d'arrachement">Essai d'arrachement</option>
+          <option value="Essai de maintenance">Essai de maintenance</option>
+          <option value="Machine">Machine</option>
+          <option value="Main-d'œuvre">Main-d'œuvre</option>
+          <option value="Matière">Matière</option>
+        </select>
+        <small *ngIf="hasError('typeInterne')" class="error-message">
+          {{ getErrorMessage('typeInterne') }}
+        </small>
+      </div>
+
+      <!-- Espaceur -->
+      <div class="form-group" *ngIf="nonconfForm.get('sourceType')?.value !== 'interne'">
+        <label>&nbsp;</label>
+        <div class="form-control placeholder" style="visibility: hidden;">
+          Placeholder
+        </div>
+      </div>
+
+      <!-- Type (MP/SE) - Auto-rempli -->
+      <div class="form-group">
+        <label for="type">Type</label>
+        <select
+          id="type"
+          formControlName="type"
+          class="form-control"
+          [class.error]="hasError('type')"
+          [disabled]="true"
+        >
+          <option value="MP">MP (Matière Première)</option>
+          <option value="SE">SE (Sous-Ensemble)</option>
+        </select>
+        <small class="help-text">Déterminé automatiquement</small>
+      </div>
+    </div>
+
+    <!-- Ligne 3: Quantité de Rebut | Sortie Ligne | Défauts -->
+    <div class="form-row">
+      <!-- Quantité Rebut -->
+      <div class="form-group">
+        <label for="qteRebut">Quantité de Rebut <span class="required">*</span></label>
+        <input
+          type="number"
+          id="qteRebut"
+          formControlName="qteRebut"
+          placeholder="0"
+          class="form-control"
+          [class.error]="hasError('qteRebut')"
+          min="0"
+        />
+        <small *ngIf="hasError('qteRebut')" class="error-message">
+          {{ getErrorMessage('qteRebut') }}
+        </small>
+      </div>
+
+      <!-- Sortie Ligne -->
+      <div class="form-group">
+        <label for="sortieLigne">Sortie Ligne <span class="required">*</span></label>
+        <input
+          type="number"
+          id="sortieLigne"
+          formControlName="sortieLigne"
+          placeholder="0"
+          class="form-control"
+          [class.error]="hasError('sortieLigne')"
+          min="0"
+        />
+        <small *ngIf="hasError('sortieLigne')" class="error-message">
+          {{ getErrorMessage('sortieLigne') }}
+        </small>
+      </div>
+
+      <!-- Défauts -->
+      <div class="form-group">
+        <label for="defauts">Défauts <span class="required">*</span></label>
+        <select
+          id="defauts"
+          formControlName="defauts"
+          class="form-control"
+          [class.error]="hasError('defauts')"
+        >
+          <option value="">Sélectionner un défaut</option>
+          <option *ngFor="let defaut of defautsList" [value]="defaut">
+            {{ defaut }}
+          </option>
+        </select>
+        <small *ngIf="hasError('defauts')" class="error-message">
+          {{ getErrorMessage('defauts') }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Note d'avertissement -->
+    <div *ngIf="nonconfForm.invalid && nonconfForm.touched" class="warning-note">
+      ⚠️ Tous les champs marqués d'un * sont obligatoires
+    </div>
+
+    <!-- Boutons d'action -->
+    <div class="form-actions">
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="isSubmitting || nonconfForm.invalid"
+      >
+        <span *ngIf="!isSubmitting">✓ Ajouter</span>
+        <span *ngIf="isSubmitting">⏳ Ajout en cours...</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        (click)="resetForm()"
+        [disabled]="isSubmitting"
+      >
+        🔄 Réinitialiser
+      </button>
+    </div>
+  </form>
+
+  <!-- ============ FILTRES DE RECHERCHE ============ -->
+  <div class="filters-section" *ngIf="saisies.length > 0">
+    <h3>🔍 Filtres de recherche</h3>
+    
+    <form [formGroup]="filterForm" (ngSubmit)="applyFilters()">
+      <!-- Ligne 1: Date | Ligne | Type -->
+      <div class="filters-row">
+        <!-- Filtre Date -->
+        <div class="filter-group">
+          <label for="filterDate">Date</label>
+          <input
+            type="date"
+            id="filterDate"
+            formControlName="date"
+            class="form-control"
+          />
+        </div>
+
+        <!-- Filtre Ligne -->
+        <div class="filter-group">
+          <label for="filterLigne">Ligne</label>
+          <select
+            id="filterLigne"
+            formControlName="ligne"
+            class="form-control"
+          >
+            <option value="">Toutes les lignes</option>
+            <option *ngFor="let ligne of availableLines" [value]="ligne">
+              {{ ligne }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre Type -->
+        <div class="filter-group">
+          <label for="filterType">Type</label>
+          <select
+            id="filterType"
+            formControlName="type"
+            class="form-control"
+          >
+            <option value="">Tous les types</option>
+            <option value="MP">MP</option>
+            <option value="SE">SE</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Ligne 2: Référence | Défaut | Source -->
+      <div class="filters-row">
+        <!-- Filtre Référence -->
+        <div class="filter-group">
+          <label for="filterReference">Référence</label>
+          <input
+            type="text"
+            id="filterReference"
+            formControlName="reference"
+            placeholder="Rechercher référence..."
+            class="form-control"
+          />
+        </div>
+
+        <!-- Filtre Défaut -->
+        <div class="filter-group">
+          <label for="filterDefaut">Défaut</label>
+          <select
+            id="filterDefaut"
+            formControlName="defaut"
+            class="form-control"
+          >
+            <option value="">Tous les défauts</option>
+            <option *ngFor="let defaut of defautsList" [value]="defaut">
+              {{ defaut }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre Source Type -->
+        <div class="filter-group">
+          <label for="filterSourceType">Source</label>
+          <select
+            id="filterSourceType"
+            formControlName="sourceType"
+            class="form-control"
+          >
+            <option value="">Toutes les sources</option>
+            <option value="fournisseur">Fournisseur</option>
+            <option value="interne">Interne</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Boutons de filtrage -->
+      <div class="filter-actions">
+        <button
+          type="submit"
+          class="btn btn-filter"
+          [disabled]="isFiltering"
+        >
+          <span *ngIf="!isFiltering">🔍 Appliquer les filtres</span>
+          <span *ngIf="isFiltering">⏳ Filtrage...</span>
+        </button>
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          (click)="resetFilters()"
+          [disabled]="isFiltering"
+        >
+          🗑️ Effacer les filtres
+        </button>
+
+        <!-- Bouton Export Excel -->
+        <button
+          type="button"
+          class="btn btn-excel"
+          (click)="exportToExcel()"
+          [disabled]="filteredSaisies.length === 0"
+        >
+          📊 Exporter en Excel
+        </button>
+
+        <!-- Indicateur de filtrage -->
+        <div class="filter-info" *ngIf="isFiltered">
+          <span class="badge badge-info">
+            {{ filteredSaisies.length }} / {{ totalSaisiesCount }} résultats
+          </span>
+          <small class="filter-text">Filtres actifs</small>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ============ LISTE DES SAISIES ============ -->
+  <div class="saisies-list">
+    <div class="list-header">
+      <h3>📋 Liste des Non-Conformités 
+        <span *ngIf="isFiltered">({{ filteredSaisies.length }} sur {{ totalSaisiesCount }})</span>
+        <span *ngIf="!isFiltered">({{ totalSaisiesCount }})</span>
+      </h3>
+      
+      <!-- Bouton d'export en bas aussi -->
+      <button
+        *ngIf="saisies.length > 0"
+        class="btn btn-excel-bottom"
+        (click)="exportToExcel()"
+        [disabled]="filteredSaisies.length === 0"
+      >
+         Télécharger Excel
+      </button>
+    </div>
+    
+    <div class="table-container" *ngIf="filteredSaisies.length > 0">
+      <table class="saisies-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Source</th>
+            <th>Type Interne</th>
+            <th>Ligne</th>
+            <th>Référence</th>
+            <th>Type</th>
+            <th>Qté Rebut</th>
+            <th>Sortie Ligne</th>
+            <th>Défauts</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let saisie of filteredSaisies">
+            <td>{{ saisie.date | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="badge" 
+                    [class.badge-fournisseur]="saisie.sourceType === 'fournisseur'" 
+                    [class.badge-interne]="saisie.sourceType === 'interne'">
+                {{ saisie.sourceType === 'fournisseur' ? 'Fournisseur' : 'Interne' }}
+              </span>
+            </td>
+            <td>
+              <span *ngIf="saisie.typeInterne" class="badge badge-type-interne">
+                {{ saisie.typeInterne }}
+              </span>
+              <span *ngIf="!saisie.typeInterne" class="badge badge-none">-</span>
+            </td>
+            <td><span class="badge badge-ligne">{{ saisie.ligne }}</span></td>
+            <td>{{ saisie.reference }}</td>
+            <td>
+              <span class="badge" [class.badge-mp]="saisie.type === 'MP'" [class.badge-se]="saisie.type === 'SE'">
+                {{ saisie.type }}
+              </span>
+            </td>
+            <td class="text-center">{{ saisie.qteRebut }}</td>
+            <td class="text-center">{{ saisie.sortieLigne }}</td>
+            
+            <!-- Colonne Défauts -->
+            <td>{{ saisie.defauts }}</td>
+            
+            <!-- Colonne Statut -->
+            <td>
+              <span class="badge" 
+                    [class.badge-en-attente]="saisie.statut === 'en attente'"
+                    [class.badge-declare]="saisie.statut === 'déclaré'">
+                {{ saisie.statut }}
+              </span>
+            </td>
+            
+            <!-- Colonne Actions -->
+            <td class="actions-cell">
+              <!-- Bouton D rouge seulement si statut = "en attente" -->
+              <button
+                *ngIf="saisie.statut === 'en attente'"
+                class="btn-icon btn-statut-d"
+                (click)="updateStatutToDeclare(saisie)"
+                title="Marquer comme déclaré (D)"
+              >
+                🔴 D
+              </button>
+              
+              <!-- Bouton Supprimer -->
+              <button
+                class="btn-icon btn-delete"
+                (click)="deleteSaisie(saisie.id!)"
+                title="Supprimer"
+              >
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Message si aucun résultat après filtrage -->
+    <div *ngIf="filteredSaisies.length === 0 && saisies.length > 0" class="empty-filtered">
+      <p>🔍 Aucune saisie ne correspond à vos critères de filtrage</p>
+      <button class="btn btn-link" (click)="resetFilters()">
+        Afficher toutes les saisies ({{ totalSaisiesCount }})
+      </button>
+    </div>
+
+    <!-- Message si aucune saisie du tout -->
+    <div *ngIf="saisies.length === 0 && !isLoading" class="empty-state">
+      <p>📭 Aucune saisie de non-conformité pour le moment</p>
+    </div>
+
+    <!-- Loading spinner -->
+    <div *ngIf="isLoading" class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Chargement en cours...</p>
+    </div>
+  </div>
+</div>

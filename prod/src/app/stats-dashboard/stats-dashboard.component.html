@@ -1,0 +1,199 @@
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow">PROD SERAF · Direction Générale</div>
+      <h1>Statistiques </h1>
+      <div class="sub">Vue consolidée — Ouvriers &amp; et 4 services</div>
+    </div>
+    <div class="date-chip" *ngIf="data">
+      {{ data.periode.dateDebut }} → {{ data.periode.dateFin }}
+    </div>
+  </header>
+
+  <!-- ══════════ FILTER BAR ══════════ -->
+  <div class="filterbar">
+    <div class="filterbar-row">
+      <div class="field">
+        <label>Date début</label>
+        <input type="date" [(ngModel)]="dateDebut" (change)="load()">
+      </div>
+      <div class="field">
+        <label>Date fin</label>
+        <input type="date" [(ngModel)]="dateFin" (change)="load()">
+      </div>
+      <div class="field">
+        <label>Périodes rapides</label>
+        <div class="quickrange">
+          <button [class.active]="activeRange==='week'" (click)="setQuickRange('week')">Cette semaine</button>
+          <button [class.active]="activeRange==='month'" (click)="setQuickRange('month')">Ce mois</button>
+          <button [class.active]="activeRange==='quarter'" (click)="setQuickRange('quarter')">Ce trimestre</button>
+          <button [class.active]="activeRange==='year'" (click)="setQuickRange('year')">Cette année</button>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn-primary">Export Excel</button>
+    </div>
+
+    <div class="filterbar-row service-row">
+      <div class="field" style="width:100%;">
+        <label>Service</label>
+        <div class="service-pills">
+          <button *ngFor="let s of services"
+                  class="pill" [class.active]="selectedService===s"
+                  (click)="setService(s)">
+            {{ s === 'tous' ? 'Tous' : s }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="state-msg" *ngIf="loading">Chargement des statistiques…</div>
+  <div class="state-msg error" *ngIf="error">{{ error }}</div>
+
+  <ng-container *ngIf="data && !loading">
+
+    <!-- ══════════ KPIs ══════════ -->
+    <div class="kpis">
+      <div class="kpi">
+        <div class="label">Taux d'absentéisme</div>
+        <div class="value">{{ data.kpis.tauxAbsenteisme }}%</div>
+        <div class="delta">sur {{ data.kpis.effectifSuivi }} personnes suivies</div>
+      </div>
+      <div class="kpi r">
+        <div class="label">Absences non justifiées</div>
+        <div class="value">{{ data.kpis.absencesNonJustifiees }}</div>
+        <div class="delta">sur {{ data.kpis.totalJoursAbsent }} jours d'absence au total</div>
+      </div>
+      <div class="kpi g">
+        <div class="label">Jours de congé posés</div>
+        <div class="value">{{ data.kpis.joursCongePoses }}</div>
+        <div class="delta">{{ data.kpis.personnesEnConge }} personnes concernées</div>
+      </div>
+      <div class="kpi a">
+        <div class="label">En attente de justification</div>
+        <div class="value">{{ data.kpis.enAttenteJustification }}</div>
+        <div class="delta">à traiter par le RH</div>
+      </div>
+    </div>
+
+    <!-- ══════════ ROW 1: tendance + répartition par type ══════════ -->
+    <div class="grid2">
+      <div class="card">
+        <h3>Évolution de l'absentéisme</h3>
+        <div class="card-sub">Taux d'absence journalier — {{ data.periode.dateDebut }} au {{ data.periode.dateFin }}</div>
+        <svg class="trend-svg" viewBox="0 0 640 180" preserveAspectRatio="none" *ngIf="trendPointsArr.length">
+          <line class="trend-track" x1="0" y1="150" x2="640" y2="150"/>
+          <line class="trend-track" x1="0" y1="100" x2="640" y2="100"/>
+          <line class="trend-track" x1="0" y1="50" x2="640" y2="50"/>
+          <polyline fill="none" stroke="#04219e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+            [attr.points]="trendPolyline"/>
+          <g fill="#04219e">
+            <circle *ngFor="let p of trendPointsArr" [attr.cx]="p.x" [attr.cy]="p.y" r="4">
+              <title>{{ jourLabelCourt(p.jour) }} — {{ p.taux }}%</title>
+            </circle>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="10" fill="#5b657a">
+            <text *ngFor="let p of trendPointsArr" [attr.x]="p.x - 10" y="172">{{ jourLabelCourt(p.jour) }}</text>
+          </g>
+        </svg>
+        <div class="empty" *ngIf="!trendPointsArr.length">Pas assez de données sur cette période.</div>
+      </div>
+
+      <div class="card">
+        <h3>Répartition par type de statut</h3>
+        <div class="card-sub">{{ data.periode.nbJours }} jours analysés</div>
+        <div class="typebar">
+          <div class="row" *ngFor="let t of data.repartitionParType">
+            <div class="name">{{ t.label }}</div>
+            <div class="track">
+              <div class="fill" [style.width.%]="(t.count / maxTypeCount()) * 100" [style.background]="couleurType(t.statut)"></div>
+            </div>
+            <div class="n">{{ t.count }}</div>
+          </div>
+          <div class="empty" *ngIf="!data.repartitionParType.length">Aucune absence sur cette période.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ ROW 2: par groupe + récurrences ══════════ -->
+    <div class="grid2">
+      <div class="card">
+        <h3>Taux d'absence par groupe</h3>
+        <div class="card-sub">Ouvriers et 4 services employés</div>
+        <div class="svc-row" *ngFor="let g of data.repartitionParGroupe">
+          <div class="name">{{ g.groupe }}</div>
+          <div class="track">
+            <div class="fill" [style.width.%]="g.tauxAbsence"></div>
+            <div class="pct">{{ g.tauxAbsence }}%</div>
+          </div>
+        </div>
+        <div class="empty" *ngIf="!data.repartitionParGroupe.length">Aucune donnée.</div>
+      </div>
+
+      <div class="card">
+        <h3>Récurrences à surveiller</h3>
+        <div class="card-sub">Absences non justifiées répétées (2 occurrences ou plus)</div>
+        <table>
+          <thead><tr><th>Matricule</th><th>Nom</th><th>Groupe</th><th>Occ.</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let r of data.recurrences">
+              <td class="mat">{{ r.matricule }}</td>
+              <td>{{ r.nomPrenom }}</td>
+              <td>{{ r.groupe }}</td>
+              <td><span [class]="badgeClass(r.occurrences)">{{ r.occurrences }}×</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="empty" *ngIf="!data.recurrences.length">Aucune récurrence détectée sur cette période.</div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ══════════ RECHERCHE INDIVIDUELLE ══════════ -->
+  <div class="lookup-card">
+    <h3 style="font-family:'Space Grotesk',sans-serif;margin:0 0 4px;">Recherche individuelle</h3>
+    <div class="card-sub">Tape un matricule pour voir le détail sur la période sélectionnée</div>
+    <div class="lookup-search">
+      <input type="text" [(ngModel)]="matSearch" placeholder="Ex. 1472" (keyup.enter)="rechercherFiche()">
+      <button class="btn-primary" (click)="rechercherFiche()">Rechercher</button>
+    </div>
+
+    <div class="state-msg" *ngIf="ficheLoading">Chargement de la fiche…</div>
+    <div class="state-msg error" *ngIf="ficheError">{{ ficheError }}</div>
+
+    <div class="fiche show" *ngIf="ficheData && !ficheLoading">
+      <div class="fiche-head">
+        <div>
+          <div class="nom">{{ ficheData.nomPrenom }}</div>
+          <div class="meta">{{ ficheData.groupe }} · du {{ ficheData.periode.dateDebut }} au {{ ficheData.periode.dateFin }}</div>
+        </div>
+        <div class="mat-tag">MAT. {{ ficheData.matricule }}</div>
+      </div>
+
+      <div class="fiche-kpis">
+        <div class="mini g"><div class="n">{{ ficheData.resume.joursPresent }}</div><div class="l">Jours présent</div></div>
+        <div class="mini r"><div class="n">{{ ficheData.resume.joursAbsentNonJustifie }}</div><div class="l">Jours absent</div></div>
+        <div class="mini a"><div class="n">{{ ficheData.resume.joursJustifies }}</div><div class="l">Jours congé/maladie</div></div>
+        <div class="mini"><div class="n">{{ ficheData.resume.tauxPresence }}%</div><div class="l">Taux présence</div></div>
+      </div>
+
+      <div class="timeline-label">Détail jour par jour</div>
+      <div class="timeline">
+        <div *ngFor="let j of ficheData.timeline"
+             [class]="etatClass(j.etat)"
+             [attr.data-tip]="jourLabelCourt(j.jour) + ' — ' + etatLabel(j.etat)">
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>Présent</span>
+        <span><i style="background:var(--red)"></i>Absent non justifié</span>
+        <span><i style="background:#c9d3f7"></i>Congé</span>
+        <span><i style="background:#f7c98e"></i>Maladie</span>
+      </div>
+    </div>
+  </div>
+
+</div>

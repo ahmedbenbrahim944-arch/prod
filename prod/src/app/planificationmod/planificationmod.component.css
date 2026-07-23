@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================== LAYOUT PRINCIPAL ==================== */
+.full-screen-layout {
+  min-height: 100vh;
+  background: #f8fafc !important;
+}
+
+/* ==================== TABLEAU ==================== */
+.week-planning-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  background: #ffffff !important;
+  font-size: 0.813rem !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* En-têtes */
+.week-planning-table th {
+  font-weight: 600;
+  border: 1px solid #e2e8f0 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 0.625rem !important;
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  text-align: center;
+}
+
+/* Cellules */
+.week-planning-table td {
+  padding: 4px 6px !important;
+  border: none !important;
+  vertical-align: middle;
+  min-width: 90px !important;
+  font-size: 1rem !important;
+  background: transparent !important;
+  text-align: center;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+  height: 36px !important;
+  max-height: 36px !important;
+  overflow: hidden;
+}
+
+/* Colonne RÉFÉRENCE sticky */
+.week-planning-table .sticky-cell {
+  background: #fcf8f8 !important;
+  font-weight: 700;
+  font-size: 0.82rem !important;
+  color: #091fe8 !important;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  border-right: 2px solid #e2e8f0 !important;
+  padding: 3px 4px !important;
+  max-width: 160px !important;
+  min-width: 140px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* Cellule C (lecture seule) — fond jaune très léger */
+.cell-c-readonly {
+  background: #fffbeb !important;
+  cursor: default !important;
+}
+
+/* Cellule M (editable) — fond violet très léger au hover */
+.cell-m-editable {
+  background: transparent !important;
+  cursor: pointer !important;
+  transition: background-color 0.15s ease;
+}
+
+.cell-m-editable:hover {
+  background: #f5f3ff !important;
+}
+
+/* Input M */
+.week-planning-table input {
+  font-size: 1rem !important;
+  font-weight: 600;
+  padding: 3px 5px !important;
+  background: #ffffff !important;
+  border: 2px solid #8b5cf6 !important;
+  border-radius: 4px;
+  color: #7c3aed !important;
+  text-align: center;
+  width: 100%;
+  transition: all 0.2s ease;
+  min-height: 24px !important;
+  max-height: 32px !important;
+}
+
+.week-planning-table input:focus {
+  background: #faf5ff !important;
+  border-color: #7c3aed !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Hover lignes */
+.week-planning-table tbody tr:hover td {
+  background: #faf5ff !important;
+}
+
+/* Hauteur fixe des lignes */
+.week-planning-table tbody tr {
+  height: 36px !important;
+  max-height: 36px !important;
+}
+
+/* En-tête jours */
+.day-header {
+  font-size: 0.625rem !important;
+  font-weight: 600 !important;
+  padding: 6px 4px !important;
+  color: white !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+}
+
+/* Titres en vert */
+h1 {
+  color: #57E809 !important;
+}
+
+.text-cyan-400 {
+  color: #57E809 !important;
+}
+
+/* ==================== CARTES DE LIGNES ==================== */
+.line-card-large {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.line-card-large:hover {
+  transform: scale(1.02);
+  z-index: 5;
+}
+
+/* ==================== COULEURS VALEURS ==================== */
+
+/* C planifié — orange/ambre */
+.c-value {
+  color: #d97706 !important;
+  font-weight: 700 !important;
+}
+
+/* M modifié — violet */
+.m-value {
+  color: #7c3aed !important;
+  font-weight: 700 !important;
+}
+
+/* Totaux */
+.total-c {
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
+.total-m {
+  color: #7c3aed !important;
+  font-weight: 700 !important;
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 2px 3px !important;
+    font-size: 0.75rem !important;
+    height: 28px !important;
+  }
+
+  .week-planning-table input {
+    font-size: 0.75rem !important;
+    padding: 2px 3px !important;
+    min-height: 22px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .week-planning-table th,
+  .week-planning-table td {
+    padding: 2px 2px !important;
+    font-size: 0.625rem !important;
+    height: 24px !important;
+  }
+
+  .week-planning-table input {
+    font-size: 0.625rem !important;
+    padding: 1px 2px !important;
+    min-height: 20px !important;
+  }
+}
+
+/* Support tactile */
+@media (pointer: coarse) {
+  .week-planning-table input {
+    min-height: 36px !important;
+  }
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(15px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ==================== GRILLE 4 COLONNES CARTES ==================== */
+.grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr) !important;
+}
+
+@media (max-width: 1280px) {
+  .grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-4 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Séparateur visuel entre groupes de lignes */
+.week-planning-table tbody tr:nth-child(5n) td {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 6px !important;
+}
+
+/* Colonne C sticky header */
+.week-planning-table th.sticky-cell {
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  padding: 8px 6px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+  color: white !important;
+  border-right: 2px solid #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+}
+
+/* Impression : masquer tout */
+@media print {
+  .fixed, .modal, [class*="z-50"] {
+    display: none !important;
+  }
+}

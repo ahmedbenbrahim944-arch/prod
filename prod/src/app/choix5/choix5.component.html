@@ -1,0 +1,110 @@
+<!-- ════════════════════════════════════════════════════════════
+     CHEF SECTEUR — CHOIX5 (MÊME STYLE QUE CHOIX)
+════════════════════════════════════════════════════════════ -->
+
+<!-- ── PAGE D'ACCUEIL ── -->
+<div class="pdp-home fade-in">
+
+  <!-- ── TOP BAR (BLEU) ── -->
+  <div class="top-bar">
+    <span class="brand-title">
+      <span class="prod-part">HR</span>&nbsp;<span class="seraf-part">DIRECTOR</span>
+    </span>
+    <nav class="top-nav">
+      <button class="top-nav-pill active">Accueil</button>
+      <button class="top-nav-pill" routerLink="/stat">Statistique</button>
+      <button class="top-nav-pill" routerLink="/Prod2">Planning</button>
+      <button class="top-nav-pill" routerLink="/magasin">Extraction</button>
+    </nav>
+    <button class="logout-btn" (click)="retourLogin()">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+      </svg>
+      Déconnexion
+    </button>
+  </div>
+
+  <!-- ── RANG 1 : 2 boutons ── -->
+  <div class="modules-row modules-row-2">
+    <!-- 1. Statistique -->
+    <button class="mod-btn" routerLink="/statP">
+      <div class="mod-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="mod-label">Statistique</div>
+      <div class="mod-sub"></div>
+    </button>
+
+    <!-- 2. Ouvrier -->
+    <button class="mod-btn" routerLink="/ouvrier">
+      <div class="mod-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke-width="2"/>
+          <line x1="16" y1="2" x2="16" y2="6" stroke-width="2"/>
+          <line x1="8" y1="2" x2="8" y2="6" stroke-width="2"/>
+          <line x1="3" y1="10" x2="21" y2="10" stroke-width="2"/>
+        </svg>
+      </div>
+      <div class="mod-label">Ouvrier</div>
+      <div class="mod-sub"></div>
+    </button>
+  </div>
+
+  <!-- ── RANG 2 : 3 boutons ── -->
+  <div class="modules-row modules-row-3">
+    <!-- 3. Vérifier Status -->
+    <button class="mod-btn" routerLink="/verf">
+      <div class="mod-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <ellipse cx="12" cy="5" rx="9" ry="3" stroke-width="2"/>
+          <path stroke-width="2" d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+          <path stroke-width="2" d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+      </div>
+      <div class="mod-label">Vérifier Status</div>
+      <div class="mod-sub"></div>
+    </button>
+
+    <!-- 4. Rapport des Phases -->
+    <button class="mod-btn" routerLink="/pha">
+      <div class="mod-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="mod-label">Rapport des Phases</div>
+      <div class="mod-sub"></div>
+    </button>
+
+
+    <!-- 5. Sélection -->
+    <button class="mod-btn" routerLink="/sele">
+      <div class="mod-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+      </div>
+      <div class="mod-label">Sélection</div>
+      <div class="mod-sub"></div>
+    </button>
+  </div>
+  <button class="mod-btn" routerLink="/Statuts-rh">
+      <div class="mod-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="mod-label">Corriger Statuts</div>
+      <div class="mod-sub"></div>
+    </button>
+
+
+  
+</div>

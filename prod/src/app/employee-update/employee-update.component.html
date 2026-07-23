@@ -1,0 +1,182 @@
+<!-- employee-update.component.html — Style Seraf Tunisie -->
+<div class="page-wrapper">
+
+  <!-- HEADER VERT SERAF -->
+  <header class="page-header">
+    <div class="header-left">
+      <div class="header-icon">✏️</div>
+      <div>
+        <div class="page-title">Modification Employés</div>
+        <div class="page-subtitle">Sélectionnez un service pour modifier les données</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button
+        class="btn-export-all"
+        (click)="exportAllToExcel()"
+        [disabled]="loadingExportAll"
+        title="Exporter tous les employés de tous les services en un seul fichier Excel"
+      >
+        <span *ngIf="!loadingExportAll">📊 Export Excel (Tous services)</span>
+        <span *ngIf="loadingExportAll">⏳ Export en cours...</span>
+      </button>
+      <div class="header-logo">SERAF Tunisie</div>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- Message d'erreur export global -->
+    <div class="alert alert-error" *ngIf="exportAllError">
+      {{ exportAllError }}
+    </div>
+
+    <div class="services-grid">
+
+      <div
+        *ngFor="let service of services"
+        class="service-card"
+        [class.active]="activeService === service.key"
+      >
+        <!-- EN-TÊTE CLIQUABLE -->
+        <div class="service-header" (click)="toggleService(service.key)">
+          <div class="service-left">
+            <div class="service-icon-wrap">{{ service.icon }}</div>
+            <span class="service-label">{{ service.label }}</span>
+          </div>
+          <div class="service-right">
+            <span class="service-badge">Ouvert</span>
+            <span class="toggle-icon" [class.rotated]="activeService === service.key">›</span>
+          </div>
+        </div>
+
+        <!-- CORPS DU FORMULAIRE -->
+        <div class="service-body" [class.open]="activeService === service.key">
+          <div class="form-wrapper" *ngIf="activeService === service.key">
+
+            <!-- LIGNE : Matricule + NomPrenom -->
+            <div class="matricule-row">
+              <div class="field-group">
+                <label class="field-label">Matricule</label>
+                <div class="input-with-loader">
+                  <input
+                    type="text"
+                    class="field-input"
+                    placeholder="Ex: 277"
+                    [(ngModel)]="serviceState[service.key].matriculeInput"
+                    (ngModelChange)="onMatriculeChange(service.key, $event)"
+                  />
+                  <span class="loader-spin" *ngIf="serviceState[service.key].loadingMatricule">⏳</span>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Nom & Prénom</label>
+                <div class="nom-display" [class.found]="serviceState[service.key].nomPrenom">
+                  <span *ngIf="serviceState[service.key].nomPrenom">
+                    {{ serviceState[service.key].nomPrenom }}
+                  </span>
+                  <span class="nom-placeholder"
+                    *ngIf="!serviceState[service.key].nomPrenom && !serviceState[service.key].notFound">
+                    Saisir le matricule...
+                  </span>
+                  <span class="nom-notfound" *ngIf="serviceState[service.key].notFound">
+                    ⚠️ Matricule introuvable
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FORMULAIRE (visible si employé trouvé) -->
+            <div class="edit-form" *ngIf="serviceState[service.key].selectedEmployee">
+              <div class="form-divider"><span>Données à modifier</span></div>
+
+              <div class="fields-grid">
+
+                <div class="field-group">
+                  <label class="field-label">Date de naissance</label>
+                  <input type="date" class="field-input"
+                    [(ngModel)]="serviceState[service.key].form.dateNaissance" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">CIN</label>
+                  <input type="text" class="field-input" placeholder="Ex: 09123456"
+                    [(ngModel)]="serviceState[service.key].form.cin" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Numéro Tél</label>
+                  <input type="text" class="field-input" placeholder="Ex: 20123456"
+                    [(ngModel)]="serviceState[service.key].form.numTel" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Date d'embauche</label>
+                  <input type="date" class="field-input"
+                    [(ngModel)]="serviceState[service.key].form.dateEmbauche" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Situation familiale</label>
+                  <select class="field-input field-select"
+                    [(ngModel)]="serviceState[service.key].form.situationFamiliale">
+                    <option value="">-- Choisir --</option>
+                    <option *ngFor="let s of situations" [value]="s">{{ s }}</option>
+                  </select>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Bus</label>
+                  <input type="text" class="field-input" placeholder="Ex: Bus A"
+                    [(ngModel)]="serviceState[service.key].form.bus" />
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label">Lieu</label>
+                  <input type="text" class="field-input" placeholder="Ex: Enfidha"
+                    [(ngModel)]="serviceState[service.key].form.lieu" />
+                </div>
+
+                <!-- SERVICE AUTO-REMPLI EN READONLY -->
+                <div class="field-group">
+                  <label class="field-label">Service</label>
+                  <input
+                    type="text"
+                    class="field-input"
+                    [value]="service.label"
+                    readonly
+                  />
+                </div>
+
+              </div>
+
+              <!-- Messages -->
+              <div class="alert alert-success" *ngIf="serviceState[service.key].success">
+                {{ serviceState[service.key].success }}
+              </div>
+              <div class="alert alert-error" *ngIf="serviceState[service.key].error">
+                {{ serviceState[service.key].error }}
+              </div>
+
+              <!-- Bouton -->
+              <div class="form-actions">
+                <button
+                  class="btn-save"
+                  [disabled]="serviceState[service.key].loadingSave"
+                  (click)="onSubmit(service.key)"
+                >
+                  <span *ngIf="!serviceState[service.key].loadingSave">💾 ENREGISTRER</span>
+                  <span *ngIf="serviceState[service.key].loadingSave">⏳ ENREGISTREMENT...</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

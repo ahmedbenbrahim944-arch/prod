@@ -1,0 +1,106 @@
+// src/statut/statut.controller.ts
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  HttpCode,
+  HttpStatus,
+  Put,      // 👈 Ajouter
+  Param,    // 👈 Ajouter
+} from '@nestjs/common';
+import { StatutService } from './statut.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateStatutDto } from './dto/update-statut.dto';
+import { GetStatutByDateDto } from './dto/get-statut-by-date.dto';
+import { GetStatutByMatriculeDateDto } from './dto/get-statut-by-matricule-date.dto';
+import { UpdateDocteurDto } from './dto/update-docteur.dto'; // 👈 Nouveau DTO
+
+@Controller('statut')
+export class StatutController {
+  constructor(private readonly statutService: StatutService) {}
+
+  /**
+   * Mettre à jour le statut d'un ouvrier pour une date
+   * POST /statut
+   */
+  @Post()
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  @HttpCode(HttpStatus.OK)
+  async updateStatut(@Body() updateStatutDto: UpdateStatutDto) {
+    return this.statutService.updateStatut(updateStatutDto);
+  }
+
+  /**
+   * Obtenir tous les statuts pour une date donnée
+   * GET /statut/par-date?date=2026-01-05
+   */
+  @Get('par-date')
+  @UseGuards(JwtAuthGuard)
+  async getStatutsByDate(@Query() getStatutByDateDto: GetStatutByDateDto) {
+    return this.statutService.getStatutsByDate(getStatutByDateDto);
+  }
+
+  /**
+   * Obtenir les ouvriers non-saisis avec leurs statuts
+   * GET /statut/ouvriers-non-saisis?date=2026-01-05
+   */
+  @Get('ouvriers-non-saisis')
+  @UseGuards(JwtAuthGuard)
+  async getOuvriersNonSaisis(@Query('date') date: string) {
+    return this.statutService.getOuvriersNonSaisisParDate(date);
+  }
+
+  /**
+   * Rechercher le statut d'un ouvrier par matricule + date
+   * GET /statut/ouvrier?matricule=1234&date=2026-01-05
+   */
+  @Get('ouvrier')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
+  async getStatutOuvrier(
+    @Query() query: GetStatutByMatriculeDateDto,
+  ) {
+    return this.statutService.getStatutOuvrierParMatriculeEtDate(
+      query.matricule,
+      query.date,
+    );
+  }
+
+  /**
+   * Obtenir les absents pour une date
+   * GET /statut/absents?date=2026-01-05
+   */
+  @Get('absents')
+  @UseGuards(JwtAuthGuard)
+  async getAbsentsByDate(@Query('date') date: string) {
+    return this.statutService.getAbsentsByDate(date);
+  }
+
+  /**
+   * 🆕 Mettre à jour le nom du docteur pour un absent
+   * PUT /statut/absents/:id/docteur
+   */
+  @Put('absents/:id/docteur')
+  @UseGuards(JwtAuthGuard)
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async updateNomDocteur(
+    @Param('id') id: string,
+    @Body() updateDocteurDto: UpdateDocteurDto,
+  ) {
+    return this.statutService.updateNomDocteur(+id, updateDocteurDto.nomDocteur);
+  }
+  @Get('absents/periode')
+@UseGuards(JwtAuthGuard)
+async getAbsentsByPeriode(
+  @Query('dateDebut') dateDebut: string,
+  @Query('dateFin') dateFin: string,
+) {
+  return this.statutService.getAbsentsByPeriode(dateDebut, dateFin);
+}
+}

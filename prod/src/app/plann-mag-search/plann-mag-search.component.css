@@ -1,0 +1,18 @@
+/* src/app/plann-mag-search/plann-mag-search.component.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.3s ease-out forwards; }
+
+tbody tr { transition: background-color 0.15s ease; }
+
+.font-mono { font-family: 'Courier New', monospace; }
+
+@media print {
+  .no-print { display: none !important; }
+}

@@ -1,0 +1,202 @@
+<!-- statistique-selection.component.html -->
+
+<div class="page-container">
+
+  <!-- ── HEADER ──────────────────────────────────────────────────────────── -->
+  <div class="header">
+    <h1>Statistiques Sélection</h1>
+    <p>Analyse des performances par période</p>
+  </div>
+
+  <!-- ── FILTRE DATES ─────────────────────────────────────────────────────── -->
+  <div class="card filtre-card">
+    <h2>📅 Sélectionner la période</h2>
+    <div class="filtre-row">
+      <div class="field">
+        <label>Date début</label>
+        <input type="date" [(ngModel)]="startDate" [max]="endDate" />
+      </div>
+      <div class="field">
+        <label>Date fin</label>
+        <input type="date" [(ngModel)]="endDate" [min]="startDate" />
+      </div>
+      <button
+        class="btn-primary"
+        (click)="chargerStats()"
+        [disabled]="loading || !startDate || !endDate"
+      >
+        <span *ngIf="loading" class="spinner">⟳</span>
+        {{ loading ? 'Chargement...' : 'Afficher les stats' }}
+      </button>
+      <button *ngIf="stats" class="btn-secondary" (click)="reinitialiser()">
+        Réinitialiser
+      </button>
+    </div>
+    <p *ngIf="erreur" class="erreur">⚠️ {{ erreur }}</p>
+  </div>
+
+  <!-- ── PAS DE DONNÉES ───────────────────────────────────────────────────── -->
+  <div *ngIf="stats && stats.totalPlannings === 0" class="card empty-state">
+    <div class="empty-icon">📭</div>
+    <p>Aucun planning trouvé pour cette période.</p>
+  </div>
+
+  <!-- ── CONTENU STATS ────────────────────────────────────────────────────── -->
+  <div *ngIf="stats && stats.global">
+
+    <!-- CARTES GLOBALES -->
+    <h2 class="section-title">Vue globale</h2>
+    <div class="cards-grid">
+
+      <div class="stat-card">
+        <span class="stat-icon">👷</span>
+        <p class="stat-value">{{ stats.global.totalOuvriers }}</p>
+        <p class="stat-label">Ouvriers</p>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">📦</span>
+        <p class="stat-value">{{ stats.global.totalQteSelection | number }}</p>
+        <p class="stat-label">Qté sélectionnée</p>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">🎯</span>
+        <p class="stat-value">{{ stats.global.totalQteASelectionne | number }}</p>
+        <p class="stat-label">Qté à sélectionner</p>
+      </div>
+
+      <div class="stat-card">
+        <span class="stat-icon">⏱️</span>
+        <p class="stat-value">{{ stats.global.totalHeures | number: '1.1-2' }}h</p>
+        <p class="stat-label">Heures travaillées</p>
+      </div>
+
+      <div class="stat-card rendement-card" [ngClass]="getRendementClass(stats.global.rendementMoyen)">
+        <span class="stat-icon">📊</span>
+        <p class="stat-value">{{ stats.global.rendementMoyen | number: '1.1-2' }}%</p>
+        <p class="stat-label">Rendement moyen</p>
+      </div>
+
+    </div>
+
+    <!-- TABLEAU PAR OUVRIER -->
+    <div class="card table-card">
+      <div class="table-header">
+        <h2>👷 Statistiques par ouvrier</h2>
+        <span class="badge">{{ stats.parOuvrier.length }} ouvriers</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Matricule</th>
+              <th>Nom & Prénom</th>
+              <th class="text-right">Qté sélectionnée</th>
+              <th class="text-right">Qté à sélectionner</th>
+              <th class="text-right">Heures</th>
+              <th class="text-right">Plannings</th>
+              <th class="text-right">Rendement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let o of stats.parOuvrier">
+              <td class="muted">{{ o.matricule }}</td>
+              <td class="bold">{{ o.nomPrenom }}</td>
+              <td class="text-right">{{ o.totalQteSelection | number }}</td>
+              <td class="text-right muted">{{ o.totalQteASelectionne | number }}</td>
+              <td class="text-right">{{ o.totalHeures | number: '1.1-2' }}h</td>
+              <td class="text-right muted">{{ o.totalPlannings }}</td>
+              <td class="text-right">
+                <span class="rendement-badge" [ngClass]="getBadgeClass(o.rendementMoyen)">
+                  {{ o.rendementMoyen | number: '1.1-2' }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TABLEAU PAR JOUR -->
+    <div class="card table-card">
+      <div class="table-header">
+        <h2>📅 Statistiques par jour</h2>
+        <span class="badge">{{ stats.parJour.length }} jours</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th class="text-right">Ouvriers</th>
+              <th class="text-right">Qté sélectionnée</th>
+              <th class="text-right">Qté à sélectionner</th>
+              <th class="text-right">Heures</th>
+              <th class="text-right">Rendement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let j of stats.parJour">
+              <td class="bold">{{ j.date | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-right">{{ j.totalOuvriers }}</td>
+              <td class="text-right">{{ j.totalQteSelection | number }}</td>
+              <td class="text-right muted">{{ j.totalQteASelectionne | number }}</td>
+              <td class="text-right">{{ j.totalHeures | number: '1.1-2' }}h</td>
+              <td class="text-right">
+                <span class="rendement-badge" [ngClass]="getBadgeClass(j.rendementMoyen)">
+                  {{ j.rendementMoyen | number: '1.1-2' }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TABLEAU PAR RÉFÉRENCE -->
+    <div class="card table-card">
+      <div class="table-header">
+        <h2>🏷️ Statistiques par référence</h2>
+        <span class="badge">{{ stats.parReference.length }} références</span>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Ligne</th>
+              <th>Type</th>
+              <th class="text-right">Ouvriers</th>
+              <th class="text-right">Qté sélectionnée</th>
+              <th class="text-right">Qté à sélectionner</th>
+              <th class="text-right">Heures</th>
+              <th class="text-right">Rendement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of stats.parReference">
+              <td class="bold">{{ r.reference }}</td>
+              <td class="muted">{{ r.ligneRef }}</td>
+              <td>
+                <span class="type-badge" [ngClass]="r.typeReference === 'product' ? 'type-product' : 'type-matiere'">
+                  {{ r.typeReference === 'product' ? 'Produit' : 'Matière' }}
+                </span>
+              </td>
+              <td class="text-right">{{ r.totalOuvriers }}</td>
+              <td class="text-right">{{ r.totalQteSelection | number }}</td>
+              <td class="text-right muted">{{ r.totalQteASelectionne | number }}</td>
+              <td class="text-right">{{ r.totalHeures | number: '1.1-2' }}h</td>
+              <td class="text-right">
+                <span class="rendement-badge" [ngClass]="getBadgeClass(r.rendementMoyen)">
+                  {{ r.rendementMoyen | number: '1.1-2' }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
