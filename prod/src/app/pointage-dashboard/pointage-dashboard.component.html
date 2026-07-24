@@ -87,10 +87,10 @@
       </div>
     </div>
 
-    <!-- ✅ NOUVEAU — anneaux par service (Maintenance / Magasin / Qualité) -->
+    <!-- ✅ MODIFIÉ — anneaux par (service, poste) pour les 5 secteurs -->
     <ng-container *ngIf="!hasLimitedAccess">
       <div class="ring-block ring-block-service" *ngFor="let r of serviceRings">
-        <p class="ring-title">{{ r.label }} — Employé</p>
+        <p class="ring-title">{{ r.label }}</p>
         <div class="ring-block-row">
           <div class="ring-wrap">
             <div class="ring"
@@ -175,6 +175,22 @@
         Qualité
       </button>
       <button class="service-pill"
+        *ngIf="!hasLimitedAccess"
+        [class.active]="selectedService === 'Sélection'"
+        (click)="selectService('Sélection')"
+        title="Sélection">
+        <i class="ti ti-list-check"></i>
+        Sélection
+      </button>
+      <button class="service-pill"
+        *ngIf="!hasLimitedAccess"
+        [class.active]="selectedService === 'Team Production'"
+        (click)="selectService('Team Production')"
+        title="Team Production">
+        <i class="ti ti-users-group"></i>
+        Team Production
+      </button>
+      <button class="service-pill"
         [class.active]="ouvrierMode"
         (click)="selectOuvrier()"
         title="Ouvrier">
@@ -184,17 +200,21 @@
     </div>
   </div>
 
-  <!-- ── Sous-boutons poste (visibles seulement en mode Ouvrier) ── -->
-  <div class="poste-filter" *ngIf="ouvrierMode">
+  <!-- ── Sous-boutons poste (mode Ouvrier OU secteur avec poste) ── -->
+  <div class="poste-filter" *ngIf="ouvrierMode || (selectedService && servicesAvecPoste.includes(selectedService))">
     <button class="poste-btn"
       *ngFor="let p of postes"
-      [class.active]="selectedPoste === p"
-      (click)="selectPoste(p)">
+      [class.active]="(ouvrierMode ? selectedPoste : selectedServicePoste) === p"
+      (click)="ouvrierMode ? selectPoste(p) : selectServicePoste(p)">
       {{ p }}
     </button>
-    <div *ngIf="selectedPoste" class="service-banner">
+    <div *ngIf="ouvrierMode && selectedPoste" class="service-banner">
       Poste : <strong>{{ selectedPoste }}</strong>
       <button class="btn-clear-service" (click)="selectPoste(selectedPoste)">✕</button>
+    </div>
+    <div *ngIf="!ouvrierMode && selectedServicePoste" class="service-banner">
+      Poste : <strong>{{ selectedServicePoste }}</strong>
+      <button class="btn-clear-service" (click)="selectServicePoste(selectedServicePoste)">✕</button>
     </div>
   </div>
 

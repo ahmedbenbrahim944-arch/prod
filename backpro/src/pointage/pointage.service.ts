@@ -1,6 +1,6 @@
 import { Injectable, Logger , NotFoundException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Pointage } from './entities/pointage.entity';
 import { Ouvrier } from '../ouvrier/entities/ouvrier.entity';
 import { Badge } from 'src/autosaisie/entities/badge.entity';
@@ -8,6 +8,19 @@ import { Employee } from '../employee/entities/employee.entity';
 import { StatutManuelService } from '../statut-manuel/statut-manuel.service'; // ✅ NOUVEAU
 import { TypeStatutManuel, StatutManuel } from 'src/statut-manuel/entites/statut-manuel.entity';
 import { Affectation } from 'src/affectation/entities/affectation.entity';
+import { Maintenance } from '../secteurs/maintenance/maintenance.entity'; // ✅ NOUVEAU
+import { Magasin } from '../secteurs/magasin/magasin.entity'; // ✅ NOUVEAU
+import { Qualite } from '../secteurs/qualite/qualite.entity'; // ✅ NOUVEAU
+import { Selection } from '../secteurs/selection/selection.entity'; // ✅ NOUVEAU
+import { TeamProduction } from '../secteurs/team-production/team-production.entity'; // ✅ NOUVEAU
+
+// ✅ NOUVEAU — forme unifiée d'une personne issue d'un des 5 secteurs
+interface PersonneSecteur {
+  matricule: string;
+  nomPrenom: string;
+  service: string;
+  poste?: string;
+}
 
 type CategorieAbsence = 'conge' | 'maladie' | 'injustifiee' | 'autre' | 'sans_motif';
 
@@ -95,6 +108,7 @@ export interface PresenceEmployee {
   timbratrice?: string | null;
   statut: StatutPresence;
   commentaire?: string | null; // ✅ NOUVEAU
+  poste?: string | null; // ✅ NOUVEAU — '1ere poste' | '2eme poste', absent pour Administratif
 }
 export interface RecapPosteItem {
   matricule: number;
@@ -131,13 +145,6 @@ export interface RecapPersonneJours {
 export class PointageService {
   private readonly logger = new Logger(PointageService.name);
 
-  private readonly servicesAutorises = [
-    'Administratif',
-    'Maintenance',
-    'Magasin',
-    'Qualité',
-  ];
-
   constructor(
     @InjectRepository(Pointage)
     private pointageRepo: Repository<Pointage>,
@@ -146,11 +153,103 @@ export class PointageService {
     @InjectRepository(Badge)
     private badgeRepo: Repository<Badge>,
     @InjectRepository(Employee)
-    private employeeRepo: Repository<Employee>,
+    private employeeRepo: Repository<Employee>, // ✅ ne sert plus que pour 'Administratif'
      @InjectRepository(Affectation) // ✅ NOUVEAU
     private affectationRepo: Repository<Affectation>,
+    @InjectRepository(Maintenance) // ✅ NOUVEAU
+    private maintenanceRepo: Repository<Maintenance>,
+    @InjectRepository(Magasin) // ✅ NOUVEAU
+    private magasinRepo: Repository<Magasin>,
+    @InjectRepository(Qualite) // ✅ NOUVEAU
+    private qualiteRepo: Repository<Qualite>,
+    @InjectRepository(Selection) // ✅ NOUVEAU
+    private selectionRepo: Repository<Selection>,
+    @InjectRepository(TeamProduction) // ✅ NOUVEAU
+    private teamProductionRepo: Repository<TeamProduction>,
     private statutManuelService: StatutManuelService, // ✅ NOUVEAU
   ) {}
+
+  // ════════════════════════════════════════════════════════════════
+  // ✅ NOUVEAU — Helpers centralisant l'accès aux 5 secteurs + Administratif
+  // ════════════════════════════════════════════════════════════════
+
+  // Récupère toutes les personnes des 5 secteurs + Administratif (Employee)
+  private async getToutesPersonnesSecteurs(): Promise<PersonneSecteur[]> {
+    const [administratifs, maintenance, magasin, qualite, selection, teamProduction] =
+      await Promise.all([
+        this.employeeRepo.find({ where: { service: 'Administratif' } }),
+        this.maintenanceRepo.find(),
+        this.magasinRepo.find(),
+        this.qualiteRepo.find(),
+        this.selectionRepo.find(),
+        this.teamProductionRepo.find(),
+      ]);
+
+    return [
+      ...administratifs.map((e) => ({
+        matricule: e.matricule,
+        nomPrenom: e.nomPrenom,
+        service: 'Administratif',
+      })),
+      ...maintenance.map((m) => ({
+        matricule: m.matricule,
+        nomPrenom: m.nomPrenom,
+        service: 'Maintenance',
+        poste: m.poste,
+      })),
+      ...magasin.map((m) => ({
+        matricule: m.matricule,
+        nomPrenom: m.nomPrenom,
+        service: 'Magasin',
+        poste: m.poste,
+      })),
+      ...qualite.map((q) => ({
+        matricule: q.matricule,
+        nomPrenom: q.nomPrenom,
+        service: 'Qualité',
+        poste: q.poste,
+      })),
+      ...selection.map((s) => ({
+        matricule: s.matricule,
+        nomPrenom: s.nomPrenom,
+        service: 'Sélection',
+        poste: s.poste,
+      })),
+      ...teamProduction.map((t) => ({
+        matricule: t.matricule,
+        nomPrenom: t.nomPrenom,
+        service: 'Team Production',
+        poste: t.poste,
+      })),
+    ];
+  }
+
+  // Cherche une personne par matricule dans Administratif puis les 5 secteurs
+  private async chercherPersonneSecteurParMatricule(
+    matricule: string,
+  ): Promise<{ nomPrenom: string; service: string } | null> {
+    const administratif = await this.employeeRepo.findOne({
+      where: { matricule, service: 'Administratif' },
+    });
+    if (administratif) return { nomPrenom: administratif.nomPrenom, service: 'Administratif' };
+
+    const maintenance = await this.maintenanceRepo.findOne({ where: { matricule } });
+    if (maintenance) return { nomPrenom: maintenance.nomPrenom, service: 'Maintenance' };
+
+    const magasin = await this.magasinRepo.findOne({ where: { matricule } });
+    if (magasin) return { nomPrenom: magasin.nomPrenom, service: 'Magasin' };
+
+    const qualite = await this.qualiteRepo.findOne({ where: { matricule } });
+    if (qualite) return { nomPrenom: qualite.nomPrenom, service: 'Qualité' };
+
+    const selection = await this.selectionRepo.findOne({ where: { matricule } });
+    if (selection) return { nomPrenom: selection.nomPrenom, service: 'Sélection' };
+
+    const teamProduction = await this.teamProductionRepo.findOne({ where: { matricule } });
+    if (teamProduction) return { nomPrenom: teamProduction.nomPrenom, service: 'Team Production' };
+
+    return null;
+  }
 
   // ─── Reçoit les données d'Andrea ──────────────────────────────
   async importPointages(rows: any[]): Promise<{ imported: number; duplicates: number; ignored: number }> {
@@ -175,17 +274,19 @@ export class PointageService {
           nomPrenom = badgeFound.ouvrier.nomPrenom;
           this.logger.log(`✅ Badge ${row.badge} → Ouvrier ${matricule} (${nomPrenom})`);
         } else if (badgeFound) {
-          // ── Cas 2 : Badge trouvé mais pas d'Ouvrier lié → on tente Employee ──
-          const employeeFound = await this.employeeRepo.findOne({
-            where: { matricule: String(badgeFound.matricule) },
-          });
+          // ── Cas 2 : Badge trouvé mais pas d'Ouvrier lié → on tente Administratif/secteurs ──
+          const personneFound = await this.chercherPersonneSecteurParMatricule(
+            String(badgeFound.matricule),
+          );
 
-          if (employeeFound) {
+          if (personneFound) {
             matricule = badgeFound.matricule;
-            nomPrenom = employeeFound.nomPrenom;
-            this.logger.log(`✅ Badge ${row.badge} → Employee ${matricule} (${nomPrenom})`);
+            nomPrenom = personneFound.nomPrenom;
+            this.logger.log(
+              `✅ Badge ${row.badge} → ${personneFound.service} ${matricule} (${nomPrenom})`,
+            );
           } else {
-            this.logger.warn(`⚠️ Badge ${row.badge} trouvé mais aucun Ouvrier/Employee lié`);
+            this.logger.warn(`⚠️ Badge ${row.badge} trouvé mais aucun Ouvrier/secteur lié`);
             matricule = 0;
             nomPrenom = 'Inconnu';
           }
@@ -387,10 +488,7 @@ export class PointageService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const employees = await this.employeeRepo.find({
-      where: { service: In(this.servicesAutorises) },
-      order: { nomPrenom: 'ASC' },
-    });
+    const personnes = await this.getToutesPersonnesSecteurs(); // ✅ Administratif + 5 secteurs
 
     const pointagesJour = await this.pointageRepo
       .createQueryBuilder('p')
@@ -404,7 +502,7 @@ export class PointageService {
     const absents: PresenceEmployee[] = [];
     const enConge: PresenceEmployee[] = []; // ✅ NOUVEAU
 
-    for (const e of employees) {
+    for (const e of personnes) {
       const matriculeNum = parseInt(e.matricule, 10);
       const manuel = statutsActifs.get(e.matricule);
 
@@ -426,6 +524,7 @@ export class PointageService {
           timbratrice: pointage?.timbratrice || null,
           statut: 'present',
           commentaire: null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       } else if (estStatutPresentManuel(manuel?.statut)) {
         // ✅ présent manuel (présent saisi manuellement OU badge oublié)
@@ -438,6 +537,7 @@ export class PointageService {
           timbratrice: null,
           statut: 'present',
           commentaire: manuel?.commentaire || null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       } else if (estStatutJustifie(manuel?.statut)) {
         // ✅ NOUVEAU — en congé / justifié
@@ -447,6 +547,7 @@ export class PointageService {
           service: e.service,
           statut: manuel!.statut as StatutPresence,
           commentaire: manuel?.commentaire || null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       } else {
         absents.push({
@@ -455,12 +556,13 @@ export class PointageService {
           service: e.service,
           statut: (manuel?.statut as StatutPresence) || 'absent',
           commentaire: manuel?.commentaire || null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       }
     }
 
     return {
-      totalEmployes: employees.length,
+      totalEmployes: personnes.length,
       totalPresents: presents.length,
       totalAbsents: absents.length,
       totalEnConge: enConge.length, // ✅ NOUVEAU
@@ -480,10 +582,7 @@ export class PointageService {
     const fin = new Date(dateFin);
     fin.setHours(23, 59, 59, 999);
 
-    const employees = await this.employeeRepo.find({
-      where: { service: In(this.servicesAutorises) },
-      order: { nomPrenom: 'ASC' },
-    });
+    const personnes = await this.getToutesPersonnesSecteurs(); // ✅ Administratif + 5 secteurs
 
     const pointagesPeriode = await this.pointageRepo
       .createQueryBuilder('p')
@@ -499,7 +598,7 @@ export class PointageService {
     const absents: PresenceEmployee[] = [];
     const enConge: PresenceEmployee[] = []; // ✅ NOUVEAU
 
-    for (const e of employees) {
+    for (const e of personnes) {
       const matriculeNum = parseInt(e.matricule, 10);
       const manuel = statutsActifs.get(e.matricule);
 
@@ -513,6 +612,7 @@ export class PointageService {
           timbratrice: pointage?.timbratrice,
           statut: 'present',
           commentaire: null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       } else if (estStatutPresentManuel(manuel?.statut)) {
         presents.push({
@@ -523,6 +623,7 @@ export class PointageService {
           timbratrice: null,
           statut: 'present',
           commentaire: manuel?.commentaire || null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       } else if (estStatutJustifie(manuel?.statut)) {
         // ✅ NOUVEAU
@@ -532,6 +633,7 @@ export class PointageService {
           service: e.service,
           statut: manuel!.statut as StatutPresence,
           commentaire: manuel?.commentaire || null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       } else {
         absents.push({
@@ -540,6 +642,7 @@ export class PointageService {
           service: e.service,
           statut: (manuel?.statut as StatutPresence) || 'absent',
           commentaire: manuel?.commentaire || null,
+          poste: e.poste || null, // ✅ NOUVEAU
         });
       }
     }
@@ -547,7 +650,7 @@ export class PointageService {
     return {
       dateDebut,
       dateFin,
-      totalEmployes: employees.length,
+      totalEmployes: personnes.length,
       totalPresents: presents.length,
       totalAbsents: absents.length,
       totalEnConge: enConge.length, // ✅ NOUVEAU
@@ -650,12 +753,9 @@ export class PointageService {
       ...calculerRecap(o.matricule, String(o.matricule)),
     }));
 
-    // ── Employees (4 services) ──────────────────────────────────────
-    const employees = await this.employeeRepo.find({
-      where: { service: In(this.servicesAutorises) },
-      order: { nomPrenom: 'ASC' },
-    });
-    const recapEmployees: RecapPersonneJours[] = employees.map((e) => {
+    // ── Administratif + 5 secteurs ──────────────────────────────────
+    const personnes = await this.getToutesPersonnesSecteurs();
+    const recapEmployees: RecapPersonneJours[] = personnes.map((e) => {
       const matriculeNum = parseInt(e.matricule, 10);
       return {
         matricule: e.matricule,
@@ -910,11 +1010,9 @@ async getRecapPosteAujourdhuiDetaille(): Promise<LigneEffectifDetaille[]> {
       return found || null;
     };
 
-    // ── Population suivie : Ouvriers + Employees (4 services) ────
+    // ── Population suivie : Ouvriers + Administratif + 5 secteurs ────
     const tousOuvriers = await this.ouvrierRepo.find();
-    const employees = await this.employeeRepo.find({
-      where: { service: In(this.servicesAutorises) },
-    });
+    const personnes = await this.getToutesPersonnesSecteurs();
 
     let population = [
       ...tousOuvriers.map((o) => ({
@@ -923,7 +1021,7 @@ async getRecapPosteAujourdhuiDetaille(): Promise<LigneEffectifDetaille[]> {
         nomPrenom: o.nomPrenom,
         groupe: 'Ouvriers',
       })),
-      ...employees.map((e) => ({
+      ...personnes.map((e) => ({
         matriculeNum: parseInt(e.matricule, 10),
         matriculeStr: e.matricule,
         nomPrenom: e.nomPrenom,
@@ -1090,7 +1188,7 @@ async getRecapPosteAujourdhuiDetaille(): Promise<LigneEffectifDetaille[]> {
     const debutPeriode = bornesParJour[0].debutJour;
     const finPeriode = bornesParJour[bornesParJour.length - 1].finJour;
 
-    // ── Identifie la personne : Ouvrier (matricule numérique) ou Employee ──
+    // ── Identifie la personne : Ouvrier (matricule numérique) ou Administratif/secteur ──
     const matriculeNum = parseInt(matricule, 10);
     let nomPrenom = '';
     let groupe = '';
@@ -1108,14 +1206,14 @@ async getRecapPosteAujourdhuiDetaille(): Promise<LigneEffectifDetaille[]> {
       matriculeStr = String(ouvrier.matricule);
       matriculePointage = ouvrier.matricule;
     } else {
-      const employee = await this.employeeRepo.findOne({ where: { matricule } });
-      if (!employee) {
+      const personne = await this.chercherPersonneSecteurParMatricule(matricule);
+      if (!personne) {
         throw new NotFoundException(`Aucune personne trouvée pour le matricule ${matricule}`);
       }
-      nomPrenom = employee.nomPrenom;
-      groupe = employee.service;
-      matriculeStr = employee.matricule;
-      matriculePointage = parseInt(employee.matricule, 10);
+      nomPrenom = personne.nomPrenom;
+      groupe = personne.service;
+      matriculeStr = matricule;
+      matriculePointage = parseInt(matricule, 10);
     }
 
     // ── Pointages "entrée" de la personne sur la période ──────────

@@ -10,7 +10,7 @@ import { Repository, Between, In } from 'typeorm';
 import { PlanningSelection } from './entities/planning-selection.entity';
 import { CreatePlanningSelectionDto } from './dto/create-planning-selection.dto';
 import { UpdatePlanningSelectionDto } from './dto/update-planning-selection.dto';
-import { Ouvrier } from '../ouvrier/entities/ouvrier.entity';
+import { Selection } from 'src/secteurs/selection/selection.entity';
 import { Product } from '../product/entities/product.entity';
 import { Semaine } from '../semaine/entities/semaine.entity';
 import { MatierePremier } from '../matiere-premier/entities/matiere-premier.entity';
@@ -21,8 +21,8 @@ export class PlanningSelectionService {
   constructor(
     @InjectRepository(PlanningSelection)
     private planningRepository: Repository<PlanningSelection>,
-    @InjectRepository(Ouvrier)
-    private ouvrierRepository: Repository<Ouvrier>,
+    @InjectRepository(Selection)
+    private selectionRepository: Repository<Selection>,
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     @InjectRepository(Semaine)
@@ -126,13 +126,13 @@ async create(createDto: CreatePlanningSelectionDto): Promise<PlanningSelection> 
   const semaine = await this.findSemaineForDate(date);
   const semaineNumero = this.extractWeekNumberFromName(semaine.nom);
 
-  // 2. Vérifier que l'ouvrier existe
-  const ouvrier = await this.ouvrierRepository.findOne({ 
-    where: { matricule } 
+  // 2. Vérifier que la personne existe dans la base "sélection"
+  const selection = await this.selectionRepository.findOne({ 
+    where: { matricule: matricule.toString() } 
   });
   
-  if (!ouvrier) {
-    throw new NotFoundException(`Ouvrier avec le matricule ${matricule} introuvable`);
+  if (!selection) {
+    throw new NotFoundException(`Personne avec le matricule ${matricule} introuvable dans la base sélection`);
   }
 
   // 3. Vérifier que les champs obligatoires sont présents
@@ -156,7 +156,7 @@ async create(createDto: CreatePlanningSelectionDto): Promise<PlanningSelection> 
     planning.semaineId = semaine.id;
     planning.semaineNom = semaine.nom;
     planning.matricule = matricule;
-    planning.nomPrenom = ouvrier.nomPrenom;
+    planning.nomPrenom = selection.nomPrenom;
     planning.ligne = 'selection';
     planning.reference = reference;
     planning.ligneRef = refInfo.ligne;
@@ -689,8 +689,8 @@ async create(createDto: CreatePlanningSelectionDto): Promise<PlanningSelection> 
    * Charger les relations pour un planning
    */
   private async loadRelationsForPlanning(planning: PlanningSelection): Promise<void> {
-    planning.ouvrier = await this.ouvrierRepository.findOne({ 
-      where: { matricule: planning.matricule } 
+    planning.ouvrier = await this.selectionRepository.findOne({ 
+      where: { matricule: planning.matricule.toString() } 
     });
 
     if (planning.typeReference === 'product' && planning.productId) {
@@ -721,20 +721,20 @@ async create(createDto: CreatePlanningSelectionDto): Promise<PlanningSelection> 
     const matierePremierIds = plannings.filter(p => p.matierePremierId).map(p => p.matierePremierId!);
     const semaineIds = plannings.filter(p => p.semaineId).map(p => p.semaineId!);
 
-    const [ouvriers, products, matierePremiers, semaines] = await Promise.all([
-      this.ouvrierRepository.find({ where: { matricule: In(matricules) } }),
+    const [selections, products, matierePremiers, semaines] = await Promise.all([
+      this.selectionRepository.find({ where: { matricule: In(matricules.map(m => m.toString())) } }),
       productIds.length > 0 ? this.productRepository.find({ where: { id: In(productIds) } }) : Promise.resolve([]),
       matierePremierIds.length > 0 ? this.matierePremierRepository.find({ where: { id: In(matierePremierIds) } }) : Promise.resolve([]),
       semaineIds.length > 0 ? this.semaineRepository.find({ where: { id: In(semaineIds) } }) : Promise.resolve([]),
     ]);
 
-    const ouvrierMap = new Map(ouvriers.map(o => [o.matricule, o]));
+    const selectionMap = new Map(selections.map(s => [s.matricule, s]));
     const productMap = new Map(products.map(p => [p.id, p]));
     const matierePremierMap = new Map(matierePremiers.map(m => [m.id, m]));
     const semaineMap = new Map(semaines.map(s => [s.id, s]));
 
     plannings.forEach(planning => {
-      planning.ouvrier = ouvrierMap.get(planning.matricule) || null;
+      planning.ouvrier = selectionMap.get(planning.matricule.toString()) || null;
       
       if (planning.typeReference === 'product' && planning.productId) {
         planning.product = productMap.get(planning.productId) || null;

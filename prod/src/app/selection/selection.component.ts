@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { 
   SelectionService, 
-  Ouvrier, 
+  SelectionOuvrier,
   ReferenceItem, 
   PlanningSelection, 
   CreatePlanningSelectionDto,
@@ -30,7 +30,7 @@ export interface WeekInfo {
 })
 export class SelectionComponent implements OnInit {
   semaines: WeekInfo[] = [];
-  ouvriers: Ouvrier[] = [];
+  ouvriers: SelectionOuvrier[] = [];
   references: ReferenceItem[] = [];
   plannings: PlanningSelection[] = [];
   planningsEnAttente: PlanningSelection[] = [];
@@ -62,7 +62,7 @@ export class SelectionComponent implements OnInit {
   showReferenceDropdown = false;
 
   searchMatricule = '';
-  filteredOuvriers: Ouvrier[] = [];
+  filteredOuvriers: SelectionOuvrier[] = [];
   showOuvrierDropdown = false;
 
   showCompletionModal = false;
@@ -107,7 +107,7 @@ export class SelectionComponent implements OnInit {
   }
 
   loadOuvriers(): void {
-    this.selectionService.getOuvriers().subscribe({
+    this.selectionService.getOuvriersSelection().subscribe({
       next: (ouvriers) => {
         this.ouvriers = ouvriers;
       },
@@ -162,10 +162,7 @@ export class SelectionComponent implements OnInit {
         const searchLower = value.toLowerCase();
         if (o.matricule.toString().includes(value)) return true;
         if (o.nomPrenom && o.nomPrenom.toLowerCase().includes(searchLower)) return true;
-        if (o.nom && o.prenom) {
-          if (`${o.nom} ${o.prenom}`.toLowerCase().includes(searchLower)) return true;
-        }
-        if (o.nom && o.nom.toLowerCase().includes(searchLower)) return true;
+        if (o.poste && o.poste.toLowerCase().includes(searchLower)) return true;
         return false;
       });
       this.showOuvrierDropdown = this.filteredOuvriers.length > 0;
@@ -174,18 +171,10 @@ export class SelectionComponent implements OnInit {
     }
   }
 
-  selectOuvrier(ouvrier: Ouvrier): void {
-    this.formData.matricule = ouvrier.matricule;
-    if (ouvrier.nomPrenom) {
-      this.formData.nomPrenom = ouvrier.nomPrenom;
-    } else if (ouvrier.nom && ouvrier.prenom) {
-      this.formData.nomPrenom = `${ouvrier.nom} ${ouvrier.prenom}`;
-    } else if (ouvrier.nom) {
-      this.formData.nomPrenom = ouvrier.nom;
-    } else {
-      this.formData.nomPrenom = `Ouvrier ${ouvrier.matricule}`;
-    }
-    this.formData.ligne = ouvrier.ligne || 'selection';
+  selectOuvrier(ouvrier: SelectionOuvrier): void {
+    this.formData.matricule = Number(ouvrier.matricule);
+    this.formData.nomPrenom = ouvrier.nomPrenom || `Ouvrier ${ouvrier.matricule}`;
+    this.formData.ligne = 'selection';
     this.searchMatricule = ouvrier.matricule.toString();
     this.showOuvrierDropdown = false;
   }

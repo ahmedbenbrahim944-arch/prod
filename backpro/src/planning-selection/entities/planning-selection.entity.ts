@@ -8,7 +8,7 @@ import {
   ManyToOne,
   JoinColumn
 } from 'typeorm';
-import { Ouvrier } from '../../ouvrier/entities/ouvrier.entity';
+import { Selection } from 'src/secteurs/selection/selection.entity';
 import { Product } from '../../product/entities/product.entity';
 import { Semaine } from '../../semaine/entities/semaine.entity';
 import { MatierePremier } from '../../matiere-premier/entities/matiere-premier.entity';
@@ -34,13 +34,15 @@ export class PlanningSelection {
   @JoinColumn({ name: 'semaineId' })
   semaineEntity: Semaine | null;
 
-  // Relation avec Ouvrier
+  // Relation avec la base "sélection"
+  // ⚠️ Pas de @ManyToOne/@JoinColumn ici : matricule est int côté planning_selection
+  // et varchar côté table selection (types incompatibles pour une vraie FK TypeORM).
+  // Ce champ est peuplé manuellement dans le service (loadRelationsForPlanning(s)),
+  // il n'est ni persisté ni utilisé pour une jointure automatique.
   @Column()
   matricule: number;
 
-  @ManyToOne(() => Ouvrier, { nullable: false })
-  @JoinColumn({ name: 'matricule' })
-  ouvrier: Ouvrier | null;
+  ouvrier: Selection | null;
 
   @Column({ type: 'varchar', length: 100 })
   nomPrenom: string;

@@ -66,6 +66,7 @@ export interface PresenceEmployeeItem {
   timbratrice?: string | null;
   statut: string;
   commentaire?: string | null;
+  poste?: string | null; // ✅ NOUVEAU — '1ere poste' | '2eme poste', absent pour Administratif
 }
 
 export interface PresenceEmployeeData {

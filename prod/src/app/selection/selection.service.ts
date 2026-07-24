@@ -5,12 +5,12 @@ import { Observable, of, forkJoin } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AuthService } from '../login/auth.service';
 
-export interface Ouvrier {
-  matricule: number;
-  nom?: string;
-  prenom?: string;
-  nomPrenom?: string;
-  ligne?: string;
+// Personne issue de la base "sélection" (table selection)
+export interface SelectionOuvrier {
+  id: number;
+  matricule: string;
+  nomPrenom: string;
+  poste: string;
 }
 
 export interface Product {
@@ -100,18 +100,10 @@ export class SelectionService {
     });
   }
 
-  // Récupérer les ouvriers
-  getOuvriers(): Observable<Ouvrier[]> {
-    return this.http.get<Ouvrier[]>(
-      `${this.apiUrl}/ouvrier`,
-      { headers: this.getAuthHeaders() }
-    );
-  }
-
-  // Récupérer un ouvrier par matricule
-  getOuvrierByMatricule(matricule: number): Observable<Ouvrier> {
-    return this.http.get<Ouvrier>(
-      `${this.apiUrl}/ouvrier/${matricule}`,
+  // 🆕 Récupérer les personnes depuis la base "sélection" (table selection)
+  getOuvriersSelection(): Observable<SelectionOuvrier[]> {
+    return this.http.get<SelectionOuvrier[]>(
+      `${this.apiUrl}/selection`,
       { headers: this.getAuthHeaders() }
     );
   }
@@ -309,4 +301,3 @@ export class SelectionService {
     );
   }
 }
-

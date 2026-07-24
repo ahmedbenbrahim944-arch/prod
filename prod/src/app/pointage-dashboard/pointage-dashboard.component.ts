@@ -62,8 +62,8 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
   // ✅ NOUVEAU — anneaux de présence par poste (1ere/2eme), affichés à côté de l'anneau global
   posteRings: { label: string; presents: number; absents: number; enConge: number; total: number; pct: number }[] = [];
 
-  // ✅ NOUVEAU — anneaux de présence par service (Maintenance/Magasin/Qualité)
-  serviceRings: { label: string; service: string; presents: number; absents: number; enConge: number; total: number; pct: number }[] = [];
+  // ✅ MODIFIÉ — anneaux de présence par (service, poste) pour les 5 secteurs
+  serviceRings: { label: string; service: string; poste: '1ere poste' | '2eme poste'; presents: number; absents: number; enConge: number; total: number; pct: number }[] = [];
 
   // ✅ NOUVEAU — contrôle d'accès : true si matricule === '2600'
   get hasLimitedAccess(): boolean {
@@ -86,9 +86,18 @@ export class PointageDashboardComponent implements OnInit, OnDestroy {
   // ── Derniers pointages ticker ─────────────────────────────────
   dernierPointages: Present[] = [];
 
-  // Filtre par service (Employee)
+  // Filtre par service (Employee + 5 secteurs)
   selectedService: string | null = null;
-  readonly services = ['Administratif', 'Maintenance', 'Magasin', 'Qualité'];
+  readonly services = ['Administratif', 'Maintenance', 'Magasin', 'Qualité', 'Sélection', 'Team Production'];
+
+  // ✅ NOUVEAU — les 5 secteurs qui ont un champ poste (1ere/2eme), contrairement à Administratif
+  readonly servicesAvecPoste = ['Maintenance', 'Magasin', 'Qualité', 'Sélection', 'Team Production'];
+
+  // ✅ NOUVEAU — sous-filtre poste quand un des 5 secteurs est sélectionné
+  selectedServicePoste: '1ere poste' | '2eme poste' | null = null;
+
+  // ✅ NOUVEAU — cache des données brutes du service sélectionné (pour ré-appliquer le sous-filtre poste sans refetch)
+  private serviceRawData: PresenceEmployeeData | null = null;
 
   // ════════════════════════════════════════════════════════════════
   // ✅ NOUVEAU — état pour la modal "Récup Production"
@@ -167,8 +176,9 @@ private readonly CAUSE_LABELS: Record<string, string> = {
     });
   }
 
-  // ✅ NOUVEAU — calcule le % de présence + présents/absents/enConge pour chaque service
-  // (Maintenance, Magasin, Qualité), en groupant les données employees par service.
+  // ✅ MODIFIÉ — calcule le % de présence + présents/absents/enConge pour chaque COUPLE
+  // (secteur, poste), en groupant les données employees par service ET par poste.
+  // Administratif n'a pas de poste : on ne lui construit pas d'anneau ici (inchangé).
   loadServiceRings(): void {
     const debut = this.dateDebut || new Date().toISOString().split('T')[0];
     const fin = this.dateFin || debut;
@@ -180,27 +190,32 @@ private readonly CAUSE_LABELS: Record<string, string> = {
 
     obs.subscribe({
       next: (data: PresenceEmployeeData) => {
-        const services = ['Maintenance', 'Magasin', 'Qualité'];
-        this.serviceRings = services.map((service) => {
-          const presentsFiltered = data.presents.filter(p => p.service === service);
-          const absentsFiltered = data.absents.filter(a => a.service === service);
-          const enCongeFiltered = data.enConge.filter(e => e.service === service);
+        const rings: {
+          label: string; service: string; poste: '1ere poste' | '2eme poste';
+          presents: number; absents: number; enConge: number; total: number; pct: number;
+        }[] = [];
 
-          const presents = presentsFiltered.length;
-          const absents = absentsFiltered.length;
-          const enConge = enCongeFiltered.length;
-          const total = presents + absents + enConge;
+        for (const service of this.servicesAvecPoste) {
+          for (const poste of this.postes) {
+            const presents = data.presents.filter(p => p.service === service && p.poste === poste).length;
+            const absents = data.absents.filter(a => a.service === service && a.poste === poste).length;
+            const enConge = data.enConge.filter(e => e.service === service && e.poste === poste).length;
+            const total = presents + absents + enConge;
 
-          return {
-            label: service,
-            service,
-            presents,
-            absents,
-            enConge,
-            total,
-            pct: total ? Math.round((presents / total) * 100) : 0,
-          };
-        });
+            rings.push({
+              label: `${service} — ${poste}`,
+              service,
+              poste,
+              presents,
+              absents,
+              enConge,
+              total,
+              pct: total ? Math.round((presents / total) * 100) : 0,
+            });
+          }
+        }
+
+        this.serviceRings = rings;
         this.cdr.markForCheck();
       },
     });
@@ -244,11 +259,22 @@ private readonly CAUSE_LABELS: Record<string, string> = {
               const enCongeOuv = postesInclus.reduce((s, r) => s + (r.enConge || 0), 0);
               const totalOuv = postesInclus.reduce((s, r) => s + r.totalAffectes, 0);
 
+              // ✅ NOUVEAU — même exclusion pour les 5 secteurs : un item sans poste
+              // (Administratif) passe toujours ; un item en '2eme poste' est exclu
+              // uniquement si excludePoste2 est actif.
+              const gardePoste = (item: { poste?: string | null }) =>
+                !excludePoste2 || item.poste !== '2eme poste';
+
+              const presentsEmp = emp.presents.filter(gardePoste).length;
+              const absentsEmp = emp.absents.filter(gardePoste).length;
+              const enCongeEmp = emp.enConge.filter(gardePoste).length;
+              const totalEmp = presentsEmp + absentsEmp + enCongeEmp;
+
               this.globalStats = {
-                presents: presentsOuv + emp.totalPresents,
-                absents: absentsOuv + emp.totalAbsents,
-                enConge: enCongeOuv + (emp.totalEnConge || 0),
-                total: totalOuv + emp.totalEmployes,
+                presents: presentsOuv + presentsEmp,
+                absents: absentsOuv + absentsEmp,
+                enConge: enCongeOuv + enCongeEmp,
+                total: totalOuv + totalEmp,
               };
               this.cdr.markForCheck();
             },
@@ -456,7 +482,16 @@ private readonly CAUSE_LABELS: Record<string, string> = {
       return;
     }
     this.selectedService = service;
+    this.selectedServicePoste = null; // ✅ NOUVEAU — reset le sous-filtre poste en changeant de secteur
     this.loadServiceData(); // ✅ MODIFIÉ — respecte maintenant dateDebut/dateFin
+  }
+
+  // ✅ NOUVEAU — sous-filtre poste (1ere/2eme) pour un secteur sélectionné
+  selectServicePoste(poste: '1ere poste' | '2eme poste'): void {
+    this.selectedServicePoste = this.selectedServicePoste === poste ? null : poste;
+    if (this.serviceRawData) {
+      this.applyServiceFilter(this.serviceRawData);
+    }
   }
 
   // ✅ MODIFIÉ — utilise l'endpoint période (et non plus "today" en dur)
@@ -470,6 +505,7 @@ private readonly CAUSE_LABELS: Record<string, string> = {
 
     this.svc.getPresencePeriodeEmployees(debut, fin).subscribe({
       next: (data) => {
+        this.serviceRawData = data; // ✅ NOUVEAU — cache pour le sous-filtre poste
         this.applyServiceFilter(data);
         this.lastSync = new Date().toLocaleTimeString('fr-FR', {
           hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -481,21 +517,24 @@ private readonly CAUSE_LABELS: Record<string, string> = {
     });
   }
 
-  // ✅ MODIFIÉ — reçoit maintenant les données en paramètre (plus de cache)
+  // ✅ MODIFIÉ — filtre aussi par poste si un sous-filtre poste est actif
   private applyServiceFilter(data: PresenceEmployeeData): void {
     if (!this.selectedService) return;
 
+    const gardePoste = (item: { poste?: string | null }) =>
+      !this.selectedServicePoste || item.poste === this.selectedServicePoste;
+
     const presents = data.presents.filter(
-      (p) => p.service === this.selectedService
+      (p) => p.service === this.selectedService && gardePoste(p)
     ) as unknown as Present[];
 
     const absents = data.absents.filter(
-      (a) => a.service === this.selectedService
+      (a) => a.service === this.selectedService && gardePoste(a)
     ) as unknown as Absent[];
 
     // ✅ NOUVEAU — filtrer aussi la liste en congé/justifié par service
     const enConge = (data.enConge || []).filter(
-      (c) => c.service === this.selectedService
+      (c) => c.service === this.selectedService && gardePoste(c)
     ) as unknown as EnConge[];
 
     this.data = { total: presents.length + absents.length + enConge.length, presents, absents, enConge };
@@ -505,6 +544,8 @@ private readonly CAUSE_LABELS: Record<string, string> = {
   // ✅ MODIFIÉ — repart sur l'endpoint ouvrier en respectant la période en cours
   clearServiceFilter(): void {
     this.selectedService = null;
+    this.selectedServicePoste = null; // ✅ NOUVEAU
+    this.serviceRawData = null; // ✅ NOUVEAU
 
     const today = new Date().toISOString().split('T')[0];
     if (this.dateDebut === today && this.dateFin === today) {

@@ -35,6 +35,11 @@ import { DailyReportModule } from './daily-report/daily-report.module';
 import { EmployeeModule } from './employee/employee.module';
 import { PointageModule } from './pointage/pointage.module';
 import { StatutManuelModule } from './statut-manuel/statut-manuel.module';
+import { SecteursModule } from './secteurs/secteurs.module';
+import { MaintenanceModule } from './secteurs/maintenance/maintenance.module';
+import { QualiteModule } from './secteurs/qualite/qualite.module';
+import { SelectionModule } from './secteurs/selection/selection.module';
+import { TeamProductionModule } from './secteurs/team-production/team-production.module';
 
 
 @Module({
@@ -87,7 +92,13 @@ import { StatutManuelModule } from './statut-manuel/statut-manuel.module';
     DailyReportModule,
     EmployeeModule,
     PointageModule,
-    StatutManuelModule
+    StatutManuelModule,
+    SecteursModule,
+    MagasinModule,
+    MaintenanceModule,
+    QualiteModule,
+    SelectionModule,
+    TeamProductionModule
 
   ],
   controllers: [],

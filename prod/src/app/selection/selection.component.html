@@ -107,14 +107,8 @@
                 *ngFor="let ouvrier of filteredOuvriers" 
                 class="autocomplete-item"
                 (click)="selectOuvrier(ouvrier)">
-                <strong>{{ ouvrier.matricule }}</strong> - 
-                <ng-container *ngIf="ouvrier.nomPrenom">{{ ouvrier.nomPrenom }}</ng-container>
-                <ng-container *ngIf="!ouvrier.nomPrenom && ouvrier.nom && ouvrier.prenom">
-                  {{ ouvrier.nom }} {{ ouvrier.prenom }}
-                </ng-container>
-                <ng-container *ngIf="!ouvrier.nomPrenom && !ouvrier.prenom && ouvrier.nom">
-                  {{ ouvrier.nom }}
-                </ng-container>
+                <strong>{{ ouvrier.matricule }}</strong> - {{ ouvrier.nomPrenom }}
+                <span class="badge" *ngIf="ouvrier.poste">{{ ouvrier.poste }}</span>
               </div>
             </div>
             <small class="help-text" *ngIf="!formData.matricule">Tapez pour rechercher un ouvrier</small>

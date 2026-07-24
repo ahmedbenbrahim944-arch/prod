@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlanningSelectionService } from './planning-selection.service';
 import { PlanningSelectionController } from './planning-selection.controller';
 import { PlanningSelection } from './entities/planning-selection.entity';
-import { Ouvrier } from '../ouvrier/entities/ouvrier.entity';
+import { Selection } from 'src/secteurs/selection/selection.entity';
 import { Product } from '../product/entities/product.entity';
 import { Semaine } from '../semaine/entities/semaine.entity';
 import { MatierePremier } from '../matiere-premier/entities/matiere-premier.entity';
@@ -13,7 +13,7 @@ import { MatierePremier } from '../matiere-premier/entities/matiere-premier.enti
   imports: [
     TypeOrmModule.forFeature([
       PlanningSelection, 
-      Ouvrier, 
+      Selection, 
       Product,
       Semaine,
       MatierePremier
